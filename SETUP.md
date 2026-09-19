@@ -1,166 +1,65 @@
-# SETUP.md — Guía de Configuración e Inicialización Local
+# SETUP.md — Guía de Inicialización Ultra Cómoda (Sin Configurar Python Local)
 
-Este documento guía a cualquier desarrollador o agente de IA paso a paso para configurar, instalar e iniciar el entorno de desarrollo local para el proyecto **Mapa de Dalias y Participación Ciudadana**.
-
----
-
-## 1. Prerrequisitos del Sistema
-
-Antes de comenzar, asegúrate de tener instaladas las siguientes herramientas en tu sistema:
-
-- **Node.js:** v18.17.0 o superior (recomendado v20+ LTS).
-- **pnpm:** v8.0.0 o superior (`npm install -g pnpm` o `corepack enable`).
-- **Python:** v3.11 o superior.
-- **Docker & Docker Compose:** Para la base de datos PostgreSQL local y contenedores.
-- **Git:** Para control de versiones.
+Esta guía explica el método **más rápido y cómodo** para levantar todo el proyecto localmente sin tener que configurar entornos virtuales de Python ni instalar librerías manualmente en tu sistema.
 
 ---
 
-## 2. Variables de Entorno y Configuración Inicial
+## 🚀 Inicialización en Solo 2 Pasos
 
-### 2.1 Backend (`backend/.env`)
-Crea el archivo `backend/.env` copiándolo desde `backend/.env.example` (o usando los valores por defecto locales):
-
-```env
-# Entorno
-ENV=development
-PROJECT_NAME="Mapa de Dalias API (Dev)"
-LOG_LEVEL=debug
-
-# Base de Datos PostgreSQL Local (Docker)
-DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/mapa_dalias_db
-
-# CORS
-CORS_ORIGINS=["http://localhost:3000", "http://127.0.0.1:3000"]
-
-# Asistente de IA (Opcional en desarrollo local)
-LLM_API_KEY=mock_dev_key
-LLM_MODEL=gemini-1.5-flash
+```mermaid
+flowchart TD
+    A[Paso 1: docker compose up -d] -->|Levanta Postgres + FastAPI + Migraciones + ETL| B(Backend & BD Listos)
+    C[Paso 2: pnpm install && pnpm dev] -->|Levanta Next.js + Vite Dev Server| D(Frontend & Juego Listos)
+    B --- D
 ```
 
-### 2.2 Frontend (`apps/web/.env.local`)
-Crea el archivo `apps/web/.env.local`:
+### Paso 1: Levantar el Backend y la Base de Datos con Docker (1 comando)
+Docker se encarga automáticamente de instalar Python, las librerías, conectarse a PostgreSQL, ejecutar las migraciones de Alembic y correr el script ETL de datos iniciales sin que tengas que tocar nada de Python en tu máquina.
 
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8000
-NEXT_PUBLIC_ENV=development
-```
-
----
-
-## 3. Instalación Paso a Paso
-
-### Paso 1: Clonar el Repositorio
 ```bash
-git clone https://github.com/Betto-RZE/sadaPops.git
-cd sadaPops
+docker compose -f infra/docker-compose.yml up -d
 ```
+
+*(¡Listo! El backend de FastAPI estará corriendo en `http://localhost:8000` con la base de datos totalmente configurada y poblada con datos).*
 
 ---
 
-### Paso 2: Instalar Dependencias del Monorepo Node.js
-Ejecuta `pnpm install` en la raíz del proyecto para instalar las dependencias de `apps/web`, `packages/game` y `packages/types`:
+### Paso 2: Levantar el Frontend y el Motor del Juego (`pnpm dev`)
+En tu terminal, instala las dependencias del monorepo y arranca el entorno de desarrollo (Next.js en `apps/web` y Vite dev server para `packages/game` ejecutándose en paralelo):
+
 ```bash
 pnpm install
+pnpm dev
 ```
 
----
-
-### Paso 3: Configurar el Entorno Virtual de Python (Backend)
-Navega a la carpeta `backend/` y crea el entorno virtual de Python:
-
-```bash
-cd backend
-
-# En Linux/macOS:
-python3 -m venv .venv
-source .venv/bin/activate
-
-# En Windows (PowerShell):
-python -m venv .venv
-.venv\Scripts\Activate.ps1
-
-# Instalar dependencias de Python
-pip install -e .
-# o si usas pip install directo:
-pip install -r pyproject.toml
-```
+*(¡Listo! Abre `http://localhost:3000` en tu navegador).*
 
 ---
 
-### Paso 4: Iniciar la Base de Datos PostgreSQL con Docker
-Regresa a la raíz o utiliza Docker Compose desde `infra/`:
+## 🛠️ Verificación de Servicios Activos
 
-```bash
-# Iniciar contenedor de PostgreSQL en segundo plano
-docker compose -f infra/docker-compose.yml up -d postgres
-```
-
----
-
-### Paso 5: Ejecutar Migraciones de Base de Datos
-Con la base de datos activa y el entorno de Python habilitado, ejecuta las migraciones de Alembic para crear las tablas:
-
-```bash
-cd backend
-alembic upgrade head
-```
+- 🌐 **Frontend (Next.js App Router):** [`http://localhost:3000`](http://localhost:3000)
+- 🎮 **Servidor de Dev del Juego (Vite):** [`http://localhost:5173`](http://localhost:5173) *(utilizado por Next.js para HMR rápido)*
+- ⚡ **Backend (FastAPI Docs):** [`http://localhost:8000/docs`](http://localhost:8000/docs)
+- 🟢 **Estado de Salud de la API:** [`http://localhost:8000/health`](http://localhost:8000/health)
 
 ---
 
-### Paso 6: Cargar Datos de Prueba o Ingesta ETL de la CCPC
-Para poblar la base de datos local con los datos oficiales de la CCPC del INE:
-
-```bash
-cd backend
-python etl/ccpc_ingest.py --file ../data/raw/ccpc_ine_official.zip
-```
-*(Nota: Si no cuentas con el zip oficial completo durante la instalación inicial, el script generará automáticamente datos de prueba / mock data para desarrollo).*
-
----
-
-## 4. Ejecución del Proyecto en Desarrollo
-
-Tienes dos alternativas para arrancar la aplicación localmente:
-
-### Opción A: Modo Híbrido (Recomendado para iteración rápida)
-
-1. **Backend (Terminal 1):**
-   ```bash
-   cd backend
-   source .venv/bin/activate  # o .venv\Scripts\Activate.ps1
-   uvicorn app.main:app --reload --port 8000
-   ```
-2. **Frontend + Juego (Terminal 2):**
-   ```bash
-   # Desde la raíz del proyecto
-   pnpm --filter web dev
-   ```
-
-### Opción B: Todo mediante Docker Compose
-```bash
-docker compose -f infra/docker-compose.yml up --build
-```
-
----
-
-## 5. Verificación del Entorno Local
-
-Una vez iniciados los servicios, abre tu navegador y verifica las siguientes URLs:
-
-- **Frontend Web:** [`http://localhost:3000`](http://localhost:3000) (Debe mostrar la Landing con el Mapa de Dalias en Zoom 1).
-- **Documentación de la API (OpenAPI / Swagger):** [`http://localhost:8000/docs`](http://localhost:8000/docs) (Debe listar todos los endpoints de FastAPI).
-- **Endpoint de Salud Backend:** [`http://localhost:8000/health`](http://localhost:8000/health) (Respuesta esperada: `{"status": "ok"}`).
-
----
-
-## 6. Cheat Sheet de Comandos Frecuentes
+## 📋 Comandos Frecuentes de Desarrollo
 
 | Acción | Comando |
 |---|---|
-| Iniciar todo el frontend en desarrollo | `pnpm --filter web dev` |
-| Compilar todo el monorepo | `pnpm build` |
-| Iniciar servidor de backend FastAPI | `cd backend && uvicorn app.main:app --reload` |
-| Crear nueva migración de base de datos | `cd backend && alembic revision --autogenerate -m "descripcion"` |
-| Ejecutar pruebas unitarias de backend | `cd backend && pytest` |
-| Ejecutar linter de frontend | `pnpm --filter web lint` |
+| Ver logs del backend en tiempo real | `docker compose -f infra/docker-compose.yml logs -f backend` |
+| Reiniciar contenedores backend/db | `docker compose -f infra/docker-compose.yml restart` |
+| Detener todos los contenedores | `docker compose -f infra/docker-compose.yml down` |
+| Re-ejecutar ingesta ETL dentro del contenedor | `docker exec -it sada_pops_backend python etl/ccpc_ingest.py` |
+| Ejecutar pruebas de backend en Docker | `docker exec -it sada_pops_backend pytest` |
+| Compilar frontend para producción | `pnpm build` |
+
+---
+
+## ⚙️ Variables de Entorno (Preconfiguradas)
+
+Para desarrollo local no necesitas configurar nada manualmente. Docker Compose y Next.js traen valores por defecto completamente funcionales:
+- **Backend:** Conecta automáticamente a `postgresql+asyncpg://postgres:postgrespassword@postgres:5432/mapa_dalias_db` dentro de la red del contenedor.
+- **Frontend:** Apunta automáticamente a `http://localhost:8000`.

@@ -1,0 +1,13 @@
+{
+  "name": "sada-pops-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --parallel --recursive run dev",
+    "build": "pnpm --filter web build",
+    "lint": "pnpm --parallel --recursive run lint"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  }
+}
