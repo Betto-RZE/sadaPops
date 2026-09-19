@@ -1,113 +1,113 @@
-# PROJECT_CONTEXT.md — Domain & Technical Context
+# PROJECT_CONTEXT.md — Contexto Técnico y de Dominio
 
-## 1. Hackathon Context & Challenge Overview
+## 1. Contexto del Hackathon y Resumen del Reto
 
 - **Hackathon:** Hackathon INE (Instituto Nacional Electoral)
-- **Challenge:** Reto 3 — Comunicación y visualización con impacto público
-- **Project Name:** Mapa de Dalias y Participación Ciudadana
-- **Primary Target Audience:** Youth (Jóvenes)
-- **Secondary Target Audience:** General public interested in civic engagement and electoral participation
+- **Reto:** Reto 3 — Comunicación y visualización con impacto público
+- **Nombre del Proyecto:** Mapa de Dalias y Participación Ciudadana
+- **Público Objetivo Primario:** Jóvenes
+- **Público Objetivo Secundario:** Público general interesado en la participación cívica y electoral
 
 ---
 
-## 2. Core Value Proposition & Differentiators
+## 2. Propuesta de Valor y Diferenciadores Clave
 
-Most solutions for civic awareness focus on static infographics or emotional messaging ("why voting matters"). This project differentiates itself through four key pillars:
+La mayoría de las soluciones para la concientización cívica se enfocan en infografías estáticas o mensajes emocionales ("por qué votar importa"). Este proyecto se diferencia mediante cuatro pilares fundamentales:
 
-1. **Visible Social Proof (Mapa de Dalias):** Uses the dalia (Mexico's national flower) as a visual representation of individual civic awareness. Showing that "others like you are already informing themselves" leverages peer motivation without exposing personal identities.
-2. **Actionable Intermediate Bridges:** Directly connects the desire to participate with concrete next steps (enforcing links to INE's official casilla locator, observer registration, and foreign voter procedures).
-3. **Question-Driven CCPC Translation:** Converts complex INE CCPC data (.zip files per year) into intuitive, question-first visualizations (e.g., *"¿Por qué mi estado vota tan poco?"*), paired with dynamic chart selection (bars, lines, heatmaps).
-4. **Complementary Pixel Art Game Mode:** Provides a youth-friendly alternative narrative channel through an interactive pixel art game featuring a simulated voting emulator and myth-busting challenges.
+1. **Prueba Social Visible (Mapa de Dalias):** Utiliza la dalia (flor nacional de México) como representación visual de la concientización cívica individual. Mostrar que "otros como tú ya se están informando" aprovecha la motivación entre pares sin exponer identidades personales.
+2. **Puentes Intermedios Accionables:** Conecta directamente el deseo de participar con los siguientes pasos concretos (enlaces oficiales a la ubicación de casillas del INE, registro de observadores y voto foráneo).
+3. **Traducción de la CCPC Orientada a Preguntas:** Convierte datos complejos de la CCPC del INE (archivos .zip por año) en visualizaciones intuitivas guiadas por preguntas de interés social (ej. *"¿Por qué mi estado vota tan poco?"*), combinadas con selección dinámica de gráficas (barras, líneas, mapas de calor).
+4. **Modo Juego Pixel Art Complementario:** Proporciona un canal narrativo alternativo adecuado para jóvenes a través de un juego interactivo en pixel art con un emulador de votación y desafíos para desmentir mitos.
 
 ---
 
-## 3. Navigation & UX Flow Architecture
+## 3. Arquitectura de Navegación y Flujo de UX
 
-### Open Access Model with Conditional Registration
-All content modules are unlocked and accessible from the landing page from second 1. The registration action ("Agrega tu dalia") is locked with a visual badge until the user completes **at least one** of the three primary content modules.
+### Modelo de Acceso Libre con Registro Condicionado
+Todos los módulos de contenido están desbloqueados y accesibles desde la página de inicio desde el primer segundo. La acción de registro ("Agrega tu dalia") está bloqueada con un distintivo visual hasta que el usuario completa **al menos uno** de los tres módulos principales de contenido.
 
 ```mermaid
 flowchart TD
-    A[Landing Page: Mapa de Dalias + Open Menu] --> B[Modulo: Narrativa]
-    A --> C[Modulo: Dashboard CCPC]
-    A --> D[Modulo: Juego Pixel Art]
-    A -.Always Available.-> H[Herramientas Oficiales INE]
-    A -.Always Available.-> I[Asistente de IA Flotante]
-    B --> E{Completed at least 1 module?}
+    A[Landing Page: Mapa de Dalias + Menú Abierto] --> B[Módulo: Narrativa]
+    A --> C[Módulo: Dashboard CCPC]
+    A --> D[Módulo: Juego Pixel Art]
+    A -.Siempre Disponible.-> H[Herramientas Oficiales INE]
+    A -.Siempre Disponible.-> I[Asistente de IA Flotante]
+    B --> E{¿Completó al menos 1 módulo?}
     C --> E
     D --> E
-    E -->|Yes| F[Agrega tu Dalia - UNLOCKED]
+    E -->|Sí| F[Agrega tu Dalia - DESBLOQUEADO]
 ```
 
-### Module Completion Criteria
-- **Narrativa:** User reaches the final reflection section (includes foreign voter context).
-- **Dashboard CCPC:** User explores at least 1 full question (data + dynamic chart + context phrase).
-- **Modo Juego:** User completes 1 full scene (1 myth buster or 1 voting simulation loop).
+### Criterios de Finalización de Módulos
+- **Narrativa:** El usuario llega a la sección final de reflexión (incluye el contexto de electores foráneos).
+- **Dashboard CCPC:** El usuario explora al menos 1 pregunta completa (dato + gráfica dinámica + frase de contexto).
+- **Modo Juego:** El usuario completa 1 escena completa (1 mito desmentido o 1 ciclo del simulador de voto).
 
 ---
 
-## 4. Feature Specifications
+## 4. Especificaciones de Funcionalidades
 
-### 4.1. Mapa de Dalias (Interactive Map Engine)
-- **Zoom Level 1 (National):** 1 dalia per state with active registrations. Dalia size scales dynamically based on aggregate count. States with 0 registrations hide dalia.
-- **Zoom Level 2 (State Breakdown):** The main state dalia decomposes into regional dalias.
-- **Zoom Level 3 (Municipal/Zonal):** Individual/grouped dalias located by approximate zone.
-- **Interaction:** Clicking a dalia displays an aggregate card (topics explored, anonymous timestamp). No personal info, nicknames, or free text allowed.
-- **Privacy Threshold:** If a municipality has $< 5$ registrations, aggregate automatically to state level to prevent re-identification in small communities.
+### 4.1. Mapa de Dalias (Motor de Mapa Interactivo)
+- **Nivel de Zoom 1 (Nacional):** 1 dalia por estado con registros activos. El tamaño de la dalia escala dinámicamente según el conteo acumulado. Los estados sin registros no muestran dalia.
+- **Nivel de Zoom 2 (Desglose Estatal):** La dalia estatal principal se descompone en dalias regionales.
+- **Nivel de Zoom 3 (Municipal / Zonal):** Dalias individuales o agrupadas ubicadas por zona aproximada.
+- **Interacción:** Al hacer clic en una dalia se muestra una tarjeta agregada (temas consultados, timestamp anónimo). No se permiten datos personales, nicknames ni texto libre.
+- **Umbral de Privacidad:** Si un municipio tiene $< 5$ registros, se agrega automáticamente al nivel estatal para prevenir la re-identificación en comunidades pequeñas.
 
-### 4.2. Dashboard CCPC (Question-First Data Engine)
-- **Question Selector:** Entry point presents social interest questions:
+### 4.2. Dashboard CCPC (Motor de Datos Orientado a Preguntas)
+- **Selector de Preguntas:** El punto de entrada presenta preguntas de interés social:
   - *"¿Por qué mi estado vota tan poco?"*
   - *"¿Quién participa más, hombres o mujeres?"*
   - *"¿Los jóvenes realmente votan menos que mis papás?"*
   - *"¿Ha cambiado la participación con los años?"*
-- **Dynamic Visualization:** Chart type selected based on data structure:
-  - *Categorical comparison:* Bar chart (Recharts)
-  - *Time series trends:* Line chart (Visx/Recharts)
-  - *Geographic comparison:* Heatmap / Choropleth map
-- **Short Context:** 1-2 concise context sentences accompanying each chart response.
+- **Visualización Dinámica:** Tipo de gráfica seleccionado según la estructura de los datos:
+  - *Comparación categórica:* Gráfica de barras (Recharts)
+  - *Tendencias temporales:* Gráfica de líneas (Visx/Recharts)
+  - *Comparación geográfica:* Mapa de calor / Mapa coroplético
+- **Contexto Corto:** 1 o 2 frases concisas de contexto que acompañan cada respuesta gráfica.
 
 ### 4.3. Modo Juego Pixel Art
-- **Tech Integration:** Built in `packages/game` with PixiJS/Kaplay. Loaded dynamically in Next.js with `ssr: false`.
-- **Role 1 (Desmentir Mitos):** INE officer sprite answers common youth electoral myths backed by CCPC data.
-- **Role 2 (Simulador de Voto):** Step-by-step interactive simulator of how to vote at a polling station.
-- **Cultural Respect & Inclusion:** Character sprites represent diverse regions (rural, urban, indigenous, migrant). Designs must avoid stereotypes and caricatures.
+- **Integración Técnica:** Construido en `packages/game` con PixiJS/Kaplay. Cargado dinámicamente en Next.js con `ssr: false`.
+- **Rol 1 (Desmentir Mitos):** Sprite de funcionario del INE responde mitos electorales comunes respaldados con datos de la CCPC.
+- **Rol 2 (Simulador de Voto):** Emulador interactivo paso a paso del proceso de votación en una casilla.
+- **Respeto Cultural e Inclusión:** Los sprites de los personajes representan la diversidad regional (rural, urbana, indígena, migrante). Los diseños deben evitar estereotipos y caricaturas.
 
-### 4.4. Asistente de IA (Civic Chatbot)
-- **Scope:** FastAPI backend endpoint connecting to LLM API.
-- **Constraint:** Context strictly limited to CCPC processed tables + platform editorial text. Refuses open political debate or unverified claims.
-- **Languages:** Dual support for Spanish and Náhuatl.
+### 4.4. Asistente de IA (Chatbot Cívico)
+- **Alcance:** Endpoint en el backend de FastAPI conectado a la API de LLM.
+- **Restricción:** Contexto estrictamente limitado a las tablas procesadas de la CCPC + texto editorial de la plataforma. Rechaza debate político abierto o declaraciones no verificadas.
+- **Idiomas:** Soporte dual para Español y Náhuatl.
 
-### 4.5. Herramientas Oficiales INE (Bridge Section)
-Direct, contextual links to official INE platforms:
-- Ubicador de Casillas (including electores foráneos / voting outside home section)
+### 4.5. Herramientas Oficiales INE (Sección de Enlaces)
+Enlaces directos y contextuales a plataformas oficiales del INE:
+- Ubicador de Casillas (incluyendo electores foráneos / voto fuera de su sección)
 - Registro de Observadores Electorales (Art. 217 LGIPE)
 - Convocatoria de Funcionariado de Casilla
 
 ---
 
-## 5. Technical Stack Summary
+## 5. Resumen del Stack Técnico
 
-| Domain | Technology | Justification |
+| Dominio | Tecnología | Justificación |
 |---|---|---|
-| Frontend Web | Next.js 14+ (App Router), TS, Tailwind CSS | Fast, accessible, SSR/SSG capable |
-| UI Components | shadcn/ui, Radix UI | ARIA compliance out of the box |
-| Maps Engine | react-simple-maps, d3-geo, INEGI GeoJSON | Smooth SVG zoom 1-3 control without paid APIs |
-| Charts Engine | Recharts / Visx | Dynamic chart types tailored per dataset |
-| Game Engine | PixiJS / Kaplay (in `packages/game`) | Lightweight 2D canvas, single monorepo build |
-| Backend API | FastAPI (Python 3.11+) | Async performance, Pydantic validation |
-| Database | PostgreSQL (Neon / Docker Compose) | Relational storage for aggregated counts & CCPC |
-| Data Pipeline | Python ETL (`etl/ccpc_ingest.py`) | Offline parse of official INE CCPC ZIP files |
-| Dev/Infra | Docker Compose | One-command local environment |
+| Frontend Web | Next.js 14+ (App Router), TS, Tailwind CSS | Rápido, accesible, capaz de SSR/SSG |
+| Componentes UI | shadcn/ui, Radix UI | Cumplimiento ARIA listo para usar |
+| Motor de Mapas | react-simple-maps, d3-geo, GeoJSON INEGI | Control suave de zoom SVG 1-3 sin APIs de pago |
+| Motor de Gráficas | Recharts / Visx | Tipos de gráficas dinámicas adaptadas por dataset |
+| Motor del Juego | PixiJS / Kaplay (en `packages/game`) | Canvas 2D ligero, único build en monorepo |
+| API Backend | FastAPI (Python 3.11+) | Rendimiento asíncrono, validación Pydantic |
+| Base de Datos | PostgreSQL (Neon / Docker Compose) | Almacenamiento relacional para conteos y CCPC |
+| Pipeline de Datos | Python ETL (`etl/ccpc_ingest.py`) | Parseo offline de archivos ZIP oficiales CCPC INE |
+| Infra/Dev | Docker Compose | Entorno local de un solo comando |
 
 ---
 
-## 6. Ethical, Privacy & Accessibility Constraints
+## 6. Restricciones Éticas, de Privacidad y Accesibilidad
 
-1. **Strict Anonymity:** Zero accounts, zero login forms, zero free-text comment fields.
-2. **Re-identification Safeguard:** Minimum aggregation threshold ($N=5$) for municipal maps.
-3. **Accessibility (WCAG 2.1 AA):**
-   - Full keyboard navigation.
-   - Narrative accessible table fallback for screen reader users unable to interact visually with SVG maps.
-   - Colorblind-safe palettes (never rely solely on color to convey data).
-   - Náhuatl i18n support.
+1. **Anonimato Estricto:** Cero cuentas, cero formularios de inicio de sesión, cero campos de comentarios en texto libre.
+2. **Protección contra Re-identificación:** Umbral mínimo de agregación ($N=5$) para mapas municipales.
+3. **Accesibilidad (WCAG 2.1 AA):**
+   - Navegación completa por teclado.
+   - Vista alternativa de tabla narrativa accesible para usuarios de lectores de pantalla.
+   - Paletas aptas para daltonismo (nunca depender únicamente del color para transmitir datos).
+   - Soporte i18n para Náhuatl.

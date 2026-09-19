@@ -1,34 +1,34 @@
 ---
 name: dalias-map-engine
-description: Technical instructions for implementing, rendering, and testing the SVG Dalias map using react-simple-maps, d3-geo, and INEGI GeoJSON.
+description: Instrucciones técnicas para implementar, renderizar y probar el mapa de Dalias SVG usando react-simple-maps, d3-geo y GeoJSON del INEGI.
 ---
 
-# Skill: Dalias Map Engine Implementation
+# Skill: Implementación del Motor del Mapa de Dalias
 
-## 1. Overview
-This skill guides the AI agent through building the interactive map component (`apps/web/src/features/mapa-dalias/`). The map visualizes civic participation across Mexico using scalable dalia icons, supporting 3 levels of zoom (National $\to$ State $\to$ Municipal).
-
----
-
-## 2. Dependencies & Setup
-In `apps/web/package.json`:
-- `react-simple-maps`: Vector map rendering
-- `d3-geo`: Projection matrix & centroid calculations
-- `d3-scale`: Scaling dalia size proportionally to aggregate counts
-- `framer-motion`: Smooth SVG transitions on zoom & hover
+## 1. Visión General
+Este skill guía al agente de IA para construir el componente del mapa interactivo (`apps/web/src/features/mapa-dalias/`). El mapa visualiza la participación cívica en todo México utilizando íconos escalables de dalias, soportando 3 niveles de zoom (Nacional $\to$ Estatal $\to$ Municipal).
 
 ---
 
-## 3. Zoom Hierarchy Implementation
+## 2. Dependencias y Configuración
+En `apps/web/package.json`:
+- `react-simple-maps`: Renderizado de mapa vectorial
+- `d3-geo`: Matriz de proyección y cálculo de centroides
+- `d3-scale`: Escalamiento del tamaño de la dalia proporcional al conteo de registros
+- `framer-motion`: Transiciones SVG suaves al hacer zoom y hover
 
-### Zoom Level 1: National (México Completo)
-- **GeoJSON Source:** `public/geojson/mexico_estados.json`
-- **Logic:** Render 1 main SVG dalia flower per state. Dalia radius `r` calculated via square root scaling:
-  $$\text{radius} = \text{scaleSqrt}(count, [12, 48])$$
-- **Hover/Click:** Displays tooltip with total registered dalias in state + "Haz clic para explorar municipios".
+---
 
-### Zoom Level 2: State Breakdown
-- On state selection, update projection scale & center on state centroid:
+## 3. Implementación de la Jerarquía de Zoom
+
+### Nivel de Zoom 1: Nacional (México Completo)
+- **Fuente GeoJSON:** `public/geojson/mexico_estados.json`
+- **Lógica:** Renderizar 1 dalia SVG principal por estado. El radio `r` de la dalia se calcula mediante escalamiento de raíz cuadrada:
+  $$\text{radio} = \text{scaleSqrt}(count, [12, 48])$$
+- **Hover/Clic:** Muestra tooltip con el total de dalias registradas en el estado + "Haz clic para explorar municipios".
+
+### Nivel de Zoom 2: Desglose Estatal
+- Al seleccionar un estado, actualizar la escala de proyección y centrar en el centroide estatal:
   ```tsx
   <ComposableMap projection="geoMercator" projectionConfig={{ scale: 2400, center: stateCentroid }}>
     <ZoomableGroup zoom={zoomLevel} center={centerCoordinates}>
@@ -39,12 +39,12 @@ In `apps/web/package.json`:
   </ComposableMap>
   ```
 
-### Zoom Level 3: Municipal / Zonal View
-- Check anti-reidentification threshold rule ($N=5$) from Rule 02 (`02-privacy-anonymity.md`).
-- If municipality count $< 5$, do not render discrete municipal dalia marker. Show aggregate toast message: *"Datos consolidados a nivel estatal para garantizar el anonimato de la comunidad"*.
+### Nivel de Zoom 3: Vista Municipal / Zonal
+- Verificar la regla del umbral anti-reidentificación ($N=5$) descrita en la Regla 02 (`02-privacy-anonymity.md`).
+- Si el conteo del municipio es $< 5$, no renderizar marcador de dalia municipal discreto. Mostrar mensaje toast agregado: *"Datos consolidados a nivel estatal para garantizar el anonimato de la comunidad"*.
 
 ---
 
-## 4. Visual Styling Rules
-- **Color Palette:** Primary deep violet (`#4C1D95`), dalia active petal gradient (`#8B5CF6` to `#EC4899`), background neutral dark/light theme.
-- **Accessibility:** Must include button toggling tabular view component (`<TablaAccesibleDalias />`).
+## 4. Reglas de Estilo Visual
+- **Paleta de Colores:** Violeta profundo principal (`#4C1D95`), gradiente de pétalos activos de dalia (`#8B5CF6` a `#EC4899`), fondo neutral para tema oscuro/claro.
+- **Accesibilidad:** Debe incluir botón para alternar al componente de vista tabular accesibles (`<TablaAccesibleDalias />`).

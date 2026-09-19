@@ -1,18 +1,18 @@
 ---
 name: ai-assistant-integration
-description: Instructions for setting up the scoped civic LLM assistant endpoint in FastAPI with context grounding and dual language support (es/nah).
+description: Instrucciones para configurar el endpoint del asistente LLM cívico en FastAPI con acotamiento de contexto y soporte de idioma dual (es/nah).
 ---
 
-# Skill: Scoped Civic AI Assistant Integration
+# Skill: Integración del Asistente de IA Cívico Acotado
 
-## 1. Overview
-The **Asistente de IA** is a lightweight, persistent floating chatbot component (`apps/web/src/features/asistente-ia/`) powered by a FastAPI backend endpoint (`backend/app/features/asistente/`).
+## 1. Visión General
+El **Asistente de IA** es un componente de chatbot flotante y persistente (`apps/web/src/features/asistente-ia/`) alimentado por un endpoint en el backend de FastAPI (`backend/app/features/asistente/`).
 
-It answers user queries exclusively about INE CCPC data facts and platform editorial content, adhering to strict neutrality guidelines.
+Responde preguntas de los usuarios exclusivamente sobre datos concretos de la CCPC del INE y contenido editorial de la plataforma, cumpliendo estrictas pautas de neutralidad.
 
 ---
 
-## 2. Prompt Grounding System Architecture
+## 2. Arquitectura del Sistema de Acotamiento de Prompt
 
 ```python
 # backend/app/features/asistente/service.py
@@ -25,7 +25,7 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     response: str
-    sources: list[str]  # e.g., ["CCPC INE 2024 Table 4", "Sección Narrativa 2"]
+    sources: list[str]  # ej. ["CCPC INE 2024 Tabla 4", "Sección Narrativa 2"]
 
 def build_system_prompt(language: str, context_docs: str) -> str:
     lang_instruction = "Responde en Español." if language == "es" else "Responde en lengua Náhuatl."
@@ -47,10 +47,10 @@ def build_system_prompt(language: str, context_docs: str) -> str:
 
 ---
 
-## 3. Frontend Chat Widget UI Specs
-- Floating button anchored to bottom right (`fixed bottom-6 right-6 z-50`).
-- Expandable modal containing message log + quick suggested question pills:
+## 3. Especificaciones UI del Widget de Chat
+- Botón flotante anclado en la esquina inferior derecha (`fixed bottom-6 right-6 z-50`).
+- Modal desplegable que contiene el historial de mensajes + botones pill con preguntas sugeridas:
   - *"¿Qué grupo de edad vota más?"*
   - *"¿Cómo funciona el mapa de dalias?"*
   - *"¿Puedo votar si estoy fuera de mi ciudad?"*
-- Dynamic typing animation & Markdown rendering for citations.
+- Animación de escritura dinámica y renderizado de Markdown para citar fuentes.

@@ -1,103 +1,103 @@
-# GEMINI.md — Instructions for AI Agents
+# GEMINI.md — Instrucciones para Agentes de IA
 
-Welcome to **Mapa de Dalias y Participación Ciudadana**, a digital civic engagement platform built for **Reto 3: Comunicación y visualización con impacto público** (Hackathon INE).
+Bienvenido a **Mapa de Dalias y Participación Ciudadana**, una plataforma digital de participación cívica construida para el **Reto 3: Comunicación y visualización con impacto público** (Hackathon INE).
 
-This document serves as the master entry point and governance model for all AI Agents (Gemini, Antigravity, Claude, Cursor, Copilot) working in this codebase.
-
----
-
-## 1. Project Overview & Core Mission
-
-- **Objective:** Transform complex civic data from INE's CCPC (Cultura Cívica y Participación Ciudadana) into an engaging, accessible, and social-proof-driven interactive experience.
-- **Visual Hook:** Interactive map of Mexico rendered with **dalias** (Mexico's national flower) as visual units of informed civic participation.
-- **Core Navigation Flow:** Open/free navigation from landing across 3 content modules (**Narrativa**, **Dashboard CCPC**, **Modo Juego Pixel Art**). The action of "Agrega tu dalia" (registration) unlocks only after completing at least one module.
-- **Monorepo Architecture:** Next.js 14+ (App Router) + TypeScript + Tailwind CSS for web, PixiJS/Kaplay for pixel art game, FastAPI + PostgreSQL for backend & persistence, Docker Compose for orchestration.
+Este documento sirve como el punto de entrada maestro y modelo de gobernanza para todos los Agentes de IA (Gemini, Antigravity, Claude, Cursor, Copilot) que trabajen en este código.
 
 ---
 
-## 2. Directory & Monorepo Structure
+## 1. Visión General del Proyecto y Misión Central
 
-Strict feature-first monorepo layout:
+- **Objetivo:** Transformar datos complejos de la CCPC (Cultura Cívica y Participación Ciudadana) del INE en una experiencia interactiva atractiva, accesible y guiada por prueba social.
+- **Gancho Visual:** Mapa interactivo de México representado con **dalias** (flor nacional de México) como unidades visuales de participación cívica informada.
+- **Flujo de Navegación Principal:** Navegación libre y abierta desde la landing a través de 3 módulos de contenido (**Narrativa**, **Dashboard CCPC**, **Modo Juego Pixel Art**). La acción de "Agrega tu dalia" (registro) se desbloquea únicamente al completar al menos un módulo.
+- **Arquitectura Monorepo:** Next.js 14+ (App Router) + TypeScript + Tailwind CSS para web, PixiJS/Kaplay para el juego pixel art, FastAPI + PostgreSQL para backend y persistencia, Docker Compose para orquestación.
+
+---
+
+## 2. Estructura del Monorepo y Directorios
+
+Organización estricta basada en *features*:
 
 ```
 sadaPops/
 ├── apps/
 │   └── web/                                # Next.js App Router (TypeScript, Tailwind, shadcn/ui)
-│       ├── app/                            # Route handlers ONLY (imports from src/features)
+│       ├── app/                            # Route handlers ÚNICAMENTE (importan desde src/features)
 │       │   ├── (narrativa)/page.tsx
 │       │   ├── dashboard/page.tsx
 │       │   ├── juego/page.tsx
 │       │   ├── layout.tsx
-│       │   └── api/                        # Route proxies if needed
+│       │   └── api/                        # Route proxies si aplica
 │       ├── src/
 │       │   ├── features/
-│       │   │   ├── mapa-dalias/            # Zoom 1-3, interactive dalias, GeoJSON maps
-│       │   │   ├── narrativa/              # Storytelling: problems -> mechanics -> reflection
-│       │   │   ├── dashboard-ccpc/         # Question-oriented CCPC data visualizations
-│       │   │   ├── juego/                  # Wrapper component for @mapa-dalias/game (ssr: false)
-│       │   │   ├── registro/               # "Agrega tu dalia" & unlock condition logic
-│       │   │   ├── asistente-ia/           # Floating persistent chatbot component
-│       │   │   └── herramientas-oficiales/ # Official INE links (casillas, observadores, foráneos)
-│       │   ├── shared/                     # Design tokens, base UI components, API client, hooks
-│       │   └── i18n/                       # Spanish & Náhuatl localization files
+│       │   │   ├── mapa-dalias/            # Zoom 1-3, dalias interactivas, mapas GeoJSON
+│       │   │   ├── narrativa/              # Storytelling: problemas -> mecanismo -> reflexión
+│       │   │   ├── dashboard-ccpc/         # Visualizaciones de datos CCPC orientadas a preguntas
+│       │   │   ├── juego/                  # Componente wrapper para @mapa-dalias/game (ssr: false)
+│       │   │   ├── registro/               # "Agrega tu dalia" y lógica de desbloqueo
+│       │   │   ├── asistente-ia/           # Componente chatbot flotante y persistente
+│       │   │   └── herramientas-oficiales/ # Enlaces oficiales INE (casillas, observadores, foráneos)
+│       │   ├── shared/                     # Design tokens, componentes UI base, cliente API, hooks
+│       │   └── i18n/                       # Archivos de localización en Español y Náhuatl
 │       └── package.json
 │
 ├── packages/
-│   ├── game/                               # TypeScript PixiJS/Kaplay game engine package
+│   ├── game/                               # Paquete motor de juego TypeScript PixiJS/Kaplay
 │   │   └── src/
 │   │       ├── features/
-│   │       │   ├── mitos/                  # Myth buster scene with CCPC data
-│   │       │   └── simulador-voto/         # Interactive voting process emulator
-│   │       └── shared/                     # Sprites, core engine canvas
-│   └── types/                              # Shared TS Interfaces/Contracts (Web <-> Game <-> API)
+│   │       │   ├── mitos/                  # Escena desmentir mitos con datos CCPC
+│   │       │   └── simulador-voto/         # Emulador interactivo del proceso de votación
+│   │       └── shared/                     # Sprites, canvas base del motor
+│   └── types/                              # Interfaces/Contratos TS compartidos (Web <-> Juego <-> API)
 │
-├── backend/                                # FastAPI Python Backend
+├── backend/                                # Backend en Python FastAPI
 │   ├── app/
 │   │   ├── features/
-│   │   │   ├── dalias/                     # Registration, aggregate counts, Zoom thresholds
-│   │   │   ├── dashboard/                  # CCPC questions & dynamic chart payload generators
-│   │   │   ├── progreso/                   # Completion tracking per anonymous session
-│   │   │   ├── asistente/                  # Acotado LLM endpoint (CCPC + editorial context)
-│   │   │   └── ccpc/                       # Domain repository for processed CCPC tables
-│   │   ├── core/                           # Config, DB session, CORS, security, deps
+│   │   │   ├── dalias/                     # Registro, conteos agregados, umbrales de Zoom
+│   │   │   ├── dashboard/                  # Preguntas CCPC y generadores de payload de gráficas dinámicas
+│   │   │   ├── progreso/                   # Tracking de progreso por sesión anónima
+│   │   │   ├── asistente/                  # Endpoint acotado de LLM (CCPC + contexto editorial)
+│   │   │   └── ccpc/                       # Repositorio de dominio para tablas procesadas CCPC
+│   │   ├── core/                           # Config, sesión DB, CORS, seguridad, dependencias
 │   │   └── main.py
 │   ├── etl/
-│   │   └── ccpc_ingest.py                  # Offline ETL script parsing INE CCPC .zip -> Postgres
-│   ├── migrations/                         # Alembic database migrations
-│   ├── tests/                              # Pytest test suite mirroring features
+│   │   └── ccpc_ingest.py                  # Script ETL offline para parsear .zip CCPC INE -> Postgres
+│   ├── migrations/                         # Migraciones de base de datos Alembic
+│   ├── tests/                              # Suite de pruebas Pytest espejo de features
 │   ├── Dockerfile
 │   └── pyproject.toml
 │
 ├── infra/
-│   └── docker-compose.yml                  # Local development environment setup
+│   └── docker-compose.yml                  # Configuración de entorno de desarrollo local
 │
-├── .agents/                                # Agent custom rules & skills
-│   ├── rules/                              # Architectural, privacy & accessibility constraints
-│   └── skills/                             # Workflow instructions for agent tasks
+├── .agents/                                # Reglas y skills personalizadas para el agente
+│   ├── rules/                              # Restricciones arquitectónicas, privacidad y accesibilidad
+│   └── skills/                             # Instrucciones de flujo para tareas del agente
 │
-├── GEMINI.md                               # Root agent instructions (this file)
-├── PROJECT_CONTEXT.md                      # Complete domain context & hackathon guidelines
-├── WORKFLOW.md                             # 3-week MVP execution roadmap
-└── propuesta-mapa-dalias.md                # Original hackathon proposal document
+├── GEMINI.md                               # Instrucciones raíz para el agente (este archivo)
+├── PROJECT_CONTEXT.md                      # Contexto completo del dominio y guías del hackathon
+├── WORKFLOW.md                             # Hoja de ruta de ejecución del MVP (3 semanas)
+└── propuesta-mapa-dalias.md                # Documento original de la propuesta para el hackathon
 ```
 
 ---
 
-## 3. Strict Rules for AI Agents
+## 3. Reglas Estrictas para Agentes de IA
 
-1. **Monorepo Modularity:** Keep components inside their respective `features/` folders. Do NOT create global dump folders (`components/`, `utils/`) with mixed feature logic.
-2. **Game Integration:** `packages/game` MUST be loaded client-side only in Next.js via dynamic imports with `ssr: false` (`features/juego/GameLoader.tsx`). Never attempt to render canvas or PixiJS on the server.
-3. **Anonymity & Zero PII:** Never add free-text fields or nicknames for dalia registration. Use anonymous local session tokens (`useSesionAnonima`).
-4. **Zoom 3 Anti-Reidentification Threshold:** On municipal/zonal map views, if a region has fewer than $N$ (default: 5) registered dalias, aggregate the count to the parent state level to protect user privacy in small communities.
-5. **Accessibility First (WCAG 2.1 AA):** All maps MUST provide an equivalent narrated tabular/text route for screen readers. Contrast ratios must be AA compliant. Include i18n support for Náhuatl.
-6. **No Fake Infrastructure:** Do NOT build custom casilla locators or observer registration forms. Always link directly to official INE portals.
-7. **Scoped AI Assistant:** The backend chatbot endpoint MUST restrict prompts exclusively to CCPC dataset facts and editorial platform content. Refuse open political debate.
+1. **Modularidad Monorepo:** Mantener componentes dentro de sus respectivas carpetas `features/`. NO crear carpetas globales mixtas (`components/`, `utils/`) con lógica de distintas características.
+2. **Integración del Juego:** `packages/game` DEBE cargarse del lado del cliente en Next.js mediante importaciones dinámicas con `ssr: false` (`features/juego/GameLoader.tsx`). Nunca intentar renderizar PixiJS o canvas en el servidor.
+3. **Anonimato y Cero PII:** Nunca agregar campos de texto libre o nicknames para el registro de dalia. Usar tokens de sesión anónima local (`useSesionAnonima`).
+4. **Umbral Anti-Reidentificación en Zoom 3:** En vistas municipales/zonales del mapa, si una región tiene menos de $N$ (por defecto: 5) dalias registradas, agregar el conteo al nivel estatal superior para proteger la privacidad del usuario en comunidades pequeñas.
+5. **Accesibilidad Primero (WCAG 2.1 AA):** Todos los mapas DEBEN ofrecer una ruta narrativa/tabular equivalente para lectores de pantalla. Los ratios de contraste deben cumplir WCAG AA. Incluir soporte i18n para Náhuatl.
+6. **Sin Infraestructura Ficticia:** NO construir ubicadores de casillas ni formularios de registro de observadores propios. Enlazar siempre directamente a portales oficiales del INE.
+7. **Asistente de IA Acotado:** El endpoint del chatbot en el backend DEBE restringir los prompts exclusivamente a datos objetivos del dataset CCPC y contenido editorial de la plataforma. Rechazar debate político abierto.
 
 ---
 
-## 4. Key References & Documentation
+## 4. Referencias Clave y Documentación
 
-- **Full Domain Context:** Read [`PROJECT_CONTEXT.md`](file:///c:/Users/betto/Documents/Hacks/INE/sadaPops/PROJECT_CONTEXT.md)
-- **Sprint Roadmap & Tasks:** Read [`WORKFLOW.md`](file:///c:/Users/betto/Documents/Hacks/INE/sadaPops/WORKFLOW.md)
-- **Specific Rules:** See files in [`.agents/rules/`](file:///c:/Users/betto/Documents/Hacks/INE/sadaPops/.agents/rules/)
-- **Specialized Skills:** See skill guides in [`.agents/skills/`](file:///c:/Users/betto/Documents/Hacks/INE/sadaPops/.agents/skills/)
+- **Contexto Completo de Dominio:** Leer [`PROJECT_CONTEXT.md`](file:///c:/Users/betto/Documents/Hacks/INE/sadaPops/PROJECT_CONTEXT.md)
+- **Hoja de Ruta y Tareas:** Leer [`WORKFLOW.md`](file:///c:/Users/betto/Documents/Hacks/INE/sadaPops/WORKFLOW.md)
+- **Reglas Específicas:** Ver archivos en [`.agents/rules/`](file:///c:/Users/betto/Documents/Hacks/INE/sadaPops/.agents/rules/)
+- **Skills Especializados:** Ver guías en [`.agents/skills/`](file:///c:/Users/betto/Documents/Hacks/INE/sadaPops/.agents/skills/)

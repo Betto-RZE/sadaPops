@@ -1,30 +1,30 @@
-# Rule 01: Monorepo & Feature-First Architecture
+# Regla 01: Arquitectura Monorepo y Basada en Features
 
-## 1. Feature-First Folder Structure
-All code in `apps/web` and `backend` MUST be grouped by feature module rather than technical layer.
+## 1. Estructura de Carpetas Basada en Features
+Todo el código en `apps/web` y `backend` DEBE agruparse por módulo funcional (*feature*) en lugar de por capa técnica.
 
-### Web App (`apps/web/src/features/`):
-- `mapa-dalias/`: Zoom levels 1-3, interactive SVG map, dalia card popups, GeoJSON handlers.
-- `narrativa/`: Sequential storytelling components, copy, foreign voter narrative section.
-- `dashboard-ccpc/`: Question selector, dynamic chart selector (bar, line, heatmap), context cards.
-- `juego/`: Wrapper component `GameLoader.tsx` mounting `@mapa-dalias/game`.
-- `registro/`: "Agrega tu dalia" CTA, unlock status tracker, session token registration API client.
-- `asistente-ia/`: Persistent floating chat widget, markdown renderer, language switcher.
-- `herramientas-oficiales/`: INE external link cards & contextual popups.
+### Aplicación Web (`apps/web/src/features/`):
+- `mapa-dalias/`: Niveles de zoom 1-3, mapa SVG interactivo, tarjetas emergentes de dalias, manejadores de GeoJSON.
+- `narrativa/`: Componentes de narrativa secuencial, copys, sección narrativa de electores foráneos.
+- `dashboard-ccpc/`: Selector de preguntas, selector dinámico de gráficas (barras, líneas, mapa de calor), tarjetas de contexto.
+- `juego/`: Componente wrapper `GameLoader.tsx` que monta `@mapa-dalias/game`.
+- `registro/`: CTA "Agrega tu dalia", rastreador del estado de desbloqueo, cliente API de registro con token de sesión.
+- `asistente-ia/`: Widget de chat flotante persistente, renderizador de markdown, selector de idioma.
+- `herramientas-oficiales/`: Tarjetas de enlaces externos del INE y popups contextuales.
 
-### Backend App (`backend/app/features/`):
-- `dalias/`: Endpoints for dalia counts, state/municipal aggregates, registration handler.
-- `dashboard/`: Endpoints returning structured data & recommended chart types for CCPC questions.
-- `progreso/`: Anonymous session completion tracker for modules.
-- `asistente/`: FastAPI route handling scoped LLM queries (CCPC + editorial context).
-- `ccpc/`: Domain repository for querying ingested CCPC SQL tables.
+### Aplicación Backend (`backend/app/features/`):
+- `dalias/`: Endpoints para conteos de dalias, agregados estatales/municipales, manejador de registro.
+- `dashboard/`: Endpoints que retornan datos estructurados y tipos de gráficas recomendadas para preguntas CCPC.
+- `progreso/`: Rastreador de finalización de módulos por sesión anónima.
+- `asistente/`: Ruta FastAPI que maneja consultas de LLM acotadas (CCPC + contexto editorial).
+- `ccpc/`: Repositorio de dominio para consultar tablas SQL de la CCPC procesadas.
 
 ---
 
-## 2. Client-Side Only Game Loading Constraint
-The pixel art game engine in `packages/game` relies on browser Canvas APIs (PixiJS/Kaplay).
-- **Rule:** NEVER import `packages/game` directly in server components or at top level in client components.
-- **Implementation:** Always use Next.js dynamic import with `ssr: false` inside `apps/web/src/features/juego/GameLoader.tsx`:
+## 2. Restricción de Carga del Juego Exclusiva en el Cliente
+El motor del juego en pixel art en `packages/game` depende de APIs de Canvas del navegador (PixiJS/Kaplay).
+- **Regla:** NUNCA importar `packages/game` directamente en Server Components o en el nivel superior de Client Components.
+- **Implementación:** Usar siempre importación dinámica de Next.js con `ssr: false` dentro de `apps/web/src/features/juego/GameLoader.tsx`:
 
 ```tsx
 // apps/web/src/features/juego/GameLoader.tsx
@@ -43,6 +43,6 @@ export function GameLoader() {
 
 ---
 
-## 3. Shared Types Package (`packages/types/`)
-- Web and Backend MUST conform to shared Pydantic/TypeScript contract interfaces.
-- Define API request/response types in `packages/types/src/index.ts` and export for frontend consumption.
+## 3. Paquete de Tipos Compartidos (`packages/types/`)
+- Web y Backend DEBEN cumplir con los contratos e interfaces definidos en TypeScript / Pydantic.
+- Definir los tipos de petición y respuesta de la API en `packages/types/src/index.ts` y exportarlos para el consumo del frontend.

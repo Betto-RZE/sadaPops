@@ -1,57 +1,57 @@
 ---
 name: ccpc-etl-ingest
-description: Step-by-step workflow for ingesting raw INE CCPC zip datasets into PostgreSQL tables using Python, pandas, and SQLAlchemy.
+description: Flujo de trabajo paso a paso para la ingesta de datasets zip de la CCPC del INE a tablas de PostgreSQL usando Python, pandas y SQLAlchemy.
 ---
 
-# Skill: CCPC ETL Ingestion & Data Transformation
+# Skill: Ingesta ETL y Transformación de Datos CCPC
 
-## 1. Context & Purpose
-The INE CCPC (Cultura Cívica y Participación Ciudadana) dataset provides official voter turnout and civic awareness metrics. It comes as a multi-year `.zip` containing raw Excel/CSV spreadsheets.
+## 1. Contexto y Propósito
+El dataset de la CCPC (Cultura Cívica y Participación Ciudadana) del INE proporciona métricas oficiales de participación electoral y cultura cívica. Se distribuye en un archivo `.zip` multianual que contiene hojas de cálculo originales en Excel/CSV.
 
-This skill provides the commands and logic to execute the offline ingestion pipeline into PostgreSQL.
+Este skill proporciona los comandos y la lógica para ejecutar el pipeline de ingesta offline hacia PostgreSQL.
 
 ---
 
-## 2. Ingestion Commands
+## 2. Comandos de Ingesta
 
 ```bash
-# Navigate to backend directory
+# Navegar al directorio del backend
 cd backend
 
-# Ensure virtual environment is active
-source .venv/bin/activate  # or .venv\Scripts\activate on Windows
+# Asegurar que el entorno virtual esté activo
+source .venv/bin/activate  # o .venv\Scripts\activate en Windows
 
-# Run the ingestion script pointing to raw ZIP file
+# Ejecutar el script de ingesta apuntando al archivo ZIP original
 python etl/ccpc_ingest.py --file ../data/raw/ccpc_ine_official.zip --db-url $DATABASE_URL
 ```
 
 ---
 
-## 3. Data Cleaning & Normalization Steps
+## 3. Pasos de Limpieza y Normalización de Datos
 
-1. **Header Normalization:** Standardize column names (lower_snake_case), convert encoding (UTF-8).
-2. **Geographic Key Alignment:** Map state/municipality names to official INEGI 2-digit state codes (`cve_ent`) and 3-digit municipal codes (`cve_mun`).
-3. **Age Demographic Bucketing:** Group age variables into standardized brackets:
-   - `18-29` (Jóvenes - target primary)
+1. **Normalización de Encabezados:** Estandarizar nombres de columnas (`lower_snake_case`), convertir codificación a UTF-8.
+2. **Alineación de Claves Geográficas:** Mapear nombres de estados/municipios con claves oficiales del INEGI de 2 dígitos (`cve_ent`) y 3 dígitos (`cve_mun`).
+3. **Agrupación de Grupos de Edad:** Agrupar variables de edad en rangos estandarizados:
+   - `18-29` (Jóvenes - objetivo primario)
    - `30-49` (Adultos jóvenes)
    - `50-64` (Adultos)
    - `65+` (Adultos mayores)
-4. **Calculated Metrics:**
+4. **Métricas Calculadas:**
    - `porcentaje_participacion`: $(\text{votos\_emitidos} / \text{lista\_nominal}) \times 100$
    - `brecha_genero`: $\text{participacion\_mujeres} - \text{participacion\_hombres}$
 
 ---
 
-## 4. Query Verification Checklist
-After ingestion, verify dataset integrity:
+## 4. Checklist de Verificación de Consultas
+Tras la ingesta, verificar la integridad de las tablas:
 ```sql
--- Check state aggregate counts for 2024 election
+-- Verificar conteos agregados por estado para la elección 2024
 SELECT cve_ent, estado, participacion_total 
 FROM ccpc_participacion_estado 
 WHERE anio_eleccion = 2024 
 ORDER BY participacion_total DESC;
 
--- Check age group breakdown
+-- Verificar desglose por grupos de edad
 SELECT grupo_edad, AVG(porcentaje_participacion) AS promedio_participacion
 FROM ccpc_participacion_edad
 GROUP BY grupo_edad;
