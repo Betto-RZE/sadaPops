@@ -88,9 +88,19 @@ sadaPops/
 │   ├── Dockerfile
 │   └── entrypoint.sh                       # Script automatizado para Docker
 │
+├── docs/                                   # Documentación completa del proyecto
+│   ├── PROJECT_CONTEXT.md
+│   ├── SETUP.md
+│   ├── WORKFLOW.md
+│   ├── PLAN_DE_DESARROLLO.md
+│   ├── DEPLOY.md
+│   └── propuesta-mapa-dalias.md
+│
 ├── infra/
 │   └── docker-compose.yml                  # Servicios PostgreSQL + FastAPI
-└── PLAN_DE_DESARROLLO.md                   # Hoja de ruta por Sprints y asignación de tareas
+├── GEMINI.md                               # Reglas maestras para Agentes de IA
+├── README.md                               # Documentación principal
+└── LICENSE                                 # Licencia MIT
 ```
 
 ---
@@ -104,12 +114,14 @@ sadaPops/
 
 ---
 
-## 📚 Documentación del Proyecto
+## 📚 Documentación del Proyecto (`docs/`)
 
-- 📖 **[`SETUP.md`](SETUP.md):** Guía detallada de inicialización local.
-- 📋 **[`PLAN_DE_DESARROLLO.md`](PLAN_DE_DESARROLLO.md):** Plan de desarrollo por Sprints y asignación de tareas por desarrollador (Dev 1 a 4).
-- 🧭 **[`PROJECT_CONTEXT.md`](PROJECT_CONTEXT.md):** Contexto técnico y de dominio completo.
-- 🚀 **[`DEPLOY.md`](DEPLOY.md):** Guía de despliegue en producción (Vercel, Google Cloud Run, Neon PostgreSQL).
+- 📖 **[`docs/SETUP.md`](docs/SETUP.md):** Guía detallada de inicialización local.
+- 📋 **[`docs/PLAN_DE_DESARROLLO.md`](docs/PLAN_DE_DESARROLLO.md):** Plan de desarrollo por Sprints y asignación de tareas por desarrollador (Dev 1 a 4).
+- 🧭 **[`docs/PROJECT_CONTEXT.md`](docs/PROJECT_CONTEXT.md):** Contexto técnico y de dominio completo.
+- 🚀 **[`docs/DEPLOY.md`](docs/DEPLOY.md):** Guía de despliegue en producción (Vercel, Google Cloud Run, Neon PostgreSQL).
+- 📜 **[`docs/WORKFLOW.md`](docs/WORKFLOW.md):** Hoja de ruta del MVP a 3 semanas.
+- 📄 **[`docs/propuesta-mapa-dalias.md`](docs/propuesta-mapa-dalias.md):** Propuesta original del proyecto.
 - 🛠️ **[`GEMINI.md`](GEMINI.md):** Reglas maestras para Agentes de IA.
 
 ---

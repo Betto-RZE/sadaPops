@@ -71,14 +71,20 @@ sadaPops/
 ├── infra/
 │   └── docker-compose.yml                  # Configuración de entorno de desarrollo local
 │
+├── docs/                                   # Documentación organizada del proyecto
+│   ├── PROJECT_CONTEXT.md
+│   ├── SETUP.md
+│   ├── WORKFLOW.md
+│   ├── PLAN_DE_DESARROLLO.md
+│   ├── DEPLOY.md
+│   └── propuesta-mapa-dalias.md
+│
 ├── .agents/                                # Reglas y skills personalizadas para el agente
 │   ├── rules/                              # Restricciones arquitectónicas, privacidad y accesibilidad
 │   └── skills/                             # Instrucciones de flujo para tareas del agente
 │
 ├── GEMINI.md                               # Instrucciones raíz para el agente (este archivo)
-├── PROJECT_CONTEXT.md                      # Contexto completo del dominio y guías del hackathon
-├── WORKFLOW.md                             # Hoja de ruta de ejecución del MVP (3 semanas)
-└── propuesta-mapa-dalias.md                # Documento original de la propuesta para el hackathon
+└── README.md                               # Documentación principal para el repositorio
 ```
 
 ---
@@ -98,14 +104,10 @@ sadaPops/
 ## 4. Referencias Clave y Documentación
 
 - **Documentación Principal (README):** Leer [`README.md`](file:///c:/Users/betto/Documents/Hacks/INE/sadaPops/README.md)
-- **Guía de Configuración Inicial (Setup):** Leer [`SETUP.md`](file:///c:/Users/betto/Documents/Hacks/INE/sadaPops/SETUP.md)
-- **Contexto Completo de Dominio:** Leer [`PROJECT_CONTEXT.md`](file:///c:/Users/betto/Documents/Hacks/INE/sadaPops/PROJECT_CONTEXT.md)
-- **Hoja de Ruta y Tareas:** Leer [`WORKFLOW.md`](file:///c:/Users/betto/Documents/Hacks/INE/sadaPops/WORKFLOW.md)
-- **Plan de Desarrollo Detallado por Equipo:** Leer [`PLAN_DE_DESARROLLO.md`](file:///c:/Users/betto/Documents/Hacks/INE/sadaPops/PLAN_DE_DESARROLLO.md)
-- **Guía de Despliegue en Producción:** Leer [`DEPLOY.md`](file:///c:/Users/betto/Documents/Hacks/INE/sadaPops/DEPLOY.md)
+- **Guía de Configuración Inicial (Setup):** Leer [`docs/SETUP.md`](file:///c:/Users/betto/Documents/Hacks/INE/sadaPops/docs/SETUP.md)
+- **Contexto Completo de Dominio:** Leer [`docs/PROJECT_CONTEXT.md`](file:///c:/Users/betto/Documents/Hacks/INE/sadaPops/docs/PROJECT_CONTEXT.md)
+- **Hoja de Ruta y Tareas:** Leer [`docs/WORKFLOW.md`](file:///c:/Users/betto/Documents/Hacks/INE/sadaPops/docs/WORKFLOW.md)
+- **Plan de Desarrollo Detallado por Equipo:** Leer [`docs/PLAN_DE_DESARROLLO.md`](file:///c:/Users/betto/Documents/Hacks/INE/sadaPops/docs/PLAN_DE_DESARROLLO.md)
+- **Guía de Despliegue en Producción:** Leer [`docs/DEPLOY.md`](file:///c:/Users/betto/Documents/Hacks/INE/sadaPops/docs/DEPLOY.md)
 - **Reglas Específicas:** Ver archivos en [`.agents/rules/`](file:///c:/Users/betto/Documents/Hacks/INE/sadaPops/.agents/rules/)
 - **Skills Especializados:** Ver guías en [`.agents/skills/`](file:///c:/Users/betto/Documents/Hacks/INE/sadaPops/.agents/skills/)
-
-
-
-
