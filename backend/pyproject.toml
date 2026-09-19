@@ -28,6 +28,10 @@ dev = [
     "httpx>=0.26.0"
 ]
 
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*", "etl*"]
+
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
