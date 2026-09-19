@@ -1,63 +1,51 @@
 ---
 name: pixelart-game-dev
-description: Instrucciones técnicas para el desarrollo de módulos del juego 2D en pixel art dentro de packages/game usando PixiJS/Kaplay y conectando el estado con Next.js.
+description: Instrucciones técnicas detalladas para desarrollar las escenas en pixel art (Mitos y Simulador de Voto) en packages/game usando PixiJS/Kaplay y conectando el estado con Next.js.
 ---
 
-# Skill: Desarrollo del Juego Pixel Art y Puente con Next.js
+# Skill: Desarrollo del Juego Pixel Art (Core Feature #2)
 
 ## 1. Visión General
-El **Modo Juego Pixel Art** proporciona un canal narrativo interactivo alternativo para enganchar al público joven. Contiene dos sub-características jugables:
-1. **Desmentir Mitos:** Diálogos con NPCs para desmentir mitos cívicos con datos reales de la CCPC.
-2. **Simulador de Voto:** Emulador del proceso paso a paso en la casilla de votación.
+El **Modo Juego Pixel Art** en `packages/game/` proporciona un canal interactivo gamificado pensado para el público joven. Contiene dos sub-características principales:
+1. **Desmentir Mitos Cívicos:** Grafo de diálogo interactivo donde personajes responden mitos con datos reales de la CCPC del INE.
+2. **Simulador de Voto:** Emulador paso a paso de la experiencia en la casilla de votación.
 
 ---
 
-## 2. Arquitectura del Paquete (`packages/game/`)
+## 2. Especificación Técnica de las Escenas
 
-```
-packages/game/
-├── src/
-│   ├── engine/                     # Inicialización de PixiJS / Kaplay y gestor de escala del canvas
-│   ├── features/
-│   │   ├── mitos/                  # Sistema de diálogo y grafo de la escena de mitos
-│   │   └── simulador-voto/         # Lógica de simulación de votación paso a paso
-│   ├── shared/
-│   │   ├── sprites/                # Assets en pixel art (funcionario INE, urna, ciudadanía)
-│   │   └── ui/                     # Cajas de diálogo, cargadores de fuentes pixel
-│   └── index.ts                    # Exporta componente PixiGameCanvas y callback de finalización
-```
+### Escena 1: Desmentir Mitos (Diálogos con Datos CCPC)
+- El jugador controla al funcionario INE en un mapa 2D de un módulo cívico.
+- Al interactuar con NPCs jóvenes, se despliega un árbol de diálogo con 3 opciones de respuesta.
+- La respuesta correcta utiliza **datos oficiales de la CCPC del INE** (ej. *"De 2012 a 2024 la participación del grupo de 18-29 años creció en 14 entidades"*).
+
+### Escena 2: Simulador de Voto en Casilla (Paso a Paso)
+- **Paso 1:** Presentación de la credencial del INE.
+- **Paso 2:** Verificación en la lista nominal.
+- **Paso 3:** Recepción de boletas impresas.
+- **Paso 4:** Ingreso a la mampara y marcado secreto.
+- **Paso 5:** Depósito en urnas según la elección.
+- **Paso 6:** Tinta indeleble en el pulgar y devolución de credencial.
 
 ---
 
-## 3. Puente de Comunicación (Juego $\leftrightarrow$ Aplicación Web)
+## 3. Integración en Next.js y Callback de Desbloqueo
 
-Cuando un jugador completa una escena en el juego, se dispara un callback de finalización para notificar a Next.js y actualizar el estado de desbloqueo del usuario para "Agrega tu dalia":
+En `apps/web/src/features/juego/GameLoader.tsx`:
+```tsx
+'use client';
+import dynamic from 'next/dynamic';
 
-```typescript
-// packages/game/src/index.ts
-export interface GameProps {
-  onModuleComplete?: (moduleName: 'mitos' | 'simulador') => void;
-  language?: 'es' | 'nah';
-}
+const CanvasGame = dynamic(
+  () => import('@mapa-dalias/game').then((mod) => mod.PixiGameCanvas),
+  { ssr: false, loading: () => <div>Cargando motor de juego pixel art...</div> }
+);
 
-export function PixiGameCanvas({ onModuleComplete, language = 'es' }: GameProps) {
-  useEffect(() => {
-    const app = new PIXI.Application({ width: 800, height: 450, backgroundColor: 0x1e1b4b });
-    // Montar canvas e iniciar loop del juego...
+export function GameLoader() {
+  const handleComplete = (moduleName: string) => {
+    // Registra módulo completado y desbloquea el botón "Agrega tu dalia"
+  };
 
-    // Al completar la escena:
-    // onModuleComplete?.('mitos');
-
-    return () => app.destroy(true);
-  }, [language]);
-
-  return <div id="game-container" className="rounded-xl overflow-hidden shadow-2xl" />;
+  return <CanvasGame onModuleComplete={handleComplete} />;
 }
 ```
-
----
-
-## 4. Reglas de Diversidad Cultural y Representación
-- Los sprites de los personajes deben reflejar la diversidad mexicana real (comunidades rurales, urbanas, indígenas, migrantes).
-- Evitar caricaturas o rasgos estereotipados exagerados. Utilizar referencias visuales respetuosas.
-- Todas las cadenas de diálogo deben provenir de las claves de i18n definidas en `packages/types` para soportar Náhuatl.
