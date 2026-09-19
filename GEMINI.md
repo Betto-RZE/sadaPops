@@ -97,7 +97,11 @@ sadaPops/
 
 ## 4. Referencias Clave y Documentación
 
+- **Guía de Configuración Inicial (Setup):** Leer [`SETUP.md`](file:///c:/Users/betto/Documents/Hacks/INE/sadaPops/SETUP.md)
 - **Contexto Completo de Dominio:** Leer [`PROJECT_CONTEXT.md`](file:///c:/Users/betto/Documents/Hacks/INE/sadaPops/PROJECT_CONTEXT.md)
 - **Hoja de Ruta y Tareas:** Leer [`WORKFLOW.md`](file:///c:/Users/betto/Documents/Hacks/INE/sadaPops/WORKFLOW.md)
+- **Guía de Despliegue en Producción:** Leer [`DEPLOY.md`](file:///c:/Users/betto/Documents/Hacks/INE/sadaPops/DEPLOY.md)
 - **Reglas Específicas:** Ver archivos en [`.agents/rules/`](file:///c:/Users/betto/Documents/Hacks/INE/sadaPops/.agents/rules/)
 - **Skills Especializados:** Ver guías en [`.agents/skills/`](file:///c:/Users/betto/Documents/Hacks/INE/sadaPops/.agents/skills/)
+
+
