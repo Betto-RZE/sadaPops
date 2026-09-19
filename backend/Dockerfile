@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy dependency requirements
 COPY pyproject.toml ./
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir fastapi uvicorn asyncpg sqlalchemy alembic pandas pydantic pydantic-settings python-dotenv pytest
+    pip install --no-cache-dir fastapi uvicorn asyncpg sqlalchemy alembic pandas pydantic pydantic-settings python-dotenv pytest httpx
 
 # Copy application source
 COPY . .
