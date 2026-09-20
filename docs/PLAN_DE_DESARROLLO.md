@@ -54,7 +54,7 @@ flowchart TD
 - **GeoJSON:** `public/geojson/mexico_estados.json` (INEGI).
 - **Proyección Map:** `geoMercator` con centroide en `[-102.5528, 23.6345]` y escala inicial `1000`.
 - **Renderizado de Dalia:** 1 dalia SVG por estado con registros activos. El radio del florón se calcula dinámicamente con la función de raíz cuadrada de d3:
-  $$r = \text{d3.scaleSqrt}(\text{registros\_estado}, [16, 52])$$
+  `r = d3.scaleSqrt(registros_estado, [16, 52])`
 - **Animación SVG:** Pétalos concéntricos generados dinámicamente según el volumen. Los estados con 0 registros no muestran dalia.
 - **Interacción:** Al hacer hover, se activa un tooltip con la cuenta total. Al hacer clic en un estado, se dispara la transición de cámara (`framer-motion` / `d3-zoom`) enfocando el centroide del estado con escala `2400`.
 
@@ -64,11 +64,11 @@ flowchart TD
 - **Información Agregada:** Tarjeta de resumen estatal ("Puebla: 4,821 personas informadas").
 
 ### 3. Nivel de Zoom 3 (Municipal / Zonal)
-- **Mecanismo Anti-Reidentificación ($N=5$):**
-  - Si un municipio tiene $C < 5$ dalias registradas, el backend envía `is_aggregated_to_state: true`.
+- **Mecanismo Anti-Reidentificación (N=5):**
+  - Si un municipio tiene `registros < 5` dalias registradas, el backend envía `is_aggregated_to_state: true`.
   - El frontend **no renderiza pines individuales** para ese municipio y suma la cantidad al acumulado del Zoom 2.
   - Se muestra una nota informativa: *"Datos consolidados a nivel estatal para garantizar el anonimato de la comunidad"*.
-- **Tarjeta de Dalia (`DaliaCard`):** Al hacer clic en una dalia municipal (con $C \ge 5$), se abre un modal sin PII:
+- **Tarjeta de Dalia (`DaliaCard`):** Al hacer clic en una dalia municipal (con `registros >= 5`), se abre un modal sin PII:
   - Muestra el módulo consultado (ej. "Completó: Dashboard CCPC").
   - Muestra un timestamp relativo anónimo (ej. "Hace 2 horas").
   - **Cero campos de texto libre o nicknames** para evitar desinformación o vandalismo.
@@ -147,7 +147,7 @@ flowchart TD
   - Desarrollar el componente alternativo `<TablaAccesibleDalias />` (WCAG 2.1 AA).
 - **Dev 3 (Backend Endpoints Mapa):**
   - Crear endpoint `GET /api/v1/dalias/aggregate`.
-  - Aplicar la regla del umbral $N=5$ para municipios pequeños.
+  - Aplicar la regla del umbral N=5 para municipios pequeños.
 - **Dev 2 (Narrativa & Desbloqueo):**
   - Desarrollar la secuencia de Narrativa (problemas $\to$ mecanismo $\to$ reflexión $\to$ electores foráneos).
   - Implementar hook `useSesionAnonima` y sistema de desbloqueo condicionado de registro.
@@ -192,6 +192,6 @@ flowchart TD
 | Sprint | Comandos de Verificación | Criterio de Aceptación Exigido |
 |---|---|---|
 | **Sprint 1** | `docker compose up -d` & `pytest backend/tests/` | Backend responde `/health` 200 OK y tablas CCPC pobladas en PostgreSQL. |
-| **Sprint 2** | `pnpm --filter web dev` & Pruebas manuales Zoom 1-3 | Mapa SVG rinde dalias dinámicas, umbral $N < 5$ activo y tabla accesible funciona. |
+| **Sprint 2** | `pnpm --filter web dev` & Pruebas manuales Zoom 1-3 | Mapa SVG rinde dalias dinámicas, umbral N < 5 activo y tabla accesible funciona. |
 | **Sprint 3** | `pnpm --filter web dev` en `/juego` y `/dashboard` | Juego corre a 60 fps sin errores SSR y Dashboard rinde gráficas por preguntas. |
 | **Sprint 4** | `npx axe-cli http://localhost:3000` & `pnpm build` | Build limpio de producción y 0 errores críticos de accesibilidad WCAG AA. |
