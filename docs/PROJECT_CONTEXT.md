@@ -28,15 +28,15 @@ Todos los módulos de contenido están desbloqueados y accesibles desde la pági
 
 ```mermaid
 flowchart TD
-    A[Landing Page: Mapa de Dalias + Menú Abierto] --> B[Módulo: Narrativa]
-    A --> C[Módulo: Dashboard CCPC]
-    A --> D[Módulo: Juego Pixel Art]
-    A -.Siempre Disponible.-> H[Herramientas Oficiales INE]
-    A -.Siempre Disponible.-> I[Asistente de IA Flotante]
-    B --> E{¿Completó al menos 1 módulo?}
+    A["Landing Page: Mapa de Dalias + Menú Abierto"] --> B["Módulo: Narrativa"]
+    A --> C["Módulo: Dashboard CCPC"]
+    A --> D["Módulo: Juego Pixel Art"]
+    A -.Siempre Disponible.-> H["Herramientas Oficiales INE"]
+    A -.Siempre Disponible.-> I["Asistente de IA Flotante"]
+    B --> E{"¿Completó al menos 1 módulo?"}
     C --> E
     D --> E
-    E -->|Sí| F[Agrega tu Dalia - DESBLOQUEADO]
+    E -->|Sí| F["Agrega tu Dalia - DESBLOQUEADO"]
 ```
 
 ### Criterios de Finalización de Módulos
@@ -75,7 +75,7 @@ flowchart TD
 
 ### 4.4. Asistente de IA (Chatbot Cívico)
 - **Alcance:** Endpoint en el backend de FastAPI conectado a la API de LLM.
-- **Restricción:** Contexto estrictamente limitado a las tablas procesadas de la CCPC + texto editorial de la plataforma. Rechaza debate político abierto o declaraciones no verificadas.
+- **Restricción:** Contexto strictly limitado a las tablas procesadas de la CCPC + texto editorial de la plataforma. Rechaza debate político abierto o declaraciones no verificadas.
 - **Idiomas:** Soporte dual para Español y Náhuatl.
 
 ### 4.5. Herramientas Oficiales INE (Sección de Enlaces)

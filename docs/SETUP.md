@@ -8,8 +8,8 @@ Esta guía explica el método **más rápido y cómodo** para levantar todo el p
 
 ```mermaid
 flowchart TD
-    A[Paso 1: docker compose up -d] -->|Levanta Postgres + FastAPI + Migraciones + ETL| B(Backend & BD Listos)
-    C[Paso 2: pnpm install && pnpm dev] -->|Levanta Next.js + Vite Dev Server| D(Frontend & Juego Listos)
+    A["Paso 1: docker compose up -d"] -->|Levanta Postgres + FastAPI + Migraciones + ETL| B["Backend & BD Listos"]
+    C["Paso 2: pnpm install && pnpm dev"] -->|Levanta Next.js + Vite Dev Server| D["Frontend & Juego Listos"]
     B --- D
 ```
 

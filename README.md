@@ -28,15 +28,15 @@ Acceso libre a todos los módulos desde el primer segundo. La acción de **"Agre
 
 ```mermaid
 flowchart TD
-    A[Landing Page: Mapa de Dalias + Menú Abierto] --> B[Módulo: Narrativa]
-    A --> C[Módulo: Dashboard CCPC]
-    A --> D[Módulo: Juego Pixel Art]
-    A -.Siempre Disponible.-> H[Herramientas Oficiales INE]
-    A -.Siempre Disponible.-> I[Asistente de IA Flotante]
-    B --> E{¿Completó al menos 1 módulo?}
+    A["Landing Page: Mapa de Dalias + Menú Abierto"] --> B["Módulo: Narrativa"]
+    A --> C["Módulo: Dashboard CCPC"]
+    A --> D["Módulo: Juego Pixel Art"]
+    A -.Siempre Disponible.-> H["Herramientas Oficiales INE"]
+    A -.Siempre Disponible.-> I["Asistente de IA Flotante"]
+    B --> E{"¿Completó al menos 1 módulo?"}
     C --> E
     D --> E
-    E -->|Sí| F[🌸 Agrega tu Dalia - DESBLOQUEADO]
+    E -->|Sí| F["🌸 Agrega tu Dalia - DESBLOQUEADO"]
 ```
 
 ---

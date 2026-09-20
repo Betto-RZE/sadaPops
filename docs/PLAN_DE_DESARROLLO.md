@@ -20,13 +20,13 @@ Este documento contiene la hoja de ruta técnica completa para el equipo de desa
 
 ```mermaid
 flowchart TD
-    subgraph Core Features Team (Prioridad Máxima)
-        Dev1[Dev 1: Lead del Mapa SVG de Dalias & Accesibilidad WCAG]
-        Dev4[Dev 4: Lead del Motor del Juego Pixel Art & Integración]
+    subgraph team1["Core Features Team (Prioridad Máxima)"]
+        Dev1["Dev 1: Lead del Mapa SVG de Dalias & Accesibilidad WCAG"]
+        Dev4["Dev 4: Lead del Motor del Juego Pixel Art & Integración"]
     end
-    subgraph UI & Backend Data Team
-        Dev2[Dev 2: UI/UX, Storytelling & Dashboard CCPC]
-        Dev3[Dev 3: FastAPI Backend, DB PostgreSQL & Pipeline ETL]
+    subgraph team2["UI & Backend Data Team"]
+        Dev2["Dev 2: UI/UX, Storytelling & Dashboard CCPC"]
+        Dev3["Dev 3: FastAPI Backend, DB PostgreSQL & Pipeline ETL"]
     end
 ```
 
@@ -43,11 +43,11 @@ El Mapa de Dalias es el gancho visual y prueba social de la plataforma. Conviert
 
 ```mermaid
 flowchart TD
-    A[Zoom 1: México Completo] -->|Clic en Estado| B[Zoom 2: Desglose Estatal]
-    B -->|Clic en Región| C[Zoom 3: Nivel Municipal/Zonal]
-    C --> D{¿Registros en Municipio < 5?}
-    D -->|Sí| E[Consolidar a Nivel Estatal - Ocultar Pines]
-    D -->|No| F[Renderizar Dalia Municipal / Mostrar Tarjeta]
+    A["Zoom 1: México Completo"] -->|Clic en Estado| B["Zoom 2: Desglose Estatal"]
+    B -->|Clic en Región| C["Zoom 3: Nivel Municipal/Zonal"]
+    C --> D{"¿Registros en Municipio < 5?"}
+    D -->|Sí| E["Consolidar a Nivel Estatal - Ocultar Pines"]
+    D -->|No| F["Renderizar Dalia Municipal / Mostrar Tarjeta"]
 ```
 
 ### 1. Nivel de Zoom 1 (Nacional — México Completo)
@@ -85,14 +85,14 @@ El Modo Juego Pixel Art vive en el paquete `@mapa-dalias/game` (`packages/game/`
 
 ```mermaid
 flowchart TD
-    A[Inicio del Juego en Next.js] --> B[Selección de Escena]
-    B --> C[Escena 1: Desmentir Mitos Cívicos]
-    B --> D[Escena 2: Simulador de Voto en Casilla]
-    C --> E[NPCs responden con datos CCPC INE]
-    D --> F[Simulación interactiva paso a paso de votación]
-    E --> G[Disparo de Callback: onModuleComplete]
+    A["Inicio del Juego en Next.js"] --> B["Selección de Escena"]
+    B --> C["Escena 1: Desmentir Mitos Cívicos"]
+    B --> D["Escena 2: Simulador de Voto en Casilla"]
+    C --> E["NPCs responden con datos CCPC INE"]
+    D --> F["Simulación interactiva paso a paso de votación"]
+    E --> G["Disparo de Callback: onModuleComplete"]
     F --> G
-    G --> H[Desbloqueo de Agrega tu Dalia en Web]
+    G --> H["Desbloqueo de Agrega tu Dalia en Web"]
 ```
 
 ### 1. Arquitectura del Motor (`packages/game/`)

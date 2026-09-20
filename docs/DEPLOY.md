@@ -10,22 +10,22 @@ Para un sprint de hackathon de 3 semanas con un equipo de 4 desarrolladores, la 
 
 ```mermaid
 flowchart LR
-    subgraph Frontend [Vercel - Free Tier]
-        NextJS[Apps/Web - Next.js App Router]
-        GamePkg[Packages/Game - Dynamic ssr:false]
+    subgraph Frontend ["Vercel - Free Tier"]
+        NextJS["Apps/Web - Next.js App Router"]
+        GamePkg["Packages/Game - Dynamic ssr:false"]
         NextJS --- GamePkg
     end
 
-    subgraph Backend [Google Cloud Run - Free Tier]
-        FastAPI[FastAPI Container - Dockerfile]
-        ETL[ETL Pipeline - Ingesta CCPC]
+    subgraph Backend ["Google Cloud Run - Free Tier"]
+        FastAPI["FastAPI Container - Dockerfile"]
+        ETL["ETL Pipeline - Ingesta CCPC"]
     end
 
-    subgraph Database [Neon PostgreSQL - Free Tier]
-        Postgres[(PostgreSQL Serverless)]
+    subgraph Database ["Neon PostgreSQL - Free Tier"]
+        Postgres[("PostgreSQL Serverless")]
     end
 
-    User[Usuario / Jurado INE] --> NextJS
+    User["Usuario / Jurado INE"] --> NextJS
     NextJS -->|HTTPS / API Requests| FastAPI
     FastAPI --> Postgres
     ETL --> Postgres
