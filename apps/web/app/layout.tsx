@@ -1,5 +1,8 @@
 import './globals.css';
 import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
   title: 'Mapa de Dalias y Participación Ciudadana | Hackathon INE',
@@ -13,7 +16,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body className="antialiased selection:bg-purple-500 selection:text-white">
+      <body className={`${inter.variable} font-sans antialiased selection:bg-dalia-600 selection:text-white bg-background text-brand-navy`}>
         {children}
       </body>
     </html>
