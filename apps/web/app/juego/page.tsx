@@ -1,5 +1,5 @@
 import { Navbar } from "@/shared/components/Navbar";
-import { GameWindow } from "@/features/juego/GameWindow";
+import { GameLoader } from "@/features/juego/GameLoader";
 
 export const metadata = {
   title: "Modo Juego Pixel Art | Mapa de Dalias - INE",
@@ -25,9 +25,9 @@ export default function JuegoPage() {
           </p>
         </section>
 
-        {/* VENTANA DEL JUEGO */}
+        {/* PANTALLA DEL JUEGO */}
         <section className="w-full mb-16">
-          <GameWindow />
+          <GameLoader />
         </section>
       </main>
 
