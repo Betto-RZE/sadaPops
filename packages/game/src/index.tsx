@@ -115,6 +115,63 @@ function PixelQuestionDocIcon({ isFullscreen }: { isFullscreen?: boolean }) {
   );
 }
 
+// Frame count definitions for each of the 8 character animation folders
+const PLAYER_FRAME_COUNTS: Record<string, number> = {
+  static1: 80,
+  static2: 50,
+  static3: 57,
+  static4: 43,
+  walking1: 26,
+  walking2: 24,
+  walking3: 22,
+  walking4: 29,
+};
+
+// Animated Player Sprite Component (Plays high quality PNG frame animations from walking1-4 & static1-4)
+function AnimatedPlayerSprite({
+  isWalking,
+  lastDirection,
+}: {
+  isWalking: boolean;
+  lastDirection: "1" | "2" | "3" | "4";
+}) {
+  const [frameIndex, setFrameIndex] = useState(0);
+
+  const currentFolder = isWalking
+    ? `walking${lastDirection}`
+    : `static${lastDirection}`;
+
+  const totalFrames = PLAYER_FRAME_COUNTS[currentFolder] || 20;
+
+  // Instantly reset frame index to 0 when direction or walking state changes
+  useEffect(() => {
+    setFrameIndex(0);
+  }, [isWalking, lastDirection]);
+
+  // Frame cycling interval (exactly 24 FPS = ~41.67ms per frame for smooth animation)
+  useEffect(() => {
+    const fps24Interval = 1000 / 24;
+    const interval = setInterval(() => {
+      setFrameIndex((prev) => (prev + 1) % totalFrames);
+    }, fps24Interval);
+
+    return () => clearInterval(interval);
+  }, [currentFolder, totalFrames]);
+
+  const imageSrc = `/assets/juego/player/${currentFolder}/${frameIndex}.png`;
+
+  return (
+    <div className="relative flex flex-col items-center justify-center">
+      <img
+        src={imageSrc}
+        alt="Personaje Principal"
+        className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 object-contain select-none pointer-events-none drop-shadow-md"
+        style={{ imageRendering: "auto" }}
+      />
+    </div>
+  );
+}
+
 export function PixiGameCanvas({
   onModuleComplete,
   language = "es",
@@ -130,9 +187,9 @@ export function PixiGameCanvas({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [irisRadius, setIrisRadius] = useState<number | null>(null);
 
-  // Player Position State on Stage Plaza (Percentages 0-100)
+  // Player Position & Direction State ("1"=S/down, "2"=A/left, "3"=W/up, "4"=D/right)
   const [playerPos, setPlayerPos] = useState({ x: 50, y: 62 });
-  const [facing, setFacing] = useState<"left" | "right">("right");
+  const [lastDirection, setLastDirection] = useState<"1" | "2" | "3" | "4">("1");
   const [isWalking, setIsWalking] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -205,7 +262,7 @@ export function PixiGameCanvas({
     [irisRadius],
   );
 
-  // Keyboard Movement on Stage Plaza
+  // Keyboard Movement on Stage Plaza (Tracks lastDirection 1-4 & interrupts on keyup)
   useEffect(() => {
     if (currentScreen !== "gameplay") return;
 
@@ -217,26 +274,26 @@ export function PixiGameCanvas({
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
-      keysPressed[e.key.toLowerCase()] = false;
+      const k = e.key.toLowerCase();
+      keysPressed[k] = false;
     };
 
     const interval = setInterval(() => {
       let dx = 0;
       let dy = 0;
 
-      if (keysPressed["arrowleft"] || keysPressed["a"]) {
-        dx -= 1.3;
-        setFacing("left");
-      }
-      if (keysPressed["arrowright"] || keysPressed["d"]) {
-        dx += 1.3;
-        setFacing("right");
-      }
-      if (keysPressed["arrowup"] || keysPressed["w"]) {
-        dy -= 1.3;
-      }
       if (keysPressed["arrowdown"] || keysPressed["s"]) {
-        dy += 1.3;
+        dy += 0.85;
+        setLastDirection("1");
+      } else if (keysPressed["arrowleft"] || keysPressed["a"]) {
+        dx -= 0.85;
+        setLastDirection("2");
+      } else if (keysPressed["arrowup"] || keysPressed["w"]) {
+        dy -= 0.85;
+        setLastDirection("3");
+      } else if (keysPressed["arrowright"] || keysPressed["d"]) {
+        dx += 0.85;
+        setLastDirection("4");
       }
 
       if (dx !== 0 || dy !== 0) {
@@ -246,6 +303,7 @@ export function PixiGameCanvas({
           y: Math.min(80, Math.max(38, prev.y + dy)),
         }));
       } else {
+        // Immediate interrupt to static idle state on key release
         setIsWalking(false);
       }
     }, 30);
@@ -268,27 +326,7 @@ export function PixiGameCanvas({
   const camX = Math.min(maxCamShift, Math.max(-maxCamShift, rawCamX));
   const camY = Math.min(maxCamShift, Math.max(-maxCamShift, rawCamY));
 
-  // Click on stage floor to walk (Transformed from screen viewport to zoomed world coords)
-  const handleStageClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const screenX = (e.clientX - rect.left) / rect.width;
-    const screenY = (e.clientY - rect.top) / rect.height;
 
-    // Inverse transform screen click into 2D world % coordinates
-    const worldX = ((screenX - 0.5) / zoomScale + 0.5 - camX / 100) * 100;
-    const worldY = ((screenY - 0.5) / zoomScale + 0.5 - camY / 100) * 100;
-
-    const targetX = Math.min(84, Math.max(14, worldX));
-    const targetY = Math.min(80, Math.max(38, worldY));
-
-    if (targetX < playerPos.x) setFacing("left");
-    if (targetX > playerPos.x) setFacing("right");
-
-    setIsWalking(true);
-    setPlayerPos({ x: targetX, y: targetY });
-
-    setTimeout(() => setIsWalking(false), 450);
-  };
 
   // Synchronize state with HTML5 Fullscreen API events
   useEffect(() => {
@@ -392,19 +430,17 @@ export function PixiGameCanvas({
   return (
     <div
       ref={containerRef}
-      className={`relative w-full max-w-5xl mx-auto select-none transition-all duration-300 ${
-        isFullscreen
-          ? "fixed inset-0 z-50 max-w-none rounded-none border-0 p-0 ring-0 shadow-none flex flex-col justify-center items-center bg-slate-950 overflow-hidden"
-          : "rounded-2xl p-2 bg-[#adadb7] border-[8px] border-[#8e8ea0] ring-4 ring-[#adadb7]/50 shadow-[0_15px_40px_rgba(0,0,0,0.15)]"
-      }`}
+      className={`relative w-full max-w-5xl mx-auto select-none transition-all duration-300 ${isFullscreen
+        ? "fixed inset-0 z-50 max-w-none rounded-none border-0 p-0 ring-0 shadow-none flex flex-col justify-center items-center bg-slate-950 overflow-hidden"
+        : "rounded-2xl p-2 bg-[#adadb7] border-[8px] border-[#8e8ea0] ring-4 ring-[#adadb7]/50 shadow-[0_15px_40px_rgba(0,0,0,0.15)]"
+        }`}
     >
       {/* Game Display Container */}
       <div
-        className={`relative overflow-hidden flex items-center justify-center bg-[#adadb7] ${
-          isFullscreen
-            ? "aspect-video w-full max-w-[177.78vh] h-auto max-h-screen rounded-none shadow-2xl"
-            : "aspect-video w-full rounded-xl"
-        }`}
+        className={`relative overflow-hidden flex items-center justify-center bg-[#adadb7] ${isFullscreen
+          ? "aspect-video w-full max-w-[177.78vh] h-auto max-h-screen rounded-none shadow-2xl"
+          : "aspect-video w-full rounded-xl"
+          }`}
       >
         {/* Canvas Background Rendering (Fallback) */}
         <canvas
@@ -500,28 +536,25 @@ export function PixiGameCanvas({
             />
 
             <div
-              className={`absolute bottom-[16%] left-1/2 -translate-x-1/2 flex flex-col items-center justify-center z-20 transition-all duration-300 ${
-                isFullscreen
-                  ? "w-[38%] min-w-[320px] max-w-[480px] gap-4"
-                  : "w-[32%] min-w-[220px] max-w-[310px] gap-3"
-              }`}
+              className={`absolute bottom-[16%] left-1/2 -translate-x-1/2 flex flex-col items-center justify-center z-20 transition-all duration-300 ${isFullscreen
+                ? "w-[38%] min-w-[320px] max-w-[480px] gap-4"
+                : "w-[32%] min-w-[220px] max-w-[310px] gap-3"
+                }`}
             >
               {/* JUGAR Button */}
               <button
                 onClick={() => changeScreenWithTransition("gameplay")}
                 type="button"
-                className={`w-full px-4 bg-[#f9d7ea] hover:bg-[#f6c2e0] rounded-md ring-2 ring-white ring-inset transition-all flex items-center justify-between cursor-pointer group shrink-0 ${
-                  isFullscreen
-                    ? "h-[64px] sm:h-[72px] border-[5px] border-[#b5146c] shadow-[6px_6px_0px_0px_#7a0c47] active:translate-x-[3px] active:translate-y-[3px]"
-                    : "h-[48px] sm:h-[52px] border-[4px] border-[#b5146c] shadow-[4px_4px_0px_0px_#7a0c47] active:translate-x-[2px] active:translate-y-[2px]"
-                } active:shadow-none`}
+                className={`w-full px-4 bg-[#f9d7ea] hover:bg-[#f6c2e0] rounded-md ring-2 ring-white ring-inset transition-all flex items-center justify-between cursor-pointer group shrink-0 ${isFullscreen
+                  ? "h-[64px] sm:h-[72px] border-[5px] border-[#b5146c] shadow-[6px_6px_0px_0px_#7a0c47] active:translate-x-[3px] active:translate-y-[3px]"
+                  : "h-[48px] sm:h-[52px] border-[4px] border-[#b5146c] shadow-[4px_4px_0px_0px_#7a0c47] active:translate-x-[2px] active:translate-y-[2px]"
+                  } active:shadow-none`}
               >
                 <span
-                  className={`font-mono font-black text-black tracking-widest uppercase flex-1 text-center drop-shadow-[0_1px_0_rgba(255,255,255,0.8)] select-none ${
-                    isFullscreen
-                      ? "text-2xl sm:text-3xl pl-8"
-                      : "text-lg sm:text-xl pl-6"
-                  }`}
+                  className={`font-mono font-black text-black tracking-widest uppercase flex-1 text-center drop-shadow-[0_1px_0_rgba(255,255,255,0.8)] select-none ${isFullscreen
+                    ? "text-2xl sm:text-3xl pl-8"
+                    : "text-lg sm:text-xl pl-6"
+                    }`}
                 >
                   JUGAR
                 </span>
@@ -532,18 +565,16 @@ export function PixiGameCanvas({
               <button
                 onClick={() => changeScreenWithTransition("how_to_play")}
                 type="button"
-                className={`w-full px-4 bg-[#f9d7ea] hover:bg-[#f6c2e0] rounded-md ring-2 ring-white ring-inset transition-all flex items-center justify-between cursor-pointer group shrink-0 ${
-                  isFullscreen
-                    ? "h-[64px] sm:h-[72px] border-[5px] border-[#b5146c] shadow-[6px_6px_0px_0px_#7a0c47] active:translate-x-[3px] active:translate-y-[3px]"
-                    : "h-[48px] sm:h-[52px] border-[4px] border-[#b5146c] shadow-[4px_4px_0px_0px_#7a0c47] active:translate-x-[2px] active:translate-y-[2px]"
-                } active:shadow-none`}
+                className={`w-full px-4 bg-[#f9d7ea] hover:bg-[#f6c2e0] rounded-md ring-2 ring-white ring-inset transition-all flex items-center justify-between cursor-pointer group shrink-0 ${isFullscreen
+                  ? "h-[64px] sm:h-[72px] border-[5px] border-[#b5146c] shadow-[6px_6px_0px_0px_#7a0c47] active:translate-x-[3px] active:translate-y-[3px]"
+                  : "h-[48px] sm:h-[52px] border-[4px] border-[#b5146c] shadow-[4px_4px_0px_0px_#7a0c47] active:translate-x-[2px] active:translate-y-[2px]"
+                  } active:shadow-none`}
               >
                 <span
-                  className={`font-mono font-black text-black tracking-wider uppercase flex-1 text-center drop-shadow-[0_1px_0_rgba(255,255,255,0.8)] select-none ${
-                    isFullscreen
-                      ? "text-xl sm:text-2xl pl-3"
-                      : "text-base sm:text-lg pl-2"
-                  }`}
+                  className={`font-mono font-black text-black tracking-wider uppercase flex-1 text-center drop-shadow-[0_1px_0_rgba(255,255,255,0.8)] select-none ${isFullscreen
+                    ? "text-xl sm:text-2xl pl-3"
+                    : "text-base sm:text-lg pl-2"
+                    }`}
                 >
                   CÓMO JUGAR
                 </span>
@@ -568,11 +599,10 @@ export function PixiGameCanvas({
                 onClick={() => changeScreenWithTransition("splash")}
                 type="button"
                 aria-label="Volver al menú"
-                className={`bg-[#f9d7ea] hover:bg-[#f6c2e0] rounded-md ring-2 ring-white ring-inset active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all flex items-center justify-center cursor-pointer font-mono font-black text-black uppercase drop-shadow-[0_1px_0_rgba(255,255,255,0.8)] shrink-0 ${
-                  isFullscreen
-                    ? "w-14 h-14 text-2xl border-[5px] border-[#b5146c] shadow-[6px_6px_0px_0px_#7a0c47]"
-                    : "w-10 h-10 text-lg border-[4px] border-[#b5146c] shadow-[4px_4px_0px_0px_#7a0c47]"
-                }`}
+                className={`bg-[#f9d7ea] hover:bg-[#f6c2e0] rounded-md ring-2 ring-white ring-inset active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all flex items-center justify-center cursor-pointer font-mono font-black text-black uppercase drop-shadow-[0_1px_0_rgba(255,255,255,0.8)] shrink-0 ${isFullscreen
+                  ? "w-14 h-14 text-2xl border-[5px] border-[#b5146c] shadow-[6px_6px_0px_0px_#7a0c47]"
+                  : "w-10 h-10 text-lg border-[4px] border-[#b5146c] shadow-[4px_4px_0px_0px_#7a0c47]"
+                  }`}
               >
                 <span>◀</span>
               </button>
@@ -582,10 +612,7 @@ export function PixiGameCanvas({
 
         {/* SCREEN: GAMEPLAY - DYNAMIC 2D STAGE MAP & AVATAR PLAZA */}
         {currentScreen === "gameplay" && (
-          <div
-            className="absolute inset-0 w-full h-full z-20 overflow-hidden bg-[#2d572c] cursor-crosshair select-none"
-            onClick={handleStageClick}
-          >
+          <div className="absolute inset-0 w-full h-full z-20 overflow-hidden bg-[#2d572c] select-none">
             {/* Ambient Dynamic Animations Styles */}
             <style>{`
               @keyframes godRayPulse {
@@ -779,48 +806,15 @@ export function PixiGameCanvas({
                 style={{
                   left: `${playerPos.x}%`,
                   top: `${playerPos.y}%`,
-                  transform: `translate(-50%, -100%) scaleX(${facing === "left" ? -1 : 1})`,
+                  transform: "translate(-50%, -90%)",
                 }}
-                className="absolute z-25 pointer-events-none transition-all duration-300 ease-out flex flex-col items-center select-none"
+                className="absolute z-25 pointer-events-none transition-all duration-75 ease-linear flex flex-col items-center select-none"
               >
-                {/* Character Tag (Always Facing Straight) */}
-                <div
-                  style={{ transform: `scaleX(${facing === "left" ? -1 : 1})` }}
-                  className="mb-1 bg-slate-900/90 text-white font-mono text-[10px] font-bold px-2 py-0.5 rounded border border-pink-400/80 shadow whitespace-nowrap"
-                >
-                  🚶 Tú (Ciudadano)
-                </div>
-
-                {/* 16-Bit Pixel Avatar Sprite */}
-                <div className="relative flex flex-col items-center">
-                  {/* Hair / Cap */}
-                  <div className="w-6 h-3 bg-pink-600 rounded-t-md border border-black" />
-                  {/* Face */}
-                  <div className="w-5 h-4 bg-[#fcd5ce] border-x border-b border-black flex items-center justify-around px-0.5">
-                    <div className="w-1 h-1 bg-black rounded-full" />
-                    <div className="w-1 h-1 bg-black rounded-full" />
-                  </div>
-                  {/* Shirt */}
-                  <div className="w-7 h-5 bg-slate-900 border border-black rounded-sm flex items-center justify-center">
-                    <span className="text-[8px] font-mono font-bold text-pink-400">INE</span>
-                  </div>
-                  {/* Legs with Walking Motion */}
-                  <div className="w-6 h-3 flex justify-between px-0.5">
-                    <div
-                      className={`w-2 h-3 bg-slate-700 border border-black rounded-b-sm ${
-                        isWalking ? "animate-pulse" : ""
-                      }`}
-                    />
-                    <div
-                      className={`w-2 h-3 bg-slate-700 border border-black rounded-b-sm ${
-                        isWalking ? "animate-ping" : ""
-                      }`}
-                    />
-                  </div>
-                </div>
-
-                {/* Drop Shadow on Stone Plaza Floor */}
-                <div className="w-8 h-2 bg-black/40 rounded-full blur-[1px] mt-0.5" />
+                {/* Dynamic 8-Folder Sprite Animation Component */}
+                <AnimatedPlayerSprite
+                  isWalking={isWalking}
+                  lastDirection={lastDirection}
+                />
               </div>
             </div>
           </div>
