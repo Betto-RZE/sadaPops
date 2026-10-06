@@ -5,6 +5,7 @@ export interface GameProps {
   onModuleComplete?: (moduleName: "mitos" | "simulador") => void;
   language?: "es" | "nah";
   splashImageUrl?: string;
+  stageImageUrl?: string;
 }
 
 function PixelBallotBoxIcon({ isFullscreen }: { isFullscreen?: boolean }) {
@@ -118,6 +119,7 @@ export function PixiGameCanvas({
   onModuleComplete,
   language = "es",
   splashImageUrl = "/assets/juego/splash.jpg",
+  stageImageUrl = "/assets/juego/escenario.jpg",
 }: GameProps) {
   const [currentScreen, setCurrentScreen] = useState<
     "splash" | "how_to_play" | "gameplay"
@@ -128,12 +130,20 @@ export function PixiGameCanvas({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [irisRadius, setIrisRadius] = useState<number | null>(null);
 
+  // Player Position State on Stage Plaza (Percentages 0-100)
+  const [playerPos, setPlayerPos] = useState({ x: 50, y: 62 });
+  const [facing, setFacing] = useState<"left" | "right">("right");
+  const [isWalking, setIsWalking] = useState(false);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Retro Circle (Iris Wipe) Screen Transition Handler with SVG Mask
   const changeScreenWithTransition = useCallback(
-    (targetScreen: "splash" | "how_to_play" | "gameplay") => {
+    (
+      targetScreen: "splash" | "how_to_play" | "gameplay",
+      targetScene: "mitos" | "simulador" | null = null,
+    ) => {
       if (irisRadius !== null) return;
 
       const shrinkDuration = 380; // 380ms circle shrink
@@ -145,7 +155,6 @@ export function PixiGameCanvas({
       const animateShrink = (now: number) => {
         const elapsed = now - startTime;
         const progress = Math.min(1, elapsed / shrinkDuration);
-        // Smooth ease-in-out quadratic curve
         const ease =
           progress < 0.5
             ? 2 * progress * progress
@@ -157,15 +166,17 @@ export function PixiGameCanvas({
         if (progress < 1) {
           requestAnimationFrame(animateShrink);
         } else {
-          // Midpoint: Screen is 100% solid black. Hold for 300ms
+          // Midpoint: Screen is 100% solid black
           setIrisRadius(0);
           setCurrentScreen(targetScreen);
           if (targetScreen === "splash") {
             setActiveScene(null);
+          } else {
+            setActiveScene(targetScene);
           }
 
           setTimeout(() => {
-            // Step 2: Grow circle from 0 up to 800 (from center outward)
+            // Step 2: Grow circle from 0 up to 800
             const openStartTime = performance.now();
             const animateGrow = (openNow: number) => {
               const openElapsed = openNow - openStartTime;
@@ -181,7 +192,6 @@ export function PixiGameCanvas({
               if (openProgress < 1) {
                 requestAnimationFrame(animateGrow);
               } else {
-                // Done! Unmount transition mask
                 setIrisRadius(null);
               }
             };
@@ -194,6 +204,91 @@ export function PixiGameCanvas({
     },
     [irisRadius],
   );
+
+  // Keyboard Movement on Stage Plaza
+  useEffect(() => {
+    if (currentScreen !== "gameplay") return;
+
+    const keysPressed: Record<string, boolean> = {};
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const k = e.key.toLowerCase();
+      keysPressed[k] = true;
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      keysPressed[e.key.toLowerCase()] = false;
+    };
+
+    const interval = setInterval(() => {
+      let dx = 0;
+      let dy = 0;
+
+      if (keysPressed["arrowleft"] || keysPressed["a"]) {
+        dx -= 1.3;
+        setFacing("left");
+      }
+      if (keysPressed["arrowright"] || keysPressed["d"]) {
+        dx += 1.3;
+        setFacing("right");
+      }
+      if (keysPressed["arrowup"] || keysPressed["w"]) {
+        dy -= 1.3;
+      }
+      if (keysPressed["arrowdown"] || keysPressed["s"]) {
+        dy += 1.3;
+      }
+
+      if (dx !== 0 || dy !== 0) {
+        setIsWalking(true);
+        setPlayerPos((prev) => ({
+          x: Math.min(84, Math.max(14, prev.x + dx)),
+          y: Math.min(80, Math.max(38, prev.y + dy)),
+        }));
+      } else {
+        setIsWalking(false);
+      }
+    }, 30);
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, [currentScreen]);
+
+  // Camera Dynamic Zoom & Smooth Character Tracking Parameters
+  const zoomScale = 1.45;
+  const maxCamShift = (1 - 1 / zoomScale) * 50; // Max shift % before exposing background edges (~15.5%)
+  const rawCamX = 50 - playerPos.x;
+  const rawCamY = 50 - playerPos.y;
+  const camX = Math.min(maxCamShift, Math.max(-maxCamShift, rawCamX));
+  const camY = Math.min(maxCamShift, Math.max(-maxCamShift, rawCamY));
+
+  // Click on stage floor to walk (Transformed from screen viewport to zoomed world coords)
+  const handleStageClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const screenX = (e.clientX - rect.left) / rect.width;
+    const screenY = (e.clientY - rect.top) / rect.height;
+
+    // Inverse transform screen click into 2D world % coordinates
+    const worldX = ((screenX - 0.5) / zoomScale + 0.5 - camX / 100) * 100;
+    const worldY = ((screenY - 0.5) / zoomScale + 0.5 - camY / 100) * 100;
+
+    const targetX = Math.min(84, Math.max(14, worldX));
+    const targetY = Math.min(80, Math.max(38, worldY));
+
+    if (targetX < playerPos.x) setFacing("left");
+    if (targetX > playerPos.x) setFacing("right");
+
+    setIsWalking(true);
+    setPlayerPos({ x: targetX, y: targetY });
+
+    setTimeout(() => setIsWalking(false), 450);
+  };
 
   // Synchronize state with HTML5 Fullscreen API events
   useEffect(() => {
@@ -279,6 +374,21 @@ export function PixiGameCanvas({
     };
   }, [currentScreen, splashImageUrl]);
 
+  const mythsData = [
+    {
+      title: "Mito: 'Mi voto no cuenta ni cambia nada'",
+      fact: "Dato CCPC INE: La participación ciudadana promedio en elecciones generales supera el 60%. Cada voto sumado forma los porcentajes de gobernanza directa y fiscalización pública.",
+    },
+    {
+      title: "Mito: 'Los funcionarios de casilla son pagados por partidos'",
+      fact: "Dato CCPC INE: Falso. Los funcionarios son vecinos insaculados (sorteados por mes de nacimiento) y capacitados de manera neutral por el INE.",
+    },
+    {
+      title: "Mito: 'Las urnas pueden alterarse fácilmente'",
+      fact: "Dato CCPC INE: Las boletas cuentan con marcas de agua infalsificables, folios únicos y son contadas en presencia de observadores de todos los partidos.",
+    },
+  ];
+
   return (
     <div
       ref={containerRef}
@@ -296,7 +406,7 @@ export function PixiGameCanvas({
             : "aspect-video w-full rounded-xl"
         }`}
       >
-        {/* Canvas Background Rendering */}
+        {/* Canvas Background Rendering (Fallback) */}
         <canvas
           ref={canvasRef}
           width={960}
@@ -332,7 +442,7 @@ export function PixiGameCanvas({
           {/* 1. Visible CRT Scanlines grid */}
           <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.30)_50%)] bg-[length:100%_4px] opacity-90" />
 
-          {/* 2. Moving CRT Refresh Scan Beam (Cyan/White Tinted) */}
+          {/* 2. Moving CRT Refresh Scan Beam */}
           <div
             className="absolute left-0 right-0 h-10 bg-gradient-to-b from-transparent via-cyan-200/25 to-transparent"
             style={{ animation: "crtBeamSweep 4.5s linear infinite" }}
@@ -379,7 +489,7 @@ export function PixiGameCanvas({
           </svg>
         )}
 
-        {/* Splash Menu Screen with JUGAR & CÓMO JUGAR buttons matching reference image */}
+        {/* Splash Menu Screen with JUGAR & CÓMO JUGAR buttons */}
         {currentScreen === "splash" && (
           <div className="absolute inset-0 w-full h-full z-20 overflow-hidden">
             <img
@@ -389,7 +499,6 @@ export function PixiGameCanvas({
               style={{ imageRendering: "pixelated" }}
             />
 
-            {/* Pixel Action Buttons Container (Dynamic Proportional Scaling in Fullscreen) */}
             <div
               className={`absolute bottom-[16%] left-1/2 -translate-x-1/2 flex flex-col items-center justify-center z-20 transition-all duration-300 ${
                 isFullscreen
@@ -447,7 +556,6 @@ export function PixiGameCanvas({
         {/* SCREEN: CÓMO JUGAR / CONTROLES */}
         {currentScreen === "how_to_play" && (
           <div className="absolute inset-0 w-full h-full z-30 flex flex-col items-center justify-center bg-slate-950 overflow-hidden animate-in fade-in duration-200 select-none">
-            {/* Background Controls Pixel Image */}
             <img
               src="/assets/juego/controles.jpg"
               alt="Controles de Juego - Voces en Casilla INE"
@@ -455,10 +563,6 @@ export function PixiGameCanvas({
               style={{ imageRendering: "pixelated" }}
             />
 
-            {/* CRT TV Static overlay for visual cohesion */}
-            <div className="absolute inset-0 pointer-events-none z-10 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%)] bg-[length:100%_4px] opacity-60" />
-
-            {/* Pixel Art Square Arrow Button: Top-Left Return to Splash Menu */}
             <div className="absolute top-[6%] left-[6%] z-40">
               <button
                 onClick={() => changeScreenWithTransition("splash")}
@@ -476,118 +580,249 @@ export function PixiGameCanvas({
           </div>
         )}
 
-        {/* SCREEN: GAMEPLAY / SCENE SELECTOR */}
+        {/* SCREEN: GAMEPLAY - DYNAMIC 2D STAGE MAP & AVATAR PLAZA */}
         {currentScreen === "gameplay" && (
-          <div className="absolute inset-0 bg-[#adadb7] flex flex-col items-center justify-between p-6 z-20">
-            {/* Top Bar inside Gameplay */}
-            <div className="w-full flex items-center justify-between border-b border-slate-700/40 pb-3 pr-16">
+          <div
+            className="absolute inset-0 w-full h-full z-20 overflow-hidden bg-[#2d572c] cursor-crosshair select-none"
+            onClick={handleStageClick}
+          >
+            {/* Ambient Dynamic Animations Styles */}
+            <style>{`
+              @keyframes godRayPulse {
+                0%, 100% { opacity: 0.08; transform: rotate(-24deg) scaleY(1); }
+                50% { opacity: 0.18; transform: rotate(-24deg) scaleY(1.03); }
+              }
+              @keyframes petalFloat1 {
+                0% { transform: translate(0px, 0px) rotate(0deg); opacity: 0; }
+                15% { opacity: 0.85; }
+                85% { opacity: 0.75; }
+                100% { transform: translate(110px, 150px) rotate(260deg); opacity: 0; }
+              }
+              @keyframes petalFloat2 {
+                0% { transform: translate(0px, 0px) rotate(0deg); opacity: 0; }
+                20% { opacity: 0.8; }
+                80% { opacity: 0.7; }
+                100% { transform: translate(-90px, 140px) rotate(-190deg); opacity: 0; }
+              }
+              @keyframes petalFloat3 {
+                0% { transform: translate(0px, 0px) rotate(0deg); opacity: 0; }
+                25% { opacity: 0.9; }
+                75% { opacity: 0.8; }
+                100% { transform: translate(70px, 160px) rotate(310deg); opacity: 0; }
+              }
+              @keyframes sparkleFloat {
+                0% { transform: translate(0, 0) scale(0.5); opacity: 0.15; }
+                50% { transform: translate(18px, -24px) scale(1.2); opacity: 0.85; }
+                100% { transform: translate(36px, -48px) scale(0.5); opacity: 0.15; }
+              }
+              @keyframes butterflyFlutter {
+                0% { transform: translate(0px, 0px) scaleX(1); }
+                25% { transform: translate(16px, -14px) scaleX(1); }
+                50% { transform: translate(30px, 6px) scaleX(-1); }
+                75% { transform: translate(10px, 14px) scaleX(-1); }
+                100% { transform: translate(0px, 0px) scaleX(1); }
+              }
+              @keyframes mistDrift {
+                0% { transform: translateX(-4%); opacity: 0.12; }
+                50% { transform: translateX(4%); opacity: 0.24; }
+                100% { transform: translateX(-4%); opacity: 0.12; }
+              }
+            `}</style>
+
+            {/* CRT TV Scanline Grid for Retro Cohesion (Pinned to Viewport) */}
+            <div className="absolute inset-0 pointer-events-none z-20 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.22)_50%)] bg-[length:100%_4px] opacity-60" />
+
+            {/* Top HUD Bar: Return to Splash Button (Pinned to Viewport) */}
+            <div className="absolute top-3 left-3 z-30 pointer-events-none">
               <button
-                onClick={() => changeScreenWithTransition("splash")}
-                className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-100 font-mono text-xs font-bold rounded border border-slate-700 flex items-center gap-2 transition"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  changeScreenWithTransition("splash");
+                }}
+                type="button"
+                className="pointer-events-auto px-3.5 py-1.5 bg-[#f9d7ea] hover:bg-[#f6c2e0] text-black font-mono text-xs font-black rounded-md border-2 border-[#b5146c] shadow-[3px_3px_0px_0px_#7a0c47] active:translate-x-[1px] active:translate-y-[1px] transition flex items-center gap-1.5 cursor-pointer select-none"
               >
                 <span>◀</span> MENÚ PRINCIPAL
               </button>
-
-              <div className="font-mono text-xs text-slate-900 font-bold uppercase tracking-wider">
-                {activeScene
-                  ? `Escena Activa: ${activeScene.toUpperCase()}`
-                  : "Selecciona una Escena"}
-              </div>
             </div>
 
-            {/* Main Gameplay Screen Content */}
-            {!activeScene ? (
-              <div className="flex-1 w-full flex flex-col items-center justify-center gap-6 py-4">
-                <h3 className="font-mono font-bold text-lg text-slate-900 tracking-wider text-center">
-                  ¿QUÉ ESCENA DESEAS REPRODUCIR?
-                </h3>
+            {/* DYNAMIC CAMERA WORLD CONTAINER (Enlarges 1.45x and smoothly tracks avatar) */}
+            <div
+              className="absolute inset-0 w-full h-full transition-transform duration-300 ease-out z-10"
+              style={{
+                transform: `scale(${zoomScale}) translate(${camX}%, ${camY}%)`,
+                transformOrigin: "center center",
+                willChange: "transform",
+              }}
+            >
+              {/* Background 2D Stage Map (User Uploaded Plaza Map) */}
+              <img
+                src={stageImageUrl}
+                alt="Escenario del Juego - INE Stage"
+                className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
+                style={{ imageRendering: "pixelated" }}
+              />
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-xl">
-                  {/* Option 1: Mitos */}
-                  <button
-                    onClick={() => setActiveScene("mitos")}
-                    className="p-5 bg-white hover:bg-slate-50 border-2 border-slate-400 hover:border-pink-500 rounded-xl text-left transition-all group shadow-lg flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="text-2xl mb-2 group-hover:scale-110 transition-transform">
-                        💬
-                      </div>
-                      <h4 className="font-mono font-bold text-slate-900 text-base mb-1">
-                        01. Desmentir Mitos
-                      </h4>
-                      <p className="text-xs text-slate-600 leading-relaxed">
-                        Grafo de diálogo interactivo con datos oficiales de la
-                        CCPC del INE.
-                      </p>
-                    </div>
-                    <div className="mt-4 text-xs font-mono font-bold text-dalia-600 group-hover:translate-x-1 transition-transform">
-                      INICIAR ESCENA ▶
-                    </div>
-                  </button>
+              {/* DYNAMIC AMBIENT LIGHTING & ATMOSPHERE LAYERS */}
+              {/* 1. Soft Warm Top-Left Sunlight Canopy Bloom Glare */}
+              <div className="absolute inset-0 pointer-events-none z-12 bg-[radial-gradient(circle_at_15%_10%,rgba(254,240,138,0.18)_0%,rgba(253,224,71,0.06)_35%,transparent_65%)]" />
 
-                  {/* Option 2: Simulador */}
-                  <button
-                    onClick={() => setActiveScene("simulador")}
-                    className="p-5 bg-slate-900 hover:bg-purple-950 border-2 border-purple-600/60 hover:border-pink-500 rounded-xl text-left transition-all group shadow-lg flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="text-2xl mb-2 group-hover:scale-110 transition-transform">
-                        🗳️
-                      </div>
-                      <h4 className="font-mono font-bold text-white text-base mb-1">
-                        02. Simulador de Voto
-                      </h4>
-                      <p className="text-xs text-slate-400 leading-relaxed text-slate-600">
-                        Emulador paso a paso de la experiencia de votar en la
-                        casilla.
-                      </p>
-                    </div>
-                    <div className="mt-4 text-xs font-mono font-bold text-pink-400 group-hover:translate-x-1 transition-transform">
-                      INICIAR ESCENA ▶
-                    </div>
-                  </button>
+              {/* 2. Softened Volumetric Sun Light Rays (God Rays) */}
+              <div className="absolute inset-0 pointer-events-none z-13 overflow-hidden">
+                <div
+                  className="absolute -top-[30%] -left-[10%] w-[140%] h-[160%] bg-gradient-to-r from-transparent via-amber-100/12 to-transparent blur-[2px] transform origin-top-left"
+                  style={{ animation: "godRayPulse 8s ease-in-out infinite" }}
+                />
+                <div
+                  className="absolute -top-[30%] left-[18%] w-[120%] h-[160%] bg-gradient-to-r from-transparent via-yellow-100/10 to-transparent blur-[3px] transform origin-top-left"
+                  style={{ animation: "godRayPulse 10s ease-in-out infinite 2.5s" }}
+                />
+                <div
+                  className="absolute -top-[30%] left-[38%] w-[100%] h-[160%] bg-gradient-to-r from-transparent via-pink-100/08 to-transparent blur-[4px] transform origin-top-left"
+                  style={{ animation: "godRayPulse 9s ease-in-out infinite 4.5s" }}
+                />
+              </div>
+
+              {/* 3. Floating Ambient Particles: Dalia Petals & Gold Sunlight Dust */}
+              <div className="absolute inset-0 pointer-events-none z-14 overflow-hidden">
+                {/* Floating Pink Dalia Petals (Rich Flow) */}
+                <div
+                  className="absolute top-[14%] left-[18%] w-2.5 h-2.5 bg-pink-400/80 rounded-tl-full rounded-br-full border border-pink-600/40 shadow-sm"
+                  style={{ animation: "petalFloat1 6.5s ease-in-out infinite" }}
+                />
+                <div
+                  className="absolute top-[22%] left-[62%] w-3 h-2 bg-pink-500/85 rounded-tr-full rounded-bl-full border border-pink-700/40 shadow-sm"
+                  style={{ animation: "petalFloat2 8s ease-in-out infinite 1.2s" }}
+                />
+                <div
+                  className="absolute top-[10%] left-[42%] w-2 h-2 bg-dalia-400/90 rounded-full border border-pink-500/50 shadow-sm"
+                  style={{ animation: "petalFloat3 7.2s ease-in-out infinite 2.4s" }}
+                />
+                <div
+                  className="absolute top-[28%] left-[80%] w-2.5 h-2.5 bg-pink-300/80 rounded-tl-full rounded-br-full border border-pink-500/40"
+                  style={{ animation: "petalFloat2 9s ease-in-out infinite 3.6s" }}
+                />
+                <div
+                  className="absolute top-[16%] left-[32%] w-2 h-2 bg-pink-400/80 rounded-tr-full rounded-bl-full border border-pink-600/30"
+                  style={{ animation: "petalFloat1 7.8s ease-in-out infinite 4.8s" }}
+                />
+                <div
+                  className="absolute top-[35%] left-[12%] w-2.5 h-2 bg-dalia-500/85 rounded-tl-full rounded-br-full border border-pink-700/30"
+                  style={{ animation: "petalFloat3 8.5s ease-in-out infinite 5.5s" }}
+                />
+                <div
+                  className="absolute top-[20%] left-[52%] w-3 h-2.5 bg-pink-300/90 rounded-tr-full rounded-bl-full border border-pink-400/40"
+                  style={{ animation: "petalFloat1 6.8s ease-in-out infinite 6.2s" }}
+                />
+                <div
+                  className="absolute top-[30%] left-[70%] w-2 h-2 bg-pink-400/75 rounded-full border border-pink-500/30"
+                  style={{ animation: "petalFloat2 8.2s ease-in-out infinite 7.0s" }}
+                />
+
+                {/* Glowing Sunlight Sparkles / Pollen Dust */}
+                <div
+                  className="absolute top-[38%] left-[28%] w-1.5 h-1.5 bg-amber-200 rounded-full shadow-[0_0_6px_#fde047]"
+                  style={{ animation: "sparkleFloat 4s ease-in-out infinite" }}
+                />
+                <div
+                  className="absolute top-[52%] left-[52%] w-2 h-2 bg-yellow-100 rounded-full shadow-[0_0_8px_#fef08a]"
+                  style={{ animation: "sparkleFloat 5.5s ease-in-out infinite 0.8s" }}
+                />
+                <div
+                  className="absolute top-[32%] left-[72%] w-1.5 h-1.5 bg-amber-300 rounded-full shadow-[0_0_6px_#fde047]"
+                  style={{ animation: "sparkleFloat 4.8s ease-in-out infinite 1.9s" }}
+                />
+                <div
+                  className="absolute top-[62%] left-[18%] w-2 h-2 bg-amber-100 rounded-full shadow-[0_0_8px_#ffffff]"
+                  style={{ animation: "sparkleFloat 6s ease-in-out infinite 2.8s" }}
+                />
+                <div
+                  className="absolute top-[44%] left-[40%] w-1.5 h-1.5 bg-yellow-200 rounded-full shadow-[0_0_6px_#fde047]"
+                  style={{ animation: "sparkleFloat 5.2s ease-in-out infinite 3.7s" }}
+                />
+                <div
+                  className="absolute top-[58%] left-[84%] w-2 h-2 bg-amber-200 rounded-full shadow-[0_0_8px_#fef08a]"
+                  style={{ animation: "sparkleFloat 4.5s ease-in-out infinite 4.4s" }}
+                />
+                <div
+                  className="absolute top-[26%] left-[60%] w-1.5 h-1.5 bg-yellow-100 rounded-full shadow-[0_0_6px_#ffffff]"
+                  style={{ animation: "sparkleFloat 5.8s ease-in-out infinite 5.1s" }}
+                />
+              </div>
+
+              {/* 4. Animated Pixel Butterflies hovering near bushes */}
+              <div className="absolute inset-0 pointer-events-none z-14">
+                {/* Butterfly 1 (Bottom Left Flowers) */}
+                <div
+                  className="absolute left-[12%] bottom-[14%] text-sm select-none"
+                  style={{ animation: "butterflyFlutter 4.2s ease-in-out infinite" }}
+                >
+                  🦋
+                </div>
+                {/* Butterfly 2 (Bottom Right Flowers) */}
+                <div
+                  className="absolute right-[14%] bottom-[16%] text-sm select-none"
+                  style={{ animation: "butterflyFlutter 5.5s ease-in-out infinite 1.8s" }}
+                >
+                  🦋
                 </div>
               </div>
-            ) : (
-              /* ACTIVE SCENE CANVAS DISPLAY */
-              <div className="flex-1 w-full flex flex-col items-center justify-center p-4">
-                <div className="w-full max-w-2xl bg-white border-2 border-slate-300 rounded-xl p-6 text-center flex flex-col items-center justify-center gap-4 shadow-xl">
-                  <div className="text-4xl animate-bounce">
-                    {activeScene === "mitos" ? "🌸" : "🗳️"}
-                  </div>
-                  <h4 className="font-mono font-bold text-lg text-slate-900">
-                    Cargando Escena:{" "}
-                    {activeScene === "mitos"
-                      ? "Desmentir Mitos Cívicos"
-                      : "Simulador de Voto en Casilla"}
-                  </h4>
-                  <p className="text-xs text-slate-600 max-w-md">
-                    Motor PixiJS inicializado. Renderizando sprites y mapa de
-                    nodos 2D...
-                  </p>
 
-                  <div className="mt-4 flex gap-4">
-                    <button
-                      onClick={() => {
-                        onModuleComplete?.(activeScene);
-                        alert(
-                          `¡Enhorabuena! Has completado la escena ${activeScene.toUpperCase()}. Se ha registrado tu progreso.`,
-                        );
-                      }}
-                      className="px-5 py-2.5 bg-dalia-600 hover:bg-pink-500 text-white font-mono font-bold text-xs uppercase rounded-lg border-2 border-slate-900 shadow-md transition"
-                    >
-                      Completar Módulo y Desbloquear Dalia
-                    </button>
-                    <button
-                      onClick={() => setActiveScene(null)}
-                      className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs font-bold rounded border border-slate-600 transition"
-                    >
-                      Cambiar Escena
-                    </button>
+              {/* 5. Gentle Forest Ground Mist Layer */}
+              <div
+                className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-emerald-950/20 via-emerald-900/10 to-transparent pointer-events-none z-11"
+                style={{ animation: "mistDrift 10s ease-in-out infinite" }}
+              />
+
+              {/* PLAYER CHARACTER AVATAR ON THE PLAZA FLOOR */}
+              <div
+                style={{
+                  left: `${playerPos.x}%`,
+                  top: `${playerPos.y}%`,
+                  transform: `translate(-50%, -100%) scaleX(${facing === "left" ? -1 : 1})`,
+                }}
+                className="absolute z-25 pointer-events-none transition-all duration-300 ease-out flex flex-col items-center select-none"
+              >
+                {/* Character Tag (Always Facing Straight) */}
+                <div
+                  style={{ transform: `scaleX(${facing === "left" ? -1 : 1})` }}
+                  className="mb-1 bg-slate-900/90 text-white font-mono text-[10px] font-bold px-2 py-0.5 rounded border border-pink-400/80 shadow whitespace-nowrap"
+                >
+                  🚶 Tú (Ciudadano)
+                </div>
+
+                {/* 16-Bit Pixel Avatar Sprite */}
+                <div className="relative flex flex-col items-center">
+                  {/* Hair / Cap */}
+                  <div className="w-6 h-3 bg-pink-600 rounded-t-md border border-black" />
+                  {/* Face */}
+                  <div className="w-5 h-4 bg-[#fcd5ce] border-x border-b border-black flex items-center justify-around px-0.5">
+                    <div className="w-1 h-1 bg-black rounded-full" />
+                    <div className="w-1 h-1 bg-black rounded-full" />
+                  </div>
+                  {/* Shirt */}
+                  <div className="w-7 h-5 bg-slate-900 border border-black rounded-sm flex items-center justify-center">
+                    <span className="text-[8px] font-mono font-bold text-pink-400">INE</span>
+                  </div>
+                  {/* Legs with Walking Motion */}
+                  <div className="w-6 h-3 flex justify-between px-0.5">
+                    <div
+                      className={`w-2 h-3 bg-slate-700 border border-black rounded-b-sm ${
+                        isWalking ? "animate-pulse" : ""
+                      }`}
+                    />
+                    <div
+                      className={`w-2 h-3 bg-slate-700 border border-black rounded-b-sm ${
+                        isWalking ? "animate-ping" : ""
+                      }`}
+                    />
                   </div>
                 </div>
+
+                {/* Drop Shadow on Stone Plaza Floor */}
+                <div className="w-8 h-2 bg-black/40 rounded-full blur-[1px] mt-0.5" />
               </div>
-            )}
+            </div>
           </div>
         )}
 
