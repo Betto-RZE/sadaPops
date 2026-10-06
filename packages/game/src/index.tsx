@@ -9,7 +9,9 @@ export interface GameProps {
 
 function PixelBallotBoxIcon({ isFullscreen }: { isFullscreen?: boolean }) {
   return (
-    <div className={`relative shrink-0 flex items-center justify-center select-none ${isFullscreen ? "w-10 h-10" : "w-8 h-8"}`}>
+    <div
+      className={`relative shrink-0 flex items-center justify-center select-none ${isFullscreen ? "w-10 h-10" : "w-8 h-8"}`}
+    >
       <svg
         width={isFullscreen ? "40" : "32"}
         height={isFullscreen ? "40" : "32"}
@@ -20,9 +22,26 @@ function PixelBallotBoxIcon({ isFullscreen }: { isFullscreen?: boolean }) {
         style={{ imageRendering: "pixelated" }}
       >
         {/* White ballot dropping into box */}
-        <rect x="9" y="1" width="6" height="7" fill="#FFFFFF" stroke="#000000" strokeWidth="1.5" />
+        <rect
+          x="9"
+          y="1"
+          width="6"
+          height="7"
+          fill="#FFFFFF"
+          stroke="#000000"
+          strokeWidth="1.5"
+        />
         {/* Magenta box body */}
-        <rect x="3" y="7" width="18" height="14" rx="1" fill="#9d2b70" stroke="#000000" strokeWidth="1.5" />
+        <rect
+          x="3"
+          y="7"
+          width="18"
+          height="14"
+          rx="1"
+          fill="#9d2b70"
+          stroke="#000000"
+          strokeWidth="1.5"
+        />
         {/* Slot line */}
         <line x1="6" y1="7" x2="18" y2="7" stroke="#000000" strokeWidth="2" />
       </svg>
@@ -33,7 +52,9 @@ function PixelBallotBoxIcon({ isFullscreen }: { isFullscreen?: boolean }) {
 function PixelQuestionDocIcon({ isFullscreen }: { isFullscreen?: boolean }) {
   return (
     <div className="flex items-center gap-0.5 shrink-0 select-none">
-      <span className={`text-black font-mono font-black leading-none mr-0.5 ${isFullscreen ? "text-2xl sm:text-3xl" : "text-xl"}`}>
+      <span
+        className={`text-black font-mono font-black leading-none mr-0.5 ${isFullscreen ? "text-2xl sm:text-3xl" : "text-xl"}`}
+      >
         ?
       </span>
       <svg
@@ -46,14 +67,48 @@ function PixelQuestionDocIcon({ isFullscreen }: { isFullscreen?: boolean }) {
         style={{ imageRendering: "pixelated" }}
       >
         {/* Document sheet */}
-        <rect x="4" y="2" width="16" height="20" fill="#FFFFFF" stroke="#000000" strokeWidth="1.5" />
+        <rect
+          x="4"
+          y="2"
+          width="16"
+          height="20"
+          fill="#FFFFFF"
+          stroke="#000000"
+          strokeWidth="1.5"
+        />
         {/* Folded corner */}
-        <path d="M14 2 L20 8 L14 8 Z" fill="#D1D5DB" stroke="#000000" strokeWidth="1" />
+        <path
+          d="M14 2 L20 8 L14 8 Z"
+          fill="#D1D5DB"
+          stroke="#000000"
+          strokeWidth="1"
+        />
         {/* Text lines */}
         <line x1="7" y1="7" x2="13" y2="7" stroke="#000000" strokeWidth="1.5" />
-        <line x1="7" y1="11" x2="17" y2="11" stroke="#000000" strokeWidth="1.5" />
-        <line x1="7" y1="15" x2="17" y2="15" stroke="#000000" strokeWidth="1.5" />
-        <line x1="7" y1="19" x2="13" y2="19" stroke="#000000" strokeWidth="1.5" />
+        <line
+          x1="7"
+          y1="11"
+          x2="17"
+          y2="11"
+          stroke="#000000"
+          strokeWidth="1.5"
+        />
+        <line
+          x1="7"
+          y1="15"
+          x2="17"
+          y2="15"
+          stroke="#000000"
+          strokeWidth="1.5"
+        />
+        <line
+          x1="7"
+          y1="19"
+          x2="13"
+          y2="19"
+          stroke="#000000"
+          strokeWidth="1.5"
+        />
       </svg>
     </div>
   );
@@ -71,9 +126,74 @@ export function PixiGameCanvas({
     null,
   );
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [irisRadius, setIrisRadius] = useState<number | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Retro Circle (Iris Wipe) Screen Transition Handler with SVG Mask
+  const changeScreenWithTransition = useCallback(
+    (targetScreen: "splash" | "how_to_play" | "gameplay") => {
+      if (irisRadius !== null) return;
+
+      const shrinkDuration = 380; // 380ms circle shrink
+      const blackHoldTime = 300; // 300ms hold in solid black
+      const growDuration = 380; // 380ms circle grow
+      const startTime = performance.now();
+
+      // Step 1: Shrink circle from 800 down to 0 (to center)
+      const animateShrink = (now: number) => {
+        const elapsed = now - startTime;
+        const progress = Math.min(1, elapsed / shrinkDuration);
+        // Smooth ease-in-out quadratic curve
+        const ease =
+          progress < 0.5
+            ? 2 * progress * progress
+            : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+        const currentR = 800 * (1 - ease);
+        setIrisRadius(currentR);
+
+        if (progress < 1) {
+          requestAnimationFrame(animateShrink);
+        } else {
+          // Midpoint: Screen is 100% solid black. Hold for 300ms
+          setIrisRadius(0);
+          setCurrentScreen(targetScreen);
+          if (targetScreen === "splash") {
+            setActiveScene(null);
+          }
+
+          setTimeout(() => {
+            // Step 2: Grow circle from 0 up to 800 (from center outward)
+            const openStartTime = performance.now();
+            const animateGrow = (openNow: number) => {
+              const openElapsed = openNow - openStartTime;
+              const openProgress = Math.min(1, openElapsed / growDuration);
+              const openEase =
+                openProgress < 0.5
+                  ? 2 * openProgress * openProgress
+                  : 1 - Math.pow(-2 * openProgress + 2, 2) / 2;
+
+              const growR = 800 * openEase;
+              setIrisRadius(growR);
+
+              if (openProgress < 1) {
+                requestAnimationFrame(animateGrow);
+              } else {
+                // Done! Unmount transition mask
+                setIrisRadius(null);
+              }
+            };
+            requestAnimationFrame(animateGrow);
+          }, blackHoldTime);
+        }
+      };
+
+      requestAnimationFrame(animateShrink);
+    },
+    [irisRadius],
+  );
 
   // Synchronize state with HTML5 Fullscreen API events
   useEffect(() => {
@@ -185,9 +305,8 @@ export function PixiGameCanvas({
           style={{ imageRendering: "pixelated" }}
         />
 
-        {/* CRT Animated TV Static & Interference Layer */}
+        {/* CRT Animated TV Static Layer */}
         <div className="absolute inset-0 pointer-events-none z-15 overflow-hidden">
-          {/* Keyframe Styles for Visible CRT TV Static & Scanlines */}
           <style>{`
             @keyframes crtBeamSweep {
               0% { top: -15%; opacity: 0; }
@@ -238,6 +357,28 @@ export function PixiGameCanvas({
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_45%,rgba(0,0,0,0.45)_100%)]" />
         </div>
 
+        {/* RETRO IRIS WIPE SVG MASK TRANSITION OVERLAY */}
+        {irisRadius !== null && (
+          <svg
+            className="absolute inset-0 w-full h-full z-50 pointer-events-auto"
+            viewBox="0 0 1000 562.5"
+            preserveAspectRatio="none"
+          >
+            <defs>
+              <mask id="irisApertureMask">
+                <rect width="1000" height="562.5" fill="white" />
+                <circle cx="500" cy="281.25" r={irisRadius} fill="black" />
+              </mask>
+            </defs>
+            <rect
+              width="1000"
+              height="562.5"
+              fill="black"
+              mask="url(#irisApertureMask)"
+            />
+          </svg>
+        )}
+
         {/* Splash Menu Screen with JUGAR & CÓMO JUGAR buttons matching reference image */}
         {currentScreen === "splash" && (
           <div className="absolute inset-0 w-full h-full z-20 overflow-hidden">
@@ -258,7 +399,7 @@ export function PixiGameCanvas({
             >
               {/* JUGAR Button */}
               <button
-                onClick={() => setCurrentScreen("gameplay")}
+                onClick={() => changeScreenWithTransition("gameplay")}
                 type="button"
                 className={`w-full px-4 bg-[#f9d7ea] hover:bg-[#f6c2e0] rounded-md ring-2 ring-white ring-inset transition-all flex items-center justify-between cursor-pointer group shrink-0 ${
                   isFullscreen
@@ -280,7 +421,7 @@ export function PixiGameCanvas({
 
               {/* CÓMO JUGAR Button */}
               <button
-                onClick={() => setCurrentScreen("how_to_play")}
+                onClick={() => changeScreenWithTransition("how_to_play")}
                 type="button"
                 className={`w-full px-4 bg-[#f9d7ea] hover:bg-[#f6c2e0] rounded-md ring-2 ring-white ring-inset transition-all flex items-center justify-between cursor-pointer group shrink-0 ${
                   isFullscreen
@@ -303,74 +444,33 @@ export function PixiGameCanvas({
           </div>
         )}
 
-        {/* MODAL: CÓMO JUGAR */}
+        {/* SCREEN: CÓMO JUGAR / CONTROLES */}
         {currentScreen === "how_to_play" && (
-          <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-sm z-30 flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
-            <div
-              className="w-full max-w-lg bg-slate-900 border-4 border-purple-600 rounded-xl p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,0.9)] text-slate-100 flex flex-col gap-5"
+          <div className="absolute inset-0 w-full h-full z-30 flex flex-col items-center justify-center bg-slate-950 overflow-hidden animate-in fade-in duration-200 select-none">
+            {/* Background Controls Pixel Image */}
+            <img
+              src="/assets/juego/controles.jpg"
+              alt="Controles de Juego - Voces en Casilla INE"
+              className="absolute inset-0 w-full h-full object-cover bg-[#adadb7]"
               style={{ imageRendering: "pixelated" }}
-            >
-              {/* Modal Header */}
-              <div className="flex items-center justify-between border-b-2 border-purple-900/80 pb-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-pink-500 text-xl font-mono">❓</span>
-                  <h3 className="font-mono font-black text-lg uppercase tracking-wider text-purple-200">
-                    Instrucciones de Juego
-                  </h3>
-                </div>
-                <button
-                  onClick={() => setCurrentScreen("splash")}
-                  className="w-8 h-8 flex items-center justify-center bg-slate-800 hover:bg-pink-600 text-slate-300 hover:text-white rounded border-2 border-slate-700 font-mono font-bold transition-colors"
-                >
-                  ✕
-                </button>
-              </div>
+            />
 
-              {/* Rules List */}
-              <div className="space-y-3 font-sans text-xs sm:text-sm text-slate-300 leading-relaxed">
-                <div className="flex items-start gap-3 bg-slate-950/60 p-3 rounded-lg border border-purple-900/40">
-                  <span className="font-mono font-bold text-pink-400 text-base">
-                    01.
-                  </span>
-                  <div>
-                    <strong className="text-white">
-                      Desmiente Mitos Cívicos:
-                    </strong>{" "}
-                    Interactúa con los personajes del Módulo Cívico 2D y
-                    responde preguntas usando datos reales de la CCPC del INE.
-                  </div>
-                </div>
+            {/* CRT TV Static overlay for visual cohesion */}
+            <div className="absolute inset-0 pointer-events-none z-10 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%)] bg-[length:100%_4px] opacity-60" />
 
-                <div className="flex items-start gap-3 bg-slate-950/60 p-3 rounded-lg border border-purple-900/40">
-                  <span className="font-mono font-bold text-purple-400 text-base">
-                    02.
-                  </span>
-                  <div>
-                    <strong className="text-white">Simulador de Voto:</strong>{" "}
-                    Conoce cada paso del proceso en la casilla: desde entregar
-                    tu credencial hasta la aplicación de tinta indeleble.
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3 bg-slate-950/60 p-3 rounded-lg border border-purple-900/40">
-                  <span className="font-mono font-bold text-emerald-400 text-base">
-                    03.
-                  </span>
-                  <div>
-                    <strong className="text-white">Desbloqueo de Dalia:</strong>{" "}
-                    Al completar al menos una escena, desbloquearás tu registro
-                    anónimo para plantar tu Dalia en el mapa nacional.
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Button */}
+            {/* Pixel Art Square Arrow Button: Top-Left Return to Splash Menu */}
+            <div className="absolute top-[6%] left-[6%] z-40">
               <button
-                onClick={() => setCurrentScreen("splash")}
+                onClick={() => changeScreenWithTransition("splash")}
                 type="button"
-                className="mt-2 w-full py-3 bg-purple-600 hover:bg-purple-500 text-white font-mono font-bold text-sm tracking-widest uppercase rounded-lg border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.8)] active:translate-x-0.5 active:translate-y-0.5 transition-all"
+                aria-label="Volver al menú"
+                className={`bg-[#f9d7ea] hover:bg-[#f6c2e0] rounded-md ring-2 ring-white ring-inset active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all flex items-center justify-center cursor-pointer font-mono font-black text-black uppercase drop-shadow-[0_1px_0_rgba(255,255,255,0.8)] shrink-0 ${
+                  isFullscreen
+                    ? "w-14 h-14 text-2xl border-[5px] border-[#b5146c] shadow-[6px_6px_0px_0px_#7a0c47]"
+                    : "w-10 h-10 text-lg border-[4px] border-[#b5146c] shadow-[4px_4px_0px_0px_#7a0c47]"
+                }`}
               >
-                ¡ENTENDIDO! VOLVER AL MENÚ
+                <span>◀</span>
               </button>
             </div>
           </div>
@@ -382,10 +482,7 @@ export function PixiGameCanvas({
             {/* Top Bar inside Gameplay */}
             <div className="w-full flex items-center justify-between border-b border-slate-700/40 pb-3 pr-16">
               <button
-                onClick={() => {
-                  setCurrentScreen("splash");
-                  setActiveScene(null);
-                }}
+                onClick={() => changeScreenWithTransition("splash")}
                 className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-100 font-mono text-xs font-bold rounded border border-slate-700 flex items-center gap-2 transition"
               >
                 <span>◀</span> MENÚ PRINCIPAL
