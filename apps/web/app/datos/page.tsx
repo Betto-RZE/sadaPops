@@ -1,6 +1,5 @@
 import { Navbar } from '@/shared/components/Navbar';
 import { ArrowRight, BarChart2, PieChart, Users, LineChart, Info } from 'lucide-react';
-import Link from 'next/link';
 
 const stories = [
   {
@@ -125,15 +124,9 @@ export default function DatosPage() {
                     {story.placeholder}
                   </div>
                   
-                  {story.id === 1 ? (
-                    <Link href="/datos/evolucion" className="flex items-center gap-2 text-sm font-bold text-brand-navy group-hover:text-gray-600 transition-colors w-fit">
-                      Explorar <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                    </Link>
-                  ) : (
-                    <button className="flex items-center gap-2 text-sm font-bold text-brand-navy group-hover:text-gray-600 transition-colors w-fit">
-                      Explorar <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                    </button>
-                  )}
+                  <button className="flex items-center gap-2 text-sm font-bold text-brand-navy group-hover:text-gray-600 transition-colors w-fit">
+                    Explorar <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                  </button>
                 </div>
               </div>
             ))}
