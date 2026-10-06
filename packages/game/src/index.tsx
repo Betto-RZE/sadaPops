@@ -161,11 +161,11 @@ function AnimatedPlayerSprite({
   const imageSrc = `/assets/juego/player/${currentFolder}/${frameIndex}.png`;
 
   return (
-    <div className="relative flex flex-col items-center justify-center">
+    <div className="relative flex flex-col items-center justify-center w-full shrink-0">
       <img
         src={imageSrc}
         alt="Personaje Principal"
-        className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 object-contain select-none pointer-events-none drop-shadow-md"
+        className="w-full h-auto object-contain select-none pointer-events-none drop-shadow-md shrink-0"
         style={{ imageRendering: "auto" }}
       />
     </div>
@@ -299,8 +299,8 @@ export function PixiGameCanvas({
       if (dx !== 0 || dy !== 0) {
         setIsWalking(true);
         setPlayerPos((prev) => ({
-          x: Math.min(84, Math.max(14, prev.x + dx)),
-          y: Math.min(80, Math.max(38, prev.y + dy)),
+          x: Math.min(96, Math.max(4, prev.x + dx)),
+          y: Math.min(94, Math.max(6, prev.y + dy)),
         }));
       } else {
         // Immediate interrupt to static idle state on key release
@@ -806,9 +806,10 @@ export function PixiGameCanvas({
                 style={{
                   left: `${playerPos.x}%`,
                   top: `${playerPos.y}%`,
+                  width: "9.5%",
                   transform: "translate(-50%, -90%)",
                 }}
-                className="absolute z-25 pointer-events-none transition-all duration-75 ease-linear flex flex-col items-center select-none"
+                className="absolute z-25 pointer-events-none transition-all duration-75 ease-linear flex flex-col items-center select-none shrink-0"
               >
                 {/* Dynamic 8-Folder Sprite Animation Component */}
                 <AnimatedPlayerSprite
