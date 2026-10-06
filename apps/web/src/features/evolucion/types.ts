@@ -1,18 +1,19 @@
-export type ElectionType = 'PRESIDENCIAL' | 'INTERMEDIA';
-
 export interface ParticipationData {
   year: number;
-  type: ElectionType;
-  participationRate: number | null; // null for placeholder
-  nominalList: number | null;
-  votes: number | null;
-  label?: string;
+  participation: number; // Porcentaje real CCPC (ej: 44.1)
+  change: number | null; // Diferencia en puntos porcentuales vs elección anterior
+  activeOutOfTen: number; // Cantidad aproximada para representación 10 personas (ej: 4, 6, 5...)
+  outOfTenPhrase: string; // Frase explicativa ('4 de cada 10 personas', 'Casi 6 de cada 10...', etc.)
+  type: string; // 'Elección federal'
+  description: string; // Explicación breve oficial
 }
 
-export interface ChangeData {
-  cycleType: string;
-  comparison: string;
-  differencePts: number | null;
+export interface TransitionData {
+  fromYear: number;
+  toYear: number;
+  fromRate: number;
+  toRate: number;
+  changePts: number;
+  direction: 'up' | 'down';
   description: string;
-  nature: string;
 }
