@@ -191,6 +191,7 @@ export function PixiGameCanvas({
   const [playerPos, setPlayerPos] = useState({ x: 50, y: 62 });
   const [lastDirection, setLastDirection] = useState<"1" | "2" | "3" | "4">("1");
   const [isWalking, setIsWalking] = useState(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -228,6 +229,10 @@ export function PixiGameCanvas({
           setCurrentScreen(targetScreen);
           if (targetScreen === "splash") {
             setActiveScene(null);
+            // Reset character state & game progress hidden behind solid black curtain
+            setPlayerPos({ x: 50, y: 62 });
+            setIsWalking(false);
+            setLastDirection("1");
           } else {
             setActiveScene(targetScene);
           }
@@ -659,17 +664,22 @@ export function PixiGameCanvas({
             {/* CRT TV Scanline Grid for Retro Cohesion (Pinned to Viewport) */}
             <div className="absolute inset-0 pointer-events-none z-20 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.22)_50%)] bg-[length:100%_4px] opacity-60" />
 
-            {/* Top HUD Bar: Return to Splash Button (Pinned to Viewport) */}
+            {/* Top HUD Bar: Return Arrow Button (Pinned to Viewport) */}
             <div className="absolute top-3 left-3 z-30 pointer-events-none">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  changeScreenWithTransition("splash");
+                  setShowExitConfirm(true);
                 }}
                 type="button"
-                className="pointer-events-auto px-3.5 py-1.5 bg-[#f9d7ea] hover:bg-[#f6c2e0] text-black font-mono text-xs font-black rounded-md border-2 border-[#b5146c] shadow-[3px_3px_0px_0px_#7a0c47] active:translate-x-[1px] active:translate-y-[1px] transition flex items-center gap-1.5 cursor-pointer select-none"
+                aria-label="Volver al menú principal"
+                className={`pointer-events-auto bg-[#f9d7ea] hover:bg-[#f6c2e0] rounded-md ring-2 ring-white ring-inset active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all flex items-center justify-center cursor-pointer font-mono font-black text-black shrink-0 ${
+                  isFullscreen
+                    ? "w-12 h-12 text-xl border-[4px] border-[#b5146c] shadow-[4px_4px_0px_0px_#7a0c47]"
+                    : "w-9 h-9 text-sm border-[3px] border-[#b5146c] shadow-[3px_3px_0px_0px_#7a0c47]"
+                }`}
               >
-                <span>◀</span> MENÚ PRINCIPAL
+                <span>◀</span>
               </button>
             </div>
 
@@ -816,6 +826,60 @@ export function PixiGameCanvas({
                   isWalking={isWalking}
                   lastDirection={lastDirection}
                 />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* RETRO PIXEL ART EXIT CONFIRMATION MODAL */}
+        {showExitConfirm && (
+          <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div
+              className={`bg-[#f9d7ea] text-black font-mono flex flex-col items-center text-center shadow-[8px_8px_0px_0px_#400624] ring-4 ring-white ring-inset relative overflow-hidden select-none ${
+                isFullscreen
+                  ? "w-[46%] min-w-[320px] max-w-[520px] p-6 sm:p-8 rounded-xl border-[6px] border-[#7a0c47]"
+                  : "w-[85%] max-w-[350px] p-5 sm:p-6 rounded-lg border-[4px] border-[#7a0c47]"
+              }`}
+            >
+              <h3
+                className={`font-black uppercase text-[#7a0c47] tracking-wider ${
+                  isFullscreen ? "text-xl sm:text-2xl mb-3 mt-1" : "text-base sm:text-lg mb-2"
+                }`}
+              >
+                ¿REGRESAR AL MENÚ?
+              </h3>
+
+              <p
+                className={`text-slate-900 font-bold leading-relaxed mb-6 max-w-xs ${
+                  isFullscreen ? "text-sm sm:text-base" : "text-xs sm:text-sm"
+                }`}
+              >
+                Si regresas al menú principal, perderás todo tu progreso actual en la partida.
+              </p>
+
+              {/* Pixel Action Buttons */}
+              <div className="flex gap-3 sm:gap-4 w-full justify-center">
+                <button
+                  type="button"
+                  onClick={() => setShowExitConfirm(false)}
+                  className={`flex-1 bg-white hover:bg-slate-100 text-black border-2 sm:border-3 border-black font-black uppercase shadow-[3px_3px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all cursor-pointer ${
+                    isFullscreen ? "py-3 text-sm sm:text-base rounded-md" : "py-2 text-xs rounded"
+                  }`}
+                >
+                  CANCELAR
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowExitConfirm(false);
+                    changeScreenWithTransition("splash");
+                  }}
+                  className={`flex-1 bg-[#b5146c] hover:bg-[#8e0e54] text-white border-2 sm:border-3 border-black font-black uppercase shadow-[3px_3px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all cursor-pointer ${
+                    isFullscreen ? "py-3 text-sm sm:text-base rounded-md" : "py-2 text-xs rounded"
+                  }`}
+                >
+                  SÍ, SALIR
+                </button>
               </div>
             </div>
           </div>

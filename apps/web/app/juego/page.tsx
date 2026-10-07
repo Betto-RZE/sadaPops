@@ -15,17 +15,13 @@ export default function JuegoPage() {
     >
       <Navbar />
 
-      <main className="flex-1 w-full max-w-[1440px] mx-auto px-6 lg:px-12 py-10 md:py-14 flex flex-col items-center">
+      <main className="flex-1 w-full max-w-[1440px] mx-auto px-6 lg:px-12 py-10 md:py-14 flex flex-col items-start">
         {/* HEADER DE LA SECCIÓN */}
-        <section className="w-full max-w-5xl mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/10 border border-slate-900/20 text-brand-navy font-mono text-xs uppercase tracking-widest mb-4 backdrop-blur-sm">
-            <span className="w-2 h-2 rounded-full bg-pink-600 animate-pulse" />
-            Experiencia Cívica Interactiva
-          </div>
-          <h1 className="text-4xl md:text-6xl font-black tracking-tight text-brand-navy mb-4 leading-[1.1] drop-shadow-sm">
+        <section className="w-full max-w-4xl mb-10 text-left animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <h1 className="text-5xl md:text-[64px] font-black tracking-tight text-brand-navy mb-5 leading-[1.1]">
             Modo Juego Pixel Art
           </h1>
-          <p className="text-lg md:text-xl text-brand-navy/80 font-medium leading-relaxed max-w-3xl">
+          <p className="text-xl md:text-2xl text-brand-navy/80 font-medium leading-relaxed max-w-3xl">
             Explora las escenas de diálogo para desmentir mitos cívicos con
             datos de la CCPC del INE y vive el emulador paso a paso de la
             casilla de votación.
