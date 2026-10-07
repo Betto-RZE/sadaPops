@@ -9,16 +9,23 @@ export const metadata = {
 
 export default function JuegoPage() {
   return (
-    <div className="min-h-screen bg-background flex flex-col font-sans">
+    <div
+      className="min-h-screen flex flex-col font-sans relative bg-cover bg-top bg-no-repeat bg-scroll"
+      style={{ backgroundImage: "url('/assets/juego/bg-ciudad-pixel.png')" }}
+    >
       <Navbar />
 
-      <main className="flex-1 w-full max-w-[1440px] mx-auto px-6 lg:px-12 py-12 md:py-16">
+      <main className="flex-1 w-full max-w-[1440px] mx-auto px-6 lg:px-12 py-10 md:py-14 flex flex-col items-center">
         {/* HEADER DE LA SECCIÓN */}
-        <section className="max-w-4xl mb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <h1 className="text-5xl md:text-[64px] font-black tracking-tight text-brand-navy mb-6 leading-[1.1]">
+        <section className="w-full max-w-5xl mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/10 border border-slate-900/20 text-brand-navy font-mono text-xs uppercase tracking-widest mb-4 backdrop-blur-sm">
+            <span className="w-2 h-2 rounded-full bg-pink-600 animate-pulse" />
+            Experiencia Cívica Interactiva
+          </div>
+          <h1 className="text-4xl md:text-6xl font-black tracking-tight text-brand-navy mb-4 leading-[1.1] drop-shadow-sm">
             Modo Juego Pixel Art
           </h1>
-          <p className="text-xl md:text-2xl text-brand-navy/70 font-medium leading-relaxed max-w-2xl">
+          <p className="text-lg md:text-xl text-brand-navy/80 font-medium leading-relaxed max-w-3xl">
             Explora las escenas de diálogo para desmentir mitos cívicos con
             datos de la CCPC del INE y vive el emulador paso a paso de la
             casilla de votación.
@@ -26,19 +33,20 @@ export default function JuegoPage() {
         </section>
 
         {/* PANTALLA DEL JUEGO */}
-        <section className="w-full mb-16">
+        <section className="w-full mb-12 flex justify-center">
           <GameLoader />
         </section>
       </main>
 
       {/* FOOTER */}
-      <footer className="w-full py-8 text-center text-[10px] font-bold tracking-widest uppercase text-gray-400 border-t border-gray-100 bg-white mt-auto">
+      <footer className="w-full py-6 text-center text-[10px] font-bold tracking-widest uppercase text-slate-600 border-t border-slate-300/60 bg-white/70 backdrop-blur-md mt-auto">
         <div className="mx-auto max-w-[1440px] px-6 lg:px-12 flex justify-between items-center">
           <div className="flex gap-4 items-center">
-            <span className="text-brand-navy">INE</span>
-            <div className="w-px h-3 bg-gray-300"></div>
+            <span className="text-brand-navy font-mono font-bold text-xs">INE</span>
+            <div className="w-px h-3 bg-slate-400"></div>
             <span>Democracia que florece</span>
           </div>
+          <span className="font-mono text-slate-500 text-[10px]">CCPC 2026</span>
         </div>
       </footer>
     </div>

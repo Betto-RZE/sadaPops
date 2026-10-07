@@ -806,7 +806,7 @@ export function PixiGameCanvas({
                 style={{
                   left: `${playerPos.x}%`,
                   top: `${playerPos.y}%`,
-                  width: "9.5%",
+                  width: "6.5%",
                   transform: "translate(-50%, -90%)",
                 }}
                 className="absolute z-25 pointer-events-none transition-all duration-75 ease-linear flex flex-col items-center select-none shrink-0"
