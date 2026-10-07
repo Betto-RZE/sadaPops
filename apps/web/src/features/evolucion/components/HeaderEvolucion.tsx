@@ -5,47 +5,44 @@ import { pixelFont } from '../fonts';
 
 export function HeaderEvolucion() {
   return (
-    <header className="relative w-full bg-[#334155] overflow-hidden">
-      {/* Contenedor del Hero con altura optimizada para evitar sobre-escalado y pixeleado excesivo */}
-      <div className="relative w-full max-w-[1360px] mx-auto h-[440px] sm:h-[490px] md:h-[540px] overflow-hidden">
+    <header className="relative w-full bg-[#FDFCFD] pt-3 sm:pt-4 md:pt-6 pb-2 px-3 sm:px-6 lg:px-12">
+      {/* Contenedor enmarcado del Hero: con bordes laterales y esquinas redondeadas en desktop para ajustar el tamaño */}
+      <div className="relative w-full max-w-[1360px] mx-auto h-[440px] sm:h-[480px] md:h-[520px] lg:h-[550px] rounded-2xl sm:rounded-3xl overflow-hidden border border-slate-200/90 shadow-[0_16px_45px_-12px_rgba(28,37,65,0.14)] bg-[#1C2541]">
         
-        {/* 1. Imagen base en alta resolución */}
+        {/* 1. Imagen base en alta resolución con posicionamiento inteligente */}
         <Image
-          src="/hero_clean.jpg"
+          src="/hero_widescreen.jpg"
           alt="Aula cívica del INE con gráfica de dalias de participación en el pizarrón"
           fill
           priority
-          className="object-cover object-center select-none pointer-events-none filter brightness-[0.97]"
+          className="object-cover object-[70%_center] sm:object-[65%_center] md:object-center select-none pointer-events-none filter brightness-[1.02]"
           sizes="(max-width: 1360px) 100vw, 1360px"
         />
 
-        {/* 2. Filtro grisáceo traslúcido para suavizar bordes y disimular artefactos de la imagen */}
+        {/* 2. Sutil degradado lateral que suaviza la iluminación bajo la tarjeta de texto */}
         <div 
-          className="absolute inset-0 bg-slate-700/25 backdrop-blur-[0.5px] pointer-events-none z-[2]" 
+          className="absolute inset-y-0 left-0 w-full sm:w-[60%] md:w-[50%] bg-gradient-to-r from-slate-900/30 via-slate-900/10 to-transparent pointer-events-none z-[2]" 
           aria-hidden="true" 
         />
 
-        {/* 3. Textos sobre el área de la ventana (cielo atardecer) */}
-        <div className="absolute top-[8%] sm:top-[10%] md:top-[12%] left-[4%] sm:left-[5%] md:left-[6%] z-10 max-w-[340px] sm:max-w-[400px] md:max-w-[460px]">
-          {/* Badge de capítulo */}
-          <div className="mb-2 sm:mb-3">
-            <span className={`${pixelFont.className} bg-white/95 text-[#E3007E] border border-pink-200/90 px-2.5 py-0.5 rounded shadow-sm text-[10px] sm:text-xs md:text-sm font-bold tracking-wider uppercase inline-block`}>
-              CAPÍTULO 1 • CRONOLOGÍA ELECTORAL 2009–2024
-            </span>
+        {/* 3. Tarjeta HUD / Diálogo cívico estilo pixel-chic */}
+        <div className="absolute top-3 sm:top-6 md:top-8 lg:top-10 left-3 sm:left-6 md:left-8 lg:left-10 z-10 w-[calc(100%-1.5rem)] max-w-[310px] sm:max-w-[380px] md:max-w-[430px] lg:max-w-[460px]">
+          <div className="bg-white/[0.96] backdrop-blur-md rounded-xl sm:rounded-2xl lg:rounded-3xl p-4 sm:p-6 lg:p-7 border border-white/90 shadow-[0_12px_36px_-8px_rgba(28,37,65,0.22)] transition-all">
+            
+            {/* Título pixel art con alto contraste */}
+            <h1 className={`${pixelFont.className} text-xl sm:text-2xl md:text-3xl lg:text-[38px] font-black text-[#1C2541] tracking-tight leading-[1.1] mb-2 sm:mb-3`}>
+              ¿Cómo ha cambiado<br />
+              <span className="text-[#E3007E]">la participación?</span>
+            </h1>
+
+            {/* Barra divisora rosa INE */}
+            <div className="w-8 sm:w-12 h-1 sm:h-1.5 bg-[#E3007E] rounded-full mb-2.5 sm:mb-3.5" />
+
+            {/* Párrafo descriptivo con contraste garantizado */}
+            <p className="text-xs sm:text-sm md:text-base text-slate-700 font-medium leading-snug sm:leading-relaxed">
+              Seis elecciones, seis momentos distintos: descubre cómo cambió la participación ciudadana de 2009 a 2024.
+            </p>
           </div>
-
-          {/* Título en dos renglones pixel art */}
-          <h1 className={`${pixelFont.className} text-3xl sm:text-4xl md:text-5xl lg:text-[54px] font-black text-[#1C2541] tracking-tight leading-[1.05] mb-2 sm:mb-3 drop-shadow-sm`}>
-            ¿Cómo ha cambiado<br />la participación?
-          </h1>
-
-          {/* Barra rosa INE */}
-          <div className="w-12 sm:w-14 h-1 sm:h-1.5 bg-[#E3007E] rounded-full mb-3 sm:mb-4 shadow-sm" />
-
-          {/* Párrafo descriptivo */}
-          <p className="text-xs sm:text-sm md:text-base lg:text-lg text-[#1C2541]/95 font-medium leading-snug sm:leading-relaxed max-w-[320px] sm:max-w-[380px] md:max-w-[420px] drop-shadow-sm">
-            Una mirada al pulso democrático de México: la alternancia entre elecciones intermedias y presidenciales, y el crecimiento progresivo de la memoria cívica.
-          </p>
         </div>
 
       </div>

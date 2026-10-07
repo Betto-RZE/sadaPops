@@ -203,20 +203,47 @@ const PixelPillar = ({ x, topY }: { x: number; topY: number }) => {
 };
 
 const PixelNode = ({ x, y, selected }: { x: number; y: number; selected: boolean }) => (
-  <g transform={`translate(${x}, ${y})`} shapeRendering="crispEdges" className="cursor-pointer transition-transform hover:scale-110">
+  <g transform={`translate(${x}, ${y})`} shapeRendering="crispEdges">
+    {/* Hitbox amplio e invisible para asegurar interacción suave y estable */}
+    <circle r="26" fill="transparent" className="cursor-pointer" />
+
+    {/* Halo en hover (cuando no está seleccionado) */}
+    {!selected && (
+      <polygon 
+        points="-22,-10 -10,-22 10,-22 22,-10 22,10 10,22 -10,22 -22,10" 
+        fill="#E3007E" 
+        className="opacity-0 group-hover:opacity-30 transition-opacity pointer-events-none"
+      />
+    )}
+
+    {/* Halo permanente pulsante si está seleccionado */}
     {selected && (
       <polygon 
         points="-26,-12 -12,-26 12,-26 26,-12 26,12 12,26 -12,26 -26,12" 
         fill="#F472B6" 
         opacity="0.35"
-        className="animate-pulse"
+        className="animate-pulse pointer-events-none"
       />
     )}
+
+    {/* Nodo octagonal pixel art */}
     <polygon 
       points="-14,-6 -6,-14 6,-14 14,-6 14,6 6,14 -6,14 -14,6" 
       fill={selected ? "#BE185D" : "#FFFFFF"} 
       stroke={selected ? "#831843" : "#64748B"} 
-      strokeWidth="4" 
+      strokeWidth={selected ? "4" : "3.5"} 
+      className={`transition-all duration-150 ${
+        selected 
+          ? '' 
+          : 'group-hover:fill-[#FFF0F6] group-hover:stroke-[#E3007E] group-hover:stroke-[4.5px]'
+      }`}
+    />
+
+    {/* Punto central del nodo */}
+    <rect 
+      x="-3" y="-3" width="6" height="6" 
+      fill={selected ? "#FFFFFF" : "#64748B"} 
+      className={selected ? '' : 'group-hover:fill-[#E3007E] transition-colors'}
     />
   </g>
 );
@@ -340,7 +367,7 @@ export function TimelineVisualization({ selectedYear, onSelectYear }: Props) {
   };
 
   return (
-    <section className="bg-white rounded-t-[32px] rounded-b-3xl p-6 md:p-10 border border-gray-100 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.12)] mb-12 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
+    <section className="bg-white rounded-t-[32px] rounded-b-3xl p-6 md:p-10 border border-gray-100 border-t-4 border-t-[#E3007E] shadow-[0_20px_50px_-20px_rgba(227,0,126,0.12)] mb-12 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
       
       {/* Barra de control superior idéntica al mockup */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-6 border-b border-gray-100 pb-6">
@@ -350,7 +377,7 @@ export function TimelineVisualization({ selectedYear, onSelectYear }: Props) {
             className={`flex items-center gap-3 px-7 py-3.5 rounded-xl font-bold font-mono tracking-wider text-xs transition-all shadow-md ${
               isTouring 
                 ? 'bg-[#E3007E] text-white hover:bg-[#BE185D] ring-4 ring-pink-100' 
-                : 'bg-[#0B1528] text-white hover:bg-[#1E293B] hover:scale-[1.02]'
+                : 'bg-[#1C2541] text-white hover:bg-[#2A0F2A] hover:scale-[1.02] shadow-brand-navy/20'
             }`}
             aria-label={isTouring ? 'Pausar recorrido de la montaña rusa' : 'Iniciar recorrido interactivo'}
           >
@@ -359,10 +386,13 @@ export function TimelineVisualization({ selectedYear, onSelectYear }: Props) {
           </button>
 
           <div>
-            <div className="text-xs md:text-sm font-black text-brand-navy tracking-widest uppercase font-mono">
-              RECORRIDO HISTÓRICO CCPC
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#E3007E]" />
+              <div className="text-xs md:text-sm font-black text-brand-navy tracking-widest uppercase font-mono">
+                RECORRIDO HISTÓRICO CCPC
+              </div>
             </div>
-            <div className="text-[11px] md:text-xs text-slate-500 font-mono">
+            <div className="text-[11px] md:text-xs text-slate-500 font-mono pl-4">
               15 Años de Elecciones Federales (2009-2024)
             </div>
           </div>
@@ -375,47 +405,49 @@ export function TimelineVisualization({ selectedYear, onSelectYear }: Props) {
         </div>
       </div>
 
-      {/* Pestañas de Años */}
-      <div className="flex overflow-x-auto gap-3 pb-4 mb-8 snap-x hide-scrollbar">
-        {PARTICIPATION_DATA.map((data) => {
-          const isSelected = data.year === selectedYear;
-          return (
-            <button
-              key={data.year}
-              onClick={() => handleSelectYearManual(data.year)}
-              className={`flex-shrink-0 snap-center flex flex-col items-center justify-center w-36 h-24 rounded-2xl border-2 transition-all ${
-                isSelected 
-                  ? 'bg-[#2A0F2A] border-[#E3007E] text-white shadow-lg scale-105 ring-2 ring-pink-200' 
-                  : 'bg-gray-50/70 border-gray-200 text-gray-600 hover:bg-gray-100 hover:border-gray-300'
-              }`}
-            >
-              <span className={`text-xs font-bold mb-0.5 font-mono ${isSelected ? 'text-pink-300' : 'text-gray-500'}`}>
-                {data.year}
-              </span>
-              <span className={`text-2xl font-black mb-0.5 font-mono ${isSelected ? 'text-white' : 'text-brand-navy'}`}>
-                {data.participation}%
-              </span>
-              <span className={`text-[10px] tracking-wider uppercase font-bold font-mono ${
-                isSelected ? 'text-pink-400' : 'text-gray-400'
-              }`}>
-                {data.type}
-              </span>
-            </button>
-          );
-        })}
+      {/* Pestañas de Años: perfectamente centradas en cualquier pantalla */}
+      <div className="w-full overflow-x-auto hide-scrollbar py-3 mb-8">
+        <div className="flex md:grid md:grid-cols-6 min-w-max md:min-w-0 w-full max-w-5xl mx-auto gap-2 sm:gap-3 lg:gap-4 px-2 py-2">
+          {PARTICIPATION_DATA.map((data) => {
+            const isSelected = data.year === selectedYear;
+            return (
+              <button
+                key={data.year}
+                onClick={() => handleSelectYearManual(data.year)}
+                className={`flex-shrink-0 md:flex-shrink flex flex-col items-center justify-center w-32 md:w-full h-20 sm:h-22 lg:h-24 rounded-2xl border-2 transition-all ${
+                  isSelected 
+                    ? 'bg-gradient-to-br from-[#E3007E] via-[#D10072] to-[#B0005F] border-white text-white shadow-xl scale-105 ring-4 ring-pink-300' 
+                    : 'bg-gradient-to-b from-[#FFFDFE] to-[#FFF0F6] border-pink-200 text-brand-navy hover:bg-[#FFEBF5] hover:border-[#E3007E] shadow-xs'
+                }`}
+              >
+                <span className={`text-[11px] sm:text-xs font-bold mb-0.5 font-mono ${isSelected ? 'text-white/90' : 'text-[#E3007E]'}`}>
+                  {data.year}
+                </span>
+                <span className={`text-xl sm:text-2xl font-black mb-0.5 font-mono ${isSelected ? 'text-white' : 'text-brand-navy'}`}>
+                  {data.participation}%
+                </span>
+                <span className={`text-[9px] sm:text-[10px] tracking-wider uppercase font-bold font-mono ${
+                  isSelected ? 'text-white/80' : 'text-slate-500'
+                }`}>
+                  {data.type}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Contenedor de la Montaña Rusa (Responsive con scroll horizontal interno en móviles) */}
+      {/* Contenedor de la Montaña Rusa: escalado proporcional y dinámico según el tamaño de la pantalla */}
       <div 
-        className="relative w-full rounded-2xl border border-gray-200 bg-[#F8FAFC] overflow-hidden shadow-inner" 
+        className="relative w-full rounded-2xl border border-pink-200/60 bg-gradient-to-b from-[#F8FAFC] via-[#FFF5FA]/40 to-[#FFF0F7]/60 overflow-hidden shadow-inner" 
         style={{ imageRendering: 'pixelated' }}
       >
         <div className="overflow-x-auto hide-scrollbar w-full">
-          <div className="min-w-[800px] lg:min-w-full h-[440px] relative">
+          <div className="w-full min-w-[620px] sm:min-w-full relative aspect-[1000/350]">
             <svg 
-              className="w-full h-full" 
+              className="w-full h-full block" 
               viewBox="0 0 1000 350" 
-              preserveAspectRatio="none"
+              preserveAspectRatio="xMidYMid meet"
             >
               
               {/* Capa 1: Montañas distantes en escala de grises */}
@@ -462,29 +494,35 @@ export function TimelineVisualization({ selectedYear, onSelectYear }: Props) {
                   <g 
                     key={pt.year} 
                     onClick={() => handleSelectYearManual(pt.year)}
-                    className="cursor-pointer"
+                    className="cursor-pointer group"
                   >
                     {/* Línea vertical de referencia */}
                     <line 
                       x1={pt.x} y1={pt.y} x2={pt.x} y2="260" 
-                      stroke={isSelected ? "#E3007E" : "#94A3B8"} 
+                      stroke={isSelected ? "#E3007E" : undefined} 
                       strokeWidth={isSelected ? "3" : "1.5"} 
                       strokeDasharray="4 4" 
                       shapeRendering="crispEdges"
+                      className={isSelected ? '' : 'stroke-slate-400 group-hover:stroke-[#E3007E] group-hover:stroke-[2px] transition-colors'}
                     />
 
                     {/* Remache en línea base */}
                     <rect 
                       x={pt.x - 5} y="258" width="10" height="9" 
-                      fill={isSelected ? "#E3007E" : "#64748B"} 
+                      fill={isSelected ? "#E3007E" : undefined} 
                       shapeRendering="crispEdges" 
+                      className={isSelected ? '' : 'fill-slate-500 group-hover:fill-[#E3007E] transition-colors'}
                     />
                     
                     {/* Texto de Año en la línea base */}
                     <text 
                       x={pt.x} y="290" 
                       textAnchor="middle" 
-                      className={`text-sm font-bold font-mono ${isSelected ? 'fill-brand-navy font-black' : 'fill-slate-500'}`}
+                      className={`text-sm font-bold font-mono transition-colors ${
+                        isSelected 
+                          ? 'fill-brand-navy font-black' 
+                          : 'fill-slate-500 group-hover:fill-[#E3007E] group-hover:font-black'
+                      }`}
                     >
                       {pt.year}
                     </text>

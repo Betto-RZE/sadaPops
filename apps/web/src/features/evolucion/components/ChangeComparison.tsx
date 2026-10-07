@@ -33,22 +33,26 @@ export function ChangeComparison({ selectedYear, onSelectYear }: Props) {
             <div
               key={`${t.fromYear}-${t.toYear}`}
               onClick={() => onSelectYear?.(t.toYear)}
-              className={`bg-white rounded-2xl p-6 border transition-all cursor-pointer flex flex-col justify-between ${
+              className={`rounded-2xl p-6 border-2 transition-all cursor-pointer flex flex-col justify-between ${
                 isSelected 
-                  ? 'border-[#E3007E] ring-4 ring-pink-50 shadow-md scale-[1.02]' 
-                  : 'border-gray-100 shadow-sm hover:border-gray-200 hover:shadow'
+                  ? 'bg-gradient-to-br from-[#E3007E] via-[#D10072] to-[#A30055] text-white border-white ring-4 ring-pink-300 shadow-xl scale-[1.03]' 
+                  : 'bg-gradient-to-b from-[#FFF5FA] via-[#FDF0F7] to-[#FCE7F3] border-pink-300 shadow-sm hover:border-[#E3007E] hover:shadow-md hover:-translate-y-1'
               }`}
             >
               <div>
                 {/* Cabecera de ciclo */}
                 <div className="flex justify-between items-center mb-5">
                   <span className={`text-xs font-black font-mono tracking-wider ${
-                    isSelected ? 'text-dalia-600' : 'text-brand-navy'
+                    isSelected ? 'text-white' : 'text-brand-navy'
                   }`}>
                     {t.fromYear} → {t.toYear}
                   </span>
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded font-mono uppercase ${
-                    isPositive ? 'bg-pink-50 text-dalia-600' : 'bg-slate-100 text-slate-600'
+                    isSelected
+                      ? 'bg-white/20 text-white backdrop-blur-xs'
+                      : isPositive 
+                        ? 'bg-[#E3007E] text-white shadow-xs' 
+                        : 'bg-[#1C2541] text-white shadow-xs'
                   }`}>
                     {isPositive ? 'SUBE' : 'BAJA'}
                   </span>
@@ -57,33 +61,49 @@ export function ChangeComparison({ selectedYear, onSelectYear }: Props) {
                 {/* Valor en puntos porcentuales con flecha pixel art */}
                 <div className="flex items-center gap-2 mb-2">
                   <div className={`p-1.5 rounded ${
-                    isPositive ? 'bg-pink-100 text-dalia-600' : 'bg-slate-100 text-slate-700'
+                    isSelected
+                      ? 'bg-white/20 text-white'
+                      : isPositive 
+                        ? 'bg-pink-200 text-[#E3007E]' 
+                        : 'bg-slate-200 text-slate-800'
                   }`}>
                     <PixelArrow direction={t.direction} />
                   </div>
                   <span className={`text-3xl font-black font-mono tracking-tight ${
-                    isPositive ? 'text-dalia-600' : 'text-slate-700'
+                    isSelected
+                      ? 'text-white'
+                      : isPositive 
+                        ? 'text-[#BE185D]' 
+                        : 'text-[#1C2541]'
                   }`}>
                     {isPositive ? `+${t.changePts.toFixed(1)}` : t.changePts.toFixed(1)}
                   </span>
                 </div>
 
                 {/* Unidad estricta: Puntos porcentuales */}
-                <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-4">
+                <div className={`text-[11px] font-black uppercase tracking-wider mb-4 ${
+                  isSelected ? 'text-white/85' : 'text-slate-500'
+                }`}>
                   puntos porcentuales
                 </div>
 
                 {/* Explicación breve */}
-                <p className="text-xs text-gray-500 leading-relaxed">
+                <p className={`text-xs leading-relaxed ${
+                  isSelected ? 'text-white/95 font-medium' : 'text-slate-700 font-medium'
+                }`}>
                   {t.description}
                 </p>
               </div>
 
               {/* Rango de porcentajes oficiales */}
-              <div className="mt-6 pt-3 border-t border-gray-100 flex justify-between items-center text-[11px] font-bold font-mono text-gray-400">
+              <div className={`mt-6 pt-3 border-t flex justify-between items-center text-[11px] font-bold font-mono ${
+                isSelected 
+                  ? 'border-white/25 text-white/90' 
+                  : 'border-pink-300/80 text-slate-600'
+              }`}>
                 <span>{t.fromRate}%</span>
-                <span className="text-gray-300">→</span>
-                <span className={isSelected ? 'text-dalia-600 font-black' : ''}>{t.toRate}%</span>
+                <span className={isSelected ? 'text-white/50' : 'text-[#E3007E]'}>→</span>
+                <span className={isSelected ? 'text-white font-black' : 'text-brand-navy font-black'}>{t.toRate}%</span>
               </div>
             </div>
           );
