@@ -1,6 +1,35 @@
 import Image from 'next/image';
+import { Vote, Landmark } from 'lucide-react';
 import { ParticipationData } from '../types';
 import { pixelFont } from '../fonts';
+
+// Contexto institucional editorial oficial según el año electoral
+const ELECTION_DETAILS: Record<number, { type: string; scope: string }> = {
+  2009: {
+    type: 'Elección federal intermedia',
+    scope: 'Cámara de Diputados',
+  },
+  2012: {
+    type: 'Elección presidencial',
+    scope: 'Presidencia + Congreso',
+  },
+  2015: {
+    type: 'Elección federal intermedia',
+    scope: 'Cámara de Diputados',
+  },
+  2018: {
+    type: 'Elección presidencial',
+    scope: 'Presidencia + Congreso',
+  },
+  2021: {
+    type: 'Elección federal intermedia',
+    scope: 'Cámara de Diputados',
+  },
+  2024: {
+    type: 'Elección presidencial',
+    scope: 'Presidencia + Congreso',
+  },
+};
 
 interface Props {
   data: ParticipationData | undefined;
@@ -99,70 +128,65 @@ export function StatsGrid({ data }: Props) {
   const participationRate = data?.participation ?? 59.7;
   const activeCount = data?.activeOutOfTen ?? 6;
   const phrase = data?.outOfTenPhrase ?? 'Casi 6 de cada 10 personas';
+  const selectedYearNum = data?.year ?? 2024;
+  const electionContext = ELECTION_DETAILS[selectedYearNum] ?? {
+    type: 'Elección federal',
+    scope: 'Cargos federales',
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
       
       {/* 6. DATO PRINCIPAL */}
-      <div className="bg-white rounded-3xl p-8 md:p-12 border border-gray-100 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)] flex flex-col justify-between">
+      <div className="bg-white rounded-3xl p-8 md:p-12 border border-slate-200/90 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.06)] flex flex-col justify-between relative overflow-hidden">
         <div>
           <div className="flex justify-between items-center mb-8">
-            <span className="px-3.5 py-1.5 rounded-lg text-[10px] font-bold tracking-widest uppercase bg-dalia-50 text-dalia-600 border border-dalia-100">
+            <span className="px-3.5 py-1.5 rounded-lg text-[10px] font-bold tracking-widest uppercase bg-[#E3007E] text-white shadow-xs">
               ELECCIÓN FEDERAL
             </span>
-            <span className="text-xs font-bold text-gray-400 tracking-widest uppercase font-mono">
+            <span className="text-xs font-bold text-[#1C2541]/70 tracking-widest uppercase font-mono">
               PROCESO ELECTORAL {yearStr}
             </span>
           </div>
           
           <div className="mb-8">
-            <h4 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-3 font-mono">
+            <h4 className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-3 font-mono">
               Participación en {yearStr}
             </h4>
             <h3 className="text-[76px] md:text-[104px] font-black text-brand-navy leading-none tracking-tighter flex items-baseline gap-1">
-              {participationRate}<span className="text-4xl md:text-5xl font-bold text-dalia-600">%</span>
+              {participationRate}<span className="text-4xl md:text-5xl font-bold text-[#E3007E]">%</span>
             </h3>
-            <div className="text-xl font-medium text-dalia-600 italic mt-1">
+            <div className="text-xl font-bold text-[#E3007E] mt-1 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#E3007E]" />
               de participación ciudadana en las urnas
             </div>
           </div>
           
-          <p className="text-lg md:text-xl text-brand-navy/75 font-medium leading-relaxed max-w-lg">
+          <p className="text-lg md:text-xl text-brand-navy/85 font-medium leading-relaxed max-w-lg">
             {data?.description || `En ${yearStr} participó el ${participationRate}% de la ciudadanía considerada en el conteo.`}
           </p>
         </div>
 
-        {/* Comparación directa con la elección anterior */}
-        <div className="mt-10 pt-8 border-t border-gray-100">
-          <div className="text-[10px] font-bold text-gray-400 tracking-widest uppercase mb-2 font-mono">
-            {data?.change !== null ? 'VARIACIÓN RESPECTO A LA ELECCIÓN ANTERIOR' : 'INICIO DE LA SERIE HISTÓRICA'}
-          </div>
+        {/* Contexto institucional editorial de la elección */}
+        <div className="mt-10 pt-8 border-t border-slate-100">
+          <h4 className="text-sm sm:text-base font-bold text-slate-500 tracking-wider uppercase mb-3.5 font-mono">
+            ¿QUÉ SE ELIGIÓ EN {yearStr}?
+          </h4>
 
-          {data?.change !== null && data?.change !== undefined ? (
-            <div className="flex items-center gap-3">
-              <div 
-                className={`p-2 rounded-lg flex items-center justify-center ${
-                  data.change > 0 ? 'bg-pink-100 text-dalia-600' : 'bg-slate-100 text-slate-700'
-                }`}
-              >
-                <PixelArrow direction={data.change > 0 ? 'up' : 'down'} />
+          <div className="flex items-start gap-4">
+            <div className="p-2.5 rounded-xl bg-slate-50 text-[#E3007E] border border-slate-100 shrink-0 mt-0.5">
+              <Vote className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-xl md:text-2xl font-black text-brand-navy tracking-tight leading-snug">
+                {electionContext.type}
               </div>
-              <div className="flex items-baseline gap-2">
-                <span className={`text-3xl font-black font-mono tracking-tight ${
-                  data.change > 0 ? 'text-dalia-600' : 'text-slate-700'
-                }`}>
-                  {data.change > 0 ? `+${data.change.toFixed(1)}` : data.change.toFixed(1)}
-                </span>
-                <span className="text-sm font-bold text-gray-600 uppercase tracking-wider">
-                  puntos porcentuales
-                </span>
+              <div className="text-sm md:text-base font-semibold text-slate-500 mt-1 flex items-center gap-2 font-sans">
+                <Landmark className="w-4 h-4 text-slate-400 shrink-0" />
+                <span>{electionContext.scope}</span>
               </div>
             </div>
-          ) : (
-            <p className="text-sm font-bold text-gray-500">
-              2009 corresponde al primer registro de la serie de Conteos Censales del INE (sin ciclo previo comparable).
-            </p>
-          )}
+          </div>
         </div>
       </div>
 
