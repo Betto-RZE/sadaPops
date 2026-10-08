@@ -172,6 +172,42 @@ function AnimatedPlayerSprite({
   );
 }
 
+// Centralized Plaza Collision Bounds (Edit these 6 numbers to dynamically adjust boundaries in real-time!)
+export const PLAZA_BOUNDS = {
+  topLeftX: 14, // Top-Left boundary % (at minY = 30%)
+  bottomLeftX: 2, // Bottom-Left boundary % (at maxY = 95%)
+  topRightX: 87, // Top-Right boundary % (at minY = 30%)
+  bottomRightX: 98, // Bottom-Right boundary % (at maxY = 95%)
+  minY: 30, // Top boundary %
+  maxY: 95, // Bottom boundary %
+};
+
+// Returns dynamic left boundary % at vertical position y (Slanted diagonal line)
+const getLeftBoundaryX = (y: number): number => {
+  if (PLAZA_BOUNDS.maxY === PLAZA_BOUNDS.minY) return PLAZA_BOUNDS.topLeftX;
+  const progress = Math.min(
+    1,
+    Math.max(0, (y - PLAZA_BOUNDS.minY) / (PLAZA_BOUNDS.maxY - PLAZA_BOUNDS.minY))
+  );
+  return (
+    PLAZA_BOUNDS.topLeftX +
+    progress * (PLAZA_BOUNDS.bottomLeftX - PLAZA_BOUNDS.topLeftX)
+  );
+};
+
+// Returns dynamic right boundary % at vertical position y (Slanted diagonal line)
+const getRightBoundaryX = (y: number): number => {
+  if (PLAZA_BOUNDS.maxY === PLAZA_BOUNDS.minY) return PLAZA_BOUNDS.topRightX;
+  const progress = Math.min(
+    1,
+    Math.max(0, (y - PLAZA_BOUNDS.minY) / (PLAZA_BOUNDS.maxY - PLAZA_BOUNDS.minY))
+  );
+  return (
+    PLAZA_BOUNDS.topRightX +
+    progress * (PLAZA_BOUNDS.bottomRightX - PLAZA_BOUNDS.topRightX)
+  );
+};
+
 export function PixiGameCanvas({
   onModuleComplete,
   language = "es",
@@ -283,6 +319,19 @@ export function PixiGameCanvas({
       keysPressed[k] = false;
     };
 
+    // Explanada Plaza Collision System (Restricts movement strictly to diagonal PLAZA_BOUNDS)
+    const isPlazaWalkable = (x: number, y: number): boolean => {
+      if (y < PLAZA_BOUNDS.minY || y > PLAZA_BOUNDS.maxY) {
+        return false;
+      }
+      const minXForY = getLeftBoundaryX(y);
+      const maxXForY = getRightBoundaryX(y);
+      if (x < minXForY || x > maxXForY) {
+        return false;
+      }
+      return true;
+    };
+
     const interval = setInterval(() => {
       let dx = 0;
       let dy = 0;
@@ -303,10 +352,25 @@ export function PixiGameCanvas({
 
       if (dx !== 0 || dy !== 0) {
         setIsWalking(true);
-        setPlayerPos((prev) => ({
-          x: Math.min(96, Math.max(4, prev.x + dx)),
-          y: Math.min(94, Math.max(6, prev.y + dy)),
-        }));
+        setPlayerPos((prev) => {
+          const targetX = prev.x + dx;
+          const targetY = prev.y + dy;
+
+          // 1. Full diagonal movement if target is on stone explanada
+          if (isPlazaWalkable(targetX, targetY)) {
+            return { x: targetX, y: targetY };
+          }
+          // 2. Smooth horizontal wall slide if X is valid
+          if (isPlazaWalkable(targetX, prev.y)) {
+            return { x: targetX, y: prev.y };
+          }
+          // 3. Smooth vertical wall slide if Y is valid
+          if (isPlazaWalkable(prev.x, targetY)) {
+            return { x: prev.x, y: targetY };
+          }
+          // 4. Block movement if attempting to step onto green area
+          return prev;
+        });
       } else {
         // Immediate interrupt to static idle state on key release
         setIsWalking(false);
@@ -809,6 +873,82 @@ export function PixiGameCanvas({
                 className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-emerald-950/20 via-emerald-900/10 to-transparent pointer-events-none z-11"
                 style={{ animation: "mistDrift 10s ease-in-out infinite" }}
               />
+
+              {/* LIVE COORDINATE HUD PANEL (Shows exact X% and Y% player position in real time) */}
+              <div className="absolute top-3 left-14 z-30 pointer-events-none flex items-center gap-2 select-none">
+                <div className="bg-slate-900/90 text-yellow-300 font-mono text-xs font-bold px-3 py-1.5 rounded-md border-2 border-yellow-400 shadow-md backdrop-blur-sm flex items-center gap-2">
+                  <span>📍 Posición en Vivo:</span>
+                  <span className="text-white font-mono font-black">X: {playerPos.x.toFixed(1)}% | Y: {playerPos.y.toFixed(1)}%</span>
+                </div>
+              </div>
+
+              {/* VISUAL COLLISION DEBUGGER OVERLAY (Dynamically driven by PLAZA_BOUNDS) */}
+              <div className="absolute inset-0 pointer-events-none z-28 select-none">
+                {/* 1. Top Blocked Area (0% to minY%) */}
+                <div
+                  style={{ height: `${PLAZA_BOUNDS.minY}%` }}
+                  className="absolute top-0 left-0 right-0 bg-red-500/35 border-b-2 border-red-500 flex items-center justify-center"
+                >
+                  <span className="bg-red-950/90 text-red-200 font-mono text-[10px] font-bold px-2 py-0.5 rounded border border-red-400">
+                    🔴 Bloqueado Arriba (Y &lt; {PLAZA_BOUNDS.minY}%)
+                  </span>
+                </div>
+
+                {/* 2. Bottom Blocked Area (maxY% to 100%) */}
+                <div
+                  style={{ top: `${PLAZA_BOUNDS.maxY}%`, bottom: 0 }}
+                  className="absolute left-0 right-0 bg-red-500/35 border-t-2 border-red-500 flex items-center justify-center"
+                >
+                  <span className="bg-red-950/90 text-red-200 font-mono text-[10px] font-bold px-2 py-0.5 rounded border border-red-400">
+                    🔴 Bloqueado Abajo (Y &gt; {PLAZA_BOUNDS.maxY}%)
+                  </span>
+                </div>
+
+                {/* 3. Left Blocked Area (Diagonal from topLeftX at minY to bottomLeftX at maxY) */}
+                <div
+                  style={{
+                    top: `${PLAZA_BOUNDS.minY}%`,
+                    height: `${PLAZA_BOUNDS.maxY - PLAZA_BOUNDS.minY}%`,
+                    width: "100%",
+                    clipPath: `polygon(0% 0%, ${PLAZA_BOUNDS.topLeftX}% 0%, ${PLAZA_BOUNDS.bottomLeftX}% 100%, 0% 100%)`,
+                  }}
+                  className="absolute left-0 bg-red-500/35 flex items-center justify-start pl-6"
+                >
+                  <span className="bg-red-950/90 text-red-200 font-mono text-[9px] font-bold px-1.5 py-0.5 rounded border border-red-400">
+                    🔴 Izq Diagonal ({PLAZA_BOUNDS.topLeftX}% ➔ {PLAZA_BOUNDS.bottomLeftX}%)
+                  </span>
+                </div>
+
+                {/* 4. Right Blocked Area (Diagonal from topRightX at minY to bottomRightX at maxY) */}
+                <div
+                  style={{
+                    top: `${PLAZA_BOUNDS.minY}%`,
+                    height: `${PLAZA_BOUNDS.maxY - PLAZA_BOUNDS.minY}%`,
+                    width: "100%",
+                    clipPath: `polygon(${PLAZA_BOUNDS.topRightX}% 0%, 100% 0%, 100% 100%, ${PLAZA_BOUNDS.bottomRightX}% 100%)`,
+                  }}
+                  className="absolute left-0 bg-red-500/35 flex items-center justify-end pr-6"
+                >
+                  <span className="bg-red-950/90 text-red-200 font-mono text-[9px] font-bold px-1.5 py-0.5 rounded border border-red-400">
+                    🔴 Der Diagonal ({PLAZA_BOUNDS.topRightX}% ➔ {PLAZA_BOUNDS.bottomRightX}%)
+                  </span>
+                </div>
+
+                {/* 5. Walkable Stone Plaza (Trapezoid from Left Diagonal to Right Diagonal) */}
+                <div
+                  style={{
+                    top: `${PLAZA_BOUNDS.minY}%`,
+                    height: `${PLAZA_BOUNDS.maxY - PLAZA_BOUNDS.minY}%`,
+                    width: "100%",
+                    clipPath: `polygon(${PLAZA_BOUNDS.topLeftX}% 0%, ${PLAZA_BOUNDS.topRightX}% 0%, ${PLAZA_BOUNDS.bottomRightX}% 100%, ${PLAZA_BOUNDS.bottomLeftX}% 100%)`,
+                  }}
+                  className="absolute left-0 border-2 border-dashed border-emerald-400 bg-emerald-500/15 pointer-events-none flex items-center justify-center"
+                >
+                  <span className="bg-emerald-950/90 text-emerald-300 font-mono text-[11px] font-bold px-2.5 py-1 rounded border border-emerald-400 shadow">
+                    🟢 Explanada Permitida (Diagonal Izq {PLAZA_BOUNDS.topLeftX}%-{PLAZA_BOUNDS.bottomLeftX}%, Der {PLAZA_BOUNDS.topRightX}%-{PLAZA_BOUNDS.bottomRightX}%)
+                  </span>
+                </div>
+              </div>
 
               {/* PLAYER CHARACTER AVATAR ON THE PLAZA FLOOR */}
               <div
