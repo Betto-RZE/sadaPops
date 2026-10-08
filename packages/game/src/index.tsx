@@ -179,7 +179,7 @@ export const PLAZA_BOUNDS = {
   topRightX: 87, // Top-Right boundary % (at minY = 30%)
   bottomRightX: 98, // Bottom-Right boundary % (at maxY = 95%)
   minY: 30, // Top boundary %
-  maxY: 95, // Bottom boundary %
+  maxY: 93, // Bottom boundary %
 };
 
 // Returns dynamic left boundary % at vertical position y (Slanted diagonal line)
@@ -353,22 +353,56 @@ export function PixiGameCanvas({
       if (dx !== 0 || dy !== 0) {
         setIsWalking(true);
         setPlayerPos((prev) => {
-          const targetX = prev.x + dx;
-          const targetY = prev.y + dy;
+          let effectiveDx = dx;
+          let effectiveDy = dy;
 
-          // 1. Full diagonal movement if target is on stone explanada
-          if (isPlazaWalkable(targetX, targetY)) {
-            return { x: targetX, y: targetY };
+          // Check left wall collision & slide downwards if pushing into left diagonal wall
+          const currentMinX = getLeftBoundaryX(prev.y);
+          if (dx < 0 && prev.x <= currentMinX + 0.6) {
+            effectiveDy += Math.abs(dx) * 0.75;
           }
-          // 2. Smooth horizontal wall slide if X is valid
-          if (isPlazaWalkable(targetX, prev.y)) {
-            return { x: targetX, y: prev.y };
+
+          // Check right wall collision & slide downwards if pushing into right diagonal wall
+          const currentMaxX = getRightBoundaryX(prev.y);
+          if (dx > 0 && prev.x >= currentMaxX - 0.6) {
+            effectiveDy += Math.abs(dx) * 0.75;
           }
-          // 3. Smooth vertical wall slide if Y is valid
-          if (isPlazaWalkable(prev.x, targetY)) {
-            return { x: prev.x, y: targetY };
+
+          const rawTargetX = prev.x + effectiveDx;
+          const rawTargetY = prev.y + effectiveDy;
+
+          // 1. Direct unconstrained movement if target is on stone explanada
+          if (isPlazaWalkable(rawTargetX, rawTargetY)) {
+            return { x: rawTargetX, y: rawTargetY };
           }
-          // 4. Block movement if attempting to step onto green area
+
+          // 2. Smooth Diagonal & Wall Sliding System
+          // Clamp target Y within vertical plaza bounds [minY, maxY]
+          const clampedY = Math.min(
+            PLAZA_BOUNDS.maxY,
+            Math.max(PLAZA_BOUNDS.minY, rawTargetY)
+          );
+
+          // Get dynamic left & right boundaries at clamped Y level
+          const minXAtY = getLeftBoundaryX(clampedY);
+          const maxXAtY = getRightBoundaryX(clampedY);
+
+          // Clamp target X to dynamic diagonal boundaries at clamped Y
+          const clampedX = Math.min(maxXAtY, Math.max(minXAtY, rawTargetX));
+
+          // Apply smooth diagonal wall slide
+          if (isPlazaWalkable(clampedX, clampedY)) {
+            return { x: clampedX, y: clampedY };
+          }
+
+          // Fallbacks for edge cases
+          if (isPlazaWalkable(clampedX, prev.y)) {
+            return { x: clampedX, y: prev.y };
+          }
+          if (isPlazaWalkable(prev.x, clampedY)) {
+            return { x: prev.x, y: clampedY };
+          }
+
           return prev;
         });
       } else {
