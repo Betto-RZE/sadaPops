@@ -1110,7 +1110,7 @@ export function PixiGameCanvas({
 
             {/* INTRO SPEECH BUBBLE DIALOGUE OVERLAY */}
             {dialogueState !== "dismissed" && (
-              <div className="absolute inset-0 z-40 pointer-events-none flex items-end justify-center pb-4 sm:pb-6 px-4 overflow-hidden select-none">
+              <div className="absolute inset-0 z-40 pointer-events-none flex items-end justify-center pb-4 sm:pb-8 md:pb-12 px-4 sm:px-8 overflow-hidden select-none">
                 {/* Backdrop Blur Layer Behind Dialogue Bubble */}
                 <div
                   className={`absolute inset-0 bg-black/35 backdrop-blur-md transition-opacity duration-300 pointer-events-auto ${
@@ -1121,10 +1121,10 @@ export function PixiGameCanvas({
                 />
 
                 {/* Main Dialogue Wrapper Container (Positions both Avatar Portrait & Speech Bubble) */}
-                <div className="relative z-10 w-[94%] max-w-[880px] flex flex-col items-start pointer-events-auto">
-                  {/* INE Character Portrait (Enters from Left above speech bubble) */}
+                <div className="relative z-10 w-[94%] max-w-[1320px] flex flex-col items-start pointer-events-auto">
+                  {/* INE Character Portrait (Enters from Left above speech bubble, scaled proportionally) */}
                   <div
-                    className={`relative z-20 -mb-6 sm:-mb-12 md:-mb-14 ml-4 sm:ml-8 md:ml-12 w-[160px] sm:w-[220px] md:w-[260px] aspect-square transition-all duration-300 ease-out pointer-events-none shrink-0 ${
+                    className={`relative z-20 -mb-[6%] sm:-mb-[7%] md:-mb-[8%] ml-[4%] sm:ml-[6%] w-[26%] min-w-[170px] max-w-[350px] aspect-square transition-all duration-300 ease-out pointer-events-none shrink-0 ${
                       dialogueState === "entering" || dialogueState === "visible"
                         ? "translate-x-0 opacity-100"
                         : "-translate-x-52 opacity-0"
@@ -1138,9 +1138,9 @@ export function PixiGameCanvas({
                     />
                   </div>
 
-                  {/* Speech Bubble Container with Globo-Texto.png Image Background (Enters from Bottom) */}
+                  {/* Speech Bubble Container with Globo-Texto.png Image Background (Enters from Bottom, scaled proportionally) */}
                   <div
-                    className={`relative z-10 w-full aspect-[4.2/1] min-h-[130px] sm:min-h-[170px] md:min-h-[200px] flex items-center justify-between px-6 sm:px-12 md:px-14 py-4 sm:py-6 transition-all duration-300 ease-out ${
+                    className={`relative z-10 w-full aspect-[4.2/1] min-h-[140px] sm:min-h-[190px] md:min-h-[240px] lg:min-h-[290px] flex items-center justify-between px-[5%] sm:px-[6%] md:px-[7%] py-[4%] sm:py-[5%] transition-all duration-300 ease-out ${
                       dialogueState === "entering" || dialogueState === "visible"
                         ? "translate-y-0 opacity-100 scale-100"
                         : "translate-y-44 opacity-0 scale-95"
@@ -1156,10 +1156,10 @@ export function PixiGameCanvas({
 
                     {/* Dialogue Text Content */}
                     <div className="relative z-10 flex-1 flex flex-col justify-center pr-3 sm:pr-8">
-                      <span className="text-[#a81363] font-mono font-black text-xs sm:text-base md:text-lg uppercase tracking-wider mb-1">
+                      <span className="text-[#a81363] font-mono font-black text-xs sm:text-base md:text-xl lg:text-2xl uppercase tracking-wider mb-1">
                         {language === "nah" ? "INE Cívica" : "GUÍA INE"}
                       </span>
-                      <p className="text-black font-mono font-bold text-xs sm:text-sm md:text-base leading-snug drop-shadow-[0_1px_0_rgba(255,255,255,0.8)]">
+                      <p className="text-black font-mono font-bold text-xs sm:text-base md:text-lg lg:text-xl leading-snug drop-shadow-[0_1px_0_rgba(255,255,255,0.8)]">
                         {language === "nah"
                           ? "¡Ximopanolti ipan INE Plaza! Xiqumiti miak tlamantli. Xicpacho [E] pampa xipewa."
                           : "¡Bienvenido a la Explanada Cívica del INE! Camina por la plaza para explorar los módulos interactivos de Cultura Cívica."}
@@ -1170,12 +1170,12 @@ export function PixiGameCanvas({
                     <button
                       onClick={() => setDialogueState("exiting")}
                       type="button"
-                      className="relative z-10 shrink-0 bg-[#940d57] hover:bg-[#780946] text-white rounded-lg border-2 sm:border-3 border-black shadow-[4px_4px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all flex items-center gap-2 sm:gap-3 px-3.5 sm:px-5 py-2.5 sm:py-3.5 cursor-pointer ml-3 sm:ml-4 select-none"
+                      className="relative z-10 shrink-0 bg-[#940d57] hover:bg-[#780946] text-white rounded-lg border-2 sm:border-3 border-black shadow-[4px_4px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all flex items-center gap-2 sm:gap-3 px-3.5 sm:px-6 md:px-8 py-2.5 sm:py-4 cursor-pointer ml-3 sm:ml-6 select-none"
                     >
-                      <div className="w-6 h-6 sm:w-7 sm:h-7 border-2 border-white rounded flex items-center justify-center text-white font-mono font-black text-xs sm:text-sm shrink-0">
+                      <div className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 border-2 md:border-3 border-white rounded flex items-center justify-center text-white font-mono font-black text-xs sm:text-base md:text-lg shrink-0">
                         E
                       </div>
-                      <span className="text-white font-mono font-black text-xs sm:text-sm md:text-base tracking-wider uppercase">
+                      <span className="text-white font-mono font-black text-xs sm:text-base md:text-lg lg:text-xl tracking-wider uppercase">
                         CONTINUAR
                       </span>
                     </button>
