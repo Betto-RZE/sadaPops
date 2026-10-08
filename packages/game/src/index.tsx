@@ -172,14 +172,19 @@ function AnimatedPlayerSprite({
   );
 }
 
-// Centralized Plaza Collision Bounds (Edit these 6 numbers to dynamically adjust boundaries in real-time!)
+// Centralized Plaza Collision Bounds (Edit these 9 numbers to dynamically adjust boundaries in real-time!)
 export const PLAZA_BOUNDS = {
   topLeftX: 14, // Top-Left boundary % (at minY = 30%)
-  bottomLeftX: 2, // Bottom-Left boundary % (at maxY = 95%)
+  bottomLeftX: 2, // Bottom-Left boundary % (at maxY = 93%)
   topRightX: 87, // Top-Right boundary % (at minY = 30%)
-  bottomRightX: 98, // Bottom-Right boundary % (at maxY = 95%)
+  bottomRightX: 98, // Bottom-Right boundary % (at maxY = 93%)
   minY: 30, // Top boundary %
   maxY: 93, // Bottom boundary %
+
+  // Right Side Path Opening Parameters:
+  rightPathTopY: 52, // Top Y% where the right path starts
+  rightPathBottomY: 71, // Bottom Y% where the right path ends
+  rightPathMaxX: 100, // Max X% inside the right path (walkable opening)
 };
 
 // Returns dynamic left boundary % at vertical position y (Slanted diagonal line)
@@ -195,8 +200,8 @@ const getLeftBoundaryX = (y: number): number => {
   );
 };
 
-// Returns dynamic right boundary % at vertical position y (Slanted diagonal line)
-const getRightBoundaryX = (y: number): number => {
+// Returns standard diagonal right boundary % at vertical position y
+const getBaseRightBoundaryX = (y: number): number => {
   if (PLAZA_BOUNDS.maxY === PLAZA_BOUNDS.minY) return PLAZA_BOUNDS.topRightX;
   const progress = Math.min(
     1,
@@ -206,6 +211,14 @@ const getRightBoundaryX = (y: number): number => {
     PLAZA_BOUNDS.topRightX +
     progress * (PLAZA_BOUNDS.bottomRightX - PLAZA_BOUNDS.topRightX)
   );
+};
+
+// Returns dynamic right boundary % at vertical position y (splits into upper/lower boxes with side path opening)
+const getRightBoundaryX = (y: number): number => {
+  if (y >= PLAZA_BOUNDS.rightPathTopY && y <= PLAZA_BOUNDS.rightPathBottomY) {
+    return PLAZA_BOUNDS.rightPathMaxX;
+  }
+  return getBaseRightBoundaryX(y);
 };
 
 export function PixiGameCanvas({
@@ -356,46 +369,64 @@ export function PixiGameCanvas({
           let effectiveDx = dx;
           let effectiveDy = dy;
 
-          // Check left wall collision & slide downwards if pushing into left diagonal wall
-          const currentMinX = getLeftBoundaryX(prev.y);
-          if (dx < 0 && prev.x <= currentMinX + 0.6) {
-            effectiveDy += Math.abs(dx) * 0.75;
-          }
+          const isInsideRightPath =
+            prev.y >= PLAZA_BOUNDS.rightPathTopY &&
+            prev.y <= PLAZA_BOUNDS.rightPathBottomY &&
+            prev.x > getBaseRightBoundaryX(prev.y);
 
-          // Check right wall collision & slide downwards if pushing into right diagonal wall
-          const currentMaxX = getRightBoundaryX(prev.y);
-          if (dx > 0 && prev.x >= currentMaxX - 0.6) {
-            effectiveDy += Math.abs(dx) * 0.75;
+          // 1. Diagonal Wall Sliding (ONLY applies on diagonal slopes outside side path)
+          if (!isInsideRightPath) {
+            // Check left wall collision & slide downwards if pushing into left diagonal wall
+            const currentMinX = getLeftBoundaryX(prev.y);
+            if (dx < 0 && prev.x <= currentMinX + 0.6) {
+              effectiveDy += Math.abs(dx) * 0.75;
+            }
+
+            // Check right wall collision & slide downwards if pushing into right diagonal wall
+            const currentMaxX = getRightBoundaryX(prev.y);
+            if (dx > 0 && prev.x >= currentMaxX - 0.6) {
+              effectiveDy += Math.abs(dx) * 0.75;
+            }
           }
 
           const rawTargetX = prev.x + effectiveDx;
           const rawTargetY = prev.y + effectiveDy;
 
-          // 1. Direct unconstrained movement if target is on stone explanada
+          // 2. Direct unconstrained movement if target is on stone explanada
           if (isPlazaWalkable(rawTargetX, rawTargetY)) {
             return { x: rawTargetX, y: rawTargetY };
           }
 
-          // 2. Smooth Diagonal & Wall Sliding System
-          // Clamp target Y within vertical plaza bounds [minY, maxY]
+          // 3. Side Path Movement Constraints (No diagonal wall sliding; solid ceiling, floor, & right wall)
+          if (isInsideRightPath) {
+            const pathClampedY = Math.min(
+              PLAZA_BOUNDS.rightPathBottomY,
+              Math.max(PLAZA_BOUNDS.rightPathTopY, rawTargetY)
+            );
+            const pathClampedX = Math.min(
+              PLAZA_BOUNDS.rightPathMaxX,
+              Math.max(getBaseRightBoundaryX(pathClampedY), rawTargetX)
+            );
+            if (isPlazaWalkable(pathClampedX, pathClampedY)) {
+              return { x: pathClampedX, y: pathClampedY };
+            }
+          }
+
+          // 4. Smooth Diagonal & Wall Sliding System for Main Plaza
           const clampedY = Math.min(
             PLAZA_BOUNDS.maxY,
             Math.max(PLAZA_BOUNDS.minY, rawTargetY)
           );
 
-          // Get dynamic left & right boundaries at clamped Y level
           const minXAtY = getLeftBoundaryX(clampedY);
           const maxXAtY = getRightBoundaryX(clampedY);
 
-          // Clamp target X to dynamic diagonal boundaries at clamped Y
           const clampedX = Math.min(maxXAtY, Math.max(minXAtY, rawTargetX));
 
-          // Apply smooth diagonal wall slide
           if (isPlazaWalkable(clampedX, clampedY)) {
             return { x: clampedX, y: clampedY };
           }
 
-          // Fallbacks for edge cases
           if (isPlazaWalkable(clampedX, prev.y)) {
             return { x: clampedX, y: prev.y };
           }
@@ -953,22 +984,37 @@ export function PixiGameCanvas({
                   </span>
                 </div>
 
-                {/* 4. Right Blocked Area (Diagonal from topRightX at minY to bottomRightX at maxY) */}
+                {/* 4. Upper Right Blocked Area (Diagonal from topRightX at minY down to rightPathTopY) */}
                 <div
                   style={{
                     top: `${PLAZA_BOUNDS.minY}%`,
-                    height: `${PLAZA_BOUNDS.maxY - PLAZA_BOUNDS.minY}%`,
+                    height: `${PLAZA_BOUNDS.rightPathTopY - PLAZA_BOUNDS.minY}%`,
                     width: "100%",
-                    clipPath: `polygon(${PLAZA_BOUNDS.topRightX}% 0%, 100% 0%, 100% 100%, ${PLAZA_BOUNDS.bottomRightX}% 100%)`,
+                    clipPath: `polygon(${PLAZA_BOUNDS.topRightX}% 0%, 100% 0%, 100% 100%, ${getBaseRightBoundaryX(PLAZA_BOUNDS.rightPathTopY)}% 100%)`,
                   }}
                   className="absolute left-0 bg-red-500/35 flex items-center justify-end pr-6"
                 >
                   <span className="bg-red-950/90 text-red-200 font-mono text-[9px] font-bold px-1.5 py-0.5 rounded border border-red-400">
-                    🔴 Der Diagonal ({PLAZA_BOUNDS.topRightX}% ➔ {PLAZA_BOUNDS.bottomRightX}%)
+                    🔴 Der Sup (Y: {PLAZA_BOUNDS.minY}%-{PLAZA_BOUNDS.rightPathTopY}%)
                   </span>
                 </div>
 
-                {/* 5. Walkable Stone Plaza (Trapezoid from Left Diagonal to Right Diagonal) */}
+                {/* 5. Lower Right Blocked Area (Diagonal from rightPathBottomY down to bottomRightX at maxY) */}
+                <div
+                  style={{
+                    top: `${PLAZA_BOUNDS.rightPathBottomY}%`,
+                    height: `${PLAZA_BOUNDS.maxY - PLAZA_BOUNDS.rightPathBottomY}%`,
+                    width: "100%",
+                    clipPath: `polygon(${getBaseRightBoundaryX(PLAZA_BOUNDS.rightPathBottomY)}% 0%, 100% 0%, 100% 100%, ${PLAZA_BOUNDS.bottomRightX}% 100%)`,
+                  }}
+                  className="absolute left-0 bg-red-500/35 flex items-center justify-end pr-6"
+                >
+                  <span className="bg-red-950/90 text-red-200 font-mono text-[9px] font-bold px-1.5 py-0.5 rounded border border-red-400">
+                    🔴 Der Inf (Y: {PLAZA_BOUNDS.rightPathBottomY}%-{PLAZA_BOUNDS.maxY}%)
+                  </span>
+                </div>
+
+                {/* 6. Walkable Stone Plaza (Main Trapezoid) */}
                 <div
                   style={{
                     top: `${PLAZA_BOUNDS.minY}%`,
@@ -980,6 +1026,21 @@ export function PixiGameCanvas({
                 >
                   <span className="bg-emerald-950/90 text-emerald-300 font-mono text-[11px] font-bold px-2.5 py-1 rounded border border-emerald-400 shadow">
                     🟢 Explanada Permitida (Diagonal Izq {PLAZA_BOUNDS.topLeftX}%-{PLAZA_BOUNDS.bottomLeftX}%, Der {PLAZA_BOUNDS.topRightX}%-{PLAZA_BOUNDS.bottomRightX}%)
+                  </span>
+                </div>
+
+                {/* 7. Right Side Path Opening Highlight */}
+                <div
+                  style={{
+                    top: `${PLAZA_BOUNDS.rightPathTopY}%`,
+                    height: `${PLAZA_BOUNDS.rightPathBottomY - PLAZA_BOUNDS.rightPathTopY}%`,
+                    left: `${getBaseRightBoundaryX((PLAZA_BOUNDS.rightPathTopY + PLAZA_BOUNDS.rightPathBottomY) / 2)}%`,
+                    right: 0,
+                  }}
+                  className="absolute border-2 border-dashed border-cyan-400 bg-cyan-500/25 pointer-events-none flex items-center justify-center"
+                >
+                  <span className="bg-cyan-950/90 text-cyan-200 font-mono text-[9px] font-bold px-1.5 py-0.5 rounded border border-cyan-400 shadow">
+                    🟢 Camino Derecho (Y: {PLAZA_BOUNDS.rightPathTopY}%-{PLAZA_BOUNDS.rightPathBottomY}%)
                   </span>
                 </div>
               </div>
