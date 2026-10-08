@@ -127,6 +127,20 @@ const PLAYER_FRAME_COUNTS: Record<string, number> = {
   walking4: 29,
 };
 
+// Preload all player animation frames into memory to eliminate image loading stutter
+const PRELOADED_PLAYER_IMAGES: Record<string, HTMLImageElement[]> = {};
+
+function preloadPlayerFolder(folder: string) {
+  if (typeof window === "undefined" || PRELOADED_PLAYER_IMAGES[folder]) return;
+  PRELOADED_PLAYER_IMAGES[folder] = [];
+  const count = PLAYER_FRAME_COUNTS[folder] || 20;
+  for (let i = 0; i < count; i++) {
+    const img = new Image();
+    img.src = `/assets/juego/player/${folder}/${i}.png`;
+    PRELOADED_PLAYER_IMAGES[folder].push(img);
+  }
+}
+
 // Animated Player Sprite Component (Plays high quality PNG frame animations from walking1-4 & static1-4)
 function AnimatedPlayerSprite({
   isWalking,
@@ -142,6 +156,11 @@ function AnimatedPlayerSprite({
     : `static${lastDirection}`;
 
   const totalFrames = PLAYER_FRAME_COUNTS[currentFolder] || 20;
+
+  // Preload animation frames into memory on folder change
+  useEffect(() => {
+    preloadPlayerFolder(currentFolder);
+  }, [currentFolder]);
 
   // Instantly reset frame index to 0 when direction or walking state changes
   useEffect(() => {
@@ -242,6 +261,60 @@ export function PixiGameCanvas({
   const [isWalking, setIsWalking] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
+  // Intro Dialogue Speech Bubble State: "initial_delay" | "entering" | "visible" | "exiting" | "dismissed"
+  const [dialogueState, setDialogueState] = useState<
+    "initial_delay" | "entering" | "visible" | "exiting" | "dismissed"
+  >("initial_delay");
+  const dialogueStateRef = useRef(dialogueState);
+
+  useEffect(() => {
+    dialogueStateRef.current = dialogueState;
+  }, [dialogueState]);
+
+  // Dialogue 3-second delay & animation state transitions
+  useEffect(() => {
+    if (currentScreen !== "gameplay") {
+      setDialogueState("initial_delay");
+      return;
+    }
+
+    if (dialogueState === "initial_delay") {
+      const timer = setTimeout(() => {
+        setDialogueState("entering");
+      }, 3000);
+      return () => clearTimeout(timer);
+    } else if (dialogueState === "entering") {
+      const timer = setTimeout(() => {
+        setDialogueState("visible");
+      }, 350);
+      return () => clearTimeout(timer);
+    } else if (dialogueState === "exiting") {
+      const timer = setTimeout(() => {
+        setDialogueState("dismissed");
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+  }, [currentScreen, dialogueState]);
+
+  // Press "E" key handler to dismiss dialogue speech bubble
+  useEffect(() => {
+    if (
+      currentScreen !== "gameplay" ||
+      (dialogueState !== "entering" && dialogueState !== "visible") ||
+      showExitConfirm
+    )
+      return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === "e") {
+        setDialogueState("exiting");
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [currentScreen, dialogueState, showExitConfirm]);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -282,6 +355,7 @@ export function PixiGameCanvas({
             setPlayerPos({ x: 50, y: 62 });
             setIsWalking(false);
             setLastDirection("1");
+            setDialogueState("initial_delay");
           } else {
             setActiveScene(targetScene);
           }
@@ -345,21 +419,35 @@ export function PixiGameCanvas({
       return true;
     };
 
-    const interval = setInterval(() => {
+    let animationFrameId: number;
+    let lastTime = performance.now();
+    const speedPerSecond = 28.5; // Walk speed % per second
+
+    const updateGameLoop = (currentTime: number) => {
+      const dt = Math.min(0.05, (currentTime - lastTime) / 1000); // Delta time in seconds (capped at 50ms)
+      lastTime = currentTime;
+
+      // Block player movement completely while dialogue intro sequence is active
+      if (dialogueStateRef.current !== "dismissed") {
+        setIsWalking(false);
+        animationFrameId = requestAnimationFrame(updateGameLoop);
+        return;
+      }
+
       let dx = 0;
       let dy = 0;
 
       if (keysPressed["arrowdown"] || keysPressed["s"]) {
-        dy += 0.85;
+        dy += speedPerSecond * dt;
         setLastDirection("1");
       } else if (keysPressed["arrowleft"] || keysPressed["a"]) {
-        dx -= 0.85;
+        dx -= speedPerSecond * dt;
         setLastDirection("2");
       } else if (keysPressed["arrowup"] || keysPressed["w"]) {
-        dy -= 0.85;
+        dy -= speedPerSecond * dt;
         setLastDirection("3");
       } else if (keysPressed["arrowright"] || keysPressed["d"]) {
-        dx += 0.85;
+        dx += speedPerSecond * dt;
         setLastDirection("4");
       }
 
@@ -440,21 +528,25 @@ export function PixiGameCanvas({
         // Immediate interrupt to static idle state on key release
         setIsWalking(false);
       }
-    }, 30);
+
+      animationFrameId = requestAnimationFrame(updateGameLoop);
+    };
+
+    animationFrameId = requestAnimationFrame(updateGameLoop);
 
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
 
     return () => {
-      clearInterval(interval);
+      cancelAnimationFrame(animationFrameId);
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
   }, [currentScreen]);
 
   // Camera Dynamic Zoom & Smooth Character Tracking Parameters
-  const zoomScale = 1.45;
-  const maxCamShift = (1 - 1 / zoomScale) * 50; // Max shift % before exposing background edges (~15.5%)
+  const zoomScale = 1.75;
+  const maxCamShift = (1 - 1 / zoomScale) * 50; // Max shift % before exposing background edges
   const rawCamX = 50 - playerPos.x;
   const rawCamY = 50 - playerPos.y;
   const camX = Math.min(maxCamShift, Math.max(-maxCamShift, rawCamX));
@@ -618,23 +710,14 @@ export function PixiGameCanvas({
             style={{ animation: "crtBeamSweep 4.5s linear infinite" }}
           />
 
-          {/* 3. Animated TV Static Noise Overlay */}
+          {/* 3. VHS Glitch Bar Line (Hardware Accelerated) */}
           <div
-            className="absolute -inset-4 bg-repeat opacity-14 mix-blend-screen"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-              animation: "tvNoiseGlitch 0.1s steps(2) infinite",
-            }}
-          />
-
-          {/* 4. VHS Glitch Bar Line */}
-          <div
-            className="absolute left-0 right-0 h-2 bg-pink-400/40 backdrop-invert-[0.25]"
+            className="absolute left-0 right-0 h-2 bg-pink-400/30"
             style={{ animation: "vhsBarSweep 6s ease-in-out infinite" }}
           />
 
-          {/* 5. CRT Radial Monitor Vignette */}
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_45%,rgba(0,0,0,0.45)_100%)]" />
+          {/* 4. CRT Radial Monitor Vignette */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_45%,rgba(0,0,0,0.45)_100%)] pointer-events-none" />
         </div>
 
         {/* RETRO IRIS WIPE SVG MASK TRANSITION OVERLAY */}
@@ -811,9 +894,9 @@ export function PixiGameCanvas({
               </button>
             </div>
 
-            {/* DYNAMIC CAMERA WORLD CONTAINER (Enlarges 1.45x and smoothly tracks avatar) */}
+            {/* DYNAMIC CAMERA WORLD CONTAINER (Enlarges 1.75x and smoothly tracks avatar) */}
             <div
-              className="absolute inset-0 w-full h-full transition-transform duration-300 ease-out z-10"
+              className="absolute inset-0 w-full h-full z-10"
               style={{
                 transform: `scale(${zoomScale}) translate(${camX}%, ${camY}%)`,
                 transformOrigin: "center center",
@@ -939,111 +1022,7 @@ export function PixiGameCanvas({
                 style={{ animation: "mistDrift 10s ease-in-out infinite" }}
               />
 
-              {/* LIVE COORDINATE HUD PANEL (Shows exact X% and Y% player position in real time) */}
-              <div className="absolute top-3 left-14 z-30 pointer-events-none flex items-center gap-2 select-none">
-                <div className="bg-slate-900/90 text-yellow-300 font-mono text-xs font-bold px-3 py-1.5 rounded-md border-2 border-yellow-400 shadow-md backdrop-blur-sm flex items-center gap-2">
-                  <span>📍 Posición en Vivo:</span>
-                  <span className="text-white font-mono font-black">X: {playerPos.x.toFixed(1)}% | Y: {playerPos.y.toFixed(1)}%</span>
-                </div>
-              </div>
 
-              {/* VISUAL COLLISION DEBUGGER OVERLAY (Dynamically driven by PLAZA_BOUNDS) */}
-              <div className="absolute inset-0 pointer-events-none z-28 select-none">
-                {/* 1. Top Blocked Area (0% to minY%) */}
-                <div
-                  style={{ height: `${PLAZA_BOUNDS.minY}%` }}
-                  className="absolute top-0 left-0 right-0 bg-red-500/35 border-b-2 border-red-500 flex items-center justify-center"
-                >
-                  <span className="bg-red-950/90 text-red-200 font-mono text-[10px] font-bold px-2 py-0.5 rounded border border-red-400">
-                    🔴 Bloqueado Arriba (Y &lt; {PLAZA_BOUNDS.minY}%)
-                  </span>
-                </div>
-
-                {/* 2. Bottom Blocked Area (maxY% to 100%) */}
-                <div
-                  style={{ top: `${PLAZA_BOUNDS.maxY}%`, bottom: 0 }}
-                  className="absolute left-0 right-0 bg-red-500/35 border-t-2 border-red-500 flex items-center justify-center"
-                >
-                  <span className="bg-red-950/90 text-red-200 font-mono text-[10px] font-bold px-2 py-0.5 rounded border border-red-400">
-                    🔴 Bloqueado Abajo (Y &gt; {PLAZA_BOUNDS.maxY}%)
-                  </span>
-                </div>
-
-                {/* 3. Left Blocked Area (Diagonal from topLeftX at minY to bottomLeftX at maxY) */}
-                <div
-                  style={{
-                    top: `${PLAZA_BOUNDS.minY}%`,
-                    height: `${PLAZA_BOUNDS.maxY - PLAZA_BOUNDS.minY}%`,
-                    width: "100%",
-                    clipPath: `polygon(0% 0%, ${PLAZA_BOUNDS.topLeftX}% 0%, ${PLAZA_BOUNDS.bottomLeftX}% 100%, 0% 100%)`,
-                  }}
-                  className="absolute left-0 bg-red-500/35 flex items-center justify-start pl-6"
-                >
-                  <span className="bg-red-950/90 text-red-200 font-mono text-[9px] font-bold px-1.5 py-0.5 rounded border border-red-400">
-                    🔴 Izq Diagonal ({PLAZA_BOUNDS.topLeftX}% ➔ {PLAZA_BOUNDS.bottomLeftX}%)
-                  </span>
-                </div>
-
-                {/* 4. Upper Right Blocked Area (Diagonal from topRightX at minY down to rightPathTopY) */}
-                <div
-                  style={{
-                    top: `${PLAZA_BOUNDS.minY}%`,
-                    height: `${PLAZA_BOUNDS.rightPathTopY - PLAZA_BOUNDS.minY}%`,
-                    width: "100%",
-                    clipPath: `polygon(${PLAZA_BOUNDS.topRightX}% 0%, 100% 0%, 100% 100%, ${getBaseRightBoundaryX(PLAZA_BOUNDS.rightPathTopY)}% 100%)`,
-                  }}
-                  className="absolute left-0 bg-red-500/35 flex items-center justify-end pr-6"
-                >
-                  <span className="bg-red-950/90 text-red-200 font-mono text-[9px] font-bold px-1.5 py-0.5 rounded border border-red-400">
-                    🔴 Der Sup (Y: {PLAZA_BOUNDS.minY}%-{PLAZA_BOUNDS.rightPathTopY}%)
-                  </span>
-                </div>
-
-                {/* 5. Lower Right Blocked Area (Diagonal from rightPathBottomY down to bottomRightX at maxY) */}
-                <div
-                  style={{
-                    top: `${PLAZA_BOUNDS.rightPathBottomY}%`,
-                    height: `${PLAZA_BOUNDS.maxY - PLAZA_BOUNDS.rightPathBottomY}%`,
-                    width: "100%",
-                    clipPath: `polygon(${getBaseRightBoundaryX(PLAZA_BOUNDS.rightPathBottomY)}% 0%, 100% 0%, 100% 100%, ${PLAZA_BOUNDS.bottomRightX}% 100%)`,
-                  }}
-                  className="absolute left-0 bg-red-500/35 flex items-center justify-end pr-6"
-                >
-                  <span className="bg-red-950/90 text-red-200 font-mono text-[9px] font-bold px-1.5 py-0.5 rounded border border-red-400">
-                    🔴 Der Inf (Y: {PLAZA_BOUNDS.rightPathBottomY}%-{PLAZA_BOUNDS.maxY}%)
-                  </span>
-                </div>
-
-                {/* 6. Walkable Stone Plaza (Main Trapezoid) */}
-                <div
-                  style={{
-                    top: `${PLAZA_BOUNDS.minY}%`,
-                    height: `${PLAZA_BOUNDS.maxY - PLAZA_BOUNDS.minY}%`,
-                    width: "100%",
-                    clipPath: `polygon(${PLAZA_BOUNDS.topLeftX}% 0%, ${PLAZA_BOUNDS.topRightX}% 0%, ${PLAZA_BOUNDS.bottomRightX}% 100%, ${PLAZA_BOUNDS.bottomLeftX}% 100%)`,
-                  }}
-                  className="absolute left-0 border-2 border-dashed border-emerald-400 bg-emerald-500/15 pointer-events-none flex items-center justify-center"
-                >
-                  <span className="bg-emerald-950/90 text-emerald-300 font-mono text-[11px] font-bold px-2.5 py-1 rounded border border-emerald-400 shadow">
-                    🟢 Explanada Permitida (Diagonal Izq {PLAZA_BOUNDS.topLeftX}%-{PLAZA_BOUNDS.bottomLeftX}%, Der {PLAZA_BOUNDS.topRightX}%-{PLAZA_BOUNDS.bottomRightX}%)
-                  </span>
-                </div>
-
-                {/* 7. Right Side Path Opening Highlight */}
-                <div
-                  style={{
-                    top: `${PLAZA_BOUNDS.rightPathTopY}%`,
-                    height: `${PLAZA_BOUNDS.rightPathBottomY - PLAZA_BOUNDS.rightPathTopY}%`,
-                    left: `${getBaseRightBoundaryX((PLAZA_BOUNDS.rightPathTopY + PLAZA_BOUNDS.rightPathBottomY) / 2)}%`,
-                    right: 0,
-                  }}
-                  className="absolute border-2 border-dashed border-cyan-400 bg-cyan-500/25 pointer-events-none flex items-center justify-center"
-                >
-                  <span className="bg-cyan-950/90 text-cyan-200 font-mono text-[9px] font-bold px-1.5 py-0.5 rounded border border-cyan-400 shadow">
-                    🟢 Camino Derecho (Y: {PLAZA_BOUNDS.rightPathTopY}%-{PLAZA_BOUNDS.rightPathBottomY}%)
-                  </span>
-                </div>
-              </div>
 
               {/* PLAYER CHARACTER AVATAR ON THE PLAZA FLOOR */}
               <div
@@ -1052,8 +1031,9 @@ export function PixiGameCanvas({
                   top: `${playerPos.y}%`,
                   width: "6.5%",
                   transform: "translate(-50%, -90%)",
+                  willChange: "left, top",
                 }}
-                className="absolute z-25 pointer-events-none transition-all duration-75 ease-linear flex flex-col items-center select-none shrink-0"
+                className="absolute z-25 pointer-events-none flex flex-col items-center select-none shrink-0"
               >
                 {/* Dynamic 8-Folder Sprite Animation Component */}
                 <AnimatedPlayerSprite
@@ -1076,6 +1056,82 @@ export function PixiGameCanvas({
                 style={{ imageRendering: "pixelated" }}
               />
             </div>
+
+            {/* INTRO SPEECH BUBBLE DIALOGUE OVERLAY */}
+            {dialogueState !== "dismissed" && (
+              <div className="absolute inset-0 z-40 pointer-events-none flex items-end justify-center pb-4 sm:pb-6 px-4 overflow-hidden select-none">
+                {/* Backdrop Blur Layer Behind Dialogue Bubble */}
+                <div
+                  className={`absolute inset-0 bg-black/35 backdrop-blur-md transition-opacity duration-300 pointer-events-auto ${
+                    dialogueState === "entering" || dialogueState === "visible"
+                      ? "opacity-100"
+                      : "opacity-0"
+                  }`}
+                />
+
+                {/* Main Dialogue Wrapper Container (Positions both Avatar Portrait & Speech Bubble) */}
+                <div className="relative z-10 w-[94%] max-w-[880px] flex flex-col items-start pointer-events-auto">
+                  {/* INE Character Portrait (Enters from Left above speech bubble) */}
+                  <div
+                    className={`relative z-20 -mb-6 sm:-mb-12 md:-mb-14 ml-4 sm:ml-8 md:ml-12 w-[160px] sm:w-[220px] md:w-[260px] aspect-square transition-all duration-300 ease-out pointer-events-none shrink-0 ${
+                      dialogueState === "entering" || dialogueState === "visible"
+                        ? "translate-x-0 opacity-100"
+                        : "-translate-x-52 opacity-0"
+                    }`}
+                  >
+                    <img
+                      src="/assets/juego/ine-avatar-dialogo.png"
+                      alt="Guía INE"
+                      className="w-full h-full object-contain select-none pointer-events-none drop-shadow-[0_10px_20px_rgba(0,0,0,0.6)]"
+                      style={{ imageRendering: "pixelated" }}
+                    />
+                  </div>
+
+                  {/* Speech Bubble Container with Globo-Texto.png Image Background (Enters from Bottom) */}
+                  <div
+                    className={`relative z-10 w-full aspect-[4.2/1] min-h-[130px] sm:min-h-[170px] md:min-h-[200px] flex items-center justify-between px-6 sm:px-12 md:px-14 py-4 sm:py-6 transition-all duration-300 ease-out ${
+                      dialogueState === "entering" || dialogueState === "visible"
+                        ? "translate-y-0 opacity-100 scale-100"
+                        : "translate-y-44 opacity-0 scale-95"
+                    }`}
+                  >
+                    {/* Pixel Art Dialogue Balloon Image Asset */}
+                    <img
+                      src="/assets/juego/globo-texto.png"
+                      alt="Globo de Texto"
+                      className="absolute inset-0 w-full h-full object-fill pointer-events-none z-0 drop-shadow-[0_12px_30px_rgba(0,0,0,0.7)]"
+                      style={{ imageRendering: "pixelated" }}
+                    />
+
+                    {/* Dialogue Text Content */}
+                    <div className="relative z-10 flex-1 flex flex-col justify-center pr-3 sm:pr-8">
+                      <span className="text-[#a81363] font-mono font-black text-xs sm:text-base md:text-lg uppercase tracking-wider mb-1">
+                        {language === "nah" ? "INE Cívica" : "GUÍA INE"}
+                      </span>
+                      <p className="text-black font-mono font-bold text-xs sm:text-sm md:text-base leading-snug drop-shadow-[0_1px_0_rgba(255,255,255,0.8)]">
+                        {language === "nah"
+                          ? "¡Ximopanolti ipan INE Plaza! Xiqumiti miak tlamantli. Xicpacho [E] pampa xipewa."
+                          : "¡Bienvenido a la Explanada Cívica del INE! Camina por la plaza para explorar los módulos interactivos de Cultura Cívica."}
+                      </p>
+                    </div>
+
+                    {/* Action Button Matching Screenshot Mockup Design */}
+                    <button
+                      onClick={() => setDialogueState("exiting")}
+                      type="button"
+                      className="relative z-10 shrink-0 bg-[#940d57] hover:bg-[#780946] text-white rounded-lg border-2 sm:border-3 border-black shadow-[4px_4px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all flex items-center gap-2 sm:gap-3 px-3.5 sm:px-5 py-2.5 sm:py-3.5 cursor-pointer ml-3 sm:ml-4 select-none"
+                    >
+                      <div className="w-6 h-6 sm:w-7 sm:h-7 border-2 border-white rounded flex items-center justify-center text-white font-mono font-black text-xs sm:text-sm shrink-0">
+                        E
+                      </div>
+                      <span className="text-white font-mono font-black text-xs sm:text-sm md:text-base tracking-wider uppercase">
+                        CONTINUAR
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
