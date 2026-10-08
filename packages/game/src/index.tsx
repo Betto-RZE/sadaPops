@@ -421,7 +421,15 @@ export function PixiGameCanvas({
 
     let animationFrameId: number;
     let lastTime = performance.now();
-    const speedPerSecond = 28.5; // Walk speed % per second
+
+    // Smooth Movement Physics Constants
+    const maxSpeed = 22.0; // Max walk speed % per second (slightly lower max speed for controlled movement)
+    const RAMP_TIME = 1.0; // Continuous hold duration (seconds) to reach full speed
+    const frictionRate = 9.0; // Deceleration/slide factor (~0.25s inertial slide on release)
+
+    // Track key hold duration and continuous velocity (% per sec)
+    let keyHoldTime = 0;
+    const velocity = { x: 0, y: 0 };
 
     const updateGameLoop = (currentTime: number) => {
       const dt = Math.min(0.05, (currentTime - lastTime) / 1000); // Delta time in seconds (capped at 50ms)
@@ -429,30 +437,69 @@ export function PixiGameCanvas({
 
       // Block player movement completely while dialogue intro sequence is active
       if (dialogueStateRef.current !== "dismissed") {
+        velocity.x = 0;
+        velocity.y = 0;
+        keyHoldTime = 0;
         setIsWalking(false);
         animationFrameId = requestAnimationFrame(updateGameLoop);
         return;
       }
 
-      let dx = 0;
-      let dy = 0;
+      let dirX = 0;
+      let dirY = 0;
 
+      // Restrict user movement strictly to 4 orthogonal directions (no diagonal user input)
       if (keysPressed["arrowdown"] || keysPressed["s"]) {
-        dy += speedPerSecond * dt;
+        dirY = 1;
         setLastDirection("1");
-      } else if (keysPressed["arrowleft"] || keysPressed["a"]) {
-        dx -= speedPerSecond * dt;
-        setLastDirection("2");
       } else if (keysPressed["arrowup"] || keysPressed["w"]) {
-        dy -= speedPerSecond * dt;
+        dirY = -1;
         setLastDirection("3");
+      } else if (keysPressed["arrowleft"] || keysPressed["a"]) {
+        dirX = -1;
+        setLastDirection("2");
       } else if (keysPressed["arrowright"] || keysPressed["d"]) {
-        dx += speedPerSecond * dt;
+        dirX = 1;
         setLastDirection("4");
       }
 
-      if (dx !== 0 || dy !== 0) {
-        setIsWalking(true);
+      const isInputActive = dirX !== 0 || dirY !== 0;
+
+      // INSTANTLY interrupt walking animation posture on key release
+      setIsWalking(isInputActive);
+
+      // Accumulate continuous press time when direction keys held, reset to 0 on key release
+      if (isInputActive) {
+        keyHoldTime = Math.min(RAMP_TIME, keyHoldTime + dt);
+      } else {
+        keyHoldTime = 0;
+      }
+
+      // Quadratic ease-in acceleration ramp: starts extremely subtle (micro-step), reaching full speed at 1s
+      const rampFactor = isInputActive ? Math.pow(keyHoldTime / RAMP_TIME, 2) : 0;
+      const targetVx = dirX * maxSpeed * rampFactor;
+      const targetVy = dirY * maxSpeed * rampFactor;
+
+      if (isInputActive) {
+        velocity.x += (targetVx - velocity.x) * Math.min(1, 16.0 * dt);
+        velocity.y += (targetVy - velocity.y) * Math.min(1, 16.0 * dt);
+      } else {
+        // Inertial deceleration slide when key is released
+        velocity.x += (0 - velocity.x) * Math.min(1, frictionRate * dt);
+        velocity.y += (0 - velocity.y) * Math.min(1, frictionRate * dt);
+      }
+
+      // Threshold micro-drift when completely stopped
+      if (!isInputActive && Math.abs(velocity.x) < 0.04) velocity.x = 0;
+      if (!isInputActive && Math.abs(velocity.y) < 0.04) velocity.y = 0;
+
+      const currentSpeed = Math.hypot(velocity.x, velocity.y);
+      const isMoving = currentSpeed > 0.01;
+
+      if (isMoving) {
+        const dx = velocity.x * dt;
+        const dy = velocity.y * dt;
+
         setPlayerPos((prev) => {
           let effectiveDx = dx;
           let effectiveDy = dy;
@@ -522,10 +569,14 @@ export function PixiGameCanvas({
             return { x: prev.x, y: clampedY };
           }
 
+          // Zero out velocity when colliding head-on into solid boundary
+          velocity.x = 0;
+          velocity.y = 0;
+
           return prev;
         });
       } else {
-        // Immediate interrupt to static idle state on key release
+        // Immediate interrupt to static idle state on full stop
         setIsWalking(false);
       }
 
@@ -545,7 +596,7 @@ export function PixiGameCanvas({
   }, [currentScreen]);
 
   // Camera Dynamic Zoom & Smooth Character Tracking Parameters
-  const zoomScale = 1.75;
+  const zoomScale = 2.35;
   const maxCamShift = (1 - 1 / zoomScale) * 50; // Max shift % before exposing background edges
   const rawCamX = 50 - playerPos.x;
   const rawCamY = 50 - playerPos.y;
