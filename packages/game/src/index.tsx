@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { PixelFullscreenButton } from "./PixelFullscreenButton";
+import { PixelSpeechBubble } from "./PixelSpeechBubble";
 
 export interface GameProps {
   onModuleComplete?: (moduleName: "mitos" | "simulador") => void;
@@ -211,7 +212,10 @@ const getLeftBoundaryX = (y: number): number => {
   if (PLAZA_BOUNDS.maxY === PLAZA_BOUNDS.minY) return PLAZA_BOUNDS.topLeftX;
   const progress = Math.min(
     1,
-    Math.max(0, (y - PLAZA_BOUNDS.minY) / (PLAZA_BOUNDS.maxY - PLAZA_BOUNDS.minY))
+    Math.max(
+      0,
+      (y - PLAZA_BOUNDS.minY) / (PLAZA_BOUNDS.maxY - PLAZA_BOUNDS.minY),
+    ),
   );
   return (
     PLAZA_BOUNDS.topLeftX +
@@ -224,7 +228,10 @@ const getBaseRightBoundaryX = (y: number): number => {
   if (PLAZA_BOUNDS.maxY === PLAZA_BOUNDS.minY) return PLAZA_BOUNDS.topRightX;
   const progress = Math.min(
     1,
-    Math.max(0, (y - PLAZA_BOUNDS.minY) / (PLAZA_BOUNDS.maxY - PLAZA_BOUNDS.minY))
+    Math.max(
+      0,
+      (y - PLAZA_BOUNDS.minY) / (PLAZA_BOUNDS.maxY - PLAZA_BOUNDS.minY),
+    ),
   );
   return (
     PLAZA_BOUNDS.topRightX +
@@ -257,7 +264,9 @@ export function PixiGameCanvas({
 
   // Player Position & Direction State ("1"=S/down, "2"=A/left, "3"=W/up, "4"=D/right)
   const [playerPos, setPlayerPos] = useState({ x: 50, y: 62 });
-  const [lastDirection, setLastDirection] = useState<"1" | "2" | "3" | "4">("1");
+  const [lastDirection, setLastDirection] = useState<"1" | "2" | "3" | "4">(
+    "1",
+  );
   const [isWalking, setIsWalking] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
@@ -271,17 +280,22 @@ export function PixiGameCanvas({
     dialogueStateRef.current = dialogueState;
   }, [dialogueState]);
 
-  // Dialogue 3-second delay & animation state transitions
+  // Dialogue delay & animation state transitions (Triggers exactly 2s after iris aperture fully opens)
   useEffect(() => {
     if (currentScreen !== "gameplay") {
       setDialogueState("initial_delay");
       return;
     }
 
+    // Wait until retro iris wipe has fully completed and screen is open
+    if (irisRadius !== null) {
+      return;
+    }
+
     if (dialogueState === "initial_delay") {
       const timer = setTimeout(() => {
         setDialogueState("entering");
-      }, 3000);
+      }, 2000);
       return () => clearTimeout(timer);
     } else if (dialogueState === "entering") {
       const timer = setTimeout(() => {
@@ -294,26 +308,7 @@ export function PixiGameCanvas({
       }, 350);
       return () => clearTimeout(timer);
     }
-  }, [currentScreen, dialogueState]);
-
-  // Press "E" key handler to dismiss dialogue speech bubble
-  useEffect(() => {
-    if (
-      currentScreen !== "gameplay" ||
-      (dialogueState !== "entering" && dialogueState !== "visible") ||
-      showExitConfirm
-    )
-      return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() === "e") {
-        setDialogueState("exiting");
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [currentScreen, dialogueState, showExitConfirm]);
+  }, [currentScreen, irisRadius, dialogueState]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -358,6 +353,7 @@ export function PixiGameCanvas({
             setDialogueState("initial_delay");
           } else {
             setActiveScene(targetScene);
+            setDialogueState("initial_delay");
           }
 
           setTimeout(() => {
@@ -476,7 +472,9 @@ export function PixiGameCanvas({
       }
 
       // Quadratic ease-in acceleration ramp: starts extremely subtle (micro-step), reaching full speed at 1s
-      const rampFactor = isInputActive ? Math.pow(keyHoldTime / RAMP_TIME, 2) : 0;
+      const rampFactor = isInputActive
+        ? Math.pow(keyHoldTime / RAMP_TIME, 2)
+        : 0;
       const targetVx = dirX * maxSpeed * rampFactor;
       const targetVy = dirY * maxSpeed * rampFactor;
 
@@ -536,11 +534,11 @@ export function PixiGameCanvas({
           if (isInsideRightPath) {
             const pathClampedY = Math.min(
               PLAZA_BOUNDS.rightPathBottomY,
-              Math.max(PLAZA_BOUNDS.rightPathTopY, rawTargetY)
+              Math.max(PLAZA_BOUNDS.rightPathTopY, rawTargetY),
             );
             const pathClampedX = Math.min(
               PLAZA_BOUNDS.rightPathMaxX,
-              Math.max(getBaseRightBoundaryX(pathClampedY), rawTargetX)
+              Math.max(getBaseRightBoundaryX(pathClampedY), rawTargetX),
             );
             if (isPlazaWalkable(pathClampedX, pathClampedY)) {
               return { x: pathClampedX, y: pathClampedY };
@@ -550,7 +548,7 @@ export function PixiGameCanvas({
           // 4. Smooth Diagonal & Wall Sliding System for Main Plaza
           const clampedY = Math.min(
             PLAZA_BOUNDS.maxY,
-            Math.max(PLAZA_BOUNDS.minY, rawTargetY)
+            Math.max(PLAZA_BOUNDS.minY, rawTargetY),
           );
 
           const minXAtY = getLeftBoundaryX(clampedY);
@@ -602,8 +600,6 @@ export function PixiGameCanvas({
   const rawCamY = 50 - playerPos.y;
   const camX = Math.min(maxCamShift, Math.max(-maxCamShift, rawCamX));
   const camY = Math.min(maxCamShift, Math.max(-maxCamShift, rawCamY));
-
-
 
   // Synchronize state with HTML5 Fullscreen API events
   useEffect(() => {
@@ -707,18 +703,20 @@ export function PixiGameCanvas({
   return (
     <div
       ref={containerRef}
-      className={`relative w-full max-w-5xl mx-auto select-none transition-all duration-300 ${isFullscreen
-        ? "fixed inset-0 z-50 max-w-none rounded-none border-0 p-0 ring-0 shadow-none flex flex-col justify-center items-center bg-slate-950 overflow-hidden"
-        : "rounded-2xl shadow-2xl overflow-hidden"
-        }`}
+      className={`relative w-full max-w-5xl mx-auto select-none transition-all duration-300 ${
+        isFullscreen
+          ? "fixed inset-0 z-50 max-w-none rounded-none border-0 p-0 ring-0 shadow-none flex flex-col justify-center items-center bg-slate-950 overflow-hidden"
+          : "rounded-2xl shadow-2xl overflow-hidden"
+      }`}
     >
       {/* Game Display Container */}
       <div
         style={{ containerType: "inline-size" }}
-        className={`relative overflow-hidden flex items-center justify-center bg-slate-950 ${isFullscreen
-          ? "aspect-video w-full max-w-[177.78vh] h-auto max-h-screen rounded-none shadow-2xl"
-          : "aspect-video w-full rounded-xl"
-          }`}
+        className={`relative overflow-hidden flex items-center justify-center bg-slate-950 ${
+          isFullscreen
+            ? "aspect-video w-full max-w-[177.78vh] h-auto max-h-screen rounded-none shadow-2xl"
+            : "aspect-video w-full rounded-xl"
+        }`}
       >
         {/* Canvas Background Rendering (Fallback) */}
         <canvas
@@ -805,14 +803,16 @@ export function PixiGameCanvas({
             />
 
             {/* DEDICATED PIXEL ART TITLE IN TOP-CENTER (PROPORTIONAL CONTAINER QUERY SCALING) */}
-            <div
-              className="absolute top-[16%] left-1/2 -translate-x-1/2 w-[92%] flex flex-col items-center text-center select-none z-20 pointer-events-none"
-            >
+            <div className="absolute top-[16%] left-1/2 -translate-x-1/2 w-[92%] flex flex-col items-center text-center select-none z-20 pointer-events-none">
               <style>{`
-                @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap');
+                @import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap');
 
                 .font-arcade-pixel {
                   font-family: 'Press Start 2P', 'Silkscreen', monospace, sans-serif;
+                }
+
+                .font-dialogue-pixel {
+                  font-family: 'Pixelify Sans', 'Silkscreen', 'Press Start 2P', monospace, sans-serif;
                 }
 
                 @keyframes retroSeesawBalanceSlow {
@@ -858,25 +858,28 @@ export function PixiGameCanvas({
 
             {/* JUGAR BUTTON AT BOTTOM-CENTER */}
             <div
-              className={`absolute bottom-[14%] left-1/2 -translate-x-1/2 flex flex-col items-center justify-center z-20 transition-all duration-300 ${isFullscreen
-                ? "w-[36%] min-w-[300px] max-w-[480px]"
-                : "w-[30%] min-w-[220px] max-w-[320px]"
-                }`}
+              className={`absolute bottom-[14%] left-1/2 -translate-x-1/2 flex flex-col items-center justify-center z-20 transition-all duration-300 ${
+                isFullscreen
+                  ? "w-[36%] min-w-[300px] max-w-[480px]"
+                  : "w-[30%] min-w-[220px] max-w-[320px]"
+              }`}
             >
               {/* JUGAR Button */}
               <button
                 onClick={() => changeScreenWithTransition("gameplay")}
                 type="button"
-                className={`w-full px-4 bg-[#f9d7ea] hover:bg-[#f6c2e0] rounded-md ring-2 ring-white ring-inset transition-all flex items-center justify-between cursor-pointer group shrink-0 ${isFullscreen
-                  ? "h-[64px] sm:h-[72px] border-[5px] border-[#b5146c] shadow-[6px_6px_0px_0px_#7a0c47] active:translate-x-[3px] active:translate-y-[3px]"
-                  : "h-[48px] sm:h-[52px] border-[4px] border-[#b5146c] shadow-[4px_4px_0px_0px_#7a0c47] active:translate-x-[2px] active:translate-y-[2px]"
-                  } active:shadow-none`}
+                className={`w-full px-4 bg-[#f9d7ea] hover:bg-[#f6c2e0] rounded-md ring-2 ring-white ring-inset transition-all flex items-center justify-between cursor-pointer group shrink-0 ${
+                  isFullscreen
+                    ? "h-[64px] sm:h-[72px] border-[5px] border-[#b5146c] shadow-[6px_6px_0px_0px_#7a0c47] active:translate-x-[3px] active:translate-y-[3px]"
+                    : "h-[48px] sm:h-[52px] border-[4px] border-[#b5146c] shadow-[4px_4px_0px_0px_#7a0c47] active:translate-x-[2px] active:translate-y-[2px]"
+                } active:shadow-none`}
               >
                 <span
-                  className={`font-mono font-black text-black tracking-widest uppercase flex-1 text-center drop-shadow-[0_1px_0_rgba(255,255,255,0.8)] select-none ${isFullscreen
-                    ? "text-2xl sm:text-3xl pl-8"
-                    : "text-lg sm:text-xl pl-6"
-                    }`}
+                  className={`font-mono font-black text-black tracking-widest uppercase flex-1 text-center drop-shadow-[0_1px_0_rgba(255,255,255,0.8)] select-none ${
+                    isFullscreen
+                      ? "text-2xl sm:text-3xl pl-8"
+                      : "text-lg sm:text-xl pl-6"
+                  }`}
                 >
                   JUGAR
                 </span>
@@ -944,10 +947,11 @@ export function PixiGameCanvas({
                 }}
                 type="button"
                 aria-label="Volver al menú principal"
-                className={`pointer-events-auto bg-[#f9d7ea] hover:bg-[#f6c2e0] rounded-md ring-2 ring-white ring-inset active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all flex items-center justify-center cursor-pointer font-mono font-black text-black shrink-0 ${isFullscreen
-                  ? "w-12 h-12 text-xl border-[4px] border-[#b5146c] shadow-[4px_4px_0px_0px_#7a0c47]"
-                  : "w-9 h-9 text-sm border-[3px] border-[#b5146c] shadow-[3px_3px_0px_0px_#7a0c47]"
-                  }`}
+                className={`pointer-events-auto bg-[#f9d7ea] hover:bg-[#f6c2e0] rounded-md ring-2 ring-white ring-inset active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all flex items-center justify-center cursor-pointer font-mono font-black text-black shrink-0 ${
+                  isFullscreen
+                    ? "w-12 h-12 text-xl border-[4px] border-[#b5146c] shadow-[4px_4px_0px_0px_#7a0c47]"
+                    : "w-9 h-9 text-sm border-[3px] border-[#b5146c] shadow-[3px_3px_0px_0px_#7a0c47]"
+                }`}
               >
                 <span>◀</span>
               </button>
@@ -982,11 +986,15 @@ export function PixiGameCanvas({
                 />
                 <div
                   className="absolute -top-[30%] left-[18%] w-[120%] h-[160%] bg-gradient-to-r from-transparent via-yellow-100/10 to-transparent blur-[3px] transform origin-top-left"
-                  style={{ animation: "godRayPulse 10s ease-in-out infinite 2.5s" }}
+                  style={{
+                    animation: "godRayPulse 10s ease-in-out infinite 2.5s",
+                  }}
                 />
                 <div
                   className="absolute -top-[30%] left-[38%] w-[100%] h-[160%] bg-gradient-to-r from-transparent via-pink-100/08 to-transparent blur-[4px] transform origin-top-left"
-                  style={{ animation: "godRayPulse 9s ease-in-out infinite 4.5s" }}
+                  style={{
+                    animation: "godRayPulse 9s ease-in-out infinite 4.5s",
+                  }}
                 />
               </div>
 
@@ -999,31 +1007,45 @@ export function PixiGameCanvas({
                 />
                 <div
                   className="absolute top-[22%] left-[62%] w-3 h-2 bg-pink-500/85 rounded-tr-full rounded-bl-full border border-pink-700/40 shadow-sm"
-                  style={{ animation: "petalFloat2 8s ease-in-out infinite 1.2s" }}
+                  style={{
+                    animation: "petalFloat2 8s ease-in-out infinite 1.2s",
+                  }}
                 />
                 <div
                   className="absolute top-[10%] left-[42%] w-2 h-2 bg-dalia-400/90 rounded-full border border-pink-500/50 shadow-sm"
-                  style={{ animation: "petalFloat3 7.2s ease-in-out infinite 2.4s" }}
+                  style={{
+                    animation: "petalFloat3 7.2s ease-in-out infinite 2.4s",
+                  }}
                 />
                 <div
                   className="absolute top-[28%] left-[80%] w-2.5 h-2.5 bg-pink-300/80 rounded-tl-full rounded-br-full border border-pink-500/40"
-                  style={{ animation: "petalFloat2 9s ease-in-out infinite 3.6s" }}
+                  style={{
+                    animation: "petalFloat2 9s ease-in-out infinite 3.6s",
+                  }}
                 />
                 <div
                   className="absolute top-[16%] left-[32%] w-2 h-2 bg-pink-400/80 rounded-tr-full rounded-bl-full border border-pink-600/30"
-                  style={{ animation: "petalFloat1 7.8s ease-in-out infinite 4.8s" }}
+                  style={{
+                    animation: "petalFloat1 7.8s ease-in-out infinite 4.8s",
+                  }}
                 />
                 <div
                   className="absolute top-[35%] left-[12%] w-2.5 h-2 bg-dalia-500/85 rounded-tl-full rounded-br-full border border-pink-700/30"
-                  style={{ animation: "petalFloat3 8.5s ease-in-out infinite 5.5s" }}
+                  style={{
+                    animation: "petalFloat3 8.5s ease-in-out infinite 5.5s",
+                  }}
                 />
                 <div
                   className="absolute top-[20%] left-[52%] w-3 h-2.5 bg-pink-300/90 rounded-tr-full rounded-bl-full border border-pink-400/40"
-                  style={{ animation: "petalFloat1 6.8s ease-in-out infinite 6.2s" }}
+                  style={{
+                    animation: "petalFloat1 6.8s ease-in-out infinite 6.2s",
+                  }}
                 />
                 <div
                   className="absolute top-[30%] left-[70%] w-2 h-2 bg-pink-400/75 rounded-full border border-pink-500/30"
-                  style={{ animation: "petalFloat2 8.2s ease-in-out infinite 7.0s" }}
+                  style={{
+                    animation: "petalFloat2 8.2s ease-in-out infinite 7.0s",
+                  }}
                 />
 
                 {/* Glowing Sunlight Sparkles / Pollen Dust */}
@@ -1033,27 +1055,39 @@ export function PixiGameCanvas({
                 />
                 <div
                   className="absolute top-[52%] left-[52%] w-2 h-2 bg-yellow-100 rounded-full shadow-[0_0_8px_#fef08a]"
-                  style={{ animation: "sparkleFloat 5.5s ease-in-out infinite 0.8s" }}
+                  style={{
+                    animation: "sparkleFloat 5.5s ease-in-out infinite 0.8s",
+                  }}
                 />
                 <div
                   className="absolute top-[32%] left-[72%] w-1.5 h-1.5 bg-amber-300 rounded-full shadow-[0_0_6px_#fde047]"
-                  style={{ animation: "sparkleFloat 4.8s ease-in-out infinite 1.9s" }}
+                  style={{
+                    animation: "sparkleFloat 4.8s ease-in-out infinite 1.9s",
+                  }}
                 />
                 <div
                   className="absolute top-[62%] left-[18%] w-2 h-2 bg-amber-100 rounded-full shadow-[0_0_8px_#ffffff]"
-                  style={{ animation: "sparkleFloat 6s ease-in-out infinite 2.8s" }}
+                  style={{
+                    animation: "sparkleFloat 6s ease-in-out infinite 2.8s",
+                  }}
                 />
                 <div
                   className="absolute top-[44%] left-[40%] w-1.5 h-1.5 bg-yellow-200 rounded-full shadow-[0_0_6px_#fde047]"
-                  style={{ animation: "sparkleFloat 5.2s ease-in-out infinite 3.7s" }}
+                  style={{
+                    animation: "sparkleFloat 5.2s ease-in-out infinite 3.7s",
+                  }}
                 />
                 <div
                   className="absolute top-[58%] left-[84%] w-2 h-2 bg-amber-200 rounded-full shadow-[0_0_8px_#fef08a]"
-                  style={{ animation: "sparkleFloat 4.5s ease-in-out infinite 4.4s" }}
+                  style={{
+                    animation: "sparkleFloat 4.5s ease-in-out infinite 4.4s",
+                  }}
                 />
                 <div
                   className="absolute top-[26%] left-[60%] w-1.5 h-1.5 bg-yellow-100 rounded-full shadow-[0_0_6px_#ffffff]"
-                  style={{ animation: "sparkleFloat 5.8s ease-in-out infinite 5.1s" }}
+                  style={{
+                    animation: "sparkleFloat 5.8s ease-in-out infinite 5.1s",
+                  }}
                 />
               </div>
 
@@ -1062,14 +1096,19 @@ export function PixiGameCanvas({
                 {/* Butterfly 1 (Bottom Left Flowers) */}
                 <div
                   className="absolute left-[12%] bottom-[14%] text-sm select-none"
-                  style={{ animation: "butterflyFlutter 4.2s ease-in-out infinite" }}
+                  style={{
+                    animation: "butterflyFlutter 4.2s ease-in-out infinite",
+                  }}
                 >
                   🦋
                 </div>
                 {/* Butterfly 2 (Bottom Right Flowers) */}
                 <div
                   className="absolute right-[14%] bottom-[16%] text-sm select-none"
-                  style={{ animation: "butterflyFlutter 5.5s ease-in-out infinite 1.8s" }}
+                  style={{
+                    animation:
+                      "butterflyFlutter 5.5s ease-in-out infinite 1.8s",
+                  }}
                 >
                   🦋
                 </div>
@@ -1080,8 +1119,6 @@ export function PixiGameCanvas({
                 className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-emerald-950/20 via-emerald-900/10 to-transparent pointer-events-none z-11"
                 style={{ animation: "mistDrift 10s ease-in-out infinite" }}
               />
-
-
 
               {/* PLAYER CHARACTER AVATAR ON THE PLAZA FLOOR */}
               <div
@@ -1117,80 +1154,27 @@ export function PixiGameCanvas({
             </div>
 
             {/* INTRO SPEECH BUBBLE DIALOGUE OVERLAY */}
-            {dialogueState !== "dismissed" && (
-              <div className="absolute inset-0 z-40 pointer-events-none flex items-end justify-center pb-1 sm:pb-2 md:pb-2.5 px-3 sm:px-6 overflow-hidden select-none">
-                {/* Backdrop Blur Layer Behind Dialogue Bubble */}
-                <div
-                  className={`absolute inset-0 bg-black/35 backdrop-blur-md transition-opacity duration-300 pointer-events-auto ${
-                    dialogueState === "entering" || dialogueState === "visible"
-                      ? "opacity-100"
-                      : "opacity-0"
-                  }`}
-                />
-
-                {/* Main Dialogue Wrapper Container (Positions both Avatar Portrait & Speech Bubble) */}
-                <div className="relative z-10 w-[95%] max-w-[1350px] flex flex-col items-start pointer-events-auto">
-                  {/* INE Character Portrait (Enters from Left, enlarged and raised higher above speech bubble so text is unobstructed) */}
-                  <div
-                    className={`relative z-20 -mb-[3.5%] sm:-mb-[4%] md:-mb-[4.5%] ml-[2%] sm:ml-[3%] w-[33%] min-w-[210px] max-w-[430px] aspect-square transition-all duration-300 ease-out pointer-events-none shrink-0 ${
-                      dialogueState === "entering" || dialogueState === "visible"
-                        ? "translate-x-0 opacity-100"
-                        : "-translate-x-52 opacity-0"
-                    }`}
-                  >
-                    <img
-                      src="/assets/juego/ine-avatar-dialogo.png"
-                      alt="Guía INE"
-                      className="w-full h-full object-contain select-none pointer-events-none drop-shadow-[0_10px_20px_rgba(0,0,0,0.6)]"
-                      style={{ imageRendering: "pixelated" }}
-                    />
-                  </div>
-
-                  {/* Speech Bubble Container with Globo-Texto.png Image Background (Sits right near bottom edge) */}
-                  <div
-                    className={`relative z-10 w-full aspect-[4.2/1] min-h-[130px] sm:min-h-[180px] md:min-h-[230px] lg:min-h-[280px] flex items-center justify-between px-[5%] sm:px-[6%] md:px-[7%] py-[3%] sm:py-[4%] transition-all duration-300 ease-out ${
-                      dialogueState === "entering" || dialogueState === "visible"
-                        ? "translate-y-0 opacity-100 scale-100"
-                        : "translate-y-44 opacity-0 scale-95"
-                    }`}
-                  >
-                    {/* Pixel Art Dialogue Balloon Image Asset */}
-                    <img
-                      src="/assets/juego/globo-texto.png"
-                      alt="Globo de Texto"
-                      className="absolute inset-0 w-full h-full object-fill pointer-events-none z-0 drop-shadow-[0_12px_30px_rgba(0,0,0,0.7)]"
-                      style={{ imageRendering: "pixelated" }}
-                    />
-
-                    {/* Dialogue Text Content */}
-                    <div className="relative z-10 flex-1 flex flex-col justify-center pr-3 sm:pr-8">
-                      <span className="text-[#a81363] font-mono font-black text-xs sm:text-base md:text-xl lg:text-2xl uppercase tracking-wider mb-1">
-                        {language === "nah" ? "INE Cívica" : "GUÍA INE"}
-                      </span>
-                      <p className="text-black font-mono font-bold text-xs sm:text-base md:text-lg lg:text-xl leading-snug drop-shadow-[0_1px_0_rgba(255,255,255,0.8)]">
-                        {language === "nah"
+            {dialogueState !== "initial_delay" &&
+              dialogueState !== "dismissed" && (
+                <div className="absolute inset-0 z-40 pointer-events-none flex items-end justify-center pb-[1.8cqw] px-[2cqw] overflow-hidden select-none">
+                  <div className="relative z-10 w-[96%] pointer-events-auto">
+                    <PixelSpeechBubble
+                      speaker={
+                        language === "nah" ? "Inecito Cívica" : "Inecito"
+                      }
+                      text={
+                        language === "nah"
                           ? "¡Ximopanolti ipan INE Plaza! Xiqumiti miak tlamantli. Xicpacho [E] pampa xipewa."
-                          : "¡Bienvenido a la Explanada Cívica del INE! Camina por la plaza para explorar los módulos interactivos de Cultura Cívica."}
-                      </p>
-                    </div>
-
-                    {/* Action Button Matching Screenshot Mockup Design */}
-                    <button
-                      onClick={() => setDialogueState("exiting")}
-                      type="button"
-                      className="relative z-10 shrink-0 bg-[#940d57] hover:bg-[#780946] text-white rounded-lg border-2 sm:border-3 border-black shadow-[4px_4px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all flex items-center gap-2 sm:gap-3 px-3.5 sm:px-6 md:px-8 py-2.5 sm:py-4 cursor-pointer ml-3 sm:ml-6 select-none"
-                    >
-                      <div className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 border-2 md:border-3 border-white rounded flex items-center justify-center text-white font-mono font-black text-xs sm:text-base md:text-lg shrink-0">
-                        E
-                      </div>
-                      <span className="text-white font-mono font-black text-xs sm:text-base md:text-lg lg:text-xl tracking-wider uppercase">
-                        CONTINUAR
-                      </span>
-                    </button>
+                          : "¡Bienvenido a la Explanada Cívica del INE! Camina por la plaza para explorar los módulos interactivos de Cultura Cívica."
+                      }
+                      actionKey="E"
+                      disabled={showExitConfirm}
+                      isDismissing={dialogueState === "exiting"}
+                      onDismiss={() => setDialogueState("exiting")}
+                    />
                   </div>
                 </div>
-              </div>
-            )}
+              )}
           </div>
         )}
 
@@ -1199,7 +1183,9 @@ export function PixiGameCanvas({
           <div className="absolute inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-[3cqw] animate-in fade-in duration-200 select-none">
             <div
               className="relative w-[min(84cqw,460px)] bg-[#f9d7ea] border-[4px] border-black rounded-2xl shadow-[6px_6px_0px_0px_#400624,12px_12px_0px_0px_rgba(0,0,0,0.85)] p-[min(4cqw,22px)] flex flex-col items-center text-center overflow-hidden"
-              style={{ fontFamily: "'Press Start 2P', 'Silkscreen', monospace" }}
+              style={{
+                fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
+              }}
             >
               {/* Inner Bevel Light Highlight Lines */}
               <div className="absolute top-0 left-0 right-0 h-[3px] bg-white/95 pointer-events-none" />
@@ -1228,7 +1214,8 @@ export function PixiGameCanvas({
                   textShadow: "1px 1px 0px #ffffff",
                 }}
               >
-                Si regresas al menú principal, perderás todo tu progreso actual en la partida.
+                Si regresas al menú principal, perderás todo tu progreso actual
+                en la partida.
               </p>
 
               {/* Pixel Action Buttons */}
