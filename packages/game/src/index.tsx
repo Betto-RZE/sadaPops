@@ -243,7 +243,7 @@ const getRightBoundaryX = (y: number): number => {
 export function PixiGameCanvas({
   onModuleComplete,
   language = "es",
-  splashImageUrl = "/assets/juego/splash.jpg",
+  splashImageUrl = "/assets/juego/menu.png",
   stageImageUrl = "/assets/juego/escenario.png",
 }: GameProps) {
   const [currentScreen, setCurrentScreen] = useState<
@@ -793,7 +793,7 @@ export function PixiGameCanvas({
           </svg>
         )}
 
-        {/* Splash Menu Screen with JUGAR & CÓMO JUGAR buttons */}
+        {/* Splash Menu Screen with Large Unboxed Top-Centered Pixel Title */}
         {currentScreen === "splash" && (
           <div className="absolute inset-0 w-full h-full z-20 overflow-hidden">
             <img
@@ -803,10 +803,73 @@ export function PixiGameCanvas({
               style={{ imageRendering: "pixelated" }}
             />
 
+            {/* DEDICATED PIXEL ART TITLE IN TOP-CENTER (SLOW SEESAW BALANCE ANIMATION) */}
             <div
-              className={`absolute bottom-[16%] left-1/2 -translate-x-1/2 flex flex-col items-center justify-center z-20 transition-all duration-300 ${isFullscreen
-                ? "w-[38%] min-w-[320px] max-w-[480px] gap-4"
-                : "w-[32%] min-w-[220px] max-w-[310px] gap-3"
+              className={`absolute top-[20%] left-1/2 -translate-x-1/2 flex flex-col items-center text-center select-none z-20 pointer-events-none ${
+                isFullscreen ? "w-[90%] max-w-[1200px]" : "w-[88%] max-w-[850px]"
+              }`}
+            >
+              <style>{`
+                @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap');
+
+                .font-arcade-pixel {
+                  font-family: 'Press Start 2P', 'Silkscreen', monospace, sans-serif;
+                }
+
+                @keyframes retroSeesawBalanceSlow {
+                  0%, 100% {
+                    transform: rotate(-2deg) translateY(-1px);
+                    filter: drop-shadow(0 6px 14px rgba(0,0,0,0.9));
+                  }
+                  50% {
+                    transform: rotate(2deg) translateY(1px);
+                    filter: drop-shadow(0 12px 24px rgba(181,20,108,0.65));
+                  }
+                }
+              `}</style>
+
+              <div
+                className="flex flex-col items-center justify-center w-full"
+                style={{
+                  animation: "retroSeesawBalanceSlow 6.8s ease-in-out infinite",
+                  transformOrigin: "center center",
+                }}
+              >
+                <h1
+                  className={`font-arcade-pixel font-black tracking-wider uppercase leading-none text-white whitespace-nowrap ${
+                    isFullscreen
+                      ? "text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl"
+                      : "text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl"
+                  }`}
+                  style={{
+                    textShadow:
+                      "3px 3px 0px #000, -2px -2px 0px #000, 2px -2px 0px #000, -2px 2px 0px #000, 3px 0px 0px #000, -3px 0px 0px #000, 0px 3px 0px #000, 0px -3px 0px #000, 5px 5px 0px #940d57, 7px 7px 0px #400624",
+                  }}
+                >
+                  VOCES EN CASILLAS
+                </h1>
+
+                <span
+                  className={`font-arcade-pixel font-bold text-pink-200 tracking-wide uppercase mt-3 sm:mt-4 leading-normal whitespace-nowrap ${
+                    isFullscreen
+                      ? "text-xs sm:text-sm md:text-base lg:text-xl xl:text-2xl"
+                      : "text-[9px] sm:text-[10px] md:text-xs lg:text-sm"
+                  }`}
+                  style={{
+                    textShadow:
+                      "2px 2px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000, 2px 0px 0px #000, -2px 0px 0px #000, 0px 2px 0px #000, 0px -2px 0px #000, 3px 3px 0px #7a0c47",
+                  }}
+                >
+                  SIMULADOR PARA UN VOTO INFORMADO
+                </span>
+              </div>
+            </div>
+
+            {/* JUGAR BUTTON AT BOTTOM-CENTER */}
+            <div
+              className={`absolute bottom-[14%] left-1/2 -translate-x-1/2 flex flex-col items-center justify-center z-20 transition-all duration-300 ${isFullscreen
+                ? "w-[36%] min-w-[300px] max-w-[480px]"
+                : "w-[30%] min-w-[220px] max-w-[320px]"
                 }`}
             >
               {/* JUGAR Button */}
@@ -828,8 +891,6 @@ export function PixiGameCanvas({
                 </span>
                 <PixelBallotBoxIcon isFullscreen={isFullscreen} />
               </button>
-
-              
             </div>
           </div>
         )}
