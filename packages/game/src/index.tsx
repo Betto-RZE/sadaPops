@@ -321,7 +321,7 @@ export function PixiGameCanvas({
   // Retro Circle (Iris Wipe) Screen Transition Handler with SVG Mask
   const changeScreenWithTransition = useCallback(
     (
-      targetScreen: "splash" | "how_to_play" | "gameplay",
+      targetScreen: "splash" | "gameplay",
       targetScene: "mitos" | "simulador" | null = null,
     ) => {
       if (irisRadius !== null) return;
@@ -709,12 +709,12 @@ export function PixiGameCanvas({
       ref={containerRef}
       className={`relative w-full max-w-5xl mx-auto select-none transition-all duration-300 ${isFullscreen
         ? "fixed inset-0 z-50 max-w-none rounded-none border-0 p-0 ring-0 shadow-none flex flex-col justify-center items-center bg-slate-950 overflow-hidden"
-        : "rounded-2xl p-2 bg-[#adadb7] border-[8px] border-[#8e8ea0] ring-4 ring-[#adadb7]/50 shadow-[0_15px_40px_rgba(0,0,0,0.15)]"
+        : "rounded-2xl shadow-2xl overflow-hidden"
         }`}
     >
       {/* Game Display Container */}
       <div
-        className={`relative overflow-hidden flex items-center justify-center bg-[#adadb7] ${isFullscreen
+        className={`relative overflow-hidden flex items-center justify-center bg-slate-950 ${isFullscreen
           ? "aspect-video w-full max-w-[177.78vh] h-auto max-h-screen rounded-none shadow-2xl"
           : "aspect-video w-full rounded-xl"
           }`}
@@ -799,7 +799,7 @@ export function PixiGameCanvas({
             <img
               src={splashImageUrl}
               alt="Voces en Casilla - INE Splash Screen"
-              className="absolute inset-0 w-full h-full object-cover bg-[#adadb7]"
+              className="absolute inset-0 w-full h-full object-cover bg-slate-950"
               style={{ imageRendering: "pixelated" }}
             />
 
@@ -829,51 +829,7 @@ export function PixiGameCanvas({
                 <PixelBallotBoxIcon isFullscreen={isFullscreen} />
               </button>
 
-              {/* CÓMO JUGAR Button */}
-              <button
-                onClick={() => changeScreenWithTransition("how_to_play")}
-                type="button"
-                className={`w-full px-4 bg-[#f9d7ea] hover:bg-[#f6c2e0] rounded-md ring-2 ring-white ring-inset transition-all flex items-center justify-between cursor-pointer group shrink-0 ${isFullscreen
-                  ? "h-[64px] sm:h-[72px] border-[5px] border-[#b5146c] shadow-[6px_6px_0px_0px_#7a0c47] active:translate-x-[3px] active:translate-y-[3px]"
-                  : "h-[48px] sm:h-[52px] border-[4px] border-[#b5146c] shadow-[4px_4px_0px_0px_#7a0c47] active:translate-x-[2px] active:translate-y-[2px]"
-                  } active:shadow-none`}
-              >
-                <span
-                  className={`font-mono font-black text-black tracking-wider uppercase flex-1 text-center drop-shadow-[0_1px_0_rgba(255,255,255,0.8)] select-none ${isFullscreen
-                    ? "text-xl sm:text-2xl pl-3"
-                    : "text-base sm:text-lg pl-2"
-                    }`}
-                >
-                  CÓMO JUGAR
-                </span>
-                <PixelQuestionDocIcon isFullscreen={isFullscreen} />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* SCREEN: CÓMO JUGAR / CONTROLES */}
-        {currentScreen === "how_to_play" && (
-          <div className="absolute inset-0 w-full h-full z-30 flex flex-col items-center justify-center bg-slate-950 overflow-hidden animate-in fade-in duration-200 select-none">
-            <img
-              src="/assets/juego/controles.jpg"
-              alt="Controles de Juego - Voces en Casilla INE"
-              className="absolute inset-0 w-full h-full object-cover bg-[#adadb7]"
-              style={{ imageRendering: "pixelated" }}
-            />
-
-            <div className="absolute top-[6%] left-[6%] z-40">
-              <button
-                onClick={() => changeScreenWithTransition("splash")}
-                type="button"
-                aria-label="Volver al menú"
-                className={`bg-[#f9d7ea] hover:bg-[#f6c2e0] rounded-md ring-2 ring-white ring-inset active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all flex items-center justify-center cursor-pointer font-mono font-black text-black uppercase drop-shadow-[0_1px_0_rgba(255,255,255,0.8)] shrink-0 ${isFullscreen
-                  ? "w-14 h-14 text-2xl border-[5px] border-[#b5146c] shadow-[6px_6px_0px_0px_#7a0c47]"
-                  : "w-10 h-10 text-lg border-[4px] border-[#b5146c] shadow-[4px_4px_0px_0px_#7a0c47]"
-                  }`}
-              >
-                <span>◀</span>
-              </button>
+              
             </div>
           </div>
         )}
