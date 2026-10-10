@@ -714,6 +714,7 @@ export function PixiGameCanvas({
     >
       {/* Game Display Container */}
       <div
+        style={{ containerType: "inline-size" }}
         className={`relative overflow-hidden flex items-center justify-center bg-slate-950 ${isFullscreen
           ? "aspect-video w-full max-w-[177.78vh] h-auto max-h-screen rounded-none shadow-2xl"
           : "aspect-video w-full rounded-xl"
@@ -803,11 +804,9 @@ export function PixiGameCanvas({
               style={{ imageRendering: "pixelated" }}
             />
 
-            {/* DEDICATED PIXEL ART TITLE IN TOP-CENTER (SLOW SEESAW BALANCE ANIMATION) */}
+            {/* DEDICATED PIXEL ART TITLE IN TOP-CENTER (PROPORTIONAL CONTAINER QUERY SCALING) */}
             <div
-              className={`absolute top-[20%] left-1/2 -translate-x-1/2 flex flex-col items-center text-center select-none z-20 pointer-events-none ${
-                isFullscreen ? "w-[90%] max-w-[1200px]" : "w-[88%] max-w-[850px]"
-              }`}
+              className="absolute top-[16%] left-1/2 -translate-x-1/2 w-[92%] flex flex-col items-center text-center select-none z-20 pointer-events-none"
             >
               <style>{`
                 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap');
@@ -836,11 +835,7 @@ export function PixiGameCanvas({
                 }}
               >
                 <h1
-                  className={`font-arcade-pixel font-black tracking-wider uppercase leading-none text-white whitespace-nowrap ${
-                    isFullscreen
-                      ? "text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl"
-                      : "text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl"
-                  }`}
+                  className="font-arcade-pixel font-black tracking-wider uppercase leading-none text-white whitespace-nowrap text-[3.8cqw]"
                   style={{
                     textShadow:
                       "3px 3px 0px #000, -2px -2px 0px #000, 2px -2px 0px #000, -2px 2px 0px #000, 3px 0px 0px #000, -3px 0px 0px #000, 0px 3px 0px #000, 0px -3px 0px #000, 5px 5px 0px #940d57, 7px 7px 0px #400624",
@@ -850,11 +845,7 @@ export function PixiGameCanvas({
                 </h1>
 
                 <span
-                  className={`font-arcade-pixel font-bold text-pink-200 tracking-wide uppercase mt-3 sm:mt-4 leading-normal whitespace-nowrap ${
-                    isFullscreen
-                      ? "text-xs sm:text-sm md:text-base lg:text-xl xl:text-2xl"
-                      : "text-[9px] sm:text-[10px] md:text-xs lg:text-sm"
-                  }`}
+                  className="font-arcade-pixel font-bold text-pink-200 tracking-wide uppercase mt-[1.5cqw] leading-normal whitespace-nowrap text-[1.7cqw]"
                   style={{
                     textShadow:
                       "2px 2px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000, 2px 0px 0px #000, -2px 0px 0px #000, 0px 2px 0px #000, 0px -2px 0px #000, 3px 3px 0px #7a0c47",
