@@ -1194,36 +1194,53 @@ export function PixiGameCanvas({
           </div>
         )}
 
-        {/* RETRO PIXEL ART EXIT CONFIRMATION MODAL */}
+        {/* RETRO PIXEL ART EXIT CONFIRMATION MODAL (STABLE PIXEL ART LAYOUT) */}
         {showExitConfirm && (
-          <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="absolute inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-[3cqw] animate-in fade-in duration-200 select-none">
             <div
-              className={`bg-[#f9d7ea] text-black font-mono flex flex-col items-center text-center shadow-[8px_8px_0px_0px_#400624] ring-4 ring-white ring-inset relative overflow-hidden select-none ${isFullscreen
-                ? "w-[46%] min-w-[320px] max-w-[520px] p-6 sm:p-8 rounded-xl border-[6px] border-[#7a0c47]"
-                : "w-[85%] max-w-[350px] p-5 sm:p-6 rounded-lg border-[4px] border-[#7a0c47]"
-                }`}
+              className="relative w-[min(84cqw,460px)] bg-[#f9d7ea] border-[4px] border-black rounded-2xl shadow-[6px_6px_0px_0px_#400624,12px_12px_0px_0px_rgba(0,0,0,0.85)] p-[min(4cqw,22px)] flex flex-col items-center text-center overflow-hidden"
+              style={{ fontFamily: "'Press Start 2P', 'Silkscreen', monospace" }}
             >
+              {/* Inner Bevel Light Highlight Lines */}
+              <div className="absolute top-0 left-0 right-0 h-[3px] bg-white/95 pointer-events-none" />
+              <div className="absolute top-0 left-0 bottom-0 w-[3px] bg-white/95 pointer-events-none" />
+              <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#b5146c]/60 pointer-events-none" />
+              <div className="absolute top-0 right-0 bottom-0 w-[3px] bg-[#b5146c]/60 pointer-events-none" />
+
+              {/* Modal Title in Press Start 2P Font */}
               <h3
-                className={`font-black uppercase text-[#7a0c47] tracking-wider ${isFullscreen ? "text-xl sm:text-2xl mb-3 mt-1" : "text-base sm:text-lg mb-2"
-                  }`}
+                className="font-black uppercase text-[#7a0c47] tracking-wider mb-[min(2.5cqw,14px)] leading-snug"
+                style={{
+                  fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
+                  fontSize: "min(2.5cqw, 15px)",
+                  textShadow: "2px 2px 0px #ffffff, -1px -1px 0px #f9d7ea",
+                }}
               >
                 ¿REGRESAR AL MENÚ?
               </h3>
 
+              {/* Warning Description Text */}
               <p
-                className={`text-slate-900 font-bold leading-relaxed mb-6 max-w-xs ${isFullscreen ? "text-sm sm:text-base" : "text-xs sm:text-sm"
-                  }`}
+                className="font-bold text-black leading-relaxed mb-[min(4cqw,20px)] max-w-[95%]"
+                style={{
+                  fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
+                  fontSize: "min(1.8cqw, 10.5px)",
+                  textShadow: "1px 1px 0px #ffffff",
+                }}
               >
                 Si regresas al menú principal, perderás todo tu progreso actual en la partida.
               </p>
 
               {/* Pixel Action Buttons */}
-              <div className="flex gap-3 sm:gap-4 w-full justify-center">
+              <div className="flex gap-[min(3cqw,14px)] w-full justify-center">
                 <button
                   type="button"
                   onClick={() => setShowExitConfirm(false)}
-                  className={`flex-1 bg-white hover:bg-slate-100 text-black border-2 sm:border-3 border-black font-black uppercase shadow-[3px_3px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all cursor-pointer ${isFullscreen ? "py-3 text-sm sm:text-base rounded-md" : "py-2 text-xs rounded"
-                    }`}
+                  className="flex-1 bg-white hover:bg-slate-100 text-black border-[3px] border-black font-black uppercase shadow-[3px_3px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all py-[min(2cqw,10px)] rounded-xl cursor-pointer select-none"
+                  style={{
+                    fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
+                    fontSize: "min(1.7cqw, 10px)",
+                  }}
                 >
                   CANCELAR
                 </button>
@@ -1233,8 +1250,12 @@ export function PixiGameCanvas({
                     setShowExitConfirm(false);
                     changeScreenWithTransition("splash");
                   }}
-                  className={`flex-1 bg-[#b5146c] hover:bg-[#8e0e54] text-white border-2 sm:border-3 border-black font-black uppercase shadow-[3px_3px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all cursor-pointer ${isFullscreen ? "py-3 text-sm sm:text-base rounded-md" : "py-2 text-xs rounded"
-                    }`}
+                  className="flex-1 bg-[#b5146c] hover:bg-[#9c0f5a] text-white border-[3px] border-black font-black uppercase shadow-[3px_3px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all py-[min(2cqw,10px)] rounded-xl cursor-pointer select-none"
+                  style={{
+                    fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
+                    fontSize: "min(1.7cqw, 10px)",
+                    textShadow: "1px 1px 0px #000",
+                  }}
                 >
                   SÍ, SALIR
                 </button>
