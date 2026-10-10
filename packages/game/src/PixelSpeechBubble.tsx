@@ -1,9 +1,23 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+
+export interface DialogueLine {
+  speaker?: string;
+  speakerColor?: string;
+  text: string;
+  actionKey?: string;
+}
 
 export interface PixelSpeechBubbleProps {
+  /** Optional single speaker (fallback for lines without specific speaker) */
   speaker?: string;
-  text: string;
+  /** Optional single text for single-message bubbles */
+  text?: string;
+  /** Array of dialogue lines or strings representing the conversation */
+  messages?: Array<DialogueLine | string>;
+  /** Callback triggered when user finishes the final message and bubble dismisses */
   onDismiss: () => void;
+  /** Optional callback triggered on advancing to next message step */
+  onAdvance?: (stepIndex: number, currentLine: DialogueLine) => void;
   actionKey?: string;
   typingSpeedMs?: number;
   className?: string;
@@ -14,57 +28,147 @@ export interface PixelSpeechBubbleProps {
 /**
  * PixelSpeechBubble
  * Reusable Retro Pixel Art Speech Bubble Component:
+ * - Supports single messages and multi-line conversation sequences
  * - Real-time typewriter printing animation with punctuation pauses
- * - Skip typewriter on first press / dismiss on second press
+ * - Press [E] once while typing: skips typewriter and immediately shows full text
+ * - Press [E] when text is complete: advances to next message in conversation
+ * - Press [E] on final message: closes speech bubble and invokes onDismiss
  * - 100% pixel art fonts ('Pixelify Sans' & 'Press Start 2P')
- * - Square arcade action button containing solely the keycap letter ('E')
+ * - Proportional container-query scaling across window and fullscreen modes
  */
 export function PixelSpeechBubble({
   speaker = "Inecito",
   text,
+  messages,
   onDismiss,
+  onAdvance,
   actionKey = "E",
   typingSpeedMs = 26,
   className = "",
   isDismissing = false,
   disabled = false,
 }: PixelSpeechBubbleProps) {
+  // Normalize messages prop or fallback to single text
+  const normalizedLines: DialogueLine[] = useMemo(() => {
+    if (messages && messages.length > 0) {
+      return messages.map((item) => {
+        if (typeof item === "string") {
+          return { speaker, text: item, actionKey };
+        }
+        return {
+          speaker: item.speaker !== undefined ? item.speaker : speaker,
+          speakerColor: item.speakerColor,
+          text: item.text,
+          actionKey: item.actionKey ?? actionKey,
+        };
+      });
+    }
+    if (text) {
+      return [{ speaker, text, actionKey }];
+    }
+    return [];
+  }, [messages, speaker, text, actionKey]);
+
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const currentLine = normalizedLines[currentStepIndex] || {
+    speaker,
+    text: "",
+    actionKey,
+  };
+  const currentText = currentLine.text;
+  const currentSpeaker = currentLine.speaker;
+  const currentSpeakerColor = currentLine.speakerColor || "#a81363";
+  const currentActionKey = currentLine.actionKey || actionKey;
+
   const [displayedLength, setDisplayedLength] = useState(0);
   const [isTyping, setIsTyping] = useState(true);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Generate a content fingerprint to avoid resetting on re-renders (e.g. fullscreen toggle)
+  const messagesFingerprint = useMemo(() => {
+    if (messages && messages.length > 0) {
+      return messages
+        .map((m) =>
+          typeof m === "string"
+            ? m
+            : `${m.speaker || ""}:${m.text}:${m.actionKey || ""}`,
+        )
+        .join("|||");
+    }
+    return text || "";
+  }, [messages, text]);
+
+  const lastFingerprintRef = useRef(messagesFingerprint);
+
+  // Only reset dialogue sequence if the dialogue content actually changed
+  useEffect(() => {
+    if (lastFingerprintRef.current !== messagesFingerprint) {
+      lastFingerprintRef.current = messagesFingerprint;
+      setCurrentStepIndex(0);
+      setDisplayedLength(0);
+      setIsTyping(true);
+    }
+  }, [messagesFingerprint]);
 
   const skipTyping = useCallback(() => {
     if (typingTimerRef.current) {
       clearTimeout(typingTimerRef.current);
       typingTimerRef.current = null;
     }
-    setDisplayedLength(text.length);
+    setDisplayedLength(currentText.length);
     setIsTyping(false);
-  }, [text.length]);
+  }, [currentText.length]);
 
   const handleAdvance = useCallback(() => {
-    if (disabled) return;
+    if (disabled || normalizedLines.length === 0) return;
+
+    // 1. Press E while typing: skip typewriter animation immediately
     if (isTyping) {
       skipTyping();
-    } else {
-      onDismiss();
+      return;
     }
-  }, [disabled, isTyping, skipTyping, onDismiss]);
+
+    // 2. Press E when text is fully displayed:
+    if (currentStepIndex < normalizedLines.length - 1) {
+      // Clear ongoing timers and reset typing state for next text
+      if (typingTimerRef.current) {
+        clearTimeout(typingTimerRef.current);
+        typingTimerRef.current = null;
+      }
+      setDisplayedLength(0);
+      setIsTyping(true);
+      const nextIndex = currentStepIndex + 1;
+      setCurrentStepIndex(nextIndex);
+      onAdvance?.(nextIndex, normalizedLines[nextIndex]);
+      return;
+    }
+
+    // 3. Last message in conversation: Close speech bubble
+    onDismiss();
+  }, [
+    disabled,
+    normalizedLines,
+    isTyping,
+    skipTyping,
+    currentStepIndex,
+    onAdvance,
+    onDismiss,
+  ]);
 
   // Real-time typewriter animation effect
   useEffect(() => {
-    if (!text) return;
+    if (!currentText) return;
     setDisplayedLength(0);
     setIsTyping(true);
 
     let currentIndex = 0;
 
     const typeNextChar = () => {
-      if (currentIndex < text.length) {
+      if (currentIndex < currentText.length) {
         currentIndex++;
         setDisplayedLength(currentIndex);
 
-        const char = text[currentIndex - 1];
+        const char = currentText[currentIndex - 1];
         // Organic typing cadence: subtle pause on punctuation marks
         let delay = typingSpeedMs;
         if (char === "." || char === "!" || char === "?") {
@@ -87,14 +191,14 @@ export function PixelSpeechBubble({
         clearTimeout(typingTimerRef.current);
       }
     };
-  }, [text, typingSpeedMs]);
+  }, [currentText, currentStepIndex, typingSpeedMs]);
 
   // Keyboard shortcut listener (default 'E' key)
   useEffect(() => {
     if (disabled) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() === actionKey.toLowerCase()) {
+      if (e.key.toLowerCase() === currentActionKey.toLowerCase()) {
         e.preventDefault();
         handleAdvance();
       }
@@ -102,9 +206,9 @@ export function PixelSpeechBubble({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [disabled, handleAdvance, actionKey]);
+  }, [disabled, handleAdvance, currentActionKey]);
 
-  const displayedText = text.slice(0, displayedLength);
+  const displayedText = currentText.slice(0, displayedLength);
 
   return (
     <div
@@ -126,10 +230,11 @@ export function PixelSpeechBubble({
       <div className="absolute inset-x-0 top-[7.5%] bottom-[8.5%] px-[4%] flex items-center justify-between z-10">
         {/* Left Column: Speaker in top-left, Text directly below */}
         <div className="flex-1 h-full flex flex-col justify-start items-start pr-[1cqw] overflow-hidden pt-[0.2cqw]">
-          {speaker && (
+          {currentSpeaker && (
             <span
-              className="text-[#a81363] font-bold uppercase tracking-wider select-none shrink-0"
+              className="font-bold uppercase tracking-wider select-none shrink-0"
               style={{
+                color: currentSpeakerColor,
                 fontFamily:
                   "'Press Start 2P', 'Silkscreen', monospace, sans-serif",
                 fontSize: "clamp(10px, 1.6cqw, 32px)",
@@ -137,7 +242,7 @@ export function PixelSpeechBubble({
                 textShadow: "1px 1px 0px rgba(255,255,255,0.9)",
               }}
             >
-              {speaker}
+              {currentSpeaker}
             </span>
           )}
           <p
@@ -169,7 +274,7 @@ export function PixelSpeechBubble({
         <button
           onClick={handleAdvance}
           type="button"
-          aria-label={`Avanzar diálogo (${actionKey})`}
+          aria-label={`Avanzar diálogo (${currentActionKey})`}
           className="shrink-0 aspect-square bg-[#940d57] hover:bg-[#b5146c] active:bg-[#780946] text-white transition-all flex items-center justify-center cursor-pointer select-none group"
           style={{
             width: "clamp(32px, 5.2cqw, 102px)",
@@ -201,7 +306,7 @@ export function PixelSpeechBubble({
                 fontSize: "clamp(10px, 1.9cqw, 38px)",
               }}
             >
-              {actionKey}
+              {currentActionKey}
             </span>
           </div>
         </button>

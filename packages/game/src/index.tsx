@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { PixelFullscreenButton } from "./PixelFullscreenButton";
-import { PixelSpeechBubble } from "./PixelSpeechBubble";
+import { PixelSpeechBubble, DialogueLine } from "./PixelSpeechBubble";
 
 export interface GameProps {
   onModuleComplete?: (moduleName: "mitos" | "simulador") => void;
@@ -247,6 +247,19 @@ const getRightBoundaryX = (y: number): number => {
   return getBaseRightBoundaryX(y);
 };
 
+// Stable constants for intro dialogue sequence (prevents re-render resets on fullscreen toggle)
+const INTRO_MESSAGES_ES: string[] = [
+  "¡Hola! Hoy es un día muy importante. ¡Es día de elecciones!",
+  "Soy Inecito, funcionario de casilla, y mi misión es ayudar a que todas las personas puedan votar.",
+  "Pero antes de recibir a nuestros primeros votantes... ¡tenemos mucho que preparar!",
+];
+
+const INTRO_MESSAGES_NAH: string[] = [
+  "¡Niltze! Axkan se tonal tekitl. ¡Tonal tlaixquetzalistli!",
+  "Nehwa Inecito, tekitketl casilla, wan notequi tlaiknelia nochimeh tlacameh ma tlateneuakan.",
+  "Tel achto xikselikan tochantlakahuan... ¡miak tlamantli moneki timoyektlalikan!",
+];
+
 export function PixiGameCanvas({
   onModuleComplete,
   language = "es",
@@ -269,6 +282,9 @@ export function PixiGameCanvas({
   );
   const [isWalking, setIsWalking] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+
+  // Dynamic Dialogue Queue for plaza and NPC interactions
+  const [activeDialogue, setActiveDialogue] = useState<Array<DialogueLine | string> | null>(null);
 
   // Intro Dialogue Speech Bubble State: "initial_delay" | "entering" | "visible" | "exiting" | "dismissed"
   const [dialogueState, setDialogueState] = useState<
@@ -1162,15 +1178,19 @@ export function PixiGameCanvas({
                       speaker={
                         language === "nah" ? "Inecito Cívica" : "Inecito"
                       }
-                      text={
-                        language === "nah"
-                          ? "¡Ximopanolti ipan INE Plaza! Xiqumiti miak tlamantli. Xicpacho [E] pampa xipewa."
-                          : "¡Bienvenido a la Explanada Cívica del INE! Camina por la plaza para explorar los módulos interactivos de Cultura Cívica."
+                      messages={
+                        activeDialogue ||
+                        (language === "nah"
+                          ? INTRO_MESSAGES_NAH
+                          : INTRO_MESSAGES_ES)
                       }
                       actionKey="E"
                       disabled={showExitConfirm}
                       isDismissing={dialogueState === "exiting"}
-                      onDismiss={() => setDialogueState("exiting")}
+                      onDismiss={() => {
+                        setDialogueState("exiting");
+                        setActiveDialogue(null);
+                      }}
                     />
                   </div>
                 </div>
