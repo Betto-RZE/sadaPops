@@ -186,7 +186,7 @@ function AnimatedPlayerSprite({
         src={imageSrc}
         alt="Personaje Principal"
         className="w-full h-auto object-contain select-none pointer-events-none drop-shadow-md shrink-0"
-        style={{ imageRendering: "auto" }}
+        style={{ imageRendering: "pixelated" }}
       />
     </div>
   );
@@ -211,6 +211,14 @@ export const PLAZA_BOUNDS = {
 export const INITIAL_BOX_POSITION = {
   x: 20, // Horizontal: 20% (esquina superior izquierda, separada del borde diagonal)
   y: 45, // Vertical: 45% (esquina superior, separada del borde superior)
+};
+
+// Ubicaciones configurables donde se colocarán los 4 objetos en la explanada (%)
+export const PLACEMENT_SPOTS = {
+  casillas: { x: 74, y: 50 }, // Casillas electorales (zona derecha de la explanada)
+  mesa: { x: 50, y: 52 }, // Mesa directiva de casilla (zona central de la explanada)
+  deco: { x: 34, y: 72 }, // Mamparas / decorativos (zona inferior izquierda)
+  boletas: { x: 66, y: 72 }, // Urnas y boletas (zona inferior derecha)
 };
 
 // Returns dynamic left boundary % at vertical position y (Slanted diagonal line)
@@ -314,6 +322,23 @@ export function PixiGameCanvas({
     playerPosRef.current = playerPos;
   }, [playerPos]);
 
+  // Identificador de sesión para forzar remonte y reinicio limpio de todos los componentes
+  const [gameRunId, setGameRunId] = useState(0);
+
+  // Reinicio completo de la partida (vuelve absolutamente todo al estado inicial)
+  const resetEntireGame = useCallback(() => {
+    setPlayerPos({ x: 50, y: 62 });
+    setLastDirection("1");
+    setIsWalking(false);
+    setBoxPos(INITIAL_BOX_POSITION);
+    setBoxStage(1);
+    setMinigamePhase("phase_0_ready");
+    setActiveDialogue(null);
+    setDialogueState("initial_delay");
+    setShowExitConfirm(false);
+    setGameRunId((prev) => prev + 1);
+  }, []);
+
   const boxPosRef = useRef(boxPos);
   useEffect(() => {
     boxPosRef.current = boxPos;
@@ -406,14 +431,10 @@ export function PixiGameCanvas({
           setCurrentScreen(targetScreen);
           if (targetScreen === "splash") {
             setActiveScene(null);
-            // Reset character state & game progress hidden behind solid black curtain
-            setPlayerPos({ x: 50, y: 62 });
-            setIsWalking(false);
-            setLastDirection("1");
-            setDialogueState("initial_delay");
+            resetEntireGame();
           } else {
             setActiveScene(targetScene);
-            setDialogueState("initial_delay");
+            resetEntireGame();
           }
 
           setTimeout(() => {
@@ -466,7 +487,8 @@ export function PixiGameCanvas({
           curPlayer.x - curBox.x,
           curPlayer.y - curBox.y,
         );
-        // Si el jugador está cerca de la caja (radio de ~9% del escenario)
+
+        // 1. Recoger objetos de la caja de suministros (Cajas 1 a 5)
         if (distToBox < 9.0) {
           if (curPhase === "phase_0_ready") {
             setMinigamePhase("phase_1_casillas");
@@ -480,6 +502,34 @@ export function PixiGameCanvas({
           } else if (curPhase === "phase_3_done") {
             setMinigamePhase("phase_4_boletas");
             setBoxStage(5);
+          }
+        } else {
+          // 2. Colocar objetos en su ubicación correspondiente
+          let targetSpot: { x: number; y: number } | null = null;
+          if (curPhase === "phase_1_casillas")
+            targetSpot = PLACEMENT_SPOTS.casillas;
+          else if (curPhase === "phase_2_mesa")
+            targetSpot = PLACEMENT_SPOTS.mesa;
+          else if (curPhase === "phase_3_deco")
+            targetSpot = PLACEMENT_SPOTS.deco;
+          else if (curPhase === "phase_4_boletas")
+            targetSpot = PLACEMENT_SPOTS.boletas;
+
+          if (targetSpot) {
+            const distToSpot = Math.hypot(
+              curPlayer.x - targetSpot.x,
+              curPlayer.y - targetSpot.y,
+            );
+            if (distToSpot < 9.0) {
+              if (curPhase === "phase_1_casillas")
+                setMinigamePhase("phase_1_done");
+              else if (curPhase === "phase_2_mesa")
+                setMinigamePhase("phase_2_done");
+              else if (curPhase === "phase_3_deco")
+                setMinigamePhase("phase_3_done");
+              else if (curPhase === "phase_4_boletas")
+                setMinigamePhase("phase_complete");
+            }
           }
         }
       }
@@ -682,12 +732,92 @@ export function PixiGameCanvas({
   }, [currentScreen]);
 
   // Camera Dynamic Zoom & Smooth Character Tracking Parameters (Zoom temporalmente desactivado = 1.0)
-  const zoomScale = 1.5;
+  const zoomScale = 1.9;
   const maxCamShift = (1 - 1 / zoomScale) * 50; // Max shift % before exposing background edges (0 con zoom 1)
   const rawCamX = 50 - playerPos.x;
   const rawCamY = 50 - playerPos.y;
   const camX = Math.min(maxCamShift, Math.max(-maxCamShift, rawCamX));
   const camY = Math.min(maxCamShift, Math.max(-maxCamShift, rawCamY));
+
+  // OBJETIVO ACTIVO CON SIGNO DE EXCLAMACIÓN FLOTANTE (Coordenadas en el mundo %)
+  let activeExclamationTarget: { x: number; y: number } | null = null;
+  if (dialogueState === "dismissed") {
+    if (isBoxInteractable) {
+      activeExclamationTarget = { x: boxPos.x, y: boxPos.y - 3.8 };
+    } else if (minigamePhase === "phase_1_casillas") {
+      activeExclamationTarget = {
+        x: PLACEMENT_SPOTS.casillas.x,
+        y: PLACEMENT_SPOTS.casillas.y - 3.8,
+      };
+    } else if (minigamePhase === "phase_2_mesa") {
+      activeExclamationTarget = {
+        x: PLACEMENT_SPOTS.mesa.x,
+        y: PLACEMENT_SPOTS.mesa.y - 3.8,
+      };
+    } else if (minigamePhase === "phase_3_deco") {
+      activeExclamationTarget = {
+        x: PLACEMENT_SPOTS.deco.x,
+        y: PLACEMENT_SPOTS.deco.y - 3.8,
+      };
+    } else if (minigamePhase === "phase_4_boletas") {
+      activeExclamationTarget = {
+        x: PLACEMENT_SPOTS.boletas.x,
+        y: PLACEMENT_SPOTS.boletas.y - 3.8,
+      };
+    }
+  }
+
+  // Detección de proximidad para interactuar con la caja
+  const distToBox = Math.hypot(playerPos.x - boxPos.x, playerPos.y - boxPos.y);
+  const isNearBox =
+    isBoxInteractable && dialogueState === "dismissed" && distToBox < 9.0;
+
+  // Detección de proximidad al punto de colocación activo
+  let activeSpotPos: { x: number; y: number } | null = null;
+  if (minigamePhase === "phase_1_casillas")
+    activeSpotPos = PLACEMENT_SPOTS.casillas;
+  else if (minigamePhase === "phase_2_mesa")
+    activeSpotPos = PLACEMENT_SPOTS.mesa;
+  else if (minigamePhase === "phase_3_deco")
+    activeSpotPos = PLACEMENT_SPOTS.deco;
+  else if (minigamePhase === "phase_4_boletas")
+    activeSpotPos = PLACEMENT_SPOTS.boletas;
+
+  const distToActiveSpot = activeSpotPos
+    ? Math.hypot(playerPos.x - activeSpotPos.x, playerPos.y - activeSpotPos.y)
+    : 999;
+  const isNearActiveSpot = Boolean(activeSpotPos && distToActiveSpot < 9.0);
+
+  // Proyección de la posición del objetivo en pantalla (0% a 100% del viewport)
+  const targetScreenX = activeExclamationTarget
+    ? 50 + (activeExclamationTarget.x + camX - 50) * zoomScale
+    : 50;
+  const targetScreenY = activeExclamationTarget
+    ? 50 + (activeExclamationTarget.y + camY - 50) * zoomScale
+    : 50;
+
+  // ¿El signo de exclamación se encuentra dentro del encuadre visible de la cámara?
+  const isTargetInView =
+    targetScreenX >= 4 &&
+    targetScreenX <= 96 &&
+    targetScreenY >= 5 &&
+    targetScreenY <= 95;
+
+  const showOffscreenArrow = Boolean(
+    activeExclamationTarget && !isTargetInView,
+  );
+
+  // Vector de dirección desde el centro de la pantalla hacia el objetivo fuera de cámara
+  const dirX = targetScreenX - 50;
+  const dirY = targetScreenY - 50;
+  const arrowAngleRad = Math.atan2(dirY, dirX);
+  const arrowAngleDeg = (arrowAngleRad * 180) / Math.PI;
+
+  // Perímetro elíptico pegado a los bordes de la cámara (HUD ultra-fluido en 60 FPS):
+  // X varía suavemente en [3.5%, 96.5%] (radio = 46.5%)
+  // Y varía suavemente en [5.5%, 94.5%] (radio = 44.5%)
+  const arrowScreenX = 50 + 46.5 * Math.cos(arrowAngleRad);
+  const arrowScreenY = 50 + 44.5 * Math.sin(arrowAngleRad);
 
   // Synchronize state with HTML5 Fullscreen API events
   useEffect(() => {
@@ -815,49 +945,6 @@ export function PixiGameCanvas({
           style={{ imageRendering: "pixelated" }}
         />
 
-        {/* CRT Animated TV Static Layer */}
-        <div className="absolute inset-0 pointer-events-none z-15 overflow-hidden">
-          <style>{`
-            @keyframes crtBeamSweep {
-              0% { top: -15%; opacity: 0; }
-              15% { opacity: 0.6; }
-              85% { opacity: 0.6; }
-              100% { top: 115%; opacity: 0; }
-            }
-            @keyframes tvNoiseGlitch {
-              0% { opacity: 0.08; transform: translate(0, 0); }
-              25% { opacity: 0.16; transform: translate(-2px, 1px); }
-              50% { opacity: 0.10; transform: translate(1px, -1px); }
-              75% { opacity: 0.18; transform: translate(-1px, 2px); }
-              100% { opacity: 0.08; transform: translate(0, 0); }
-            }
-            @keyframes vhsBarSweep {
-              0%, 85%, 100% { opacity: 0; top: -10%; }
-              88% { opacity: 0.6; top: 30%; }
-              92% { opacity: 0.8; top: 65%; }
-              95% { opacity: 0.4; top: 90%; }
-            }
-          `}</style>
-
-          {/* 1. Visible CRT Scanlines grid */}
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.30)_50%)] bg-[length:100%_4px] opacity-90" />
-
-          {/* 2. Moving CRT Refresh Scan Beam */}
-          <div
-            className="absolute left-0 right-0 h-10 bg-gradient-to-b from-transparent via-cyan-200/25 to-transparent"
-            style={{ animation: "crtBeamSweep 4.5s linear infinite" }}
-          />
-
-          {/* 3. VHS Glitch Bar Line (Hardware Accelerated) */}
-          <div
-            className="absolute left-0 right-0 h-2 bg-pink-400/30"
-            style={{ animation: "vhsBarSweep 6s ease-in-out infinite" }}
-          />
-
-          {/* 4. CRT Radial Monitor Vignette */}
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_45%,rgba(0,0,0,0.45)_100%)] pointer-events-none" />
-        </div>
-
         {/* RETRO IRIS WIPE SVG MASK TRANSITION OVERLAY */}
         {irisRadius !== null && (
           <svg
@@ -954,7 +1041,10 @@ export function PixiGameCanvas({
             >
               {/* JUGAR Button */}
               <button
-                onClick={() => changeScreenWithTransition("gameplay")}
+                onClick={() => {
+                  resetEntireGame();
+                  changeScreenWithTransition("gameplay");
+                }}
                 type="button"
                 className={`w-full px-4 bg-[#f9d7ea] hover:bg-[#f6c2e0] rounded-md ring-2 ring-white ring-inset transition-all flex items-center justify-between cursor-pointer group shrink-0 ${
                   isFullscreen
@@ -979,56 +1069,25 @@ export function PixiGameCanvas({
 
         {/* SCREEN: GAMEPLAY - DYNAMIC 2D STAGE MAP & AVATAR PLAZA */}
         {currentScreen === "gameplay" && (
-          <div className="absolute inset-0 w-full h-full z-20 overflow-hidden bg-[#2d572c] select-none">
-            {/* Ambient Dynamic Animations Styles */}
+          <div
+            key={`gameplay-run-${gameRunId}`}
+            className="absolute inset-0 w-full h-full z-20 overflow-hidden bg-[#2d572c] select-none"
+          >
+            {/* Micro-animations Styles */}
             <style>{`
               @keyframes floatExclamation {
                 0%, 100% { transform: translateY(0px); }
                 50% { transform: translateY(-5px); }
               }
-              @keyframes godRayPulse {
-                0%, 100% { opacity: 0.08; transform: rotate(-24deg) scaleY(1); }
-                50% { opacity: 0.18; transform: rotate(-24deg) scaleY(1.03); }
+              @keyframes pixelArrowPulse {
+                0%, 100% { transform: translateX(0px); }
+                50% { transform: translateX(4px); }
               }
-              @keyframes petalFloat1 {
-                0% { transform: translate(0px, 0px) rotate(0deg); opacity: 0; }
-                15% { opacity: 0.85; }
-                85% { opacity: 0.75; }
-                100% { transform: translate(110px, 150px) rotate(260deg); opacity: 0; }
-              }
-              @keyframes petalFloat2 {
-                0% { transform: translate(0px, 0px) rotate(0deg); opacity: 0; }
-                20% { opacity: 0.8; }
-                80% { opacity: 0.7; }
-                100% { transform: translate(-90px, 140px) rotate(-190deg); opacity: 0; }
-              }
-              @keyframes petalFloat3 {
-                0% { transform: translate(0px, 0px) rotate(0deg); opacity: 0; }
-                25% { opacity: 0.9; }
-                75% { opacity: 0.8; }
-                100% { transform: translate(70px, 160px) rotate(310deg); opacity: 0; }
-              }
-              @keyframes sparkleFloat {
-                0% { transform: translate(0, 0) scale(0.5); opacity: 0.15; }
-                50% { transform: translate(18px, -24px) scale(1.2); opacity: 0.85; }
-                100% { transform: translate(36px, -48px) scale(0.5); opacity: 0.15; }
-              }
-              @keyframes butterflyFlutter {
-                0% { transform: translate(0px, 0px) scaleX(1); }
-                25% { transform: translate(16px, -14px) scaleX(1); }
-                50% { transform: translate(30px, 6px) scaleX(-1); }
-                75% { transform: translate(10px, 14px) scaleX(-1); }
-                100% { transform: translate(0px, 0px) scaleX(1); }
-              }
-              @keyframes mistDrift {
-                0% { transform: translateX(-4%); opacity: 0.12; }
-                50% { transform: translateX(4%); opacity: 0.24; }
-                100% { transform: translateX(-4%); opacity: 0.12; }
+              @keyframes floatPrompt {
+                0%, 100% { transform: translate(-50%, 0px); }
+                50% { transform: translate(-50%, -3px); }
               }
             `}</style>
-
-            {/* CRT TV Scanline Grid for Retro Cohesion (Pinned to Viewport) */}
-            <div className="absolute inset-0 pointer-events-none z-20 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.22)_50%)] bg-[length:100%_4px] opacity-60" />
 
             {/* Top HUD Bar: Return Arrow Button (Pinned to Viewport) */}
             <div className="absolute top-3 left-3 z-30 pointer-events-none">
@@ -1049,6 +1108,33 @@ export function PixiGameCanvas({
               </button>
             </div>
 
+            {/* OFF-SCREEN WAYPOINT ARROW (Flecha pixel art con movimiento fluido en 60 FPS) */}
+            {showOffscreenArrow && (
+              <div
+                className="absolute pointer-events-none z-30 select-none"
+                style={{
+                  left: `${arrowScreenX}%`,
+                  top: `${arrowScreenY}%`,
+                  transform: `translate(-50%, -50%) rotate(${arrowAngleDeg}deg)`,
+                  willChange: "left, top, transform",
+                }}
+              >
+                <div
+                  style={{
+                    animation: "pixelArrowPulse 0.9s ease-in-out infinite",
+                  }}
+                  className="flex items-center justify-center filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.7)]"
+                >
+                  <img
+                    src="/assets/juego/flecha-rosa.png"
+                    alt="Flecha indicadora de objetivo"
+                    className="w-10 h-10 object-contain select-none pointer-events-none"
+                    style={{ imageRendering: "pixelated" }}
+                  />
+                </div>
+              </div>
+            )}
+
             {/* DYNAMIC CAMERA WORLD CONTAINER (Enlarges 1.75x and smoothly tracks avatar) */}
             <div
               className="absolute inset-0 w-full h-full z-10"
@@ -1066,152 +1152,6 @@ export function PixiGameCanvas({
                 style={{ imageRendering: "pixelated" }}
               />
 
-              {/* DYNAMIC AMBIENT LIGHTING & ATMOSPHERE LAYERS */}
-              {/* 1. Soft Warm Top-Left Sunlight Canopy Bloom Glare */}
-              <div className="absolute inset-0 pointer-events-none z-12 bg-[radial-gradient(circle_at_15%_10%,rgba(254,240,138,0.18)_0%,rgba(253,224,71,0.06)_35%,transparent_65%)]" />
-
-              {/* 2. Softened Volumetric Sun Light Rays (God Rays) */}
-              <div className="absolute inset-0 pointer-events-none z-13 overflow-hidden">
-                <div
-                  className="absolute -top-[30%] -left-[10%] w-[140%] h-[160%] bg-gradient-to-r from-transparent via-amber-100/12 to-transparent blur-[2px] transform origin-top-left"
-                  style={{ animation: "godRayPulse 8s ease-in-out infinite" }}
-                />
-                <div
-                  className="absolute -top-[30%] left-[18%] w-[120%] h-[160%] bg-gradient-to-r from-transparent via-yellow-100/10 to-transparent blur-[3px] transform origin-top-left"
-                  style={{
-                    animation: "godRayPulse 10s ease-in-out infinite 2.5s",
-                  }}
-                />
-                <div
-                  className="absolute -top-[30%] left-[38%] w-[100%] h-[160%] bg-gradient-to-r from-transparent via-pink-100/08 to-transparent blur-[4px] transform origin-top-left"
-                  style={{
-                    animation: "godRayPulse 9s ease-in-out infinite 4.5s",
-                  }}
-                />
-              </div>
-
-              {/* 3. Floating Ambient Particles: Dalia Petals & Gold Sunlight Dust */}
-              <div className="absolute inset-0 pointer-events-none z-14 overflow-hidden">
-                {/* Floating Pink Dalia Petals (Rich Flow) */}
-                <div
-                  className="absolute top-[14%] left-[18%] w-2.5 h-2.5 bg-pink-400/80 rounded-tl-full rounded-br-full border border-pink-600/40 shadow-sm"
-                  style={{ animation: "petalFloat1 6.5s ease-in-out infinite" }}
-                />
-                <div
-                  className="absolute top-[22%] left-[62%] w-3 h-2 bg-pink-500/85 rounded-tr-full rounded-bl-full border border-pink-700/40 shadow-sm"
-                  style={{
-                    animation: "petalFloat2 8s ease-in-out infinite 1.2s",
-                  }}
-                />
-                <div
-                  className="absolute top-[10%] left-[42%] w-2 h-2 bg-dalia-400/90 rounded-full border border-pink-500/50 shadow-sm"
-                  style={{
-                    animation: "petalFloat3 7.2s ease-in-out infinite 2.4s",
-                  }}
-                />
-                <div
-                  className="absolute top-[28%] left-[80%] w-2.5 h-2.5 bg-pink-300/80 rounded-tl-full rounded-br-full border border-pink-500/40"
-                  style={{
-                    animation: "petalFloat2 9s ease-in-out infinite 3.6s",
-                  }}
-                />
-                <div
-                  className="absolute top-[16%] left-[32%] w-2 h-2 bg-pink-400/80 rounded-tr-full rounded-bl-full border border-pink-600/30"
-                  style={{
-                    animation: "petalFloat1 7.8s ease-in-out infinite 4.8s",
-                  }}
-                />
-                <div
-                  className="absolute top-[35%] left-[12%] w-2.5 h-2 bg-dalia-500/85 rounded-tl-full rounded-br-full border border-pink-700/30"
-                  style={{
-                    animation: "petalFloat3 8.5s ease-in-out infinite 5.5s",
-                  }}
-                />
-                <div
-                  className="absolute top-[20%] left-[52%] w-3 h-2.5 bg-pink-300/90 rounded-tr-full rounded-bl-full border border-pink-400/40"
-                  style={{
-                    animation: "petalFloat1 6.8s ease-in-out infinite 6.2s",
-                  }}
-                />
-                <div
-                  className="absolute top-[30%] left-[70%] w-2 h-2 bg-pink-400/75 rounded-full border border-pink-500/30"
-                  style={{
-                    animation: "petalFloat2 8.2s ease-in-out infinite 7.0s",
-                  }}
-                />
-
-                {/* Glowing Sunlight Sparkles / Pollen Dust */}
-                <div
-                  className="absolute top-[38%] left-[28%] w-1.5 h-1.5 bg-amber-200 rounded-full shadow-[0_0_6px_#fde047]"
-                  style={{ animation: "sparkleFloat 4s ease-in-out infinite" }}
-                />
-                <div
-                  className="absolute top-[52%] left-[52%] w-2 h-2 bg-yellow-100 rounded-full shadow-[0_0_8px_#fef08a]"
-                  style={{
-                    animation: "sparkleFloat 5.5s ease-in-out infinite 0.8s",
-                  }}
-                />
-                <div
-                  className="absolute top-[32%] left-[72%] w-1.5 h-1.5 bg-amber-300 rounded-full shadow-[0_0_6px_#fde047]"
-                  style={{
-                    animation: "sparkleFloat 4.8s ease-in-out infinite 1.9s",
-                  }}
-                />
-                <div
-                  className="absolute top-[62%] left-[18%] w-2 h-2 bg-amber-100 rounded-full shadow-[0_0_8px_#ffffff]"
-                  style={{
-                    animation: "sparkleFloat 6s ease-in-out infinite 2.8s",
-                  }}
-                />
-                <div
-                  className="absolute top-[44%] left-[40%] w-1.5 h-1.5 bg-yellow-200 rounded-full shadow-[0_0_6px_#fde047]"
-                  style={{
-                    animation: "sparkleFloat 5.2s ease-in-out infinite 3.7s",
-                  }}
-                />
-                <div
-                  className="absolute top-[58%] left-[84%] w-2 h-2 bg-amber-200 rounded-full shadow-[0_0_8px_#fef08a]"
-                  style={{
-                    animation: "sparkleFloat 4.5s ease-in-out infinite 4.4s",
-                  }}
-                />
-                <div
-                  className="absolute top-[26%] left-[60%] w-1.5 h-1.5 bg-yellow-100 rounded-full shadow-[0_0_6px_#ffffff]"
-                  style={{
-                    animation: "sparkleFloat 5.8s ease-in-out infinite 5.1s",
-                  }}
-                />
-              </div>
-
-              {/* 4. Animated Pixel Butterflies hovering near bushes */}
-              <div className="absolute inset-0 pointer-events-none z-14">
-                {/* Butterfly 1 (Bottom Left Flowers) */}
-                <div
-                  className="absolute left-[12%] bottom-[14%] text-sm select-none"
-                  style={{
-                    animation: "butterflyFlutter 4.2s ease-in-out infinite",
-                  }}
-                >
-                  🦋
-                </div>
-                {/* Butterfly 2 (Bottom Right Flowers) */}
-                <div
-                  className="absolute right-[14%] bottom-[16%] text-sm select-none"
-                  style={{
-                    animation:
-                      "butterflyFlutter 5.5s ease-in-out infinite 1.8s",
-                  }}
-                >
-                  🦋
-                </div>
-              </div>
-
-              {/* 5. Gentle Forest Ground Mist Layer */}
-              <div
-                className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-emerald-950/20 via-emerald-900/10 to-transparent pointer-events-none z-11"
-                style={{ animation: "mistDrift 10s ease-in-out infinite" }}
-              />
-
               {/* PLAYER CHARACTER AVATAR ON THE PLAZA FLOOR */}
               <div
                 style={{
@@ -1220,8 +1160,9 @@ export function PixiGameCanvas({
                   width: "6.5%",
                   transform: "translate(-50%, -90%)",
                   willChange: "left, top",
+                  zIndex: 25,
                 }}
-                className="absolute z-25 pointer-events-none flex flex-col items-center select-none shrink-0"
+                className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
               >
                 {/* Dynamic 8-Folder Sprite Animation Component */}
                 <AnimatedPlayerSprite
@@ -1238,14 +1179,67 @@ export function PixiGameCanvas({
                     top: `${boxPos.y}%`,
                     width: "7.8%",
                     transform: "translate(-50%, -75%)",
-                    zIndex: Math.round(boxPos.y),
+                    zIndex: 15,
                   }}
                   className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
                 >
+                  {/* Sombra proyectada en el suelo: sigue la figura en V isométrica de la base de la caja para evitar cualquier efecto de flotación */}
+                  <div
+                    className="absolute inset-0 pointer-events-none z-0"
+                    aria-hidden="true"
+                  >
+                    <svg
+                      viewBox="0 0 100 100"
+                      className="w-full h-full overflow-visible"
+                      preserveAspectRatio="none"
+                    >
+                      <defs>
+                        <filter
+                          id="boxShadowSoft"
+                          x="-40%"
+                          y="-40%"
+                          width="180%"
+                          height="180%"
+                        >
+                          <feGaussianBlur
+                            in="SourceGraphic"
+                            stdDeviation="1.6"
+                          />
+                        </filter>
+                        <filter
+                          id="boxShadowCore"
+                          x="-30%"
+                          y="-30%"
+                          width="160%"
+                          height="160%"
+                        >
+                          <feGaussianBlur
+                            in="SourceGraphic"
+                            stdDeviation="0.7"
+                          />
+                        </filter>
+                      </defs>
+
+                      {/* 1. Sombra difusa exterior en el suelo: proyecta el contorno en V isométrica sobre los adoquines */}
+                      <polygon
+                        points="51,64 85,76 51.5,97 17,76"
+                        fill="rgba(0, 0, 0, 0.40)"
+                        filter="url(#boxShadowSoft)"
+                      />
+
+                      {/* 2. Oclusión oscura de contacto directo pegada al borde inferior de la caja */}
+                      <polygon
+                        points="51.5,78 83,77 51.5,94.8 19,77"
+                        fill="rgba(0, 0, 0, 0.55)"
+                        filter="url(#boxShadowCore)"
+                      />
+                    </svg>
+                  </div>
+
                   {/* Signo de exclamación flotante sobre la caja cuando está disponible para interactuar */}
                   {isBoxInteractable && dialogueState === "dismissed" && (
                     <div
-                      className="absolute -top-[46%] flex items-center justify-center pointer-events-none"
+                      className="absolute -top-[46%] z-20 flex items-center justify-center pointer-events-none"
                       style={{
                         width: "19%",
                         animation: "floatExclamation 1.4s ease-in-out infinite",
@@ -1260,6 +1254,31 @@ export function PixiGameCanvas({
                     </div>
                   )}
 
+                  {/* Texto pixel art "presiona [E] para interactuar" al acercarse a la caja */}
+                  {isNearBox && (
+                    <div
+                      className="absolute -top-[78%] left-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
+                      style={{
+                        animation: "floatPrompt 1.4s ease-in-out infinite",
+                      }}
+                    >
+                      <div
+                        className="bg-[#12000f]/95 px-2.5 py-1 rounded shadow-[2px_2px_0px_#000] flex items-center gap-1.5 whitespace-nowrap text-[#ff4da6]"
+                        style={{
+                          fontFamily:
+                            "'Press Start 2P', 'Silkscreen', monospace",
+                          fontSize: "8px",
+                          lineHeight: "1.2",
+                        }}
+                      >
+                        <span>presiona</span>
+                        <span className="text-[#ff80bf] font-black">[E]</span>
+                        <span>para interactuar</span>
+                      </div>
+                      <div className="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[5px] border-t-[#12000f]" />
+                    </div>
+                  )}
+
                   {/* Sprite de la caja (caja-1.png hasta caja-5.png) */}
                   <img
                     src={`/assets/juego/caja-${boxStage}.png`}
@@ -1268,9 +1287,64 @@ export function PixiGameCanvas({
                       e.currentTarget.src = "/assets/juego/caja-1.png";
                     }}
                     alt={`Caja Minijuego Fase ${boxStage}`}
-                    className="w-full h-auto object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.45)]"
+                    className="relative z-10 w-full h-auto object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]"
                     style={{ imageRendering: "pixelated" }}
                   />
+                </div>
+              )}
+
+              {/* PUNTO DE COLOCACIÓN ACTIVO (Destino donde se ubica el objeto que llevas de la caja) */}
+              {activeSpotPos && (
+                <div
+                  style={{
+                    left: `${activeSpotPos.x}%`,
+                    top: `${activeSpotPos.y}%`,
+                    width: "7.8%",
+                    transform: "translate(-50%, -50%)",
+                    zIndex: 20,
+                  }}
+                  className="absolute pointer-events-none flex flex-col items-center select-none"
+                >
+                  {/* Signo de exclamación flotante sobre el punto de destino */}
+                  <div
+                    className="absolute -top-[46%] z-20 flex items-center justify-center pointer-events-none"
+                    style={{
+                      width: "19%",
+                      animation: "floatExclamation 1.4s ease-in-out infinite",
+                    }}
+                  >
+                    <img
+                      src="/assets/juego/exclamacion.png"
+                      alt="Ubicación disponible"
+                      className="w-full h-auto object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
+                      style={{ imageRendering: "pixelated" }}
+                    />
+                  </div>
+
+                  {/* Texto pixel art "presiona [E] para interactuar" al acercarse al punto de destino */}
+                  {isNearActiveSpot && (
+                    <div
+                      className="absolute -top-[78%] left-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
+                      style={{
+                        animation: "floatPrompt 1.4s ease-in-out infinite",
+                      }}
+                    >
+                      <div
+                        className="bg-[#12000f]/95 px-2.5 py-1 rounded shadow-[2px_2px_0px_#000] flex items-center gap-1.5 whitespace-nowrap text-[#ff4da6]"
+                        style={{
+                          fontFamily:
+                            "'Press Start 2P', 'Silkscreen', monospace",
+                          fontSize: "8px",
+                          lineHeight: "1.2",
+                        }}
+                      >
+                        <span>presiona</span>
+                        <span className="text-[#ff80bf] font-black">[E]</span>
+                        <span>para interactuar</span>
+                      </div>
+                      <div className="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[5px] border-t-[#12000f]" />
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1295,6 +1369,7 @@ export function PixiGameCanvas({
                 <div className="absolute inset-0 z-40 pointer-events-none flex items-end justify-center pb-[1.8cqw] px-[2cqw] overflow-hidden select-none">
                   <div className="relative z-10 w-[96%] pointer-events-auto">
                     <PixelSpeechBubble
+                      key={`speech-bubble-${gameRunId}`}
                       speaker={
                         language === "nah" ? "Inecito Cívica" : "Inecito"
                       }
@@ -1375,6 +1450,7 @@ export function PixiGameCanvas({
                   type="button"
                   onClick={() => {
                     setShowExitConfirm(false);
+                    resetEntireGame();
                     changeScreenWithTransition("splash");
                   }}
                   className="flex-1 bg-[#b5146c] hover:bg-[#9c0f5a] text-white border-[3px] border-black font-black uppercase shadow-[3px_3px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all py-[min(2cqw,10px)] rounded-xl cursor-pointer select-none"
