@@ -135,13 +135,51 @@ export const CASILLAS_ROW = CASILLA_POSITIONS;
 
 // COORDENADAS CONFIGURABLES DE LA MESA DE VOTACIÓN (Edita aquí manualmente):
 export const MESA_POSITION = { x: 19.0, y: 74.0 };
-export const MESA_WIDTH = "8.5%";
+export const MESA_WIDTH = "8.9%";
+
+// COORDENADAS CONFIGURABLES DE LAS 3 DECORACIONES (Edita aquí manualmente cada una):
+export const DECORACIONES_POSITIONS = {
+  cartel1: { x: 95.5, y: 50.0 }, // Cartel 1 (Mampara informativa frontal)
+  cartel2: { x: 93.0, y: 91.5 }, // Cartel 2 (Mampara informativa de perfil)
+  folleto: { x: 7.2, y: 31.0 }, // Folleto Cívico
+};
+
+// TAMAÑOS CONFIGURABLES DE LAS 3 DECORACIONES (Edita aquí el ancho '%' de cada una):
+export const DECORACIONES_SIZES = {
+  cartel1: "6.2%", // Cartel 1 frontal
+  cartel2: "6.5%", // Cartel 2 de perfil
+  folleto: "2.8%", // Folleto Cívico
+};
+
+export const DECORACIONES_LIST = [
+  {
+    id: "cartel-1",
+    key: "cartel1" as const,
+    name: "Cartel Informativo 1",
+    sprite: "/assets/juego/cartel-1.png",
+    width: DECORACIONES_SIZES.cartel1,
+  },
+  {
+    id: "cartel-2",
+    key: "cartel2" as const,
+    name: "Cartel Informativo 2",
+    sprite: "/assets/juego/cartel-2.png",
+    width: DECORACIONES_SIZES.cartel2,
+  },
+  {
+    id: "folleto",
+    key: "folleto" as const,
+    name: "Folleto Cívico",
+    sprite: "/assets/juego/folleto.png",
+    width: DECORACIONES_SIZES.folleto,
+  },
+];
 
 // Ubicaciones configurables donde se colocarán los 4 objetos en la explanada (%)
 export const PLACEMENT_SPOTS = {
   casillas: CASILLA_POSITIONS[0], // Primera mampara electoral
-  mesa: MESA_POSITION, // Mesa directiva de casilla (zona izquierda X:21, Y:62)
-  deco: { x: 34, y: 72 }, // Mamparas / decorativos (zona inferior izquierda)
+  mesa: MESA_POSITION, // Mesa directiva de casilla (zona izquierda X:19, Y:74)
+  deco: DECORACIONES_POSITIONS.cartel1, // Primera decoración (Cartel 1)
   boletas: { x: 66, y: 72 }, // Urnas y boletas (zona inferior derecha)
 };
 
@@ -245,12 +283,21 @@ export default function GameplayScene({
     | "phase_complete"
   >("phase_0_ready");
 
-  // Número de casillas colocadas individualmente (0 a 4)
-  const [placedCasillasCount, setPlacedCasillasCount] = useState<number>(0);
-  const placedCasillasCountRef = useRef(placedCasillasCount);
+  // Índices de casillas colocadas individualmente (en cualquier orden: 0, 1, 2, 3, 4)
+  const [placedCasillaIndices, setPlacedCasillaIndices] = useState<number[]>(
+    [],
+  );
+  const placedCasillaIndicesRef = useRef(placedCasillaIndices);
   useEffect(() => {
-    placedCasillasCountRef.current = placedCasillasCount;
-  }, [placedCasillasCount]);
+    placedCasillaIndicesRef.current = placedCasillaIndices;
+  }, [placedCasillaIndices]);
+
+  // Keys de decoraciones colocadas individualmente (en cualquier orden: cartel1, cartel2, folleto)
+  const [placedDecoKeys, setPlacedDecoKeys] = useState<string[]>([]);
+  const placedDecoKeysRef = useRef(placedDecoKeys);
+  useEffect(() => {
+    placedDecoKeysRef.current = placedDecoKeys;
+  }, [placedDecoKeys]);
 
   const playerPosRef = useRef(playerPos);
   useEffect(() => {
@@ -350,56 +397,90 @@ export default function GameplayScene({
           if (curPhase === "phase_0_ready") {
             setMinigamePhase("phase_1_casillas");
             setBoxStage(2);
-            setPlacedCasillasCount(0);
+            setPlacedCasillaIndices([]);
           } else if (curPhase === "phase_1_done") {
             setMinigamePhase("phase_2_mesa");
             setBoxStage(3);
           } else if (curPhase === "phase_2_done") {
             setMinigamePhase("phase_3_deco");
             setBoxStage(4);
+            setPlacedDecoKeys([]);
           } else if (curPhase === "phase_3_done") {
             setMinigamePhase("phase_4_boletas");
             setBoxStage(5);
           }
         } else {
-          // 2. Colocar objetos en su ubicación correspondiente
+          // 2. Colocar objetos en cualquier orden según proximidad
           if (curPhase === "phase_1_casillas") {
-            const currentIdx = placedCasillasCountRef.current;
-            if (currentIdx < CASILLAS_ROW.length) {
-              const target = CASILLAS_ROW[currentIdx];
-              const distToTarget = Math.hypot(
-                curPlayer.x - target.x,
-                curPlayer.y - target.y,
-              );
-              if (distToTarget < 9.0) {
-                const nextCount = currentIdx + 1;
-                setPlacedCasillasCount(nextCount);
-                if (nextCount >= CASILLAS_ROW.length) {
-                  setMinigamePhase("phase_1_done");
+            // Busca la casilla pendiente más cercana al jugador que esté a rango (< 9.0)
+            const currentIndices = placedCasillaIndicesRef.current;
+            let closestIdx = -1;
+            let minDistance = 9.0;
+
+            CASILLAS_ROW.forEach((pos, idx) => {
+              if (!currentIndices.includes(idx)) {
+                const dist = Math.hypot(
+                  curPlayer.x - pos.x,
+                  curPlayer.y - pos.y,
+                );
+                if (dist < minDistance) {
+                  minDistance = dist;
+                  closestIdx = idx;
                 }
               }
-            }
-          } else {
-            let targetSpot: { x: number; y: number } | null = null;
-            if (curPhase === "phase_2_mesa") targetSpot = PLACEMENT_SPOTS.mesa;
-            else if (curPhase === "phase_3_deco")
-              targetSpot = PLACEMENT_SPOTS.deco;
-            else if (curPhase === "phase_4_boletas")
-              targetSpot = PLACEMENT_SPOTS.boletas;
+            });
 
-            if (targetSpot) {
-              const distToSpot = Math.hypot(
-                curPlayer.x - targetSpot.x,
-                curPlayer.y - targetSpot.y,
-              );
-              if (distToSpot < 9.0) {
-                if (curPhase === "phase_2_mesa")
-                  setMinigamePhase("phase_2_done");
-                else if (curPhase === "phase_3_deco")
-                  setMinigamePhase("phase_3_done");
-                else if (curPhase === "phase_4_boletas")
-                  setMinigamePhase("phase_complete");
+            if (closestIdx !== -1) {
+              const nextIndices = [...currentIndices, closestIdx];
+              setPlacedCasillaIndices(nextIndices);
+              if (nextIndices.length >= CASILLAS_ROW.length) {
+                setMinigamePhase("phase_1_done");
               }
+            }
+          } else if (curPhase === "phase_2_mesa") {
+            const target = PLACEMENT_SPOTS.mesa;
+            const distToTarget = Math.hypot(
+              curPlayer.x - target.x,
+              curPlayer.y - target.y,
+            );
+            if (distToTarget < 9.0) {
+              setMinigamePhase("phase_2_done");
+            }
+          } else if (curPhase === "phase_3_deco") {
+            // Busca la decoración pendiente más cercana al jugador que esté a rango (< 9.0)
+            const currentKeys = placedDecoKeysRef.current;
+            let closestKey: string | null = null;
+            let minDistance = 9.0;
+
+            DECORACIONES_LIST.forEach((deco) => {
+              if (!currentKeys.includes(deco.key)) {
+                const pos = DECORACIONES_POSITIONS[deco.key];
+                const dist = Math.hypot(
+                  curPlayer.x - pos.x,
+                  curPlayer.y - pos.y,
+                );
+                if (dist < minDistance) {
+                  minDistance = dist;
+                  closestKey = deco.key;
+                }
+              }
+            });
+
+            if (closestKey !== null) {
+              const nextKeys = [...currentKeys, closestKey];
+              setPlacedDecoKeys(nextKeys);
+              if (nextKeys.length >= DECORACIONES_LIST.length) {
+                setMinigamePhase("phase_3_done");
+              }
+            }
+          } else if (curPhase === "phase_4_boletas") {
+            const target = PLACEMENT_SPOTS.boletas;
+            const distToTarget = Math.hypot(
+              curPlayer.x - target.x,
+              curPlayer.y - target.y,
+            );
+            if (distToTarget < 9.0) {
+              setMinigamePhase("phase_complete");
             }
           }
         }
@@ -603,7 +684,7 @@ export default function GameplayScene({
   }, []);
 
   // Camera Dynamic Zoom & Smooth Character Tracking Parameters
-  const zoomScale = 1.0;
+  const zoomScale = 1.9;
   const maxCamShift = (1 - 1 / zoomScale) * 50; // Max shift % before exposing background edges (0 con zoom 1)
   const rawCamX = 50 - playerPos.x;
   const rawCamY = 50 - playerPos.y;
@@ -616,21 +697,49 @@ export default function GameplayScene({
     if (isBoxInteractable) {
       activeExclamationTarget = { x: boxPos.x, y: boxPos.y - 3.8 };
     } else if (minigamePhase === "phase_1_casillas") {
-      const currentIdx = Math.min(placedCasillasCount, CASILLAS_ROW.length - 1);
-      activeExclamationTarget = {
-        x: CASILLAS_ROW[currentIdx].x,
-        y: CASILLAS_ROW[currentIdx].y - 4.5,
-      };
+      // Apunta a la casilla pendiente MÁS CERCANA al jugador
+      let closestPos: { x: number; y: number } | null = null;
+      let minD = Infinity;
+      CASILLAS_ROW.forEach((pos, idx) => {
+        if (!placedCasillaIndices.includes(idx)) {
+          const d = Math.hypot(playerPos.x - pos.x, playerPos.y - pos.y);
+          if (d < minD) {
+            minD = d;
+            closestPos = pos;
+          }
+        }
+      });
+      if (closestPos) {
+        activeExclamationTarget = {
+          x: (closestPos as { x: number; y: number }).x,
+          y: (closestPos as { x: number; y: number }).y - 4.5,
+        };
+      }
     } else if (minigamePhase === "phase_2_mesa") {
       activeExclamationTarget = {
         x: PLACEMENT_SPOTS.mesa.x,
         y: PLACEMENT_SPOTS.mesa.y - 4.5,
       };
     } else if (minigamePhase === "phase_3_deco") {
-      activeExclamationTarget = {
-        x: PLACEMENT_SPOTS.deco.x,
-        y: PLACEMENT_SPOTS.deco.y - 3.8,
-      };
+      // Apunta a la decoración pendiente MÁS CERCANA al jugador
+      let closestPos: { x: number; y: number } | null = null;
+      let minD = Infinity;
+      DECORACIONES_LIST.forEach((deco) => {
+        if (!placedDecoKeys.includes(deco.key)) {
+          const pos = DECORACIONES_POSITIONS[deco.key];
+          const d = Math.hypot(playerPos.x - pos.x, playerPos.y - pos.y);
+          if (d < minD) {
+            minD = d;
+            closestPos = pos;
+          }
+        }
+      });
+      if (closestPos) {
+        activeExclamationTarget = {
+          x: (closestPos as { x: number; y: number }).x,
+          y: (closestPos as { x: number; y: number }).y - 4.5,
+        };
+      }
     } else if (minigamePhase === "phase_4_boletas") {
       activeExclamationTarget = {
         x: PLACEMENT_SPOTS.boletas.x,
@@ -643,33 +752,6 @@ export default function GameplayScene({
   const distToBox = Math.hypot(playerPos.x - boxPos.x, playerPos.y - boxPos.y);
   const isNearBox =
     isBoxInteractable && dialogueState === "dismissed" && distToBox < 9.0;
-
-  // Detección de proximidad al punto de colocación activo
-  let activeSpotPos: { x: number; y: number } | null = null;
-  if (
-    minigamePhase === "phase_1_casillas" &&
-    placedCasillasCount < CASILLAS_ROW.length
-  )
-    activeSpotPos = CASILLAS_ROW[placedCasillasCount];
-  else if (minigamePhase === "phase_2_mesa")
-    activeSpotPos = PLACEMENT_SPOTS.mesa;
-  else if (minigamePhase === "phase_3_deco")
-    activeSpotPos = PLACEMENT_SPOTS.deco;
-  else if (minigamePhase === "phase_4_boletas")
-    activeSpotPos = PLACEMENT_SPOTS.boletas;
-
-  const distToActiveSpot = activeSpotPos
-    ? Math.hypot(playerPos.x - activeSpotPos.x, playerPos.y - activeSpotPos.y)
-    : 999;
-  const isNearActiveSpot = Boolean(activeSpotPos && distToActiveSpot < 9.0);
-
-  // Cantidad de casillas visibles en la explanada (las colocadas hasta el momento)
-  const visibleCasillasCount =
-    minigamePhase === "phase_0_ready"
-      ? 0
-      : minigamePhase === "phase_1_casillas"
-        ? placedCasillasCount
-        : CASILLAS_ROW.length;
 
   // Determina si los objetos ya fueron colocados en la explanada
   const isMesaPlaced =
@@ -946,20 +1028,84 @@ export default function GameplayScene({
           </div>
         )}
 
-        {/* PUNTO DE COLOCACIÓN ACTIVO (Destino donde se ubica el objeto que llevas de la caja) */}
-        {activeSpotPos && (
+        {/* PUNTOS DE COLOCACIÓN ACTIVOS CON SIGNO DE EXCLAMACIÓN (Desaparecen al colocar cada objeto) */}
+
+        {/* 1. MAMPARAS PENDIENTES (phase_1_casillas - todas las no colocadas muestran su icono) */}
+        {minigamePhase === "phase_1_casillas" &&
+          CASILLA_POSITIONS.map((pos, index) => {
+            if (placedCasillaIndices.includes(index)) return null;
+            const dist = Math.hypot(playerPos.x - pos.x, playerPos.y - pos.y);
+            const isNearThisSpot = dist < 9.0;
+
+            return (
+              <div
+                key={`pending-casilla-${index}`}
+                style={{
+                  left: `${pos.x}%`,
+                  top: `${pos.y}%`,
+                  width: CASILLA_WIDTH,
+                  transform: "translate(-50%, -90%)",
+                  zIndex: 20,
+                }}
+                className="absolute pointer-events-none flex flex-col items-center select-none"
+              >
+                {/* Signo de exclamación flotante sobre la ubicación disponible */}
+                <div
+                  className="absolute -top-[46%] left-1/2 -translate-x-1/2 z-20 flex items-center justify-center pointer-events-none"
+                  style={{
+                    width: EXCLAMATION_ICON_WIDTH,
+                    animation: "floatExclamation 1.4s ease-in-out infinite",
+                  }}
+                >
+                  <img
+                    src="/assets/juego/exclamacion.png"
+                    alt="Ubicación disponible"
+                    className="w-full h-auto object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
+                    style={{ imageRendering: "pixelated" }}
+                  />
+                </div>
+
+                {/* Texto pixel art "presiona E" al acercarse */}
+                {isNearThisSpot && (
+                  <div
+                    className="absolute -top-[70%] left-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
+                    style={{
+                      animation: "floatPrompt 1.4s ease-in-out infinite",
+                    }}
+                  >
+                    <div
+                      className="whitespace-nowrap text-[#ff4da6] font-black tracking-wider flex items-center gap-1 select-none"
+                      style={{
+                        fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
+                        fontSize: isFullscreen
+                          ? "clamp(6.5px, 0.68cqw, 10px)"
+                          : "clamp(4.5px, 0.48cqw, 6px)",
+                        lineHeight: "1",
+                        textShadow:
+                          "1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 1px 0 #000, 0 -1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 2px 4px rgba(0,0,0,0.9)",
+                      }}
+                    >
+                      <span>presiona</span>
+                      <span className="text-[#ff99d6]">E</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+        {/* 2. MESA DE VOTACIÓN PENDIENTE (phase_2_mesa) */}
+        {minigamePhase === "phase_2_mesa" && (
           <div
             style={{
-              left: `${activeSpotPos.x}%`,
-              top: `${activeSpotPos.y}%`,
-              width:
-                minigamePhase === "phase_2_mesa" ? MESA_WIDTH : CASILLA_WIDTH,
+              left: `${MESA_POSITION.x}%`,
+              top: `${MESA_POSITION.y}%`,
+              width: MESA_WIDTH,
               transform: "translate(-50%, -90%)",
               zIndex: 20,
             }}
             className="absolute pointer-events-none flex flex-col items-center select-none"
           >
-            {/* Signo de exclamación flotante sobre el punto de destino (tamaño idéntico e independiente del objeto) */}
             <div
               className="absolute -top-[46%] left-1/2 -translate-x-1/2 z-20 flex items-center justify-center pointer-events-none"
               style={{
@@ -975,8 +1121,10 @@ export default function GameplayScene({
               />
             </div>
 
-            {/* Texto pixel art "presiona E" al acercarse al punto de destino (sin fondo, tamaño compacto) */}
-            {isNearActiveSpot && (
+            {Math.hypot(
+              playerPos.x - MESA_POSITION.x,
+              playerPos.y - MESA_POSITION.y,
+            ) < 9.0 && (
               <div
                 className="absolute -top-[70%] left-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
                 style={{
@@ -1003,35 +1151,160 @@ export default function GameplayScene({
           </div>
         )}
 
-        {/* CASILLAS ELECTORALES COLOCADAS UNA POR UNA */}
-        {CASILLAS_ROW.slice(0, visibleCasillasCount).map((pos, index) => (
-          <div
-            key={`casilla-item-${index}`}
-            style={{
-              left: `${pos.x}%`,
-              top: `${pos.y}%`,
-              width: CASILLA_WIDTH,
-              transform: "translate(-50%, -90%)",
-              zIndex: playerPos.y >= pos.y ? 18 : 28,
-            }}
-            className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
-          >
-            {/* Sombra de apoyo en el suelo */}
-            <div
-              className="absolute bottom-[2%] w-[85%] h-[12%] bg-black/40 rounded-full blur-[1px] pointer-events-none"
-              aria-hidden="true"
-            />
-            {/* Sprite pixel art de la casilla electoral */}
-            <img
-              src="/assets/juego/casilla.png"
-              alt={`Casilla Electoral ${index + 1}`}
-              className="relative z-10 w-full h-auto object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)]"
-              style={{ imageRendering: "pixelated" }}
-            />
-          </div>
-        ))}
+        {/* 3. DECORACIONES PENDIENTES (phase_3_deco - todas las no colocadas muestran su icono) */}
+        {minigamePhase === "phase_3_deco" &&
+          DECORACIONES_LIST.map((deco) => {
+            if (placedDecoKeys.includes(deco.key)) return null;
+            const pos = DECORACIONES_POSITIONS[deco.key];
+            const dist = Math.hypot(playerPos.x - pos.x, playerPos.y - pos.y);
+            const isNearThisSpot = dist < 9.0;
 
-        {/* OBJETO COLOCADO: MESA DE VOTACIÓN CON URNAS */}
+            return (
+              <div
+                key={`pending-deco-${deco.id}`}
+                style={{
+                  left: `${pos.x}%`,
+                  top: `${pos.y}%`,
+                  width: deco.width,
+                  transform: "translate(-50%, -90%)",
+                  zIndex: 20,
+                }}
+                className="absolute pointer-events-none flex flex-col items-center select-none"
+              >
+                <div
+                  className="absolute -top-[46%] left-1/2 -translate-x-1/2 z-20 flex items-center justify-center pointer-events-none"
+                  style={{
+                    width: EXCLAMATION_ICON_WIDTH,
+                    animation: "floatExclamation 1.4s ease-in-out infinite",
+                  }}
+                >
+                  <img
+                    src="/assets/juego/exclamacion.png"
+                    alt="Ubicación disponible"
+                    className="w-full h-auto object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
+                    style={{ imageRendering: "pixelated" }}
+                  />
+                </div>
+
+                {isNearThisSpot && (
+                  <div
+                    className="absolute -top-[70%] left-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
+                    style={{
+                      animation: "floatPrompt 1.4s ease-in-out infinite",
+                    }}
+                  >
+                    <div
+                      className="whitespace-nowrap text-[#ff4da6] font-black tracking-wider flex items-center gap-1 select-none"
+                      style={{
+                        fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
+                        fontSize: isFullscreen
+                          ? "clamp(6.5px, 0.68cqw, 10px)"
+                          : "clamp(4.5px, 0.48cqw, 6px)",
+                        lineHeight: "1",
+                        textShadow:
+                          "1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 1px 0 #000, 0 -1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 2px 4px rgba(0,0,0,0.9)",
+                      }}
+                    >
+                      <span>presiona</span>
+                      <span className="text-[#ff99d6]">E</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+        {/* 4. BOLETAS PENDIENTES (phase_4_boletas) */}
+        {minigamePhase === "phase_4_boletas" && (
+          <div
+            style={{
+              left: `${PLACEMENT_SPOTS.boletas.x}%`,
+              top: `${PLACEMENT_SPOTS.boletas.y}%`,
+              width: "8%",
+              transform: "translate(-50%, -90%)",
+              zIndex: 20,
+            }}
+            className="absolute pointer-events-none flex flex-col items-center select-none"
+          >
+            <div
+              className="absolute -top-[46%] left-1/2 -translate-x-1/2 z-20 flex items-center justify-center pointer-events-none"
+              style={{
+                width: EXCLAMATION_ICON_WIDTH,
+                animation: "floatExclamation 1.4s ease-in-out infinite",
+              }}
+            >
+              <img
+                src="/assets/juego/exclamacion.png"
+                alt="Ubicación disponible"
+                className="w-full h-auto object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
+                style={{ imageRendering: "pixelated" }}
+              />
+            </div>
+
+            {Math.hypot(
+              playerPos.x - PLACEMENT_SPOTS.boletas.x,
+              playerPos.y - PLACEMENT_SPOTS.boletas.y,
+            ) < 9.0 && (
+              <div
+                className="absolute -top-[70%] left-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
+                style={{
+                  animation: "floatPrompt 1.4s ease-in-out infinite",
+                }}
+              >
+                <div
+                  className="whitespace-nowrap text-[#ff4da6] font-black tracking-wider flex items-center gap-1 select-none"
+                  style={{
+                    fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
+                    fontSize: isFullscreen
+                      ? "clamp(6.5px, 0.68cqw, 10px)"
+                      : "clamp(4.5px, 0.48cqw, 6px)",
+                    lineHeight: "1",
+                    textShadow:
+                      "1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 1px 0 #000, 0 -1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 2px 4px rgba(0,0,0,0.9)",
+                  }}
+                >
+                  <span>presiona</span>
+                  <span className="text-[#ff99d6]">E</span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* CASILLAS ELECTORALES COLOCADAS EN CUALQUIER ORDEN (sin sombras artificiales) */}
+        {CASILLA_POSITIONS.map((pos, index) => {
+          const isPlaced =
+            minigamePhase !== "phase_0_ready" &&
+            minigamePhase !== "phase_1_casillas"
+              ? true
+              : placedCasillaIndices.includes(index);
+
+          if (!isPlaced) return null;
+
+          return (
+            <div
+              key={`casilla-item-${index}`}
+              style={{
+                left: `${pos.x}%`,
+                top: `${pos.y}%`,
+                width: CASILLA_WIDTH,
+                transform: "translate(-50%, -90%)",
+                zIndex: playerPos.y >= pos.y ? 18 : 28,
+              }}
+              className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
+            >
+              {/* Sprite pixel art de la casilla electoral */}
+              <img
+                src="/assets/juego/casilla.png"
+                alt={`Casilla Electoral ${index + 1}`}
+                className="relative z-10 w-full h-auto object-contain"
+                style={{ imageRendering: "pixelated" }}
+              />
+            </div>
+          );
+        })}
+
+        {/* OBJETO COLOCADO: MESA DE VOTACIÓN CON URNAS (sin sombras artificiales) */}
         {isMesaPlaced && (
           <div
             style={{
@@ -1043,20 +1316,50 @@ export default function GameplayScene({
             }}
             className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
           >
-            {/* Sombra de apoyo de las patas de la mesa en el suelo */}
-            <div
-              className="absolute bottom-[2%] w-[85%] h-[12%] bg-black/40 rounded-full blur-[1px] pointer-events-none"
-              aria-hidden="true"
-            />
             {/* Sprite pixel art de la mesa de votación */}
             <img
               src="/assets/juego/mesa.png"
               alt="Mesa Directiva de Casilla"
-              className="relative z-10 w-full h-auto object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)]"
+              className="relative z-10 w-full h-auto object-contain"
               style={{ imageRendering: "pixelated" }}
             />
           </div>
         )}
+
+        {/* OBJETOS COLOCADOS: 3 DECORACIONES (Cartel 1, Cartel 2, Folleto) (sin sombras artificiales) */}
+        {DECORACIONES_LIST.map((deco) => {
+          const isPlaced =
+            minigamePhase === "phase_3_done" ||
+            minigamePhase === "phase_4_boletas" ||
+            minigamePhase === "phase_complete"
+              ? true
+              : placedDecoKeys.includes(deco.key);
+
+          if (!isPlaced) return null;
+
+          const pos = DECORACIONES_POSITIONS[deco.key];
+          return (
+            <div
+              key={`deco-item-${deco.id}`}
+              style={{
+                left: `${pos.x}%`,
+                top: `${pos.y}%`,
+                width: deco.width,
+                transform: "translate(-50%, -90%)",
+                zIndex: playerPos.y >= pos.y ? 18 : 28,
+              }}
+              className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
+            >
+              {/* Sprite pixel art de la decoracion */}
+              <img
+                src={deco.sprite}
+                alt={deco.name}
+                className="relative z-10 w-full h-auto object-contain"
+                style={{ imageRendering: "pixelated" }}
+              />
+            </div>
+          );
+        })}
 
         {/* FOREGROUND BUSH OVERLAYS (Positioned at z-30 above player so character walks behind them) */}
         <img
