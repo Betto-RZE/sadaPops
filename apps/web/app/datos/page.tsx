@@ -144,6 +144,46 @@ export default function DatosPage() {
                 );
               }
 
+              if (story.id === 2) {
+                return (
+                  <div 
+                    key={story.id} 
+                    className="group relative flex flex-col justify-between bg-white rounded-[28px] border border-gray-100 shadow-[0_4px_24px_-8px_rgba(0,0,0,0.06)] hover:shadow-[0_20px_45px_-12px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-1 overflow-hidden min-h-[440px] sm:min-h-[460px] animate-in fade-in slide-in-from-bottom-8 fill-mode-both"
+                    style={{ animationDelay: `${i * 100}ms` }}
+                  >
+                    {/* Imagen de fondo de tirando de la cuerda */}
+                    <Image
+                      src="/card_genero_bg.jpg"
+                      alt="Fondo interactivo de participación por género: tirando de la cuerda"
+                      fill
+                      priority
+                      className="object-cover object-bottom select-none pointer-events-none transition-transform duration-500 group-hover:scale-[1.02]"
+                      sizes="(max-width: 768px) 100vw, 450px"
+                    />
+
+                    {/* Contenido superior sobre la zona blanca superior del fondo */}
+                    <div className="relative z-10 p-7 sm:p-8">
+                      <h3 className="font-serif text-2xl sm:text-[28px] font-bold text-brand-navy mb-2.5 leading-snug tracking-tight">
+                        {story.title}
+                      </h3>
+                      <p className="text-sm sm:text-base text-slate-500 font-medium leading-relaxed max-w-[290px]">
+                        {story.description}
+                      </p>
+                    </div>
+
+                    {/* Botón flotante estilo píldora blanca idéntico a la referencia */}
+                    <div className="relative z-10 p-7 sm:p-8 pt-0">
+                      <Link 
+                        href="/datos/genero" 
+                        className="inline-flex items-center gap-2 bg-white text-brand-navy font-bold text-sm sm:text-base px-6 py-3.5 rounded-full shadow-[0_6px_24px_rgba(0,0,0,0.14)] border border-slate-100/90 hover:bg-slate-50 hover:shadow-xl transition-all group-hover:translate-x-1"
+                      >
+                        Explorar <ArrowRight className="w-4 h-4 text-brand-navy" />
+                      </Link>
+                    </div>
+                  </div>
+                );
+              }
+
               return (
                 <div 
                   key={story.id} 
