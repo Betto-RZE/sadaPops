@@ -659,7 +659,7 @@ export default function GameplayScene({
         }
         @keyframes pixelArrowPulse {
           0%, 100% { transform: translateX(0px); }
-          50% { transform: translateX(4px); }
+          50% { transform: translateX(clamp(3px, 0.4cqw, 8px)); }
         }
         @keyframes floatPrompt {
           0%, 100% { transform: translate(-50%, 0px); }
@@ -706,7 +706,7 @@ export default function GameplayScene({
             <img
               src="/assets/juego/flecha-rosa.png"
               alt="Flecha indicadora de objetivo"
-              className="w-10 h-10 object-contain select-none pointer-events-none"
+              className="w-[clamp(28px,4.2cqw,96px)] h-[clamp(28px,4.2cqw,96px)] object-contain select-none pointer-events-none"
               style={{ imageRendering: "pixelated" }}
             />
           </div>
@@ -826,27 +826,29 @@ export default function GameplayScene({
               </div>
             )}
 
-            {/* Texto pixel art "presiona [E] para interactuar" al acercarse a la caja */}
+            {/* Texto pixel art "presiona E" al acercarse a la caja (sin fondo, tamaño compacto) */}
             {isNearBox && (
               <div
-                className="absolute -top-[78%] left-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
+                className="absolute -top-[70%] left-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
                 style={{
                   animation: "floatPrompt 1.4s ease-in-out infinite",
                 }}
               >
                 <div
-                  className="bg-[#12000f]/95 px-2.5 py-1 rounded shadow-[2px_2px_0px_#000] flex items-center gap-1.5 whitespace-nowrap text-[#ff4da6]"
+                  className="whitespace-nowrap text-[#ff4da6] font-black tracking-wider flex items-center gap-1 select-none"
                   style={{
                     fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
-                    fontSize: "8px",
-                    lineHeight: "1.2",
+                    fontSize: isFullscreen
+                      ? "clamp(6.5px, 0.68cqw, 10px)"
+                      : "clamp(4.5px, 0.48cqw, 6px)",
+                    lineHeight: "1",
+                    textShadow:
+                      "1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 1px 0 #000, 0 -1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 2px 4px rgba(0,0,0,0.9)",
                   }}
                 >
                   <span>presiona</span>
-                  <span className="text-[#ff80bf] font-black">[E]</span>
-                  <span>para interactuar</span>
+                  <span className="text-[#ff99d6]">E</span>
                 </div>
-                <div className="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[5px] border-t-[#12000f]" />
               </div>
             )}
 
@@ -892,27 +894,29 @@ export default function GameplayScene({
               />
             </div>
 
-            {/* Texto pixel art "presiona [E] para interactuar" al acercarse al punto de destino */}
+            {/* Texto pixel art "presiona E" al acercarse al punto de destino (sin fondo, tamaño compacto) */}
             {isNearActiveSpot && (
               <div
-                className="absolute -top-[78%] left-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
+                className="absolute -top-[70%] left-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
                 style={{
                   animation: "floatPrompt 1.4s ease-in-out infinite",
                 }}
               >
                 <div
-                  className="bg-[#12000f]/95 px-2.5 py-1 rounded shadow-[2px_2px_0px_#000] flex items-center gap-1.5 whitespace-nowrap text-[#ff4da6]"
+                  className="whitespace-nowrap text-[#ff4da6] font-black tracking-wider flex items-center gap-1 select-none"
                   style={{
                     fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
-                    fontSize: "8px",
-                    lineHeight: "1.2",
+                    fontSize: isFullscreen
+                      ? "clamp(6.5px, 0.68cqw, 10px)"
+                      : "clamp(4.5px, 0.48cqw, 6px)",
+                    lineHeight: "1",
+                    textShadow:
+                      "1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 1px 0 #000, 0 -1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 2px 4px rgba(0,0,0,0.9)",
                   }}
                 >
                   <span>presiona</span>
-                  <span className="text-[#ff80bf] font-black">[E]</span>
-                  <span>para interactuar</span>
+                  <span className="text-[#ff99d6]">E</span>
                 </div>
-                <div className="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[5px] border-t-[#12000f]" />
               </div>
             )}
           </div>
