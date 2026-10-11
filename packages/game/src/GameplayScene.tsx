@@ -618,6 +618,10 @@ export default function GameplayScene({
     : 999;
   const isNearActiveSpot = Boolean(activeSpotPos && distToActiveSpot < 9.0);
 
+  // Determina si los objetos ya fueron colocados en la explanada
+  const isCasillaPlaced =
+    minigamePhase !== "phase_0_ready" && minigamePhase !== "phase_1_casillas";
+
   // Proyección de la posición del objetivo en pantalla (0% a 100% del viewport)
   const targetScreenX = activeExclamationTarget
     ? 50 + (activeExclamationTarget.x + camX - 50) * zoomScale
@@ -742,6 +746,26 @@ export default function GameplayScene({
           }}
           className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
         >
+          {/* Indicador de coordenadas (X, Y) flotante encima del personaje */}
+          <div
+            className="absolute -top-[16%] left-1/2 -translate-x-1/2 pointer-events-none select-none flex items-center justify-center whitespace-nowrap bg-black/70 px-1.5 py-0.5 rounded border border-white/25 shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
+            style={{
+              fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
+              fontSize: isFullscreen
+                ? "clamp(5.5px, 0.55cqw, 8px)"
+                : "clamp(3.5px, 0.38cqw, 5px)",
+              lineHeight: "1",
+            }}
+          >
+            <span className="text-yellow-300 font-bold">
+              X:{playerPos.x.toFixed(1)}
+            </span>
+            <span className="text-gray-300 mx-0.5">,</span>
+            <span className="text-cyan-300 font-bold">
+              Y:{playerPos.y.toFixed(1)}
+            </span>
+          </div>
+
           {/* Dynamic 8-Folder Sprite Animation Component */}
           <AnimatedPlayerSprite
             isWalking={isWalking}
@@ -919,6 +943,33 @@ export default function GameplayScene({
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* OBJETO COLOCADO: CASILLA ELECTORAL */}
+        {isCasillaPlaced && (
+          <div
+            style={{
+              left: `${PLACEMENT_SPOTS.casillas.x}%`,
+              top: `${PLACEMENT_SPOTS.casillas.y}%`,
+              width: "6.8%",
+              transform: "translate(-50%, -85%)",
+              zIndex: 18,
+            }}
+            className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
+          >
+            {/* Sombra de apoyo en el suelo */}
+            <div
+              className="absolute bottom-[2%] w-[82%] h-[16%] bg-black/40 rounded-full blur-[1px] pointer-events-none"
+              aria-hidden="true"
+            />
+            {/* Sprite de la casilla */}
+            <img
+              src="/assets/juego/casilla.png"
+              alt="Casilla Electoral"
+              className="relative z-10 w-full h-auto object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)]"
+              style={{ imageRendering: "pixelated" }}
+            />
           </div>
         )}
 
