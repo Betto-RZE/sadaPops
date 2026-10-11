@@ -207,6 +207,12 @@ export const PLAZA_BOUNDS = {
   rightPathMaxX: 100, // Max X% inside the right path (walkable opening)
 };
 
+// Ubicación configurable de la caja de suministros en la explanada (%)
+export const INITIAL_BOX_POSITION = {
+  x: 20, // Horizontal: 20% (esquina superior izquierda, separada del borde diagonal)
+  y: 45, // Vertical: 45% (esquina superior, separada del borde superior)
+};
+
 // Returns dynamic left boundary % at vertical position y (Slanted diagonal line)
 const getLeftBoundaryX = (y: number): number => {
   if (PLAZA_BOUNDS.maxY === PLAZA_BOUNDS.minY) return PLAZA_BOUNDS.topLeftX;
@@ -284,7 +290,45 @@ export function PixiGameCanvas({
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   // Dynamic Dialogue Queue for plaza and NPC interactions
-  const [activeDialogue, setActiveDialogue] = useState<Array<DialogueLine | string> | null>(null);
+  const [activeDialogue, setActiveDialogue] = useState<Array<
+    DialogueLine | string
+  > | null>(null);
+
+  // Minijuego: Caja de suministros y recolección de objetos
+  const [boxPos, setBoxPos] = useState(INITIAL_BOX_POSITION);
+  const [boxStage, setBoxStage] = useState<number>(1); // 1 = llena, 2 = sin casillas, 3 = sin mesa, 4 = sin decorativos, 5 = vacía
+  const [minigamePhase, setMinigamePhase] = useState<
+    | "phase_0_ready"
+    | "phase_1_casillas"
+    | "phase_1_done"
+    | "phase_2_mesa"
+    | "phase_2_done"
+    | "phase_3_deco"
+    | "phase_3_done"
+    | "phase_4_boletas"
+    | "phase_complete"
+  >("phase_0_ready");
+
+  const playerPosRef = useRef(playerPos);
+  useEffect(() => {
+    playerPosRef.current = playerPos;
+  }, [playerPos]);
+
+  const boxPosRef = useRef(boxPos);
+  useEffect(() => {
+    boxPosRef.current = boxPos;
+  }, [boxPos]);
+
+  const minigamePhaseRef = useRef(minigamePhase);
+  useEffect(() => {
+    minigamePhaseRef.current = minigamePhase;
+  }, [minigamePhase]);
+
+  const isBoxInteractable =
+    minigamePhase === "phase_0_ready" ||
+    minigamePhase === "phase_1_done" ||
+    minigamePhase === "phase_2_done" ||
+    minigamePhase === "phase_3_done";
 
   // Intro Dialogue Speech Bubble State: "initial_delay" | "entering" | "visible" | "exiting" | "dismissed"
   const [dialogueState, setDialogueState] = useState<
@@ -411,6 +455,34 @@ export function PixiGameCanvas({
     const handleKeyDown = (e: KeyboardEvent) => {
       const k = e.key.toLowerCase();
       keysPressed[k] = true;
+
+      // Interacción con tecla 'E' en la explanada cuando no hay diálogo activo
+      if (k === "e" && dialogueStateRef.current === "dismissed") {
+        const curPlayer = playerPosRef.current;
+        const curBox = boxPosRef.current;
+        const curPhase = minigamePhaseRef.current;
+
+        const distToBox = Math.hypot(
+          curPlayer.x - curBox.x,
+          curPlayer.y - curBox.y,
+        );
+        // Si el jugador está cerca de la caja (radio de ~9% del escenario)
+        if (distToBox < 9.0) {
+          if (curPhase === "phase_0_ready") {
+            setMinigamePhase("phase_1_casillas");
+            setBoxStage(2);
+          } else if (curPhase === "phase_1_done") {
+            setMinigamePhase("phase_2_mesa");
+            setBoxStage(3);
+          } else if (curPhase === "phase_2_done") {
+            setMinigamePhase("phase_3_deco");
+            setBoxStage(4);
+          } else if (curPhase === "phase_3_done") {
+            setMinigamePhase("phase_4_boletas");
+            setBoxStage(5);
+          }
+        }
+      }
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
@@ -609,9 +681,9 @@ export function PixiGameCanvas({
     };
   }, [currentScreen]);
 
-  // Camera Dynamic Zoom & Smooth Character Tracking Parameters
-  const zoomScale = 2.35;
-  const maxCamShift = (1 - 1 / zoomScale) * 50; // Max shift % before exposing background edges
+  // Camera Dynamic Zoom & Smooth Character Tracking Parameters (Zoom temporalmente desactivado = 1.0)
+  const zoomScale = 1.5;
+  const maxCamShift = (1 - 1 / zoomScale) * 50; // Max shift % before exposing background edges (0 con zoom 1)
   const rawCamX = 50 - playerPos.x;
   const rawCamY = 50 - playerPos.y;
   const camX = Math.min(maxCamShift, Math.max(-maxCamShift, rawCamX));
@@ -910,6 +982,10 @@ export function PixiGameCanvas({
           <div className="absolute inset-0 w-full h-full z-20 overflow-hidden bg-[#2d572c] select-none">
             {/* Ambient Dynamic Animations Styles */}
             <style>{`
+              @keyframes floatExclamation {
+                0%, 100% { transform: translateY(0px); }
+                50% { transform: translateY(-5px); }
+              }
               @keyframes godRayPulse {
                 0%, 100% { opacity: 0.08; transform: rotate(-24deg) scaleY(1); }
                 50% { opacity: 0.18; transform: rotate(-24deg) scaleY(1.03); }
@@ -1153,6 +1229,50 @@ export function PixiGameCanvas({
                   lastDirection={lastDirection}
                 />
               </div>
+
+              {/* MINIJUEGO: CAJA DE SUMINISTROS (Cargada desde el inicio en la explanada) */}
+              {minigamePhase !== "phase_complete" && (
+                <div
+                  style={{
+                    left: `${boxPos.x}%`,
+                    top: `${boxPos.y}%`,
+                    width: "7.8%",
+                    transform: "translate(-50%, -75%)",
+                    zIndex: Math.round(boxPos.y),
+                  }}
+                  className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
+                >
+                  {/* Signo de exclamación flotante sobre la caja cuando está disponible para interactuar */}
+                  {isBoxInteractable && dialogueState === "dismissed" && (
+                    <div
+                      className="absolute -top-[46%] flex items-center justify-center pointer-events-none"
+                      style={{
+                        width: "19%",
+                        animation: "floatExclamation 1.4s ease-in-out infinite",
+                      }}
+                    >
+                      <img
+                        src="/assets/juego/exclamacion.png"
+                        alt="Interacción disponible"
+                        className="w-full h-auto object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
+                        style={{ imageRendering: "pixelated" }}
+                      />
+                    </div>
+                  )}
+
+                  {/* Sprite de la caja (caja-1.png hasta caja-5.png) */}
+                  <img
+                    src={`/assets/juego/caja-${boxStage}.png`}
+                    onError={(e) => {
+                      // Fallback a caja-1.png si la imagen de la fase aún no existe en la carpeta
+                      e.currentTarget.src = "/assets/juego/caja-1.png";
+                    }}
+                    alt={`Caja Minijuego Fase ${boxStage}`}
+                    className="w-full h-auto object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.45)]"
+                    style={{ imageRendering: "pixelated" }}
+                  />
+                </div>
+              )}
 
               {/* FOREGROUND BUSH OVERLAYS (Positioned at z-30 above player so character walks behind them) */}
               <img
