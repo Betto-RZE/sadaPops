@@ -133,10 +133,14 @@ export const CASILLA_POSITIONS = [
 ];
 export const CASILLAS_ROW = CASILLA_POSITIONS;
 
+// COORDENADAS CONFIGURABLES DE LA MESA DE VOTACIÓN (Edita aquí manualmente):
+export const MESA_POSITION = { x: 19.0, y: 74.0 };
+export const MESA_WIDTH = "8.5%";
+
 // Ubicaciones configurables donde se colocarán los 4 objetos en la explanada (%)
 export const PLACEMENT_SPOTS = {
   casillas: CASILLA_POSITIONS[0], // Primera mampara electoral
-  mesa: { x: 50, y: 52 }, // Mesa directiva de casilla (zona central de la explanada)
+  mesa: MESA_POSITION, // Mesa directiva de casilla (zona izquierda X:21, Y:62)
   deco: { x: 34, y: 72 }, // Mamparas / decorativos (zona inferior izquierda)
   boletas: { x: 66, y: 72 }, // Urnas y boletas (zona inferior derecha)
 };
@@ -620,7 +624,7 @@ export default function GameplayScene({
     } else if (minigamePhase === "phase_2_mesa") {
       activeExclamationTarget = {
         x: PLACEMENT_SPOTS.mesa.x,
-        y: PLACEMENT_SPOTS.mesa.y - 3.8,
+        y: PLACEMENT_SPOTS.mesa.y - 4.5,
       };
     } else if (minigamePhase === "phase_3_deco") {
       activeExclamationTarget = {
@@ -666,6 +670,13 @@ export default function GameplayScene({
       : minigamePhase === "phase_1_casillas"
         ? placedCasillasCount
         : CASILLAS_ROW.length;
+
+  // Determina si los objetos ya fueron colocados en la explanada
+  const isMesaPlaced =
+    minigamePhase !== "phase_0_ready" &&
+    minigamePhase !== "phase_1_casillas" &&
+    minigamePhase !== "phase_1_done" &&
+    minigamePhase !== "phase_2_mesa";
 
   // Proyección de la posición del objetivo en pantalla (0% a 100% del viewport)
   const targetScreenX = activeExclamationTarget
@@ -941,7 +952,8 @@ export default function GameplayScene({
             style={{
               left: `${activeSpotPos.x}%`,
               top: `${activeSpotPos.y}%`,
-              width: CASILLA_WIDTH,
+              width:
+                minigamePhase === "phase_2_mesa" ? MESA_WIDTH : CASILLA_WIDTH,
               transform: "translate(-50%, -90%)",
               zIndex: 20,
             }}
@@ -1018,6 +1030,33 @@ export default function GameplayScene({
             />
           </div>
         ))}
+
+        {/* OBJETO COLOCADO: MESA DE VOTACIÓN CON URNAS */}
+        {isMesaPlaced && (
+          <div
+            style={{
+              left: `${MESA_POSITION.x}%`,
+              top: `${MESA_POSITION.y}%`,
+              width: MESA_WIDTH,
+              transform: "translate(-50%, -90%)",
+              zIndex: playerPos.y >= MESA_POSITION.y ? 18 : 28,
+            }}
+            className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
+          >
+            {/* Sombra de apoyo de las patas de la mesa en el suelo */}
+            <div
+              className="absolute bottom-[2%] w-[85%] h-[12%] bg-black/40 rounded-full blur-[1px] pointer-events-none"
+              aria-hidden="true"
+            />
+            {/* Sprite pixel art de la mesa de votación */}
+            <img
+              src="/assets/juego/mesa.png"
+              alt="Mesa Directiva de Casilla"
+              className="relative z-10 w-full h-auto object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)]"
+              style={{ imageRendering: "pixelated" }}
+            />
+          </div>
+        )}
 
         {/* FOREGROUND BUSH OVERLAYS (Positioned at z-30 above player so character walks behind them) */}
         <img
