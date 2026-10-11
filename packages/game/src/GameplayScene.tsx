@@ -117,9 +117,25 @@ export const INITIAL_BOX_POSITION = {
   y: 45, // Vertical: 45% (esquina superior, separada del borde superior)
 };
 
+// Tamaño y dimensiones visuales de las mamparas electorales (%)
+export const CASILLA_WIDTH = "8.5%";
+
+// Tamaño fijo y uniforme del icono de exclamación (fijado exactamente al tamaño de la caja para todos los objetos)
+export const EXCLAMATION_ICON_WIDTH = "clamp(13px, 1.48cqw, 32px)";
+
+// COORDENADAS CONFIGURABLES DE LAS 5 MAMPARAS ELECTORALES (Edita aquí manualmente cada una):
+export const CASILLA_POSITIONS = [
+  { x: 32.0, y: 36.0 }, // Mampara 1
+  { x: 42.0, y: 36.0 }, // Mampara 2
+  { x: 52.0, y: 36.0 }, // Mampara 3
+  { x: 62.0, y: 36.0 }, // Mampara 4
+  { x: 72.0, y: 36.0 }, // Mampara 5
+];
+export const CASILLAS_ROW = CASILLA_POSITIONS;
+
 // Ubicaciones configurables donde se colocarán los 4 objetos en la explanada (%)
 export const PLACEMENT_SPOTS = {
-  casillas: { x: 74, y: 50 }, // Casillas electorales (zona derecha de la explanada)
+  casillas: CASILLA_POSITIONS[0], // Primera mampara electoral
   mesa: { x: 50, y: 52 }, // Mesa directiva de casilla (zona central de la explanada)
   deco: { x: 34, y: 72 }, // Mamparas / decorativos (zona inferior izquierda)
   boletas: { x: 66, y: 72 }, // Urnas y boletas (zona inferior derecha)
@@ -225,6 +241,13 @@ export default function GameplayScene({
     | "phase_complete"
   >("phase_0_ready");
 
+  // Número de casillas colocadas individualmente (0 a 4)
+  const [placedCasillasCount, setPlacedCasillasCount] = useState<number>(0);
+  const placedCasillasCountRef = useRef(placedCasillasCount);
+  useEffect(() => {
+    placedCasillasCountRef.current = placedCasillasCount;
+  }, [placedCasillasCount]);
+
   const playerPosRef = useRef(playerPos);
   useEffect(() => {
     playerPosRef.current = playerPos;
@@ -323,6 +346,7 @@ export default function GameplayScene({
           if (curPhase === "phase_0_ready") {
             setMinigamePhase("phase_1_casillas");
             setBoxStage(2);
+            setPlacedCasillasCount(0);
           } else if (curPhase === "phase_1_done") {
             setMinigamePhase("phase_2_mesa");
             setBoxStage(3);
@@ -335,30 +359,43 @@ export default function GameplayScene({
           }
         } else {
           // 2. Colocar objetos en su ubicación correspondiente
-          let targetSpot: { x: number; y: number } | null = null;
-          if (curPhase === "phase_1_casillas")
-            targetSpot = PLACEMENT_SPOTS.casillas;
-          else if (curPhase === "phase_2_mesa")
-            targetSpot = PLACEMENT_SPOTS.mesa;
-          else if (curPhase === "phase_3_deco")
-            targetSpot = PLACEMENT_SPOTS.deco;
-          else if (curPhase === "phase_4_boletas")
-            targetSpot = PLACEMENT_SPOTS.boletas;
+          if (curPhase === "phase_1_casillas") {
+            const currentIdx = placedCasillasCountRef.current;
+            if (currentIdx < CASILLAS_ROW.length) {
+              const target = CASILLAS_ROW[currentIdx];
+              const distToTarget = Math.hypot(
+                curPlayer.x - target.x,
+                curPlayer.y - target.y,
+              );
+              if (distToTarget < 9.0) {
+                const nextCount = currentIdx + 1;
+                setPlacedCasillasCount(nextCount);
+                if (nextCount >= CASILLAS_ROW.length) {
+                  setMinigamePhase("phase_1_done");
+                }
+              }
+            }
+          } else {
+            let targetSpot: { x: number; y: number } | null = null;
+            if (curPhase === "phase_2_mesa") targetSpot = PLACEMENT_SPOTS.mesa;
+            else if (curPhase === "phase_3_deco")
+              targetSpot = PLACEMENT_SPOTS.deco;
+            else if (curPhase === "phase_4_boletas")
+              targetSpot = PLACEMENT_SPOTS.boletas;
 
-          if (targetSpot) {
-            const distToSpot = Math.hypot(
-              curPlayer.x - targetSpot.x,
-              curPlayer.y - targetSpot.y,
-            );
-            if (distToSpot < 9.0) {
-              if (curPhase === "phase_1_casillas")
-                setMinigamePhase("phase_1_done");
-              else if (curPhase === "phase_2_mesa")
-                setMinigamePhase("phase_2_done");
-              else if (curPhase === "phase_3_deco")
-                setMinigamePhase("phase_3_done");
-              else if (curPhase === "phase_4_boletas")
-                setMinigamePhase("phase_complete");
+            if (targetSpot) {
+              const distToSpot = Math.hypot(
+                curPlayer.x - targetSpot.x,
+                curPlayer.y - targetSpot.y,
+              );
+              if (distToSpot < 9.0) {
+                if (curPhase === "phase_2_mesa")
+                  setMinigamePhase("phase_2_done");
+                else if (curPhase === "phase_3_deco")
+                  setMinigamePhase("phase_3_done");
+                else if (curPhase === "phase_4_boletas")
+                  setMinigamePhase("phase_complete");
+              }
             }
           }
         }
@@ -561,8 +598,8 @@ export default function GameplayScene({
     };
   }, []);
 
-  // Camera Dynamic Zoom & Smooth Character Tracking Parameters (Zoom temporalmente desactivado = 1.0)
-  const zoomScale = 1.9;
+  // Camera Dynamic Zoom & Smooth Character Tracking Parameters
+  const zoomScale = 1.0;
   const maxCamShift = (1 - 1 / zoomScale) * 50; // Max shift % before exposing background edges (0 con zoom 1)
   const rawCamX = 50 - playerPos.x;
   const rawCamY = 50 - playerPos.y;
@@ -575,9 +612,10 @@ export default function GameplayScene({
     if (isBoxInteractable) {
       activeExclamationTarget = { x: boxPos.x, y: boxPos.y - 3.8 };
     } else if (minigamePhase === "phase_1_casillas") {
+      const currentIdx = Math.min(placedCasillasCount, CASILLAS_ROW.length - 1);
       activeExclamationTarget = {
-        x: PLACEMENT_SPOTS.casillas.x,
-        y: PLACEMENT_SPOTS.casillas.y - 3.8,
+        x: CASILLAS_ROW[currentIdx].x,
+        y: CASILLAS_ROW[currentIdx].y - 4.5,
       };
     } else if (minigamePhase === "phase_2_mesa") {
       activeExclamationTarget = {
@@ -604,8 +642,11 @@ export default function GameplayScene({
 
   // Detección de proximidad al punto de colocación activo
   let activeSpotPos: { x: number; y: number } | null = null;
-  if (minigamePhase === "phase_1_casillas")
-    activeSpotPos = PLACEMENT_SPOTS.casillas;
+  if (
+    minigamePhase === "phase_1_casillas" &&
+    placedCasillasCount < CASILLAS_ROW.length
+  )
+    activeSpotPos = CASILLAS_ROW[placedCasillasCount];
   else if (minigamePhase === "phase_2_mesa")
     activeSpotPos = PLACEMENT_SPOTS.mesa;
   else if (minigamePhase === "phase_3_deco")
@@ -618,9 +659,13 @@ export default function GameplayScene({
     : 999;
   const isNearActiveSpot = Boolean(activeSpotPos && distToActiveSpot < 9.0);
 
-  // Determina si los objetos ya fueron colocados en la explanada
-  const isCasillaPlaced =
-    minigamePhase !== "phase_0_ready" && minigamePhase !== "phase_1_casillas";
+  // Cantidad de casillas visibles en la explanada (las colocadas hasta el momento)
+  const visibleCasillasCount =
+    minigamePhase === "phase_0_ready"
+      ? 0
+      : minigamePhase === "phase_1_casillas"
+        ? placedCasillasCount
+        : CASILLAS_ROW.length;
 
   // Proyección de la posición del objetivo en pantalla (0% a 100% del viewport)
   const targetScreenX = activeExclamationTarget
@@ -835,9 +880,9 @@ export default function GameplayScene({
             {/* Signo de exclamación flotante sobre la caja cuando está disponible para interactuar */}
             {isBoxInteractable && dialogueState === "dismissed" && (
               <div
-                className="absolute -top-[46%] z-20 flex items-center justify-center pointer-events-none"
+                className="absolute -top-[46%] left-1/2 -translate-x-1/2 z-20 flex items-center justify-center pointer-events-none"
                 style={{
-                  width: "19%",
+                  width: EXCLAMATION_ICON_WIDTH,
                   animation: "floatExclamation 1.4s ease-in-out infinite",
                 }}
               >
@@ -896,17 +941,17 @@ export default function GameplayScene({
             style={{
               left: `${activeSpotPos.x}%`,
               top: `${activeSpotPos.y}%`,
-              width: "7.8%",
-              transform: "translate(-50%, -50%)",
+              width: CASILLA_WIDTH,
+              transform: "translate(-50%, -90%)",
               zIndex: 20,
             }}
             className="absolute pointer-events-none flex flex-col items-center select-none"
           >
-            {/* Signo de exclamación flotante sobre el punto de destino */}
+            {/* Signo de exclamación flotante sobre el punto de destino (tamaño idéntico e independiente del objeto) */}
             <div
-              className="absolute -top-[46%] z-20 flex items-center justify-center pointer-events-none"
+              className="absolute -top-[46%] left-1/2 -translate-x-1/2 z-20 flex items-center justify-center pointer-events-none"
               style={{
-                width: "19%",
+                width: EXCLAMATION_ICON_WIDTH,
                 animation: "floatExclamation 1.4s ease-in-out infinite",
               }}
             >
@@ -946,32 +991,33 @@ export default function GameplayScene({
           </div>
         )}
 
-        {/* OBJETO COLOCADO: CASILLA ELECTORAL */}
-        {isCasillaPlaced && (
+        {/* CASILLAS ELECTORALES COLOCADAS UNA POR UNA */}
+        {CASILLAS_ROW.slice(0, visibleCasillasCount).map((pos, index) => (
           <div
+            key={`casilla-item-${index}`}
             style={{
-              left: `${PLACEMENT_SPOTS.casillas.x}%`,
-              top: `${PLACEMENT_SPOTS.casillas.y}%`,
-              width: "6.8%",
-              transform: "translate(-50%, -85%)",
-              zIndex: 18,
+              left: `${pos.x}%`,
+              top: `${pos.y}%`,
+              width: CASILLA_WIDTH,
+              transform: "translate(-50%, -90%)",
+              zIndex: playerPos.y >= pos.y ? 18 : 28,
             }}
             className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
           >
             {/* Sombra de apoyo en el suelo */}
             <div
-              className="absolute bottom-[2%] w-[82%] h-[16%] bg-black/40 rounded-full blur-[1px] pointer-events-none"
+              className="absolute bottom-[2%] w-[85%] h-[12%] bg-black/40 rounded-full blur-[1px] pointer-events-none"
               aria-hidden="true"
             />
-            {/* Sprite de la casilla */}
+            {/* Sprite pixel art de la casilla electoral */}
             <img
               src="/assets/juego/casilla.png"
-              alt="Casilla Electoral"
+              alt={`Casilla Electoral ${index + 1}`}
               className="relative z-10 w-full h-auto object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)]"
               style={{ imageRendering: "pixelated" }}
             />
           </div>
-        )}
+        ))}
 
         {/* FOREGROUND BUSH OVERLAYS (Positioned at z-30 above player so character walks behind them) */}
         <img
