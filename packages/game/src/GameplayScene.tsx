@@ -120,8 +120,8 @@ export const INITIAL_BOX_POSITION = {
 // Tamaño y dimensiones visuales de las mamparas electorales (%)
 export const CASILLA_WIDTH = "8.5%";
 
-// Tamaño fijo y uniforme del icono de exclamación (fijado exactamente al tamaño de la caja para todos los objetos)
-export const EXCLAMATION_ICON_WIDTH = "clamp(13px, 1.48cqw, 32px)";
+// Tamaño fijo y uniforme del icono de exclamación (destacado y nítido para todos los objetos)
+export const EXCLAMATION_ICON_WIDTH = "clamp(16px, 1.8cqw, 36px)";
 
 // COORDENADAS CONFIGURABLES DE LAS 5 MAMPARAS ELECTORALES (Edita aquí manualmente cada una):
 export const CASILLA_POSITIONS = [
@@ -209,6 +209,33 @@ export const PLACEMENT_SPOTS = {
   mesa: MESA_POSITION, // Mesa directiva de casilla (zona izquierda X:19, Y:74)
   deco: DECORACIONES_POSITIONS.cartel1, // Primera decoración (Cartel 1)
   boletas: BOLETAS_POSITIONS[0], // Primera boleta electoral
+};
+
+// COORDENADAS ESTRATÉGICAS DE LOS ICONOS DE EXCLAMACIÓN (!)
+// Posicionados exactamente en el centro o área visible donde va cada objeto/interacción
+export const EXCLAMATION_ICON_POSITIONS = {
+  caja: { x: 20.0, y: 38.5 }, // Flotando sobre la parte superior de la caja de suministros
+  casillas: [
+    { x: 32.0, y: 31.0 }, // Mampara 1 (centro de la mampara)
+    { x: 42.0, y: 31.0 }, // Mampara 2 (centro de la mampara)
+    { x: 52.0, y: 31.0 }, // Mampara 3 (centro de la mampara)
+    { x: 62.0, y: 31.0 }, // Mampara 4 (centro de la mampara)
+    { x: 72.0, y: 31.0 }, // Mampara 5 (centro de la mampara)
+  ],
+  mesa: { x: 19.0, y: 65.0 }, // Centro visible de la mesa de votación
+  decos: {
+    cartel1: { x: 95.0, y: 45.0 }, // Cartel 1 frontal (entrada derecha)
+    cartel2: { x: 91.5, y: 84.0 }, // Cartel 2 (elevado sobre los arbustos para máxima visibilidad)
+    folleto: { x: 7.2, y: 27.0 }, // Folleto Cívico
+    cartel3: { x: 71.8, y: 90.0 }, // Cartel 3 / Letrero VOTA (dentro del encuadre visual de la explanada)
+  },
+  boletas: [
+    { x: 32.0, y: 25.0 }, // Boleta sobre mesa de Mampara 1
+    { x: 42.0, y: 25.0 }, // Boleta sobre mesa de Mampara 2
+    { x: 52.0, y: 25.0 }, // Boleta sobre mesa de Mampara 3
+    { x: 62.0, y: 25.0 }, // Boleta sobre mesa de Mampara 4
+    { x: 72.0, y: 25.0 }, // Boleta sobre mesa de Mampara 5
+  ],
 };
 
 export interface Point2D {
@@ -796,13 +823,16 @@ export default function GameplayScene({
         const curBox = boxPosRef.current;
         const curPhase = minigamePhaseRef.current;
 
-        const distToBox = Math.hypot(
-          curPlayer.x - curBox.x,
-          curPlayer.y - curBox.y,
+        const distToBox = Math.min(
+          Math.hypot(curPlayer.x - curBox.x, curPlayer.y - curBox.y),
+          Math.hypot(
+            curPlayer.x - EXCLAMATION_ICON_POSITIONS.caja.x,
+            curPlayer.y - EXCLAMATION_ICON_POSITIONS.caja.y,
+          ),
         );
 
         // 1. Recoger objetos de la caja de suministros (Cajas 1 a 5)
-        if (distToBox < 9.0) {
+        if (distToBox < 9.5) {
           if (curPhase === "phase_0_ready") {
             setMinigamePhase("phase_1_casillas");
             setBoxStage(2);
@@ -822,16 +852,17 @@ export default function GameplayScene({
         } else {
           // 2. Colocar objetos en cualquier orden según proximidad
           if (curPhase === "phase_1_casillas") {
-            // Busca la casilla pendiente más cercana al jugador que esté a rango (< 9.0)
+            // Busca la casilla pendiente más cercana al jugador que esté a rango (< 9.5)
             const currentIndices = placedCasillaIndicesRef.current;
             let closestIdx = -1;
-            let minDistance = 9.0;
+            let minDistance = 9.5;
 
             CASILLAS_ROW.forEach((pos, idx) => {
               if (!currentIndices.includes(idx)) {
-                const dist = Math.hypot(
-                  curPlayer.x - pos.x,
-                  curPlayer.y - pos.y,
+                const iconPos = EXCLAMATION_ICON_POSITIONS.casillas[idx];
+                const dist = Math.min(
+                  Math.hypot(curPlayer.x - pos.x, curPlayer.y - pos.y),
+                  Math.hypot(curPlayer.x - iconPos.x, curPlayer.y - iconPos.y),
                 );
                 if (dist < minDistance) {
                   minDistance = dist;
@@ -849,25 +880,27 @@ export default function GameplayScene({
             }
           } else if (curPhase === "phase_2_mesa") {
             const target = PLACEMENT_SPOTS.mesa;
-            const distToTarget = Math.hypot(
-              curPlayer.x - target.x,
-              curPlayer.y - target.y,
+            const iconPos = EXCLAMATION_ICON_POSITIONS.mesa;
+            const distToTarget = Math.min(
+              Math.hypot(curPlayer.x - target.x, curPlayer.y - target.y),
+              Math.hypot(curPlayer.x - iconPos.x, curPlayer.y - iconPos.y),
             );
-            if (distToTarget < 9.0) {
+            if (distToTarget < 9.5) {
               setMinigamePhase("phase_2_done");
             }
           } else if (curPhase === "phase_3_deco") {
-            // Busca la decoración pendiente más cercana al jugador que esté a rango (< 9.0)
+            // Busca la decoración pendiente más cercana al jugador que esté a rango (< 9.5)
             const currentKeys = placedDecoKeysRef.current;
             let closestKey: string | null = null;
-            let minDistance = 9.0;
+            let minDistance = 9.5;
 
             DECORACIONES_LIST.forEach((deco) => {
               if (!currentKeys.includes(deco.key)) {
                 const pos = DECORACIONES_POSITIONS[deco.key];
-                const dist = Math.hypot(
-                  curPlayer.x - pos.x,
-                  curPlayer.y - pos.y,
+                const iconPos = EXCLAMATION_ICON_POSITIONS.decos[deco.key];
+                const dist = Math.min(
+                  Math.hypot(curPlayer.x - pos.x, curPlayer.y - pos.y),
+                  Math.hypot(curPlayer.x - iconPos.x, curPlayer.y - iconPos.y),
                 );
                 if (dist < minDistance) {
                   minDistance = dist;
@@ -884,16 +917,17 @@ export default function GameplayScene({
               }
             }
           } else if (curPhase === "phase_4_boletas") {
-            // Busca la boleta pendiente más cercana al jugador que esté a rango (< 9.0)
+            // Busca la boleta pendiente más cercana al jugador que esté a rango (< 9.5)
             const currentIndices = placedBoletaIndicesRef.current;
             let closestIdx = -1;
-            let minDistance = 9.0;
+            let minDistance = 9.5;
 
             BOLETAS_POSITIONS.forEach((pos, idx) => {
               if (!currentIndices.includes(idx)) {
-                const dist = Math.hypot(
-                  curPlayer.x - pos.x,
-                  curPlayer.y - pos.y,
+                const iconPos = EXCLAMATION_ICON_POSITIONS.boletas[idx];
+                const dist = Math.min(
+                  Math.hypot(curPlayer.x - pos.x, curPlayer.y - pos.y),
+                  Math.hypot(curPlayer.x - iconPos.x, curPlayer.y - iconPos.y),
                 );
                 if (dist < minDistance) {
                   minDistance = dist;
@@ -1250,77 +1284,67 @@ export default function GameplayScene({
   let activeExclamationTarget: { x: number; y: number } | null = null;
   if (dialogueState === "dismissed") {
     if (isBoxInteractable) {
-      activeExclamationTarget = { x: boxPos.x, y: boxPos.y - 3.8 };
+      activeExclamationTarget = EXCLAMATION_ICON_POSITIONS.caja;
     } else if (minigamePhase === "phase_1_casillas") {
       // Apunta a la casilla pendiente MÁS CERCANA al jugador
-      let closestPos: { x: number; y: number } | null = null;
+      let closestIcon: { x: number; y: number } | null = null;
       let minD = Infinity;
-      CASILLAS_ROW.forEach((pos, idx) => {
+      CASILLAS_ROW.forEach((_, idx) => {
         if (!placedCasillaIndices.includes(idx)) {
-          const d = Math.hypot(playerPos.x - pos.x, playerPos.y - pos.y);
+          const iconPos = EXCLAMATION_ICON_POSITIONS.casillas[idx];
+          const d = Math.hypot(playerPos.x - iconPos.x, playerPos.y - iconPos.y);
           if (d < minD) {
             minD = d;
-            closestPos = pos;
+            closestIcon = iconPos;
           }
         }
       });
-      if (closestPos) {
-        activeExclamationTarget = {
-          x: (closestPos as { x: number; y: number }).x,
-          y: (closestPos as { x: number; y: number }).y - 4.5,
-        };
-      }
+      activeExclamationTarget = closestIcon;
     } else if (minigamePhase === "phase_2_mesa") {
-      activeExclamationTarget = {
-        x: PLACEMENT_SPOTS.mesa.x,
-        y: PLACEMENT_SPOTS.mesa.y - 4.5,
-      };
+      activeExclamationTarget = EXCLAMATION_ICON_POSITIONS.mesa;
     } else if (minigamePhase === "phase_3_deco") {
       // Apunta a la decoración pendiente MÁS CERCANA al jugador
-      let closestPos: { x: number; y: number } | null = null;
+      let closestIcon: { x: number; y: number } | null = null;
       let minD = Infinity;
       DECORACIONES_LIST.forEach((deco) => {
         if (!placedDecoKeys.includes(deco.key)) {
-          const pos = DECORACIONES_POSITIONS[deco.key];
-          const d = Math.hypot(playerPos.x - pos.x, playerPos.y - pos.y);
+          const iconPos = EXCLAMATION_ICON_POSITIONS.decos[deco.key];
+          const d = Math.hypot(playerPos.x - iconPos.x, playerPos.y - iconPos.y);
           if (d < minD) {
             minD = d;
-            closestPos = pos;
+            closestIcon = iconPos;
           }
         }
       });
-      if (closestPos) {
-        activeExclamationTarget = {
-          x: (closestPos as { x: number; y: number }).x,
-          y: (closestPos as { x: number; y: number }).y - 4.5,
-        };
-      }
+      activeExclamationTarget = closestIcon;
     } else if (minigamePhase === "phase_4_boletas") {
       // Apunta a la boleta pendiente MÁS CERCANA al jugador
-      let closestPos: { x: number; y: number } | null = null;
+      let closestIcon: { x: number; y: number } | null = null;
       let minD = Infinity;
-      BOLETAS_POSITIONS.forEach((pos, idx) => {
+      BOLETAS_POSITIONS.forEach((_, idx) => {
         if (!placedBoletaIndices.includes(idx)) {
-          const d = Math.hypot(playerPos.x - pos.x, playerPos.y - pos.y);
+          const iconPos = EXCLAMATION_ICON_POSITIONS.boletas[idx];
+          const d = Math.hypot(playerPos.x - iconPos.x, playerPos.y - iconPos.y);
           if (d < minD) {
             minD = d;
-            closestPos = pos;
+            closestIcon = iconPos;
           }
         }
       });
-      if (closestPos) {
-        activeExclamationTarget = {
-          x: (closestPos as { x: number; y: number }).x,
-          y: (closestPos as { x: number; y: number }).y - 4.5,
-        };
-      }
+      activeExclamationTarget = closestIcon;
     }
   }
 
   // Detección de proximidad para interactuar con la caja
-  const distToBox = Math.hypot(playerPos.x - boxPos.x, playerPos.y - boxPos.y);
+  const distToBox = Math.min(
+    Math.hypot(playerPos.x - boxPos.x, playerPos.y - boxPos.y),
+    Math.hypot(
+      playerPos.x - EXCLAMATION_ICON_POSITIONS.caja.x,
+      playerPos.y - EXCLAMATION_ICON_POSITIONS.caja.y,
+    ),
+  );
   const isNearBox =
-    isBoxInteractable && dialogueState === "dismissed" && distToBox < 9.0;
+    isBoxInteractable && dialogueState === "dismissed" && distToBox < 9.5;
 
   // Determina si los objetos ya fueron colocados en la explanada
   const isMesaPlaced =
@@ -1523,7 +1547,7 @@ export default function GameplayScene({
             {/* Signo de exclamación flotante sobre la caja cuando está disponible para interactuar */}
             {isBoxInteractable && dialogueState === "dismissed" && (
               <div
-                className="absolute -top-[46%] left-1/2 -translate-x-1/2 z-20 flex items-center justify-center pointer-events-none"
+                className="absolute -top-[48%] left-1/2 -translate-x-1/2 z-35 flex items-center justify-center pointer-events-none"
                 style={{
                   width: EXCLAMATION_ICON_WIDTH,
                   animation: "floatExclamation 1.4s ease-in-out infinite",
@@ -1532,7 +1556,7 @@ export default function GameplayScene({
                 <img
                   src="/assets/juego/exclamacion.png"
                   alt="Interacción disponible"
-                  className="w-full h-auto object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
+                  className="w-full h-auto object-contain drop-shadow-[0_2px_5px_rgba(0,0,0,0.6)]"
                   style={{ imageRendering: "pixelated" }}
                 />
               </div>
@@ -1541,7 +1565,7 @@ export default function GameplayScene({
             {/* Texto pixel art "presiona E" al acercarse a la caja (sin fondo, tamaño compacto) */}
             {isNearBox && (
               <div
-                className="absolute -top-[70%] left-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
+                className="absolute -top-[75%] left-1/2 -translate-x-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
                 style={{
                   animation: "floatPrompt 1.4s ease-in-out infinite",
                 }}
@@ -1584,24 +1608,27 @@ export default function GameplayScene({
         {minigamePhase === "phase_1_casillas" &&
           CASILLA_POSITIONS.map((pos, index) => {
             if (placedCasillaIndices.includes(index)) return null;
-            const dist = Math.hypot(playerPos.x - pos.x, playerPos.y - pos.y);
-            const isNearThisSpot = dist < 9.0;
+            const iconPos = EXCLAMATION_ICON_POSITIONS.casillas[index];
+            const dist = Math.min(
+              Math.hypot(playerPos.x - pos.x, playerPos.y - pos.y),
+              Math.hypot(playerPos.x - iconPos.x, playerPos.y - iconPos.y),
+            );
+            const isNearThisSpot = dist < 9.5;
 
             return (
               <div
                 key={`pending-casilla-${index}`}
                 style={{
-                  left: `${pos.x}%`,
-                  top: `${pos.y}%`,
-                  width: CASILLA_WIDTH,
-                  transform: "translate(-50%, -90%)",
-                  zIndex: 20,
+                  left: `${iconPos.x}%`,
+                  top: `${iconPos.y}%`,
+                  transform: "translate(-50%, -50%)",
+                  zIndex: 35,
                 }}
                 className="absolute pointer-events-none flex flex-col items-center select-none"
               >
                 {/* Signo de exclamación flotante sobre la ubicación disponible */}
                 <div
-                  className="absolute -top-[46%] left-1/2 -translate-x-1/2 z-20 flex items-center justify-center pointer-events-none"
+                  className="flex items-center justify-center pointer-events-none"
                   style={{
                     width: EXCLAMATION_ICON_WIDTH,
                     animation: "floatExclamation 1.4s ease-in-out infinite",
@@ -1610,7 +1637,7 @@ export default function GameplayScene({
                   <img
                     src="/assets/juego/exclamacion.png"
                     alt="Ubicación disponible"
-                    className="w-full h-auto object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
+                    className="w-full h-auto object-contain drop-shadow-[0_2px_5px_rgba(0,0,0,0.6)]"
                     style={{ imageRendering: "pixelated" }}
                   />
                 </div>
@@ -1618,7 +1645,7 @@ export default function GameplayScene({
                 {/* Texto pixel art "presiona E" al acercarse */}
                 {isNearThisSpot && (
                   <div
-                    className="absolute -top-[70%] left-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
+                    className="absolute -top-[120%] left-1/2 -translate-x-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
                     style={{
                       animation: "floatPrompt 1.4s ease-in-out infinite",
                     }}
@@ -1645,84 +1672,92 @@ export default function GameplayScene({
           })}
 
         {/* 2. MESA DE VOTACIÓN PENDIENTE (phase_2_mesa) */}
-        {minigamePhase === "phase_2_mesa" && (
-          <div
-            style={{
-              left: `${MESA_POSITION.x}%`,
-              top: `${MESA_POSITION.y}%`,
-              width: MESA_WIDTH,
-              transform: "translate(-50%, -90%)",
-              zIndex: 20,
-            }}
-            className="absolute pointer-events-none flex flex-col items-center select-none"
-          >
-            <div
-              className="absolute -top-[46%] left-1/2 -translate-x-1/2 z-20 flex items-center justify-center pointer-events-none"
-              style={{
-                width: EXCLAMATION_ICON_WIDTH,
-                animation: "floatExclamation 1.4s ease-in-out infinite",
-              }}
-            >
-              <img
-                src="/assets/juego/exclamacion.png"
-                alt="Ubicación disponible"
-                className="w-full h-auto object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
-                style={{ imageRendering: "pixelated" }}
-              />
-            </div>
+        {minigamePhase === "phase_2_mesa" && (() => {
+          const iconPos = EXCLAMATION_ICON_POSITIONS.mesa;
+          const dist = Math.min(
+            Math.hypot(playerPos.x - MESA_POSITION.x, playerPos.y - MESA_POSITION.y),
+            Math.hypot(playerPos.x - iconPos.x, playerPos.y - iconPos.y),
+          );
+          const isNearMesa = dist < 9.5;
 
-            {Math.hypot(
-              playerPos.x - MESA_POSITION.x,
-              playerPos.y - MESA_POSITION.y,
-            ) < 9.0 && (
+          return (
+            <div
+              style={{
+                left: `${iconPos.x}%`,
+                top: `${iconPos.y}%`,
+                transform: "translate(-50%, -50%)",
+                zIndex: 35,
+              }}
+              className="absolute pointer-events-none flex flex-col items-center select-none"
+            >
               <div
-                className="absolute -top-[70%] left-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
+                className="flex items-center justify-center pointer-events-none"
                 style={{
-                  animation: "floatPrompt 1.4s ease-in-out infinite",
+                  width: EXCLAMATION_ICON_WIDTH,
+                  animation: "floatExclamation 1.4s ease-in-out infinite",
                 }}
               >
+                <img
+                  src="/assets/juego/exclamacion.png"
+                  alt="Ubicación disponible"
+                  className="w-full h-auto object-contain drop-shadow-[0_2px_5px_rgba(0,0,0,0.6)]"
+                  style={{ imageRendering: "pixelated" }}
+                />
+              </div>
+
+              {isNearMesa && (
                 <div
-                  className="whitespace-nowrap text-[#ff4da6] font-black tracking-wider flex items-center gap-1 select-none"
+                  className="absolute -top-[120%] left-1/2 -translate-x-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
                   style={{
-                    fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
-                    fontSize: isFullscreen
-                      ? "clamp(6.5px, 0.68cqw, 10px)"
-                      : "clamp(4.5px, 0.48cqw, 6px)",
-                    lineHeight: "1",
-                    textShadow:
-                      "1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 1px 0 #000, 0 -1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 2px 4px rgba(0,0,0,0.9)",
+                    animation: "floatPrompt 1.4s ease-in-out infinite",
                   }}
                 >
-                  <span>presiona</span>
-                  <span className="text-[#ff99d6]">E</span>
+                  <div
+                    className="whitespace-nowrap text-[#ff4da6] font-black tracking-wider flex items-center gap-1 select-none"
+                    style={{
+                      fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
+                      fontSize: isFullscreen
+                        ? "clamp(6.5px, 0.68cqw, 10px)"
+                        : "clamp(4.5px, 0.48cqw, 6px)",
+                      lineHeight: "1",
+                      textShadow:
+                        "1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 1px 0 #000, 0 -1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 2px 4px rgba(0,0,0,0.9)",
+                    }}
+                  >
+                    <span>presiona</span>
+                    <span className="text-[#ff99d6]">E</span>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        )}
+              )}
+            </div>
+          );
+        })()}
 
         {/* 3. DECORACIONES PENDIENTES (phase_3_deco - todas las no colocadas muestran su icono) */}
         {minigamePhase === "phase_3_deco" &&
           DECORACIONES_LIST.map((deco) => {
             if (placedDecoKeys.includes(deco.key)) return null;
             const pos = DECORACIONES_POSITIONS[deco.key];
-            const dist = Math.hypot(playerPos.x - pos.x, playerPos.y - pos.y);
-            const isNearThisSpot = dist < 9.0;
+            const iconPos = EXCLAMATION_ICON_POSITIONS.decos[deco.key];
+            const dist = Math.min(
+              Math.hypot(playerPos.x - pos.x, playerPos.y - pos.y),
+              Math.hypot(playerPos.x - iconPos.x, playerPos.y - iconPos.y),
+            );
+            const isNearThisSpot = dist < 9.5;
 
             return (
               <div
                 key={`pending-deco-${deco.id}`}
                 style={{
-                  left: `${pos.x}%`,
-                  top: `${pos.y}%`,
-                  width: deco.width,
-                  transform: "translate(-50%, -90%)",
-                  zIndex: deco.key === "cartel3" ? 35 : 20,
+                  left: `${iconPos.x}%`,
+                  top: `${iconPos.y}%`,
+                  transform: "translate(-50%, -50%)",
+                  zIndex: 35,
                 }}
                 className="absolute pointer-events-none flex flex-col items-center select-none"
               >
                 <div
-                  className="absolute -top-[46%] left-1/2 -translate-x-1/2 z-20 flex items-center justify-center pointer-events-none"
+                  className="flex items-center justify-center pointer-events-none"
                   style={{
                     width: EXCLAMATION_ICON_WIDTH,
                     animation: "floatExclamation 1.4s ease-in-out infinite",
@@ -1731,14 +1766,14 @@ export default function GameplayScene({
                   <img
                     src="/assets/juego/exclamacion.png"
                     alt="Ubicación disponible"
-                    className="w-full h-auto object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
+                    className="w-full h-auto object-contain drop-shadow-[0_2px_5px_rgba(0,0,0,0.6)]"
                     style={{ imageRendering: "pixelated" }}
                   />
                 </div>
 
                 {isNearThisSpot && (
                   <div
-                    className="absolute -top-[70%] left-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
+                    className="absolute -top-[120%] left-1/2 -translate-x-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
                     style={{
                       animation: "floatPrompt 1.4s ease-in-out infinite",
                     }}
@@ -1768,26 +1803,26 @@ export default function GameplayScene({
         {minigamePhase === "phase_4_boletas" &&
           BOLETAS_POSITIONS.map((pos, index) => {
             if (placedBoletaIndices.includes(index)) return null;
-            const dist = Math.hypot(playerPos.x - pos.x, playerPos.y - pos.y);
-            const isNearThisSpot = dist < 9.0;
-            const boletaWidth = BOLETAS_SIZES[index] || BOLETA_WIDTH;
-            const casillaY = CASILLA_POSITIONS[index]?.y ?? 36.0;
-            const isPlayerInFront = playerPos.y >= casillaY;
+            const iconPos = EXCLAMATION_ICON_POSITIONS.boletas[index];
+            const dist = Math.min(
+              Math.hypot(playerPos.x - pos.x, playerPos.y - pos.y),
+              Math.hypot(playerPos.x - iconPos.x, playerPos.y - iconPos.y),
+            );
+            const isNearThisSpot = dist < 9.5;
 
             return (
               <div
                 key={`pending-boleta-${index}`}
                 style={{
-                  left: `${pos.x}%`,
-                  top: `${pos.y}%`,
-                  width: boletaWidth,
-                  transform: "translate(-50%, -90%)",
-                  zIndex: isPlayerInFront ? 21 : 29,
+                  left: `${iconPos.x}%`,
+                  top: `${iconPos.y}%`,
+                  transform: "translate(-50%, -50%)",
+                  zIndex: 35,
                 }}
                 className="absolute pointer-events-none flex flex-col items-center select-none"
               >
                 <div
-                  className="absolute -top-[46%] left-1/2 -translate-x-1/2 z-20 flex items-center justify-center pointer-events-none"
+                  className="flex items-center justify-center pointer-events-none"
                   style={{
                     width: EXCLAMATION_ICON_WIDTH,
                     animation: "floatExclamation 1.4s ease-in-out infinite",
@@ -1796,14 +1831,14 @@ export default function GameplayScene({
                   <img
                     src="/assets/juego/exclamacion.png"
                     alt="Ubicación disponible"
-                    className="w-full h-auto object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
+                    className="w-full h-auto object-contain drop-shadow-[0_2px_5px_rgba(0,0,0,0.6)]"
                     style={{ imageRendering: "pixelated" }}
                   />
                 </div>
 
                 {isNearThisSpot && (
                   <div
-                    className="absolute -top-[70%] left-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
+                    className="absolute -top-[120%] left-1/2 -translate-x-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
                     style={{
                       animation: "floatPrompt 1.4s ease-in-out infinite",
                     }}
