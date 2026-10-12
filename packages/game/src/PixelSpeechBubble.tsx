@@ -5,6 +5,8 @@ export interface DialogueLine {
   speakerColor?: string;
   text: string;
   actionKey?: string;
+  /** Destinatario del diálogo: "user" (habla con nosotros -> frente/cámara) | "npc" (habla con otro personaje -> derecha) */
+  target?: "user" | "npc";
 }
 
 export interface PixelSpeechBubbleProps {
@@ -18,6 +20,8 @@ export interface PixelSpeechBubbleProps {
   onDismiss: () => void;
   /** Optional callback triggered on advancing to next message step */
   onAdvance?: (stepIndex: number, currentLine: DialogueLine) => void;
+  /** Callback triggered whenever the current dialogue line changes */
+  onLineChange?: (line: DialogueLine, stepIndex: number) => void;
   actionKey?: string;
   typingSpeedMs?: number;
   className?: string;
@@ -42,6 +46,7 @@ export function PixelSpeechBubble({
   messages,
   onDismiss,
   onAdvance,
+  onLineChange,
   actionKey = "E",
   typingSpeedMs = 26,
   className = "",
@@ -60,6 +65,7 @@ export function PixelSpeechBubble({
           speakerColor: item.speakerColor,
           text: item.text,
           actionKey: item.actionKey ?? actionKey,
+          target: item.target,
         };
       });
     }
@@ -75,6 +81,12 @@ export function PixelSpeechBubble({
     text: "",
     actionKey,
   };
+
+  useEffect(() => {
+    if (currentLine && currentLine.text) {
+      onLineChange?.(currentLine, currentStepIndex);
+    }
+  }, [currentStepIndex, currentLine, onLineChange]);
   const currentText = currentLine.text;
   const currentSpeaker = currentLine.speaker;
   const currentSpeakerColor = currentLine.speakerColor || "#a81363";
@@ -250,8 +262,8 @@ export function PixelSpeechBubble({
             style={{
               fontFamily:
                 "'Pixelify Sans', 'Silkscreen', 'Press Start 2P', monospace, sans-serif",
-              fontSize: "clamp(13px, 2.3cqw, 46px)",
-              lineHeight: 1.25,
+              fontSize: "clamp(11.5px, 2.0cqw, 40px)",
+              lineHeight: 1.2,
               textShadow: "0 1px 0 rgba(255,255,255,0.85)",
             }}
           >

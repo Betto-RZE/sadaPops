@@ -291,11 +291,7 @@ const isInsideBox = (x: number, y: number, box: ObstacleBox): boolean => {
   return x >= box.minX && x <= box.maxX && y >= box.minY && y <= box.maxY;
 };
 
-const isInsidePolygon = (
-  x: number,
-  y: number,
-  polygon: Point2D[],
-): boolean => {
+const isInsidePolygon = (x: number, y: number, polygon: Point2D[]): boolean => {
   if (!polygon || polygon.length < 3) return false;
   let inside = false;
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
@@ -338,8 +334,7 @@ const tryPolygonWallSlide = (
     if (len2 === 0) continue;
 
     let t =
-      ((targetX - a.x) * (b.x - a.x) + (targetY - a.y) * (b.y - a.y)) /
-      len2;
+      ((targetX - a.x) * (b.x - a.x) + (targetY - a.y) * (b.y - a.y)) / len2;
     t = Math.max(0, Math.min(1, t));
     const px = a.x + t * (b.x - a.x);
     const py = a.y + t * (b.y - a.y);
@@ -535,7 +530,11 @@ const getSafePushVector = (
       ? true
       : placedDecos.includes("cartel2");
 
-  if (isCartel2Present && obs.cartel2 && isInsideBox(pos.x, pos.y, obs.cartel2)) {
+  if (
+    isCartel2Present &&
+    obs.cartel2 &&
+    isInsideBox(pos.x, pos.y, obs.cartel2)
+  ) {
     const box = obs.cartel2;
     const exits = [
       // Izquierda (hacia la explanada central)
@@ -561,7 +560,11 @@ const getSafePushVector = (
   }
 
   // 4. Verificar si está dentro de la Caja de Suministros (polígono)
-  if (phase !== "phase_complete" && Array.isArray(obs.caja) && obs.caja.length >= 3) {
+  if (
+    phase !== "phase_complete" &&
+    Array.isArray(obs.caja) &&
+    obs.caja.length >= 3
+  ) {
     if (isInsidePolygon(pos.x, pos.y, obs.caja)) {
       const poly = obs.caja;
       const cx = poly.reduce((acc, p) => acc + p.x, 0) / poly.length;
@@ -657,15 +660,89 @@ const getRightBoundaryX = (y: number): number => {
 
 // Stable constants for intro dialogue sequence (prevents re-render resets on fullscreen toggle)
 const INTRO_MESSAGES_ES: string[] = [
-  "¡Hola! Hoy es un día muy importante. ¡Es día de elecciones!",
-  "Soy Inecito, funcionario de casilla, y mi misión es ayudar a que todas las personas puedan votar.",
-  "Pero antes de recibir a nuestros primeros votantes... ¡tenemos mucho que preparar!",
+  "¡Hola, hola! ¡Qué gusto verte por aquí! Mi nombre es Inecito y hoy nos espera un día muy especial.",
+  "¡Hoy es día de elecciones! Miles de personas saldrán a votar para elegir a quienes las representarán y tomarán decisiones importantes para nuestro país.",
+  "Y nosotros tenemos una misión muy importante: ¡seremos funcionarios de casilla!",
+  "¿Sabías que los funcionarios de casilla son ciudadanos que ayudan a recibir, contar y registrar los votos durante las elecciones?",
+  "¡Así es! Nuestra tarea es ayudar a que la jornada electoral se desarrolle de manera ordenada, transparente y respetando el voto de cada persona.",
+  "Pero antes de recibir a nuestros primeros votantes, tenemos que asegurarnos de que todo esté en su lugar.",
+  "Si trabajamos juntos, terminaremos en un abrir y cerrar de ojos.",
+  "¿Estás listo? ¡Pues manos a la obra!",
 ];
 
 const INTRO_MESSAGES_NAH: string[] = [
-  "¡Niltze! Axkan se tonal tekitl. ¡Tonal tlaixquetzalistli!",
-  "Nehwa Inecito, tekitketl casilla, wan notequi tlaiknelia nochimeh tlacameh ma tlateneuakan.",
-  "Tel achto xikselikan tochantlakahuan... ¡miak tlamantli moneki timoyektlalikan!",
+  "¡Niltze, niltze! ¡Kualtsin nimitsita nikan! Notoka Inecito wan axkan tiktlakitiseh se tonal tekitik.",
+  "¡Axkan tonal tlaixquetzalistli! Miakeh tlacameh kisaskeh ma tlateneuakan pampa kitlapejpeniskeh akin kintekitiliskeh wan kitlaliseh tekitl ipan totlaltikpak.",
+  "Wan tehwanten tikpiyah se ueyi tekitl: ¡tiyeskeh tekitkeh casilla!",
+  "¿Tikmatia tlacameh tekitkeh casilla in altepetlacameh akin tlaikneliah kiseliah, kipouah wan kitlaliah in votos ipan tlaixquetzalistli?",
+  "¡Kemah! Totekiu tlaiknelis ma mopano in tonal tlaixquetzalistli ika tlamatilis, chipauak wan tlatlakitilis in ivoto sesen tlacatl.",
+  "Tel achto xikselikan tochantlakahuan, moneki tikchiuaskeh nochitlamantli ma yeto ipan ikuakualkan.",
+  "Tla titekitih sansehkan, titlankeh niman niman.",
+  "¿Tiyejtok? ¡Ma titekitikan!",
+];
+
+// Diálogos educativos al completar la colocación de todas las mamparas
+const MAMPARAS_MESSAGES_ES: string[] = [
+  "¡Excelente! Estas son las mamparas electorales, y tienen una función muy importante.",
+  "Permiten que cada persona marque su boleta en privado, sin que nadie pueda ver por quién está votando.",
+  "Recuerda que en México el voto es libre y secreto. ¡Nadie puede obligarte a revelar tu elección!",
+];
+
+const MAMPARAS_MESSAGES_NAH: string[] = [
+  "¡Kualtsin tekitl! Inihkeh in mamparas electorales, wan kipiyah se ueyi tekitl.",
+  "Kikahuah ma sesen tlacatl kitlali ivoto ichtaka, ayac huelis kitas akinon kitlapejpenia.",
+  "Xikilnamiki ipan Mexico in voto tlatitlantli wan ichtaka. ¡Ayac huelis mitschiualtis ma tiquihto motlapejpenalis!",
+];
+
+// Diálogos educativos al colocar la mesa directiva de casilla
+const MESA_MESSAGES_ES: string[] = [
+  "¡Perfecto! Esta mesa será nuestro centro de operaciones durante la jornada electoral.",
+  "Aquí los funcionarios revisan la Credencial para Votar, verifican que las personas estén en la Lista Nominal y les entregan sus boletas.",
+  "También se encargan de contar los votos al finalizar la votación y registrar los resultados.",
+  "¡Por eso es tan importante nuestro trabajo!",
+];
+
+const MESA_MESSAGES_NAH: string[] = [
+  "¡Kualtsin! Inin mesa yeski totlalnamikilis wan totekiyotl ipan tonal tlaixquetzalistli.",
+  "Nikan tekitkeh casilla kitah in Credencial para Votar, kitah ma yetokan ipan Lista Nominal wan kinmakah iminboletas.",
+  "Noihki kipouah in votos kuak tlami in tlaixquetzalistli wan kitlaliah in tlateneualistli.",
+  "¡Ika inin ueyi totekiu!",
+];
+
+// Diálogos educativos al colocar todas las decoraciones y carteles
+const DECORACIONES_MESSAGES_ES: string[] = [
+  "¡Wow! ¡Ahora sí que se ve mucho mejor!",
+  "Los letreros y señalamientos ayudan a identificar la casilla y orientan a las personas durante la votación.",
+  "También permiten mostrar información importante, como la identificación de la casilla y las indicaciones para los votantes.",
+  "¡Una buena organización ayuda a que todos sepan a dónde dirigirse!",
+  "¡Ya casi terminamos! Solo nos falta preparar uno de los materiales más importantes de toda la elección.",
+  "¡Las boletas electorales! Vamos a colocarlas cuidadosamente sobre la mesa.",
+];
+
+const DECORACIONES_MESSAGES_NAH: string[] = [
+  "¡Kualtsin! ¡Axkan nelkualtsin moitta!",
+  "In tlaixkopinketl wan tlahtolmachiyotl tlaikneliah ma kixmatikan in casilla wan kinyakan in tlacameh kuak tlateneuah.",
+  "Noihki kinextiah ueyi tlamatilis, kenin itoka in casilla wan tlen moneki kichiuaskeh in tlacameh.",
+  "¡Se kualtsin tekiyotl tlaiknelia nochimeh ma kimatikan kanin yaskeh!",
+  "¡Achitsin polihui titlankeh! San moneki tikyektlaliseh se ueyi tlamantli ipan tlaixquetzalistli.",
+  "¡In boletas electorales! Ma tiktlalikan kualtsin ipan in mesa.",
+];
+
+// Diálogos educativos al colocar las boletas electorales
+const BOLETAS_MESSAGES_ES: string[] = [
+  "¡Excelente trabajo! Estas son las boletas electorales.",
+  "En ellas aparecen las opciones por las que podemos votar, como partidos políticos y candidaturas, dependiendo del tipo de elección.",
+  "Cada votante recibe las boletas que le corresponden y marca su elección en secreto.",
+  "Después, las deposita en las urnas para que sean contadas al finalizar la votación.",
+  "¡Y algo muy importante! Las boletas deben mantenerse bajo el cuidado de los funcionarios para proteger la integridad de la elección.",
+];
+
+const BOLETAS_MESSAGES_NAH: string[] = [
+  "¡Kualtsin tekitl! Inihkeh in boletas electorales.",
+  "Ipan yehuan monextiah kanin uelis titlateneuaskeh, ken partidos políticos wan candidaturas.",
+  "Sesen tlacatl kiselia iboletas wan kimachiyotia itlapejpenalis ichtaka.",
+  "Satepan, kitlalia ipan in urnas pampa mopouaskeh kuak tlami in tlaixquetzalistli.",
+  "¡Wan se tlamantli ueyi! In boletas moneki kipiaskeh in tekitkeh casilla pampa kiyektlaliseh in tlaixquetzalistli.",
 ];
 
 export interface GameplaySceneProps {
@@ -759,9 +836,15 @@ export default function GameplayScene({
     minigamePhase === "phase_2_done" ||
     minigamePhase === "phase_3_done";
 
-  // Intro Dialogue Speech Bubble State: "initial_delay" | "entering" | "visible" | "exiting" | "dismissed"
+  // Intro & Stage Dialogue Speech Bubble State:
+  // "initial_delay" (inicio escena 2s) | "delayed_start" (1.5s post-objeto) | "entering" | "visible" | "exiting" | "dismissed"
   const [dialogueState, setDialogueState] = useState<
-    "initial_delay" | "entering" | "visible" | "exiting" | "dismissed"
+    | "initial_delay"
+    | "delayed_start"
+    | "entering"
+    | "visible"
+    | "exiting"
+    | "dismissed"
   >("initial_delay");
   const dialogueStateRef = useRef(dialogueState);
 
@@ -769,11 +852,88 @@ export default function GameplayScene({
     dialogueStateRef.current = dialogueState;
   }, [dialogueState]);
 
+  const dialogueDelayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+
+  // Limpieza del timer de retraso de diálogo al desmontar
+  useEffect(() => {
+    return () => {
+      if (dialogueDelayTimerRef.current) {
+        clearTimeout(dialogueDelayTimerRef.current);
+      }
+    };
+  }, []);
+
   // Pausa del juego (modal de salida abierto) accesible desde el bucle de animacion
   const isPausedRef = useRef(isPaused);
   useEffect(() => {
     isPausedRef.current = isPaused;
   }, [isPaused]);
+
+  // Destinatario del diálogo: "user" (habla con nosotros -> frente/cámara "1") o "npc" (habla con otro personaje -> derecha "4")
+  const [dialogueTarget, setDialogueTarget] = useState<"user" | "npc">("user");
+  const dialogueTargetRef = useRef(dialogueTarget);
+  useEffect(() => {
+    dialogueTargetRef.current = dialogueTarget;
+  }, [dialogueTarget]);
+
+  // Orientación del personaje ante globos de texto:
+  // - Habla con nosotros ("user"): voltea hacia delante mirando a la cámara ("1")
+  // - Habla con otro personaje ("npc"): voltea hacia la derecha ("4")
+  useEffect(() => {
+    if (dialogueState === "entering" || dialogueState === "visible") {
+      setIsWalking(false);
+      setLastDirection(dialogueTarget === "npc" ? "4" : "1");
+    }
+  }, [dialogueState, dialogueTarget]);
+
+  // Función preparada para interactuar con NPCs u otros personajes y eventos:
+  // - delayMs > 0: bloquea teclado inmediatamente, mantiene postura actual y tras 1.5s voltea a la cámara/npc y muestra texto
+  const triggerDialogue = (
+    messages: Array<DialogueLine | string>,
+    target: "user" | "npc" = "user",
+    delayMs = 0,
+  ) => {
+    if (dialogueDelayTimerRef.current) {
+      clearTimeout(dialogueDelayTimerRef.current);
+      dialogueDelayTimerRef.current = null;
+    }
+
+    setDialogueTarget(target);
+    dialogueTargetRef.current = target;
+    setActiveDialogue(messages);
+    setIsWalking(false);
+
+    if (delayMs > 0) {
+      // 1. Bloquear teclado y mantener postura actual durante delayMs (1.5s)
+      setDialogueState("delayed_start");
+      dialogueStateRef.current = "delayed_start";
+
+      dialogueDelayTimerRef.current = setTimeout(() => {
+        // 2. Transcurrido 1.5s, voltea hacia el jugador/cámara y muestra el texto
+        setLastDirection(target === "npc" ? "4" : "1");
+        setDialogueState("entering");
+        dialogueStateRef.current = "entering";
+        dialogueDelayTimerRef.current = null;
+      }, delayMs);
+    } else {
+      setLastDirection(target === "npc" ? "4" : "1");
+      setDialogueState("entering");
+      dialogueStateRef.current = "entering";
+    }
+  };
+
+  // Botón provisional de testeo: permite skipear todos los textos con un solo clic
+  const handleSkipAllDialogue = () => {
+    if (dialogueDelayTimerRef.current) {
+      clearTimeout(dialogueDelayTimerRef.current);
+      dialogueDelayTimerRef.current = null;
+    }
+    setDialogueState("dismissed");
+    dialogueStateRef.current = "dismissed";
+    setActiveDialogue(null);
+  };
 
   // Dialogue delay & animation state transitions (Triggers exactly 2s after iris aperture fully opens)
   useEffect(() => {
@@ -886,6 +1046,11 @@ export default function GameplayScene({
               setPlacedCasillaIndices(nextIndices);
               if (nextIndices.length >= CASILLAS_ROW.length) {
                 setMinigamePhase("phase_1_done");
+                const messages =
+                  language === "nah"
+                    ? MAMPARAS_MESSAGES_NAH
+                    : MAMPARAS_MESSAGES_ES;
+                triggerDialogue(messages, "user", 1500);
               }
             }
           } else if (curPhase === "phase_2_mesa") {
@@ -897,6 +1062,9 @@ export default function GameplayScene({
             );
             if (distToTarget < 9.5) {
               setMinigamePhase("phase_2_done");
+              const messages =
+                language === "nah" ? MESA_MESSAGES_NAH : MESA_MESSAGES_ES;
+              triggerDialogue(messages, "user", 1500);
             }
           } else if (curPhase === "phase_3_deco") {
             // Busca la decoración pendiente más cercana al jugador que esté a rango (< 10.0)
@@ -924,6 +1092,11 @@ export default function GameplayScene({
               setPlacedDecoKeys(nextKeys);
               if (nextKeys.length >= DECORACIONES_LIST.length) {
                 setMinigamePhase("phase_3_done");
+                const messages =
+                  language === "nah"
+                    ? DECORACIONES_MESSAGES_NAH
+                    : DECORACIONES_MESSAGES_ES;
+                triggerDialogue(messages, "user", 1500);
               }
             }
           } else if (curPhase === "phase_4_boletas") {
@@ -951,6 +1124,11 @@ export default function GameplayScene({
               setPlacedBoletaIndices(nextIndices);
               if (nextIndices.length >= BOLETAS_POSITIONS.length) {
                 setMinigamePhase("phase_complete");
+                const messages =
+                  language === "nah"
+                    ? BOLETAS_MESSAGES_NAH
+                    : BOLETAS_MESSAGES_ES;
+                triggerDialogue(messages, "user", 1500);
               }
             }
           }
@@ -1050,8 +1228,8 @@ export default function GameplayScene({
       const dt = Math.min(0.05, (currentTime - lastTime) / 1000); // Delta time in seconds (capped at 50ms)
       lastTime = currentTime;
 
-      // Block player movement completely while dialogue intro sequence is active or game is paused
-      if (dialogueStateRef.current !== "dismissed" || isPausedRef.current) {
+      // Modal de pausa abierto: congela completamente
+      if (isPausedRef.current) {
         velocity.x = 0;
         velocity.y = 0;
         keyHoldTime = 0;
@@ -1060,7 +1238,8 @@ export default function GameplayScene({
         return;
       }
 
-      // Sistema de Despenetración / Empuje suave si el personaje quedó dentro de un obstáculo al colocarlo
+      // Sistema de Despenetración / Empuje suave si el personaje quedó dentro de un obstáculo al colocarlo:
+      // Funciona SIEMPRE (incluso con el globo de texto activo) para sacarlo de inmediato de la colisión
       const pushVec = getSafePushVector(
         playerPosRef.current,
         OBJECT_COLLISION_BOXES,
@@ -1092,6 +1271,23 @@ export default function GameplayScene({
           y: prev.y + pushDy,
         }));
 
+        animationFrameId = requestAnimationFrame(updateGameLoop);
+        return;
+      }
+
+      // Bloquea el movimiento del jugador durante diálogos o pausas previas al diálogo
+      // (una vez desatascado y fuera del obstáculo, se detiene; y si el diálogo ya inició, se orienta a la cámara o NPC)
+      if (dialogueStateRef.current !== "dismissed") {
+        velocity.x = 0;
+        velocity.y = 0;
+        keyHoldTime = 0;
+        setIsWalking(false);
+        if (
+          dialogueStateRef.current === "entering" ||
+          dialogueStateRef.current === "visible"
+        ) {
+          setLastDirection(dialogueTargetRef.current === "npc" ? "4" : "1");
+        }
         animationFrameId = requestAnimationFrame(updateGameLoop);
         return;
       }
@@ -1283,7 +1479,7 @@ export default function GameplayScene({
   }, []);
 
   // Camera Dynamic Zoom & Smooth Character Tracking Parameters
-  const zoomScale = 1.9;
+  const zoomScale = 2.1;
   const maxCamShift = (1 - 1 / zoomScale) * 50; // Max shift % before exposing background edges (0 con zoom 1)
   const rawCamX = 50 - playerPos.x;
   const rawCamY = 50 - playerPos.y;
@@ -1302,7 +1498,10 @@ export default function GameplayScene({
       CASILLAS_ROW.forEach((_, idx) => {
         if (!placedCasillaIndices.includes(idx)) {
           const iconPos = EXCLAMATION_ICON_POSITIONS.casillas[idx];
-          const d = Math.hypot(playerPos.x - iconPos.x, playerPos.y - iconPos.y);
+          const d = Math.hypot(
+            playerPos.x - iconPos.x,
+            playerPos.y - iconPos.y,
+          );
           if (d < minD) {
             minD = d;
             closestIcon = iconPos;
@@ -1319,7 +1518,10 @@ export default function GameplayScene({
       DECORACIONES_LIST.forEach((deco) => {
         if (!placedDecoKeys.includes(deco.key)) {
           const iconPos = EXCLAMATION_ICON_POSITIONS.decos[deco.key];
-          const d = Math.hypot(playerPos.x - iconPos.x, playerPos.y - iconPos.y);
+          const d = Math.hypot(
+            playerPos.x - iconPos.x,
+            playerPos.y - iconPos.y,
+          );
           if (d < minD) {
             minD = d;
             closestIcon = iconPos;
@@ -1334,7 +1536,10 @@ export default function GameplayScene({
       BOLETAS_POSITIONS.forEach((_, idx) => {
         if (!placedBoletaIndices.includes(idx)) {
           const iconPos = EXCLAMATION_ICON_POSITIONS.boletas[idx];
-          const d = Math.hypot(playerPos.x - iconPos.x, playerPos.y - iconPos.y);
+          const d = Math.hypot(
+            playerPos.x - iconPos.x,
+            playerPos.y - iconPos.y,
+          );
           if (d < minD) {
             minD = d;
             closestIcon = iconPos;
@@ -1430,6 +1635,31 @@ export default function GameplayScene({
           <span>◀</span>
         </button>
       </div>
+
+      {/* BOTÓN PROVISIONAL DE TESTEO: SALTAR TODOS LOS DIÁLOGOS CON UN SOLO CLIC */}
+      {dialogueState !== "dismissed" && (
+        <div className="absolute top-3 right-3 z-50 pointer-events-auto">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleSkipAllDialogue();
+            }}
+            type="button"
+            title="Botón provisional para pruebas: saltar todos los textos con un solo clic"
+            className={`bg-[#ff2a85] hover:bg-[#ff4da6] active:bg-[#d61b6b] text-white font-black rounded-md border-[3px] border-black shadow-[3px_3px_0px_0px_#000] cursor-pointer transition-all flex items-center gap-1.5 select-none active:translate-x-[1px] active:translate-y-[1px] active:shadow-none ${
+              isFullscreen
+                ? "text-[11px] py-2 px-3.5 tracking-wider"
+                : "text-[9px] py-1.5 px-2.5 tracking-wider"
+            }`}
+            style={{
+              fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
+            }}
+          >
+            <span>⏩</span>
+            <span>SALTAR TEXTOS (TEST)</span>
+          </button>
+        </div>
+      )}
 
       {/* OFF-SCREEN WAYPOINT ARROW (Flecha pixel art con movimiento fluido en 60 FPS) */}
       {showOffscreenArrow && (
@@ -1684,66 +1914,70 @@ export default function GameplayScene({
           })}
 
         {/* 2. MESA DE VOTACIÓN PENDIENTE (phase_2_mesa) */}
-        {minigamePhase === "phase_2_mesa" && (() => {
-          const iconPos = EXCLAMATION_ICON_POSITIONS.mesa;
-          const dist = Math.min(
-            Math.hypot(playerPos.x - MESA_POSITION.x, playerPos.y - MESA_POSITION.y),
-            Math.hypot(playerPos.x - iconPos.x, playerPos.y - iconPos.y),
-          );
-          const isNearMesa = dist < 9.5;
+        {minigamePhase === "phase_2_mesa" &&
+          (() => {
+            const iconPos = EXCLAMATION_ICON_POSITIONS.mesa;
+            const dist = Math.min(
+              Math.hypot(
+                playerPos.x - MESA_POSITION.x,
+                playerPos.y - MESA_POSITION.y,
+              ),
+              Math.hypot(playerPos.x - iconPos.x, playerPos.y - iconPos.y),
+            );
+            const isNearMesa = dist < 9.5;
 
-          return (
-            <div
-              style={{
-                left: `${iconPos.x}%`,
-                top: `${iconPos.y}%`,
-                transform: "translate(-50%, -50%)",
-                zIndex: 35,
-              }}
-              className="absolute pointer-events-none flex flex-col items-center select-none"
-            >
+            return (
               <div
-                className="flex items-center justify-center pointer-events-none"
                 style={{
-                  width: EXCLAMATION_ICON_WIDTH,
-                  animation: "floatExclamation 1.4s ease-in-out infinite",
+                  left: `${iconPos.x}%`,
+                  top: `${iconPos.y}%`,
+                  transform: "translate(-50%, -50%)",
+                  zIndex: 35,
                 }}
+                className="absolute pointer-events-none flex flex-col items-center select-none"
               >
-                <img
-                  src="/assets/juego/exclamacion.png"
-                  alt="Ubicación disponible"
-                  className="w-full h-auto object-contain drop-shadow-[0_2px_5px_rgba(0,0,0,0.6)]"
-                  style={{ imageRendering: "pixelated" }}
-                />
-              </div>
-
-              {isNearMesa && (
                 <div
-                  className="absolute -top-[28%] left-1/2 -translate-x-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
+                  className="flex items-center justify-center pointer-events-none"
                   style={{
-                    animation: "floatPrompt 1.4s ease-in-out infinite",
+                    width: EXCLAMATION_ICON_WIDTH,
+                    animation: "floatExclamation 1.4s ease-in-out infinite",
                   }}
                 >
+                  <img
+                    src="/assets/juego/exclamacion.png"
+                    alt="Ubicación disponible"
+                    className="w-full h-auto object-contain drop-shadow-[0_2px_5px_rgba(0,0,0,0.6)]"
+                    style={{ imageRendering: "pixelated" }}
+                  />
+                </div>
+
+                {isNearMesa && (
                   <div
-                    className="whitespace-nowrap text-[#ff4da6] font-black tracking-wider flex items-center gap-1 select-none"
+                    className="absolute -top-[28%] left-1/2 -translate-x-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
                     style={{
-                      fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
-                      fontSize: isFullscreen
-                        ? "clamp(6.5px, 0.68cqw, 10px)"
-                        : "clamp(4.5px, 0.48cqw, 6px)",
-                      lineHeight: "1",
-                      textShadow:
-                        "1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 1px 0 #000, 0 -1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 2px 4px rgba(0,0,0,0.9)",
+                      animation: "floatPrompt 1.4s ease-in-out infinite",
                     }}
                   >
-                    <span>presiona</span>
-                    <span className="text-[#ff99d6]">E</span>
+                    <div
+                      className="whitespace-nowrap text-[#ff4da6] font-black tracking-wider flex items-center gap-1 select-none"
+                      style={{
+                        fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
+                        fontSize: isFullscreen
+                          ? "clamp(6.5px, 0.68cqw, 10px)"
+                          : "clamp(4.5px, 0.48cqw, 6px)",
+                        lineHeight: "1",
+                        textShadow:
+                          "1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 1px 0 #000, 0 -1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 2px 4px rgba(0,0,0,0.9)",
+                      }}
+                    >
+                      <span>presiona</span>
+                      <span className="text-[#ff99d6]">E</span>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-          );
-        })()}
+                )}
+              </div>
+            );
+          })()}
 
         {/* 3. DECORACIONES PENDIENTES (phase_3_deco - todas las no colocadas muestran su icono) */}
         {minigamePhase === "phase_3_deco" &&
@@ -1956,7 +2190,8 @@ export default function GameplayScene({
                 top: `${pos.y}%`,
                 width: deco.width,
                 transform: "translate(-50%, -90%)",
-                zIndex: deco.key === "cartel3" ? 35 : (playerPos.y >= pos.y ? 18 : 28),
+                zIndex:
+                  deco.key === "cartel3" ? 35 : playerPos.y >= pos.y ? 18 : 28,
               }}
               className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
             >
@@ -2022,26 +2257,51 @@ export default function GameplayScene({
       </div>
 
       {/* INTRO SPEECH BUBBLE DIALOGUE OVERLAY */}
-      {dialogueState !== "initial_delay" && dialogueState !== "dismissed" && (
-        <div className="absolute inset-0 z-40 pointer-events-none flex items-end justify-center pb-[1.8cqw] px-[2cqw] overflow-hidden select-none">
-          <div className="relative z-10 w-[96%] pointer-events-auto">
-            <PixelSpeechBubble
-              speaker={language === "nah" ? "Inecito Cívica" : "Inecito"}
-              messages={
-                activeDialogue ||
-                (language === "nah" ? INTRO_MESSAGES_NAH : INTRO_MESSAGES_ES)
-              }
-              actionKey="E"
-              disabled={isPaused}
-              isDismissing={dialogueState === "exiting"}
-              onDismiss={() => {
-                setDialogueState("exiting");
-                setActiveDialogue(null);
-              }}
-            />
+      {dialogueState !== "initial_delay" &&
+        dialogueState !== "delayed_start" &&
+        dialogueState !== "dismissed" && (
+          <div className="absolute inset-0 z-40 pointer-events-none flex items-end justify-center pb-[1.8cqw] px-[2cqw] overflow-hidden select-none">
+            <div className="relative z-10 w-[96%] pointer-events-auto flex flex-col items-end">
+              {/* Botón provisional para saltar todos los textos (Test) */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSkipAllDialogue();
+                }}
+                type="button"
+                title="Saltar todos los textos con un solo clic (Test)"
+                className="mb-1.5 bg-[#940d57] hover:bg-[#ff2a85] active:bg-[#780946] text-white rounded border-[2px] border-black shadow-[2px_2px_0px_0px_#000] cursor-pointer transition-colors flex items-center gap-1.5 px-3 py-1 select-none active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                style={{
+                  fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
+                  fontSize: isFullscreen ? "10px" : "8px",
+                }}
+              >
+                <span>⏩</span>
+                <span>SALTAR TEXTOS (TEST)</span>
+              </button>
+
+              <PixelSpeechBubble
+                speaker={language === "nah" ? "Inecito Cívica" : "Inecito"}
+                messages={
+                  activeDialogue ||
+                  (language === "nah" ? INTRO_MESSAGES_NAH : INTRO_MESSAGES_ES)
+                }
+                actionKey="E"
+                disabled={isPaused}
+                isDismissing={dialogueState === "exiting"}
+                onLineChange={(line) => {
+                  const target = line.target || dialogueTarget;
+                  setIsWalking(false);
+                  setLastDirection(target === "npc" ? "4" : "1");
+                }}
+                onDismiss={() => {
+                  setDialogueState("exiting");
+                  setActiveDialogue(null);
+                }}
+              />
+            </div>
           </div>
-        </div>
-      )}
+        )}
     </div>
   );
 }
