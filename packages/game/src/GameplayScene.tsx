@@ -137,18 +137,20 @@ export const CASILLAS_ROW = CASILLA_POSITIONS;
 export const MESA_POSITION = { x: 19.0, y: 74.0 };
 export const MESA_WIDTH = "8.9%";
 
-// COORDENADAS CONFIGURABLES DE LAS 3 DECORACIONES (Edita aquí manualmente cada una):
+// COORDENADAS CONFIGURABLES DE LAS 4 DECORACIONES (Edita aquí manualmente cada una):
 export const DECORACIONES_POSITIONS = {
   cartel1: { x: 95.5, y: 50.0 }, // Cartel 1 (Mampara informativa frontal)
   cartel2: { x: 93.0, y: 91.5 }, // Cartel 2 (Mampara informativa de perfil)
   folleto: { x: 7.2, y: 31.0 }, // Folleto Cívico
+  cartel3: { x: 71.8, y: 99.0 }, // Cartel 3 / Letrero de Madera "VOTA"
 };
 
-// TAMAÑOS CONFIGURABLES DE LAS 3 DECORACIONES (Edita aquí el ancho '%' de cada una):
+// TAMAÑOS CONFIGURABLES DE LAS 4 DECORACIONES (Edita aquí el ancho '%' de cada una):
 export const DECORACIONES_SIZES = {
   cartel1: "6.2%", // Cartel 1 frontal
   cartel2: "6.5%", // Cartel 2 de perfil
   folleto: "2.8%", // Folleto Cívico
+  cartel3: "6.2%", // Cartel 3 / Letrero de Madera "VOTA"
 };
 
 export const DECORACIONES_LIST = [
@@ -173,14 +175,40 @@ export const DECORACIONES_LIST = [
     sprite: "/assets/juego/folleto.png",
     width: DECORACIONES_SIZES.folleto,
   },
+  {
+    id: "cartel-3",
+    key: "cartel3" as const,
+    name: "Letrero de Votación",
+    sprite: "/assets/juego/cartel-3.png",
+    width: DECORACIONES_SIZES.cartel3,
+  },
 ];
 
-// Ubicaciones configurables donde se colocarán los 4 objetos en la explanada (%)
+// TAMAÑOS CONFIGURABLES DE LAS 5 BOLETAS ELECTORALES (Edita aquí el ancho '%' de cada una):
+export const BOLETA_WIDTH = "2.8%";
+export const BOLETAS_SIZES = [
+  "2.8%", // Boleta en Mampara 1
+  "2.8%", // Boleta en Mampara 2
+  "2.8%", // Boleta en Mampara 3
+  "2.8%", // Boleta en Mampara 4
+  "2.8%", // Boleta en Mampara 5
+];
+
+// COORDENADAS CONFIGURABLES DE LAS 5 BOLETAS (Sobre la mesa de cada mampara, edita aquí manualmente):
+export const BOLETAS_POSITIONS = [
+  { x: 32.0, y: 27.5 }, // Boleta en Mampara 1
+  { x: 42.0, y: 27.5 }, // Boleta en Mampara 2
+  { x: 52.0, y: 27.5 }, // Boleta en Mampara 3
+  { x: 62.0, y: 27.5 }, // Boleta en Mampara 4
+  { x: 72.0, y: 27.5 }, // Boleta en Mampara 5
+];
+
+// Ubicaciones configurables donde se colocarán los objetos en la explanada (%)
 export const PLACEMENT_SPOTS = {
   casillas: CASILLA_POSITIONS[0], // Primera mampara electoral
   mesa: MESA_POSITION, // Mesa directiva de casilla (zona izquierda X:19, Y:74)
   deco: DECORACIONES_POSITIONS.cartel1, // Primera decoración (Cartel 1)
-  boletas: { x: 66, y: 72 }, // Urnas y boletas (zona inferior derecha)
+  boletas: BOLETAS_POSITIONS[0], // Primera boleta electoral
 };
 
 // Returns dynamic left boundary % at vertical position y (Slanted diagonal line)
@@ -292,12 +320,19 @@ export default function GameplayScene({
     placedCasillaIndicesRef.current = placedCasillaIndices;
   }, [placedCasillaIndices]);
 
-  // Keys de decoraciones colocadas individualmente (en cualquier orden: cartel1, cartel2, folleto)
+  // Keys de decoraciones colocadas individualmente (en cualquier orden: cartel1, cartel2, folleto, cartel3)
   const [placedDecoKeys, setPlacedDecoKeys] = useState<string[]>([]);
   const placedDecoKeysRef = useRef(placedDecoKeys);
   useEffect(() => {
     placedDecoKeysRef.current = placedDecoKeys;
   }, [placedDecoKeys]);
+
+  // Índices de boletas colocadas individualmente en las mamparas (0 a 4)
+  const [placedBoletaIndices, setPlacedBoletaIndices] = useState<number[]>([]);
+  const placedBoletaIndicesRef = useRef(placedBoletaIndices);
+  useEffect(() => {
+    placedBoletaIndicesRef.current = placedBoletaIndices;
+  }, [placedBoletaIndices]);
 
   const playerPosRef = useRef(playerPos);
   useEffect(() => {
@@ -408,6 +443,7 @@ export default function GameplayScene({
           } else if (curPhase === "phase_3_done") {
             setMinigamePhase("phase_4_boletas");
             setBoxStage(5);
+            setPlacedBoletaIndices([]);
           }
         } else {
           // 2. Colocar objetos en cualquier orden según proximidad
@@ -474,13 +510,30 @@ export default function GameplayScene({
               }
             }
           } else if (curPhase === "phase_4_boletas") {
-            const target = PLACEMENT_SPOTS.boletas;
-            const distToTarget = Math.hypot(
-              curPlayer.x - target.x,
-              curPlayer.y - target.y,
-            );
-            if (distToTarget < 9.0) {
-              setMinigamePhase("phase_complete");
+            // Busca la boleta pendiente más cercana al jugador que esté a rango (< 9.0)
+            const currentIndices = placedBoletaIndicesRef.current;
+            let closestIdx = -1;
+            let minDistance = 9.0;
+
+            BOLETAS_POSITIONS.forEach((pos, idx) => {
+              if (!currentIndices.includes(idx)) {
+                const dist = Math.hypot(
+                  curPlayer.x - pos.x,
+                  curPlayer.y - pos.y,
+                );
+                if (dist < minDistance) {
+                  minDistance = dist;
+                  closestIdx = idx;
+                }
+              }
+            });
+
+            if (closestIdx !== -1) {
+              const nextIndices = [...currentIndices, closestIdx];
+              setPlacedBoletaIndices(nextIndices);
+              if (nextIndices.length >= BOLETAS_POSITIONS.length) {
+                setMinigamePhase("phase_complete");
+              }
             }
           }
         }
@@ -741,10 +794,24 @@ export default function GameplayScene({
         };
       }
     } else if (minigamePhase === "phase_4_boletas") {
-      activeExclamationTarget = {
-        x: PLACEMENT_SPOTS.boletas.x,
-        y: PLACEMENT_SPOTS.boletas.y - 3.8,
-      };
+      // Apunta a la boleta pendiente MÁS CERCANA al jugador
+      let closestPos: { x: number; y: number } | null = null;
+      let minD = Infinity;
+      BOLETAS_POSITIONS.forEach((pos, idx) => {
+        if (!placedBoletaIndices.includes(idx)) {
+          const d = Math.hypot(playerPos.x - pos.x, playerPos.y - pos.y);
+          if (d < minD) {
+            minD = d;
+            closestPos = pos;
+          }
+        }
+      });
+      if (closestPos) {
+        activeExclamationTarget = {
+          x: (closestPos as { x: number; y: number }).x,
+          y: (closestPos as { x: number; y: number }).y - 4.5,
+        };
+      }
     }
   }
 
@@ -1167,7 +1234,7 @@ export default function GameplayScene({
                   top: `${pos.y}%`,
                   width: deco.width,
                   transform: "translate(-50%, -90%)",
-                  zIndex: 20,
+                  zIndex: deco.key === "cartel3" ? 35 : 20,
                 }}
                 className="absolute pointer-events-none flex flex-col items-center select-none"
               >
@@ -1214,62 +1281,70 @@ export default function GameplayScene({
             );
           })}
 
-        {/* 4. BOLETAS PENDIENTES (phase_4_boletas) */}
-        {minigamePhase === "phase_4_boletas" && (
-          <div
-            style={{
-              left: `${PLACEMENT_SPOTS.boletas.x}%`,
-              top: `${PLACEMENT_SPOTS.boletas.y}%`,
-              width: "8%",
-              transform: "translate(-50%, -90%)",
-              zIndex: 20,
-            }}
-            className="absolute pointer-events-none flex flex-col items-center select-none"
-          >
-            <div
-              className="absolute -top-[46%] left-1/2 -translate-x-1/2 z-20 flex items-center justify-center pointer-events-none"
-              style={{
-                width: EXCLAMATION_ICON_WIDTH,
-                animation: "floatExclamation 1.4s ease-in-out infinite",
-              }}
-            >
-              <img
-                src="/assets/juego/exclamacion.png"
-                alt="Ubicación disponible"
-                className="w-full h-auto object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
-                style={{ imageRendering: "pixelated" }}
-              />
-            </div>
+        {/* 4. BOLETAS PENDIENTES (phase_4_boletas - se colocan sobre las mesas de las mamparas) */}
+        {minigamePhase === "phase_4_boletas" &&
+          BOLETAS_POSITIONS.map((pos, index) => {
+            if (placedBoletaIndices.includes(index)) return null;
+            const dist = Math.hypot(playerPos.x - pos.x, playerPos.y - pos.y);
+            const isNearThisSpot = dist < 9.0;
+            const boletaWidth = BOLETAS_SIZES[index] || BOLETA_WIDTH;
+            const casillaY = CASILLA_POSITIONS[index]?.y ?? 36.0;
+            const isPlayerInFront = playerPos.y >= casillaY;
 
-            {Math.hypot(
-              playerPos.x - PLACEMENT_SPOTS.boletas.x,
-              playerPos.y - PLACEMENT_SPOTS.boletas.y,
-            ) < 9.0 && (
+            return (
               <div
-                className="absolute -top-[70%] left-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
+                key={`pending-boleta-${index}`}
                 style={{
-                  animation: "floatPrompt 1.4s ease-in-out infinite",
+                  left: `${pos.x}%`,
+                  top: `${pos.y}%`,
+                  width: boletaWidth,
+                  transform: "translate(-50%, -90%)",
+                  zIndex: isPlayerInFront ? 21 : 29,
                 }}
+                className="absolute pointer-events-none flex flex-col items-center select-none"
               >
                 <div
-                  className="whitespace-nowrap text-[#ff4da6] font-black tracking-wider flex items-center gap-1 select-none"
+                  className="absolute -top-[46%] left-1/2 -translate-x-1/2 z-20 flex items-center justify-center pointer-events-none"
                   style={{
-                    fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
-                    fontSize: isFullscreen
-                      ? "clamp(6.5px, 0.68cqw, 10px)"
-                      : "clamp(4.5px, 0.48cqw, 6px)",
-                    lineHeight: "1",
-                    textShadow:
-                      "1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 1px 0 #000, 0 -1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 2px 4px rgba(0,0,0,0.9)",
+                    width: EXCLAMATION_ICON_WIDTH,
+                    animation: "floatExclamation 1.4s ease-in-out infinite",
                   }}
                 >
-                  <span>presiona</span>
-                  <span className="text-[#ff99d6]">E</span>
+                  <img
+                    src="/assets/juego/exclamacion.png"
+                    alt="Ubicación disponible"
+                    className="w-full h-auto object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
+                    style={{ imageRendering: "pixelated" }}
+                  />
                 </div>
+
+                {isNearThisSpot && (
+                  <div
+                    className="absolute -top-[70%] left-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
+                    style={{
+                      animation: "floatPrompt 1.4s ease-in-out infinite",
+                    }}
+                  >
+                    <div
+                      className="whitespace-nowrap text-[#ff4da6] font-black tracking-wider flex items-center gap-1 select-none"
+                      style={{
+                        fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
+                        fontSize: isFullscreen
+                          ? "clamp(6.5px, 0.68cqw, 10px)"
+                          : "clamp(4.5px, 0.48cqw, 6px)",
+                        lineHeight: "1",
+                        textShadow:
+                          "1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 1px 0 #000, 0 -1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 2px 4px rgba(0,0,0,0.9)",
+                      }}
+                    >
+                      <span>presiona</span>
+                      <span className="text-[#ff99d6]">E</span>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        )}
+            );
+          })}
 
         {/* CASILLAS ELECTORALES COLOCADAS EN CUALQUIER ORDEN (sin sombras artificiales) */}
         {CASILLA_POSITIONS.map((pos, index) => {
@@ -1326,7 +1401,7 @@ export default function GameplayScene({
           </div>
         )}
 
-        {/* OBJETOS COLOCADOS: 3 DECORACIONES (Cartel 1, Cartel 2, Folleto) (sin sombras artificiales) */}
+        {/* OBJETOS COLOCADOS: 4 DECORACIONES (Cartel 1, Cartel 2, Folleto, Letrero VOTA) (sin sombras artificiales) */}
         {DECORACIONES_LIST.map((deco) => {
           const isPlaced =
             minigamePhase === "phase_3_done" ||
@@ -1346,7 +1421,7 @@ export default function GameplayScene({
                 top: `${pos.y}%`,
                 width: deco.width,
                 transform: "translate(-50%, -90%)",
-                zIndex: playerPos.y >= pos.y ? 18 : 28,
+                zIndex: deco.key === "cartel3" ? 35 : (playerPos.y >= pos.y ? 18 : 28),
               }}
               className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
             >
@@ -1354,6 +1429,41 @@ export default function GameplayScene({
               <img
                 src={deco.sprite}
                 alt={deco.name}
+                className="relative z-10 w-full h-auto object-contain"
+                style={{ imageRendering: "pixelated" }}
+              />
+            </div>
+          );
+        })}
+
+        {/* OBJETOS COLOCADOS: BOLETAS SOBRE LAS MESAS DE LAS MAMPARAS (sin sombras artificiales) */}
+        {BOLETAS_POSITIONS.map((pos, index) => {
+          const isPlaced =
+            minigamePhase === "phase_complete"
+              ? true
+              : placedBoletaIndices.includes(index);
+
+          if (!isPlaced) return null;
+          const boletaWidth = BOLETAS_SIZES[index] || BOLETA_WIDTH;
+          const casillaY = CASILLA_POSITIONS[index]?.y ?? 36.0;
+          const isPlayerInFront = playerPos.y >= casillaY;
+
+          return (
+            <div
+              key={`boleta-item-${index}`}
+              style={{
+                left: `${pos.x}%`,
+                top: `${pos.y}%`,
+                width: boletaWidth,
+                transform: "translate(-50%, -90%)",
+                zIndex: isPlayerInFront ? 21 : 29, // Siempre por delante de la mampara (18 o 28)
+              }}
+              className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
+            >
+              {/* Sprite pixel art de la boleta electoral */}
+              <img
+                src="/assets/juego/boleta.png"
+                alt={`Boleta Electoral ${index + 1}`}
                 className="relative z-10 w-full h-auto object-contain"
                 style={{ imageRendering: "pixelated" }}
               />
