@@ -19,13 +19,8 @@ export function TugOfWarSection({ data, selectedYear, onSelectYear }: Props) {
   // Positivo = mujeres participan más → desplazamiento hacia la izquierda
   const gap = data.womenRate - data.menRate;
   const clampedGap = Math.max(-MAX_SCALE, Math.min(MAX_SCALE, gap));
-  const womenLead = gap >= 0;
-
-  // Desplazamiento dinámico en píxeles hacia las mujeres (izquierda)
+  // Desplazamiento de la escena según la diferencia observada.
   const shiftX = clampedGap * 6.5;
-
-  // Factor de tensión de la cuerda
-  const tensionFactor = clampedGap / 9.4;
 
   // Posición del puntero sobre la línea dividida (50% = centro / empate)
   const markerPct = 50 - (clampedGap / MAX_SCALE) * 44;
@@ -36,43 +31,45 @@ export function TugOfWarSection({ data, selectedYear, onSelectYear }: Props) {
   return (
     <section 
       id="cuerda-interactiva" 
-      className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-12 scroll-mt-24"
+      className="bg-white rounded-2xl border border-slate-200 overflow-hidden mb-10 scroll-mt-24"
     >
       
-      {/* 1. CABECERA: Año electoral y proceso federal con porcentajes en limpio */}
-      <div className="bg-white px-5 py-3 sm:px-8 sm:py-3.5 border-b border-slate-200">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 max-w-[1240px] mx-auto">
-          <div className="flex items-center gap-2.5">
-            <span className="text-2xl sm:text-3xl font-bold text-slate-900 tabular-nums leading-none tracking-tight">
-              {data.year}
+      {/* Contexto de la elección, visible sin competir con la ilustración */}
+      <div className="bg-[#FAF8FA] px-5 py-3 sm:px-8 border-b border-slate-100">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 max-w-[1240px] mx-auto">
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+            <span className="text-lg sm:text-xl font-semibold text-slate-900 tabular-nums tracking-tight">
+              Elección {data.year}
             </span>
-            <span className="px-2.5 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200 font-mono uppercase">
-              {data.type}
-            </span>
+            <span className="text-sm text-slate-500">{data.type}</span>
           </div>
 
-          <div className="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm">
-            <span className="text-slate-600">
-              Mujeres: <strong className="text-[#C2006A] font-bold font-mono text-sm sm:text-base">{data.womenRate.toFixed(1)}%</strong>
-            </span>
-            <span className="text-slate-300">·</span>
-            <span className="text-slate-600">
-              Hombres: <strong className="text-slate-800 font-bold font-mono text-sm sm:text-base">{data.menRate.toFixed(1)}%</strong>
-            </span>
-            <span className="text-slate-300 hidden md:inline">·</span>
-            <span className="text-xs font-mono text-slate-400 uppercase tracking-wide hidden md:inline">
-              CCPC · INE
-            </span>
-          </div>
+          <dl className="flex items-center gap-4 text-sm">
+            <div className="flex items-baseline gap-1.5">
+              <dt className="text-slate-600">Mujeres</dt>
+              <dd className="font-semibold tabular-nums text-[#A00058]">{data.womenRate.toFixed(1)}%</dd>
+            </div>
+            <span aria-hidden="true" className="h-4 w-px bg-slate-300" />
+            <div className="flex items-baseline gap-1.5">
+              <dt className="text-slate-600">Hombres</dt>
+              <dd className="font-semibold tabular-nums text-slate-800">{data.menRate.toFixed(1)}%</dd>
+            </div>
+          </dl>
         </div>
       </div>
 
       {/* 2. PARTE PRINCIPAL: Escenario Completo con Selector de Años AL COSTADO de la Cuerda */}
-      <div className="bg-white px-4 pt-5 pb-5 sm:px-6 sm:pt-6 sm:pb-6 lg:px-8">
+      <div className="bg-white px-4 pt-5 pb-6 sm:px-6 sm:pt-6 sm:pb-8 lg:px-8">
         <div className="max-w-[1240px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_130px] xl:grid-cols-[1fr_140px] gap-4 lg:gap-6 items-center">
           
           {/* COLUMNA PRINCIPAL (IZQUIERDA/CENTRO): Cuerda Pixel Art y Plano Cartesiano */}
-          <div className="w-full flex flex-col justify-center">
+          <motion.div
+            className="w-full flex flex-col justify-center"
+            initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.25 }}
+            transition={{ duration: reduceMotion ? 0 : 0.45, ease: [0.22, 1, 0.36, 1] }}
+          >
             
             {/* Escenario de la Cuerda Pixel Art: proporción amplia para visualizar la cuerda más grande y clara */}
             <div className="relative w-full aspect-[1024/360] max-h-[290px] sm:max-h-[320px] lg:max-h-[350px] select-none px-1 sm:px-2">
@@ -83,37 +80,19 @@ export function TugOfWarSection({ data, selectedYear, onSelectYear }: Props) {
               <motion.div
                 className="w-full h-full relative"
                 initial={false}
-                animate={{ x: reduceMotion ? 0 : -shiftX }}
-                transition={spring}
+                animate={{ x: -shiftX }}
+                transition={reduceMotion ? { duration: 0 } : spring}
               >
-                {/* Dinamismo continuo: simula el esfuerzo y tironeo constante con tensión proporcional */}
-                <motion.div
-                  className="w-full h-full relative"
-                  animate={
-                    reduceMotion
-                      ? {}
-                      : {
-                          x: [-2.5 * tensionFactor, 2.5 * tensionFactor, -2 * tensionFactor, 2.5 * tensionFactor, -1, 0, -2.5 * tensionFactor],
-                          y: [0, -1.2, 0.8, -1.5, 0.6, -0.4, 0],
-                          rotate: womenLead ? [-0.25, 0.35, -0.2, 0.3, -0.25] : [0.25, -0.35, 0.2, -0.3, 0.25],
-                        }
-                  }
-                  transition={{
-                    duration: 2.6 - tensionFactor * 0.4,
-                    repeat: Infinity,
-                    ease: 'easeInOut',
-                  }}
-                >
+                <div className="w-full h-full relative">
                   <Image
                     src="/cuerda_genero_v2.png"
                     alt="Mujer y hombre en pixel art tirando de la cuerda con flor de dalia en el centro"
                     fill
                     sizes="(max-width: 1024px) 100vw, 1100px"
                     className="object-contain object-center pointer-events-none select-none"
-                    style={{ imageRendering: 'pixelated' }}
                     priority
                   />
-                </motion.div>
+                </div>
               </motion.div>
             </div>
 
@@ -134,7 +113,7 @@ export function TugOfWarSection({ data, selectedYear, onSelectYear }: Props) {
                       animate={{
                         width: `${((50 - markerPct) / 50) * 100}%`,
                       }}
-                      transition={spring}
+                      transition={reduceMotion ? { duration: 0 } : spring}
                     />
                   </div>
 
@@ -152,7 +131,7 @@ export function TugOfWarSection({ data, selectedYear, onSelectYear }: Props) {
                   className="absolute top-0 -translate-x-1/2 flex flex-col items-center z-20 pointer-events-none"
                   initial={false}
                   animate={{ left: `${markerPct}%` }}
-                  transition={spring}
+                  transition={reduceMotion ? { duration: 0 } : spring}
                 >
                   <div className="px-2.5 py-0.5 rounded bg-[#E3007E] text-white text-xs font-mono font-bold leading-tight whitespace-nowrap shadow-xs">
                     <span className="hidden sm:inline">+{Math.abs(gap).toFixed(1)} puntos porcentuales</span>
@@ -184,16 +163,16 @@ export function TugOfWarSection({ data, selectedYear, onSelectYear }: Props) {
 
             </div>
 
-          </div>
+          </motion.div>
 
           {/* COLUMNA LATERAL (A UN COSTADO DE LA CUERDA): Selector compacto y sobrio de Años */}
           <div className="w-full lg:border-l lg:border-slate-200 lg:pl-5 flex flex-col justify-center">
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 sm:p-3">
+            <div className="bg-slate-50 rounded-xl p-3">
               <div className="text-center pb-2 mb-2 border-b border-slate-200">
-                <p className="text-[11px] font-bold text-slate-700 uppercase tracking-wider leading-tight">
+                <p className="text-xs font-semibold text-slate-700 leading-tight">
                   Elección
                 </p>
-                <p className="text-[10px] font-mono text-slate-400 mt-0.5">
+                <p className="text-xs text-slate-400 mt-0.5">
                   6 procesos
                 </p>
               </div>
@@ -203,18 +182,20 @@ export function TugOfWarSection({ data, selectedYear, onSelectYear }: Props) {
                 {ELECTION_YEARS.slice().reverse().map((year) => {
                   const isSelected = selectedYear === year;
                   return (
-                    <button
+                    <motion.button
                       key={year}
                       type="button"
                       onClick={() => onSelectYear(year)}
-                      className={`w-full flex items-center justify-center py-2 px-1.5 rounded-lg transition-all text-sm font-semibold tabular-nums font-mono text-center ${
+                      whileTap={reduceMotion ? undefined : { scale: 0.96 }}
+                      className={`relative w-full flex items-center justify-center py-2 px-1.5 rounded-lg transition-all text-sm font-semibold tabular-nums font-mono text-center ${
                         isSelected
-                          ? 'bg-[#E3007E] text-white shadow-xs font-bold'
-                          : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 hover:border-slate-300'
+                          ? 'text-white font-semibold'
+                          : 'bg-white hover:bg-pink-50 text-slate-700 border border-slate-200 hover:border-pink-300'
                       }`}
                     >
-                      <span>{year}</span>
-                    </button>
+                      {isSelected && <motion.span layoutId="gender-election-year" className="absolute inset-0 rounded-lg bg-[#E3007E]" transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 420, damping: 32 }} aria-hidden="true" />}
+                      <span className="relative z-[1]">{year}</span>
+                    </motion.button>
                   );
                 })}
               </div>
@@ -224,12 +205,11 @@ export function TugOfWarSection({ data, selectedYear, onSelectYear }: Props) {
         </div>
 
         {/* Lectura textual complementaria */}
-        <div className="max-w-2xl mx-auto mt-4 sm:mt-5 p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
-          <p className="text-sm text-slate-700 leading-relaxed font-normal">
-            De cada 100 mujeres en la lista nominal votaron <strong className="text-slate-900 font-bold">{data.womenRate.toFixed(1)}</strong>. De cada
-            100 hombres votaron <strong className="text-slate-900 font-bold">{data.menRate.toFixed(1)}</strong> (diferencia de <strong className="text-[#E3007E] font-bold">+{Math.abs(gap).toFixed(1)} p.p.</strong>).
+        <div className="max-w-3xl mx-auto mt-6 border-l-2 border-[#E3007E] pl-4 sm:pl-5 py-1">
+          <p className="text-sm sm:text-base text-slate-700 leading-relaxed">
+            De cada 100 mujeres en la lista nominal votaron <strong className="font-semibold text-slate-900">{data.womenRate.toFixed(1)}</strong>. De cada 100 hombres votaron <strong className="font-semibold text-slate-900">{data.menRate.toFixed(1)}</strong> (diferencia de <strong className="font-semibold text-[#A00058]">+{Math.abs(gap).toFixed(1)} p.p.</strong>).
           </p>
-          <p className="mt-1 text-[11px] text-slate-500 font-normal">
+          <p className="mt-2 text-xs sm:text-sm text-slate-500">
             Fuente oficial: Estudios Muestrales de Participación Ciudadana (CCPC), Instituto Nacional Electoral (INE).
           </p>
         </div>

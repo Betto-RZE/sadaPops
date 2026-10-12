@@ -450,44 +450,53 @@ export function TimelineVisualization({ selectedYear, onSelectYear }: Props) {
               preserveAspectRatio="xMidYMid meet"
             >
               
-              {/* Capa 1: Montañas distantes en escala de grises */}
+              {/* Capa 1: cielo y sol en bloques de pixel art */}
+              <rect x="0" y="0" width="1000" height="260" fill="#FFF8FB" />
+              <g shapeRendering="crispEdges" aria-hidden="true">
+                <rect x="220" y="42" width="32" height="4" fill="#F9A8D4" />
+                <rect x="212" y="46" width="48" height="8" fill="#FBCFE8" />
+                <rect x="220" y="54" width="32" height="4" fill="#F9A8D4" />
+              </g>
+
+              {/* Capa 2: montañas en tonos cálidos para dar profundidad al recorrido */}
               <path 
                 d="M 0 260 L 0 170 L 70 135 L 150 180 L 240 120 L 340 175 L 430 130 L 530 190 L 660 115 L 780 165 L 900 120 L 1000 175 L 1000 260 Z" 
-                fill="#E2E8F0" 
+                fill="#F2E5EE"
                 shapeRendering="crispEdges" 
               />
               <path 
                 d="M 0 260 L 0 205 L 110 165 L 210 215 L 290 155 L 400 220 L 500 145 L 610 230 L 730 135 L 830 200 L 930 155 L 1000 195 L 1000 260 Z" 
-                fill="#CBD5E1" 
+                fill="#E5D2E2"
                 shapeRendering="crispEdges" 
               />
 
-              {/* Capa 2: Siluetas urbanas pixel art en escala de grises */}
+              {/* Capa 3: siluetas urbanas suaves al fondo */}
               <PixelCitySkyline x={320} y={260} />
               <PixelCitySkyline x={680} y={260} />
 
-              {/* Capa 3: Nubes pixel art */}
+              {/* Capa 4: nubes pixel art */}
               <PixelCloud x={70} y={55} scale={0.8} />
               <PixelCloud x={460} y={75} scale={0.65} />
               <PixelCloud x={790} y={50} scale={0.85} />
 
-              {/* Capa 4: Suelo / Base horizontal */}
-              <rect x="0" y="260" width="1000" height="5" fill="#475569" shapeRendering="crispEdges" />
-              <rect x="0" y="265" width="1000" height="85" fill="#E2E8F0" opacity="0.4" shapeRendering="crispEdges" />
+              {/* Capa 5: suelo y base del recorrido */}
+              <rect x="0" y="260" width="1000" height="5" fill="#76566F" shapeRendering="crispEdges" />
+              <rect x="0" y="265" width="1000" height="85" fill="#F8EAF1" shapeRendering="crispEdges" />
+              <rect x="0" y="278" width="1000" height="2" fill="#E8D2E0" shapeRendering="crispEdges" />
 
-              {/* Capa 5: Pilares estructurales proporcionales a las alturas reales */}
+              {/* Capa 6: pilares estructurales proporcionales a las alturas reales */}
               {POINTS.map((pt) => (
                 <PixelPillar key={`pillar-${pt.year}`} x={pt.x} topY={pt.y} />
               ))}
 
-              {/* Capa 6: Riel pixel art rasterizado (fiel al recorrido real de los datos) */}
+              {/* Capa 7: riel pixel art rasterizado, fiel al recorrido de los datos */}
               <g shapeRendering="crispEdges" aria-hidden="true">
                 {trackPixels.map(({ color, d }) => (
                   <path key={color} d={d} fill={color} />
                 ))}
               </g>
 
-              {/* Capa 7: Estaciones / Nodos interactivos por año */}
+              {/* Capa 8: estaciones y nodos interactivos por año */}
               {POINTS.map((pt) => {
                 const isSelected = selectedYear === pt.year;
                 return (
@@ -563,7 +572,7 @@ export function TimelineVisualization({ selectedYear, onSelectYear }: Props) {
                 );
               })}
 
-              {/* Capa 8: Carrito pixel art dinámico */}
+              {/* Capa 9: carrito pixel art dinámico */}
               <PixelCar x={activeCar.x} y={activeCar.y} rotation={activeCar.rotation} />
 
             </svg>
