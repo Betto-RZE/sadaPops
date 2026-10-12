@@ -385,6 +385,207 @@ const tryPolygonWallSlide = (
   return null;
 };
 
+// Sistema de Despenetración: si el personaje queda dentro de un obstáculo al colocarlo, calcula el vector de empuje a una zona segura
+const getSafePushVector = (
+  pos: Point2D,
+  obs: ObstaclesConfig,
+  phase: string,
+  placedCasillas: number[],
+  placedDecos: string[],
+  isWalkable: (x: number, y: number) => boolean,
+): { vx: number; vy: number } | null => {
+  // 1. Verificar si está dentro de alguna mampara activa
+  const areCasillasPlacedInCurrentPhase =
+    phase !== "phase_0_ready" && phase !== "phase_1_casillas";
+
+  if (Array.isArray(obs.mamparas)) {
+    for (let i = 0; i < obs.mamparas.length; i++) {
+      const isThisMamparaPlaced =
+        areCasillasPlacedInCurrentPhase || placedCasillas.includes(i);
+      const box = obs.mamparas[i];
+      if (isThisMamparaPlaced && box && isInsideBox(pos.x, pos.y, box)) {
+        // Encontrar la dirección de empuje más rápida y segura para salir del rectángulo
+        const exits = [
+          // Abajo (frente de la mampara, hacia la explanada abierta - altamente preferida)
+          { vx: 0, vy: 1, dist: box.maxY - pos.y + 0.6 },
+          // Izquierda
+          { vx: -1, vy: 0, dist: pos.x - box.minX + 0.6 },
+          // Derecha
+          { vx: 1, vy: 0, dist: box.maxX - pos.x + 0.6 },
+          // Arriba (detrás de la mampara)
+          { vx: 0, vy: -1, dist: pos.y - box.minY + 0.6 },
+        ];
+
+        // Ordenar por distancia de salida, priorizando abajo si las distancias son comparables
+        exits.sort((a, b) => {
+          const distA = a.vy === 1 ? a.dist * 0.75 : a.dist;
+          const distB = b.vy === 1 ? b.dist * 0.75 : b.dist;
+          return distA - distB;
+        });
+
+        for (const exit of exits) {
+          const testX = pos.x + exit.vx * exit.dist;
+          const testY = pos.y + exit.vy * exit.dist;
+          if (isWalkable(testX, testY)) {
+            return { vx: exit.vx, vy: exit.vy };
+          }
+        }
+        // Fallback: empujar hacia abajo hacia la explanada
+        return { vx: 0, vy: 1 };
+      }
+    }
+  }
+
+  // 2. Verificar si está dentro del polígono de la mesa directiva
+  const isMesaPresent =
+    phase !== "phase_0_ready" &&
+    phase !== "phase_1_casillas" &&
+    phase !== "phase_1_done" &&
+    phase !== "phase_2_mesa";
+
+  if (isMesaPresent && Array.isArray(obs.mesa) && obs.mesa.length >= 3) {
+    if (isInsidePolygon(pos.x, pos.y, obs.mesa)) {
+      const poly = obs.mesa;
+      const cx = poly.reduce((acc, p) => acc + p.x, 0) / poly.length;
+      const cy = poly.reduce((acc, p) => acc + p.y, 0) / poly.length;
+
+      let bestNormal: { vx: number; vy: number; dist: number } | null = null;
+
+      for (let i = 0; i < poly.length; i++) {
+        const a = poly[i];
+        const b = poly[(i + 1) % poly.length];
+        const edx = b.x - a.x;
+        const edy = b.y - a.y;
+        const len = Math.hypot(edx, edy);
+        if (len === 0) continue;
+
+        // Normal exterior unitaria
+        let nx = -edy / len;
+        let ny = edx / len;
+        const midX = (a.x + b.x) / 2;
+        const midY = (a.y + b.y) / 2;
+        if (
+          Math.hypot(midX + nx - cx, midY + ny - cy) <
+          Math.hypot(midX - nx - cx, midY - ny - cy)
+        ) {
+          nx = -nx;
+          ny = -ny;
+        }
+
+        // Distancia del punto a la arista
+        let t = ((pos.x - a.x) * edx + (pos.y - a.y) * edy) / (len * len);
+        t = Math.max(0, Math.min(1, t));
+        const px = a.x + t * edx;
+        const py = a.y + t * edy;
+        const dist = Math.hypot(pos.x - px, pos.y - py);
+
+        // Probar si el punto al salir por esta normal es caminable
+        const testX = px + nx * 1.0;
+        const testY = py + ny * 1.0;
+        if (isWalkable(testX, testY)) {
+          if (!bestNormal || dist < bestNormal.dist) {
+            bestNormal = { vx: nx, vy: ny, dist };
+          }
+        }
+      }
+
+      if (bestNormal) {
+        return { vx: bestNormal.vx, vy: bestNormal.vy };
+      }
+      // Fallback: empujar alejándose del centro del polígono
+      const fromCenterX = pos.x - cx;
+      const fromCenterY = pos.y - cy;
+      const centerDist = Math.hypot(fromCenterX, fromCenterY) || 1;
+      return { vx: fromCenterX / centerDist, vy: fromCenterY / centerDist };
+    }
+  }
+
+  // 3. Verificar si está dentro del Cartel 2
+  const isCartel2Present =
+    phase === "phase_3_done" ||
+    phase === "phase_4_boletas" ||
+    phase === "phase_complete"
+      ? true
+      : placedDecos.includes("cartel2");
+
+  if (isCartel2Present && obs.cartel2 && isInsideBox(pos.x, pos.y, obs.cartel2)) {
+    const box = obs.cartel2;
+    const exits = [
+      // Izquierda (hacia la explanada central)
+      { vx: -1, vy: 0, dist: pos.x - box.minX + 0.6 },
+      // Arriba
+      { vx: 0, vy: -1, dist: pos.y - box.minY + 0.6 },
+      // Abajo
+      { vx: 0, vy: 1, dist: box.maxY - pos.y + 0.6 },
+      // Derecha
+      { vx: 1, vy: 0, dist: box.maxX - pos.x + 0.6 },
+    ];
+    for (const exit of exits) {
+      const testX = pos.x + exit.vx * exit.dist;
+      const testY = pos.y + exit.vy * exit.dist;
+      if (isWalkable(testX, testY)) {
+        return { vx: exit.vx, vy: exit.vy };
+      }
+    }
+    return { vx: -1, vy: 0 };
+  }
+
+  // 4. Verificar si está dentro de la Caja de Suministros (polígono)
+  if (phase !== "phase_complete" && Array.isArray(obs.caja) && obs.caja.length >= 3) {
+    if (isInsidePolygon(pos.x, pos.y, obs.caja)) {
+      const poly = obs.caja;
+      const cx = poly.reduce((acc, p) => acc + p.x, 0) / poly.length;
+      const cy = poly.reduce((acc, p) => acc + p.y, 0) / poly.length;
+
+      let bestNormal: { vx: number; vy: number; dist: number } | null = null;
+      for (let i = 0; i < poly.length; i++) {
+        const a = poly[i];
+        const b = poly[(i + 1) % poly.length];
+        const edx = b.x - a.x;
+        const edy = b.y - a.y;
+        const len = Math.hypot(edx, edy);
+        if (len === 0) continue;
+
+        let nx = -edy / len;
+        let ny = edx / len;
+        const midX = (a.x + b.x) / 2;
+        const midY = (a.y + b.y) / 2;
+        if (
+          Math.hypot(midX + nx - cx, midY + ny - cy) <
+          Math.hypot(midX - nx - cx, midY - ny - cy)
+        ) {
+          nx = -nx;
+          ny = -ny;
+        }
+
+        let t = ((pos.x - a.x) * edx + (pos.y - a.y) * edy) / (len * len);
+        t = Math.max(0, Math.min(1, t));
+        const px = a.x + t * edx;
+        const py = a.y + t * edy;
+        const dist = Math.hypot(pos.x - px, pos.y - py);
+
+        const testX = px + nx * 1.0;
+        const testY = py + ny * 1.0;
+        if (isWalkable(testX, testY)) {
+          if (!bestNormal || dist < bestNormal.dist) {
+            bestNormal = { vx: nx, vy: ny, dist };
+          }
+        }
+      }
+
+      if (bestNormal) {
+        return { vx: bestNormal.vx, vy: bestNormal.vy };
+      }
+      const fromCenterX = pos.x - cx;
+      const fromCenterY = pos.y - cy;
+      const centerDist = Math.hypot(fromCenterX, fromCenterY) || 1;
+      return { vx: fromCenterX / centerDist, vy: fromCenterY / centerDist };
+    }
+  }
+
+  return null;
+};
+
 const getLeftBoundaryX = (y: number): number => {
   if (PLAZA_BOUNDS.maxY === PLAZA_BOUNDS.minY) return PLAZA_BOUNDS.topLeftX;
   const progress = Math.min(
@@ -811,6 +1012,42 @@ export default function GameplayScene({
         velocity.y = 0;
         keyHoldTime = 0;
         setIsWalking(false);
+        animationFrameId = requestAnimationFrame(updateGameLoop);
+        return;
+      }
+
+      // Sistema de Despenetración / Empuje suave si el personaje quedó dentro de un obstáculo al colocarlo
+      const pushVec = getSafePushVector(
+        playerPosRef.current,
+        OBJECT_COLLISION_BOXES,
+        minigamePhaseRef.current,
+        placedCasillaIndicesRef.current,
+        placedDecoKeysRef.current,
+        isPlazaWalkable,
+      );
+
+      if (pushVec) {
+        // Empuje suave constante a 16% de pantalla por segundo hacia zona segura
+        const pushSpeed = 16.0;
+        const pushDx = pushVec.vx * pushSpeed * dt;
+        const pushDy = pushVec.vy * pushSpeed * dt;
+
+        velocity.x = 0;
+        velocity.y = 0;
+        keyHoldTime = 0;
+
+        if (Math.abs(pushVec.vy) >= Math.abs(pushVec.vx)) {
+          setLastDirection(pushVec.vy > 0 ? "1" : "3");
+        } else {
+          setLastDirection(pushVec.vx > 0 ? "4" : "2");
+        }
+        setIsWalking(true);
+
+        setPlayerPos((prev) => ({
+          x: prev.x + pushDx,
+          y: prev.y + pushDy,
+        }));
+
         animationFrameId = requestAnimationFrame(updateGameLoop);
         return;
       }
