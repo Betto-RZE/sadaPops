@@ -211,7 +211,180 @@ export const PLACEMENT_SPOTS = {
   boletas: BOLETAS_POSITIONS[0], // Primera boleta electoral
 };
 
-// Returns dynamic left boundary % at vertical position y (Slanted diagonal line)
+export interface Point2D {
+  x: number;
+  y: number;
+}
+
+export interface ObstacleBox {
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+}
+
+export interface ObstaclesConfig {
+  mamparas: ObstacleBox[];
+  mesa: Point2D[];
+  caja: Point2D[];
+  cartel2: ObstacleBox;
+}
+
+// CAJAS DE COLISIÓN DE OBJETOS (%) CALIBRADAS
+// (Sin colisión: boletas, folleto, cartel-1 y cartel-3)
+export const OBJECT_COLLISION_BOXES: ObstaclesConfig = {
+  mamparas: [
+    { minX: 26.0, maxX: 38.0, minY: 32.5, maxY: 36.0 }, // Mampara 1
+    { minX: 35.5, maxX: 48.5, minY: 32.5, maxY: 36.0 }, // Mampara 2
+    { minX: 45.5, maxX: 58.5, minY: 32.5, maxY: 36.0 }, // Mampara 3
+    { minX: 55.5, maxX: 68.5, minY: 32.5, maxY: 36.0 }, // Mampara 4
+    { minX: 66.0, maxX: 78.0, minY: 32.5, maxY: 36.0 }, // Mampara 5
+  ],
+  mesa: [
+    { x: 16.8, y: 56.0 }, // Vértice 1
+    { x: 25.4, y: 56.4 }, // Vértice 2
+    { x: 22.2, y: 75.5 }, // Vértice 3
+    { x: 12.4, y: 76.6 }, // Vértice 4
+  ],
+  caja: [
+    { x: 19.8, y: 38.4 }, // Vértice 1
+    { x: 25.4, y: 42.0 }, // Vértice 2
+    { x: 20.5, y: 46.5 }, // Vértice 3
+    { x: 14.8, y: 42.6 }, // Vértice 4
+  ],
+  cartel2: {
+    minX: 88.0,
+    maxX: 96.5,
+    minY: 83.5,
+    maxY: 93.0,
+  },
+};
+
+const isInsideBox = (x: number, y: number, box: ObstacleBox): boolean => {
+  return x >= box.minX && x <= box.maxX && y >= box.minY && y <= box.maxY;
+};
+
+const isInsidePolygon = (
+  x: number,
+  y: number,
+  polygon: Point2D[],
+): boolean => {
+  if (!polygon || polygon.length < 3) return false;
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i].x;
+    const yi = polygon[i].y;
+    const xj = polygon[j].x;
+    const yj = polygon[j].y;
+    const intersect =
+      yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+    if (intersect) inside = !inside;
+  }
+  return inside;
+};
+
+// Diagonal Wall Sliding helper for polygon obstacles (caja & mesa)
+const tryPolygonWallSlide = (
+  currentPos: Point2D,
+  dx: number,
+  dy: number,
+  polygon: Point2D[],
+  isWalkable: (x: number, y: number) => boolean,
+): Point2D | null => {
+  if (!polygon || polygon.length < 3) return null;
+
+  const targetX = currentPos.x + dx;
+  const targetY = currentPos.y + dy;
+  const moveMag = Math.hypot(dx, dy);
+  if (moveMag < 0.0001) return null;
+
+  const cx = polygon.reduce((acc, p) => acc + p.x, 0) / polygon.length;
+  const cy = polygon.reduce((acc, p) => acc + p.y, 0) / polygon.length;
+
+  let closestEdge: { a: Point2D; b: Point2D; distSq: number } | null = null;
+
+  for (let i = 0; i < polygon.length; i++) {
+    const a = polygon[i];
+    const b = polygon[(i + 1) % polygon.length];
+
+    const len2 = (b.x - a.x) ** 2 + (b.y - a.y) ** 2;
+    if (len2 === 0) continue;
+
+    let t =
+      ((targetX - a.x) * (b.x - a.x) + (targetY - a.y) * (b.y - a.y)) /
+      len2;
+    t = Math.max(0, Math.min(1, t));
+    const px = a.x + t * (b.x - a.x);
+    const py = a.y + t * (b.y - a.y);
+    const distSq = (targetX - px) ** 2 + (targetY - py) ** 2;
+
+    if (!closestEdge || distSq < closestEdge.distSq) {
+      closestEdge = { a, b, distSq };
+    }
+  }
+
+  if (!closestEdge || closestEdge.distSq > 2.5) {
+    return null;
+  }
+
+  const { a, b } = closestEdge;
+  const edx = b.x - a.x;
+  const edy = b.y - a.y;
+  const edgeLen = Math.hypot(edx, edy);
+  if (edgeLen === 0) return null;
+
+  const tx = edx / edgeLen;
+  const ty = edy / edgeLen;
+
+  let nx = -ty;
+  let ny = tx;
+  const midX = (a.x + b.x) / 2;
+  const midY = (a.y + b.y) / 2;
+  if (
+    Math.hypot(midX + nx - cx, midY + ny - cy) <
+    Math.hypot(midX - nx - cx, midY - ny - cy)
+  ) {
+    nx = -nx;
+    ny = -ny;
+  }
+
+  const dot = dx * tx + dy * ty;
+
+  let slideDir = 0;
+  if (Math.abs(dot) > 0.05) {
+    slideDir = Math.sign(dot);
+  } else {
+    const distA = Math.hypot(currentPos.x - a.x, currentPos.y - a.y);
+    const distB = Math.hypot(currentPos.x - b.x, currentPos.y - b.y);
+    slideDir = distA < distB ? -1 : 1;
+  }
+
+  const slideSpeed = Math.max(Math.abs(dot), moveMag * 0.85) * slideDir;
+  const stepX = tx * slideSpeed;
+  const stepY = ty * slideSpeed;
+
+  const candidates = [
+    {
+      x: currentPos.x + stepX + nx * 0.1,
+      y: currentPos.y + stepY + ny * 0.1,
+    },
+    { x: currentPos.x + stepX, y: currentPos.y + stepY },
+    {
+      x: currentPos.x + stepX * 0.6 + nx * 0.1,
+      y: currentPos.y + stepY * 0.6 + ny * 0.1,
+    },
+    { x: currentPos.x + stepX * 0.6, y: currentPos.y + stepY * 0.6 },
+  ];
+
+  for (const cand of candidates) {
+    if (isWalkable(cand.x, cand.y)) {
+      return cand;
+    }
+  }
+
+  return null;
+};
+
 const getLeftBoundaryX = (y: number): number => {
   if (PLAZA_BOUNDS.maxY === PLAZA_BOUNDS.minY) return PLAZA_BOUNDS.topLeftX;
   const progress = Math.min(
@@ -558,6 +731,64 @@ export default function GameplayScene({
       return true;
     };
 
+    // Combined Collision System: Plaza Bounds + Active Obstacle Boxes & Polygons
+    const isPositionWalkable = (x: number, y: number): boolean => {
+      if (!isPlazaWalkable(x, y)) {
+        return false;
+      }
+
+      const obs = OBJECT_COLLISION_BOXES;
+      const phase = minigamePhaseRef.current;
+      const placedCasillas = placedCasillaIndicesRef.current;
+      const placedDecos = placedDecoKeysRef.current;
+
+      // Caja de suministros (rombo de 4 vértices, colisiona mientras esté en la plaza)
+      if (phase !== "phase_complete" && isInsidePolygon(x, y, obs.caja)) {
+        return false;
+      }
+
+      // Mamparas individuales (se activan conforme se va colocando cada una)
+      const areCasillasPlacedInCurrentPhase =
+        phase !== "phase_0_ready" && phase !== "phase_1_casillas";
+
+      if (Array.isArray(obs.mamparas)) {
+        for (let i = 0; i < obs.mamparas.length; i++) {
+          const isThisMamparaPlaced =
+            areCasillasPlacedInCurrentPhase || placedCasillas.includes(i);
+          if (
+            isThisMamparaPlaced &&
+            obs.mamparas[i] &&
+            isInsideBox(x, y, obs.mamparas[i])
+          ) {
+            return false;
+          }
+        }
+      }
+
+      // Mesa directiva (rectángulo inclinado de 4 vértices)
+      const isMesaPresent =
+        phase !== "phase_0_ready" &&
+        phase !== "phase_1_casillas" &&
+        phase !== "phase_1_done" &&
+        phase !== "phase_2_mesa";
+      if (isMesaPresent && isInsidePolygon(x, y, obs.mesa)) {
+        return false;
+      }
+
+      // Cartel 2 (mampara de perfil en la entrada derecha)
+      const isCartel2Present =
+        phase === "phase_3_done" ||
+        phase === "phase_4_boletas" ||
+        phase === "phase_complete"
+          ? true
+          : placedDecos.includes("cartel2");
+      if (isCartel2Present && isInsideBox(x, y, obs.cartel2)) {
+        return false;
+      }
+
+      return true;
+    };
+
     let animationFrameId: number;
     let lastTime = performance.now();
 
@@ -668,9 +899,43 @@ export default function GameplayScene({
           const rawTargetX = prev.x + effectiveDx;
           const rawTargetY = prev.y + effectiveDy;
 
-          // 2. Direct unconstrained movement if target is on stone explanada
-          if (isPlazaWalkable(rawTargetX, rawTargetY)) {
+          // 2. Direct unconstrained movement if target is on stone explanada and not hitting obstacle
+          if (isPositionWalkable(rawTargetX, rawTargetY)) {
             return { x: rawTargetX, y: rawTargetY };
+          }
+
+          // 2b. Diagonal Wall Sliding sobre la Caja de Suministros
+          const curPhase = minigamePhaseRef.current;
+          if (curPhase !== "phase_complete") {
+            const cajaSlide = tryPolygonWallSlide(
+              prev,
+              effectiveDx,
+              effectiveDy,
+              OBJECT_COLLISION_BOXES.caja,
+              isPositionWalkable,
+            );
+            if (cajaSlide) {
+              return cajaSlide;
+            }
+          }
+
+          // 2c. Diagonal Wall Sliding sobre la Mesa Directiva de Votación
+          const isMesaActive =
+            curPhase !== "phase_0_ready" &&
+            curPhase !== "phase_1_casillas" &&
+            curPhase !== "phase_1_done" &&
+            curPhase !== "phase_2_mesa";
+          if (isMesaActive) {
+            const mesaSlide = tryPolygonWallSlide(
+              prev,
+              effectiveDx,
+              effectiveDy,
+              OBJECT_COLLISION_BOXES.mesa,
+              isPositionWalkable,
+            );
+            if (mesaSlide) {
+              return mesaSlide;
+            }
           }
 
           // 3. Side Path Movement Constraints (No diagonal wall sliding; solid ceiling, floor, & right wall)
@@ -683,12 +948,12 @@ export default function GameplayScene({
               PLAZA_BOUNDS.rightPathMaxX,
               Math.max(getBaseRightBoundaryX(pathClampedY), rawTargetX),
             );
-            if (isPlazaWalkable(pathClampedX, pathClampedY)) {
+            if (isPositionWalkable(pathClampedX, pathClampedY)) {
               return { x: pathClampedX, y: pathClampedY };
             }
           }
 
-          // 4. Smooth Diagonal & Wall Sliding System for Main Plaza
+          // 4. Smooth Diagonal & Wall Sliding System for Main Plaza & Obstacles
           const clampedY = Math.min(
             PLAZA_BOUNDS.maxY,
             Math.max(PLAZA_BOUNDS.minY, rawTargetY),
@@ -699,14 +964,14 @@ export default function GameplayScene({
 
           const clampedX = Math.min(maxXAtY, Math.max(minXAtY, rawTargetX));
 
-          if (isPlazaWalkable(clampedX, clampedY)) {
+          if (isPositionWalkable(clampedX, clampedY)) {
             return { x: clampedX, y: clampedY };
           }
 
-          if (isPlazaWalkable(clampedX, prev.y)) {
+          if (isPositionWalkable(clampedX, prev.y)) {
             return { x: clampedX, y: prev.y };
           }
-          if (isPlazaWalkable(prev.x, clampedY)) {
+          if (isPositionWalkable(prev.x, clampedY)) {
             return { x: prev.x, y: clampedY };
           }
 
@@ -952,25 +1217,6 @@ export default function GameplayScene({
           className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
         >
           {/* Indicador de coordenadas (X, Y) flotante encima del personaje */}
-          <div
-            className="absolute -top-[16%] left-1/2 -translate-x-1/2 pointer-events-none select-none flex items-center justify-center whitespace-nowrap bg-black/70 px-1.5 py-0.5 rounded border border-white/25 shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
-            style={{
-              fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
-              fontSize: isFullscreen
-                ? "clamp(5.5px, 0.55cqw, 8px)"
-                : "clamp(3.5px, 0.38cqw, 5px)",
-              lineHeight: "1",
-            }}
-          >
-            <span className="text-yellow-300 font-bold">
-              X:{playerPos.x.toFixed(1)}
-            </span>
-            <span className="text-gray-300 mx-0.5">,</span>
-            <span className="text-cyan-300 font-bold">
-              Y:{playerPos.y.toFixed(1)}
-            </span>
-          </div>
-
           {/* Dynamic 8-Folder Sprite Animation Component */}
           <AnimatedPlayerSprite
             isWalking={isWalking}
@@ -986,7 +1232,7 @@ export default function GameplayScene({
               top: `${boxPos.y}%`,
               width: "7.8%",
               transform: "translate(-50%, -75%)",
-              zIndex: 15,
+              zIndex: playerPos.y < 42.4 ? 28 : 15,
             }}
             className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
           >
@@ -1387,7 +1633,12 @@ export default function GameplayScene({
               top: `${MESA_POSITION.y}%`,
               width: MESA_WIDTH,
               transform: "translate(-50%, -90%)",
-              zIndex: playerPos.y >= MESA_POSITION.y ? 18 : 28,
+              zIndex:
+                playerPos.y >= MESA_POSITION.y ||
+                (playerPos.y > 56.6 && playerPos.x >= 20.8) ||
+                (playerPos.y <= 56.6 && playerPos.x >= 24.8)
+                  ? 18
+                  : 28,
             }}
             className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
           >
