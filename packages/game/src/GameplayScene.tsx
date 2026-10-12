@@ -226,7 +226,7 @@ export const EXCLAMATION_ICON_POSITIONS = {
   decos: {
     cartel1: { x: 95.0, y: 45.0 }, // Cartel 1 frontal (entrada derecha)
     cartel2: { x: 91.5, y: 84.0 }, // Cartel 2 (elevado sobre los arbustos para máxima visibilidad)
-    folleto: { x: 7.2, y: 27.0 }, // Folleto Cívico
+    folleto: { x: 7.2, y: 28.5 }, // Folleto Cívico (centrado sobre la posición del sprite)
     cartel3: { x: 71.8, y: 90.0 }, // Cartel 3 / Letrero VOTA (dentro del encuadre visual de la explanada)
   },
   boletas: [
@@ -281,8 +281,8 @@ export const OBJECT_COLLISION_BOXES: ObstaclesConfig = {
   ],
   cartel2: {
     minX: 88.0,
-    maxX: 96.5,
-    minY: 83.5,
+    maxX: 100.0,
+    minY: 80.5,
     maxY: 93.0,
   },
 };
@@ -549,7 +549,10 @@ const getSafePushVector = (
     ];
     for (const exit of exits) {
       const testX = pos.x + exit.vx * exit.dist;
-      const testY = pos.y + exit.vy * exit.dist;
+      const testY = Math.min(
+        PLAZA_BOUNDS.maxY - 0.5,
+        Math.max(PLAZA_BOUNDS.minY + 0.5, pos.y + exit.vy * exit.dist),
+      );
       if (isWalkable(testX, testY)) {
         return { vx: exit.vx, vy: exit.vy };
       }
@@ -831,8 +834,15 @@ export default function GameplayScene({
           ),
         );
 
+        // La caja SOLO se puede interactuar en fases de recolección (_ready o _done)
+        const isBoxInteractableNow =
+          curPhase === "phase_0_ready" ||
+          curPhase === "phase_1_done" ||
+          curPhase === "phase_2_done" ||
+          curPhase === "phase_3_done";
+
         // 1. Recoger objetos de la caja de suministros (Cajas 1 a 5)
-        if (distToBox < 9.5) {
+        if (isBoxInteractableNow && distToBox < 9.5) {
           if (curPhase === "phase_0_ready") {
             setMinigamePhase("phase_1_casillas");
             setBoxStage(2);
@@ -889,10 +899,10 @@ export default function GameplayScene({
               setMinigamePhase("phase_2_done");
             }
           } else if (curPhase === "phase_3_deco") {
-            // Busca la decoración pendiente más cercana al jugador que esté a rango (< 9.5)
+            // Busca la decoración pendiente más cercana al jugador que esté a rango (< 10.0)
             const currentKeys = placedDecoKeysRef.current;
             let closestKey: string | null = null;
-            let minDistance = 9.5;
+            let minDistance = 10.0;
 
             DECORACIONES_LIST.forEach((deco) => {
               if (!currentKeys.includes(deco.key)) {
@@ -1547,7 +1557,7 @@ export default function GameplayScene({
             {/* Signo de exclamación flotante sobre la caja cuando está disponible para interactuar */}
             {isBoxInteractable && dialogueState === "dismissed" && (
               <div
-                className="absolute -translate-x-1/2 z-35 flex items-center justify-center pointer-events-none"
+                className="absolute z-35 flex items-center justify-center pointer-events-none"
                 style={{
                   left: "calc(50% - 6.4%)",
                   top: "-63%",
@@ -1561,34 +1571,32 @@ export default function GameplayScene({
                   className="w-full h-auto object-contain drop-shadow-[0_2px_5px_rgba(0,0,0,0.6)]"
                   style={{ imageRendering: "pixelated" }}
                 />
-              </div>
-            )}
 
-            {/* Texto pixel art "presiona E" al acercarse a la caja (sin fondo, tamaño compacto) */}
-            {isNearBox && (
-              <div
-                className="absolute -translate-x-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
-                style={{
-                  left: "calc(50% - 6.4%)",
-                  top: "-90%",
-                  animation: "floatPrompt 1.4s ease-in-out infinite",
-                }}
-              >
-                <div
-                  className="whitespace-nowrap text-[#ff4da6] font-black tracking-wider flex items-center gap-1 select-none"
-                  style={{
-                    fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
-                    fontSize: isFullscreen
-                      ? "clamp(6.5px, 0.68cqw, 10px)"
-                      : "clamp(4.5px, 0.48cqw, 6px)",
-                    lineHeight: "1",
-                    textShadow:
-                      "1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 1px 0 #000, 0 -1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 2px 4px rgba(0,0,0,0.9)",
-                  }}
-                >
-                  <span>presiona</span>
-                  <span className="text-[#ff99d6]">E</span>
-                </div>
+                {/* Texto pixel art "presiona E" al acercarse a la caja (centrado directamente sobre el icono) */}
+                {isNearBox && (
+                  <div
+                    className="absolute -top-[28%] left-1/2 -translate-x-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
+                    style={{
+                      animation: "floatPrompt 1.4s ease-in-out infinite",
+                    }}
+                  >
+                    <div
+                      className="whitespace-nowrap text-[#ff4da6] font-black tracking-wider flex items-center gap-1 select-none"
+                      style={{
+                        fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
+                        fontSize: isFullscreen
+                          ? "clamp(6.5px, 0.68cqw, 10px)"
+                          : "clamp(4.5px, 0.48cqw, 6px)",
+                        lineHeight: "1",
+                        textShadow:
+                          "1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 1px 0 #000, 0 -1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 2px 4px rgba(0,0,0,0.9)",
+                      }}
+                    >
+                      <span>presiona</span>
+                      <span className="text-[#ff99d6]">E</span>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1747,7 +1755,7 @@ export default function GameplayScene({
               Math.hypot(playerPos.x - pos.x, playerPos.y - pos.y),
               Math.hypot(playerPos.x - iconPos.x, playerPos.y - iconPos.y),
             );
-            const isNearThisSpot = dist < 9.5;
+            const isNearThisSpot = dist < 10.0;
 
             return (
               <div
