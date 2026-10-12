@@ -214,7 +214,7 @@ export const PLACEMENT_SPOTS = {
 // COORDENADAS ESTRATÉGICAS DE LOS ICONOS DE EXCLAMACIÓN (!)
 // Posicionados exactamente en el centro o área visible donde va cada objeto/interacción
 export const EXCLAMATION_ICON_POSITIONS = {
-  caja: { x: 20.0, y: 38.5 }, // Flotando sobre la parte superior de la caja de suministros
+  caja: { x: 19.5, y: 37.0 }, // 0.5 hacia la izquierda (20.0 -> 19.5) y 1.5 hacia arriba (38.5 -> 37.0)
   casillas: [
     { x: 32.0, y: 31.0 }, // Mampara 1 (centro de la mampara)
     { x: 42.0, y: 31.0 }, // Mampara 2 (centro de la mampara)
@@ -1547,8 +1547,10 @@ export default function GameplayScene({
             {/* Signo de exclamación flotante sobre la caja cuando está disponible para interactuar */}
             {isBoxInteractable && dialogueState === "dismissed" && (
               <div
-                className="absolute -top-[48%] left-1/2 -translate-x-1/2 z-35 flex items-center justify-center pointer-events-none"
+                className="absolute -translate-x-1/2 z-35 flex items-center justify-center pointer-events-none"
                 style={{
+                  left: "calc(50% - 6.4%)",
+                  top: "-63%",
                   width: EXCLAMATION_ICON_WIDTH,
                   animation: "floatExclamation 1.4s ease-in-out infinite",
                 }}
@@ -1565,8 +1567,10 @@ export default function GameplayScene({
             {/* Texto pixel art "presiona E" al acercarse a la caja (sin fondo, tamaño compacto) */}
             {isNearBox && (
               <div
-                className="absolute -top-[75%] left-1/2 -translate-x-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
+                className="absolute -translate-x-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
                 style={{
+                  left: "calc(50% - 6.4%)",
+                  top: "-90%",
                   animation: "floatPrompt 1.4s ease-in-out infinite",
                 }}
               >
@@ -1645,7 +1649,7 @@ export default function GameplayScene({
                 {/* Texto pixel art "presiona E" al acercarse */}
                 {isNearThisSpot && (
                   <div
-                    className="absolute -top-[120%] left-1/2 -translate-x-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
+                    className="absolute -top-[28%] left-1/2 -translate-x-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
                     style={{
                       animation: "floatPrompt 1.4s ease-in-out infinite",
                     }}
@@ -1707,7 +1711,7 @@ export default function GameplayScene({
 
               {isNearMesa && (
                 <div
-                  className="absolute -top-[120%] left-1/2 -translate-x-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
+                  className="absolute -top-[28%] left-1/2 -translate-x-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
                   style={{
                     animation: "floatPrompt 1.4s ease-in-out infinite",
                   }}
@@ -1773,7 +1777,7 @@ export default function GameplayScene({
 
                 {isNearThisSpot && (
                   <div
-                    className="absolute -top-[120%] left-1/2 -translate-x-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
+                    className="absolute -top-[28%] left-1/2 -translate-x-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
                     style={{
                       animation: "floatPrompt 1.4s ease-in-out infinite",
                     }}
@@ -1838,7 +1842,7 @@ export default function GameplayScene({
 
                 {isNearThisSpot && (
                   <div
-                    className="absolute -top-[120%] left-1/2 -translate-x-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
+                    className="absolute -top-[28%] left-1/2 -translate-x-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
                     style={{
                       animation: "floatPrompt 1.4s ease-in-out infinite",
                     }}
