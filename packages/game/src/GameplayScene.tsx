@@ -755,6 +755,11 @@ export interface GameplaySceneProps {
   isPaused: boolean;
   /** Solicita salir al menu principal (abre el modal de confirmacion) */
   onRequestExit: () => void;
+  /**
+   * Capitulo 1 completado: boletas colocadas y dialogo final cerrado.
+   * Se llama UNA sola vez; la modalidad (FULL_GAME / SINGLE_CHAPTER) la resuelve PixiGameCanvas.
+   */
+  onChapterComplete?: () => void;
 }
 
 export default function GameplayScene({
@@ -764,6 +769,7 @@ export default function GameplayScene({
   isTransitioning,
   isPaused,
   onRequestExit,
+  onChapterComplete,
 }: GameplaySceneProps) {
   // Player Position & Direction State ("1"=S/down, "2"=A/left, "3"=W/up, "4"=D/right)
   const [playerPos, setPlayerPos] = useState({ x: 50, y: 62 });
@@ -959,6 +965,21 @@ export default function GameplayScene({
       return () => clearTimeout(timer);
     }
   }, [isTransitioning, dialogueState]);
+
+  // Fin del Capitulo 1: todas las boletas colocadas y el dialogo final ya cerrado.
+  // Se notifica una sola vez (el ref evita repetirlo aunque el componente se re-renderice).
+  const onChapterCompleteRef = useRef(onChapterComplete);
+  useEffect(() => {
+    onChapterCompleteRef.current = onChapterComplete;
+  }, [onChapterComplete]);
+  const chapterCompletedRef = useRef(false);
+  useEffect(() => {
+    if (chapterCompletedRef.current) return;
+    if (minigamePhase === "phase_complete" && dialogueState === "dismissed") {
+      chapterCompletedRef.current = true;
+      onChapterCompleteRef.current?.();
+    }
+  }, [minigamePhase, dialogueState]);
 
   // Al salir del juego (desmontaje) se liberan las imagenes precargadas del personaje
   // y se abortan las descargas pendientes para no consumir memoria ni red en el menu.

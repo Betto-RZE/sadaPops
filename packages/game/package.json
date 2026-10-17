@@ -6,7 +6,8 @@
   "private": true,
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build"
+    "build": "tsc && vite build",
+    "test": "node --experimental-strip-types --no-warnings --test tests/chapterFlow.test.mjs"
   },
   "dependencies": {
     "pixi.js": "^7.3.2",

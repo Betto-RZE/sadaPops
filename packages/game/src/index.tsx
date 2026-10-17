@@ -3,10 +3,32 @@ import React, {
   useEffect,
   useRef,
   useCallback,
-  lazy,
+  useReducer,
   Suspense,
 } from "react";
 import { PixelFullscreenButton } from "./PixelFullscreenButton";
+import {
+  gameSessionReducer,
+  INITIAL_SESSION_STATE,
+  type ChapterId,
+} from "./features/capitulos/chapters";
+import { ChapterSelectScreen } from "./features/capitulos/ChapterSelectScreen";
+import {
+  ChapterSceneRouter,
+  preloadChapterScene,
+} from "./features/capitulos/ChapterSceneRouter";
+import GameEnding from "./features/capitulos/GameEnding";
+
+export {
+  CHAPTERS,
+  GAME_MODES,
+  type ChapterId,
+  type GameMode,
+  type ChapterDefinition,
+  type ChapterCardImage,
+} from "./features/capitulos/chapters";
+
+type GameScreen = "splash" | "chapters" | "gameplay";
 
 export interface GameProps {
   onModuleComplete?: (moduleName: "mitos" | "simulador") => void;
@@ -122,10 +144,28 @@ function PixelQuestionDocIcon({ isFullscreen }: { isFullscreen?: boolean }) {
   );
 }
 
-// El juego vive en su propio chunk: NO se descarga ni se ejecuta hasta presionar "JUGAR".
-// Al regresar al menu se desmonta por completo y al volver a jugar se monta desde cero.
-const loadGameplayScene = () => import("./GameplayScene");
-const GameplayScene = lazy(loadGameplayScene);
+function PixelChaptersIcon({ isFullscreen }: { isFullscreen?: boolean }) {
+  return (
+    <div
+      className={`relative shrink-0 flex items-center justify-center select-none ${isFullscreen ? "w-10 h-10" : "w-8 h-8"}`}
+    >
+      <svg
+        width={isFullscreen ? "40" : "32"}
+        height={isFullscreen ? "40" : "32"}
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className={isFullscreen ? "w-10 h-10" : "w-8 h-8"}
+        style={{ imageRendering: "pixelated" }}
+      >
+        {/* Tres recuadros de capitulo en fila */}
+        <rect x="1.5" y="6" width="6" height="12" fill="#9d2b70" stroke="#000000" strokeWidth="1.5" />
+        <rect x="9" y="6" width="6" height="12" fill="#FFFFFF" stroke="#000000" strokeWidth="1.5" />
+        <rect x="16.5" y="6" width="6" height="12" fill="#9d2b70" stroke="#000000" strokeWidth="1.5" />
+      </svg>
+    </div>
+  );
+}
 
 export function PixiGameCanvas({
   onModuleComplete,
@@ -133,26 +173,32 @@ export function PixiGameCanvas({
   splashImageUrl = "/assets/juego/menu.png",
   stageImageUrl = "/assets/juego/escenario.png",
 }: GameProps) {
-  const [currentScreen, setCurrentScreen] = useState<
-    "splash" | "how_to_play" | "gameplay"
-  >("splash");
-  const [activeScene, setActiveScene] = useState<"mitos" | "simulador" | null>(
-    null,
+  const [currentScreen, setCurrentScreen] = useState<GameScreen>("splash");
+  // Sesion de juego: modalidad (FULL_GAME / SINGLE_CHAPTER) y capitulo actual
+  const [session, dispatchSession] = useReducer(
+    gameSessionReducer,
+    INITIAL_SESSION_STATE,
   );
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [irisRadius, setIrisRadius] = useState<number | null>(null);
+  // Pantalla destino de la transicion en curso (null si no hay transicion)
+  const [transitionTarget, setTransitionTarget] = useState<GameScreen | null>(
+    null,
+  );
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  // Evita iniciar dos transiciones a la vez (doble clic, eventos simultaneos)
+  const transitionLockRef = useRef(false);
 
   // Retro Circle (Iris Wipe) Screen Transition Handler with SVG Mask
+  // `onMidpoint` se ejecuta con la pantalla 100% negra (p. ej. iniciar la sesion).
   const changeScreenWithTransition = useCallback(
-    (
-      targetScreen: "splash" | "gameplay",
-      targetScene: "mitos" | "simulador" | null = null,
-    ) => {
-      if (irisRadius !== null) return;
+    (targetScreen: GameScreen, onMidpoint?: () => void) => {
+      if (transitionLockRef.current) return;
+      transitionLockRef.current = true;
+      setTransitionTarget(targetScreen);
 
       const shrinkDuration = 380; // 380ms circle shrink
       const blackHoldTime = 300; // 300ms hold in solid black
@@ -177,9 +223,14 @@ export function PixiGameCanvas({
           // Midpoint: Screen is 100% solid black
           setIrisRadius(0);
           setCurrentScreen(targetScreen);
-          // Al cambiar a "splash" el componente GameplayScene se desmonta y libera sus recursos;
-          // al cambiar a "gameplay" se monta una partida completamente nueva.
-          setActiveScene(targetScreen === "splash" ? null : targetScene);
+          if (targetScreen === "splash") {
+            // Regreso al menu: se descarta la sesion y el capitulo se DESMONTA por completo
+            // (se cancelan su bucle, timers, dialogos y listeners). La proxima partida
+            // o capitulo se monta desde cero.
+            setShowExitConfirm(false);
+            dispatchSession({ type: "RESET" });
+          }
+          onMidpoint?.();
 
           setTimeout(() => {
             // Step 2: Grow circle from 0 up to 800
@@ -199,6 +250,8 @@ export function PixiGameCanvas({
                 requestAnimationFrame(animateGrow);
               } else {
                 setIrisRadius(null);
+                setTransitionTarget(null);
+                transitionLockRef.current = false;
               }
             };
             requestAnimationFrame(animateGrow);
@@ -208,8 +261,67 @@ export function PixiGameCanvas({
 
       requestAnimationFrame(animateShrink);
     },
-    [irisRadius],
+    [],
   );
+
+  // ---- Inicio de sesiones -------------------------------------------------
+  // Modalidad A ("JUGAR"): historia completa y lineal desde el Capitulo 1.
+  const startFullGame = useCallback(() => {
+    preloadChapterScene(1);
+    changeScreenWithTransition("gameplay", () =>
+      dispatchSession({ type: "START_FULL_GAME" }),
+    );
+  }, [changeScreenWithTransition]);
+
+  // Modalidad B ("CAPITULOS"): solo el capitulo elegido.
+  const startSingleChapter = useCallback(
+    (chapterId: ChapterId) => {
+      preloadChapterScene(chapterId);
+      changeScreenWithTransition("gameplay", () =>
+        dispatchSession({ type: "START_CHAPTER", chapterId }),
+      );
+    },
+    [changeScreenWithTransition],
+  );
+
+  const goToChapters = useCallback(
+    () => changeScreenWithTransition("chapters"),
+    [changeScreenWithTransition],
+  );
+  const goToMenu = useCallback(
+    () => changeScreenWithTransition("splash"),
+    [changeScreenWithTransition],
+  );
+
+  // Evento UNICO de fin de capitulo (lo usan las dos modalidades).
+  // El reducer decide: siguiente capitulo (FULL_GAME), final (FULL_GAME tras el 3)
+  // o regreso al menu (SINGLE_CHAPTER).
+  const activeSessionId = session.sessionId;
+  const activeChapterId = session.status === "playing" ? session.chapterId : null;
+  const handleChapterComplete = useCallback(() => {
+    if (activeChapterId === null) return;
+    dispatchSession({
+      type: "CHAPTER_COMPLETED",
+      chapterId: activeChapterId,
+      sessionId: activeSessionId,
+    });
+  }, [activeChapterId, activeSessionId]);
+
+  // SINGLE_CHAPTER terminado: regresar automaticamente al menu principal.
+  // (Si justo hay otra transicion en curso, se reintenta al terminar esta.)
+  useEffect(() => {
+    if (session.status === "returning_to_menu" && irisRadius === null) {
+      setShowExitConfirm(false);
+      changeScreenWithTransition("splash");
+    }
+  }, [session.status, irisRadius, changeScreenWithTransition]);
+
+  // El capitulo se congela con el modal de salida abierto y mientras se regresa al menu,
+  // para que no siga corriendo nada del capitulo terminado durante el cierre del iris.
+  const isChapterPaused =
+    showExitConfirm ||
+    session.status === "returning_to_menu" ||
+    transitionTarget === "splash";
 
   // Synchronize state with HTML5 Fullscreen API events
   useEffect(() => {
@@ -423,21 +535,18 @@ export function PixiGameCanvas({
               </div>
             </div>
 
-            {/* JUGAR BUTTON AT BOTTOM-CENTER */}
+            {/* MENU BUTTONS AT BOTTOM-CENTER: JUGAR (historia completa) + CAPITULOS */}
             <div
-              className={`absolute bottom-[14%] left-1/2 -translate-x-1/2 flex flex-col items-center justify-center z-20 transition-all duration-300 ${
+              className={`absolute bottom-[7%] left-1/2 -translate-x-1/2 flex flex-col items-center justify-center z-20 transition-all duration-300 ${
                 isFullscreen
-                  ? "w-[36%] min-w-[300px] max-w-[480px]"
-                  : "w-[30%] min-w-[220px] max-w-[320px]"
+                  ? "w-[36%] min-w-[300px] max-w-[480px] gap-5"
+                  : "w-[30%] min-w-[220px] max-w-[320px] gap-3"
               }`}
             >
               {/* JUGAR Button */}
               <button
-                onClick={() => {
-                  // Empieza a descargar el chunk del juego mientras se cierra el iris
-                  void loadGameplayScene();
-                  changeScreenWithTransition("gameplay");
-                }}
+                id="menu-play"
+                onClick={startFullGame}
                 type="button"
                 className={`w-full px-4 bg-[#f9d7ea] hover:bg-[#f6c2e0] rounded-md ring-2 ring-white ring-inset transition-all flex items-center justify-between cursor-pointer group shrink-0 ${
                   isFullscreen
@@ -456,25 +565,72 @@ export function PixiGameCanvas({
                 </span>
                 <PixelBallotBoxIcon isFullscreen={isFullscreen} />
               </button>
+
+              {/* CAPITULOS Button */}
+              <button
+                id="menu-chapters"
+                onClick={goToChapters}
+                type="button"
+                className={`w-full px-4 bg-white hover:bg-[#fdeef6] rounded-md ring-2 ring-[#f9d7ea] ring-inset transition-all flex items-center justify-between cursor-pointer group shrink-0 ${
+                  isFullscreen
+                    ? "h-[64px] sm:h-[72px] border-[5px] border-[#b5146c] shadow-[6px_6px_0px_0px_#7a0c47] active:translate-x-[3px] active:translate-y-[3px]"
+                    : "h-[48px] sm:h-[52px] border-[4px] border-[#b5146c] shadow-[4px_4px_0px_0px_#7a0c47] active:translate-x-[2px] active:translate-y-[2px]"
+                } active:shadow-none`}
+              >
+                <span
+                  className={`font-mono font-black text-black tracking-widest uppercase flex-1 text-center drop-shadow-[0_1px_0_rgba(255,255,255,0.8)] select-none ${
+                    isFullscreen
+                      ? "text-2xl sm:text-3xl pl-8"
+                      : "text-lg sm:text-xl pl-6"
+                  }`}
+                >
+                  CAPÍTULOS
+                </span>
+                <PixelChaptersIcon isFullscreen={isFullscreen} />
+              </button>
             </div>
           </div>
         )}
 
-        {/* SCREEN: GAMEPLAY - solo existe mientras se esta jugando */}
-        {currentScreen === "gameplay" && (
+        {/* SCREEN: CHAPTER SELECT */}
+        {currentScreen === "chapters" && (
+          <ChapterSelectScreen
+            backgroundImageUrl={splashImageUrl}
+            isFullscreen={isFullscreen}
+            disabled={irisRadius !== null}
+            onSelectChapter={startSingleChapter}
+            onBack={goToMenu}
+          />
+        )}
+
+        {/* SCREEN: GAMEPLAY - solo existe mientras hay una sesion activa */}
+        {currentScreen === "gameplay" && session.status !== "idle" && (
           <Suspense
             fallback={
               <div className="absolute inset-0 w-full h-full z-20 bg-black" />
             }
           >
-            <GameplayScene
-              language={language}
-              stageImageUrl={stageImageUrl}
-              isFullscreen={isFullscreen}
-              isTransitioning={irisRadius !== null}
-              isPaused={showExitConfirm}
-              onRequestExit={() => setShowExitConfirm(true)}
-            />
+            {session.status === "ending" ? (
+              <GameEnding
+                stageImageUrl={stageImageUrl}
+                disabled={irisRadius !== null}
+                onReturnToMenu={goToMenu}
+              />
+            ) : (
+              // La key por sesion+capitulo garantiza que cada capitulo se monte desde
+              // cero y que el anterior se desmonte (limpiando timers y listeners).
+              <ChapterSceneRouter
+                key={`session-${session.sessionId}-chapter-${session.chapterId}`}
+                chapterId={session.chapterId}
+                language={language}
+                stageImageUrl={stageImageUrl}
+                isFullscreen={isFullscreen}
+                isTransitioning={irisRadius !== null}
+                isPaused={isChapterPaused}
+                onRequestExit={() => setShowExitConfirm(true)}
+                onChapterComplete={handleChapterComplete}
+              />
+            )}
           </Suspense>
         )}
 
