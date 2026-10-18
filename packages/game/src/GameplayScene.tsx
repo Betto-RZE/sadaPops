@@ -216,13 +216,14 @@ export const PLACEMENT_SPOTS = {
 export const EXCLAMATION_ICON_POSITIONS = {
   caja: { x: 19.5, y: 37.0 }, // 0.5 hacia la izquierda (20.0 -> 19.5) y 1.5 hacia arriba (38.5 -> 37.0)
   casillas: [
-    { x: 32.0, y: 31.0 }, // Mampara 1 (centro de la mampara)
-    { x: 42.0, y: 31.0 }, // Mampara 2 (centro de la mampara)
-    { x: 52.0, y: 31.0 }, // Mampara 3 (centro de la mampara)
-    { x: 62.0, y: 31.0 }, // Mampara 4 (centro de la mampara)
-    { x: 72.0, y: 31.0 }, // Mampara 5 (centro de la mampara)
+    { x: 32.0, y: 29.0 }, // Mampara 1 (2 puntos más arriba)
+    { x: 42.0, y: 29.0 }, // Mampara 2 (2 puntos más arriba)
+    { x: 52.0, y: 29.0 }, // Mampara 3 (2 puntos más arriba)
+    { x: 62.0, y: 29.0 }, // Mampara 4 (2 puntos más arriba)
+    { x: 72.0, y: 29.0 }, // Mampara 5 (2 puntos más arriba)
   ],
   mesa: { x: 19.0, y: 65.0 }, // Centro visible de la mesa de votación
+  mesaFinal: { x: 15.0, y: 58.0 },
   decos: {
     cartel1: { x: 95.0, y: 45.0 }, // Cartel 1 frontal (entrada derecha)
     cartel2: { x: 91.5, y: 84.0 }, // Cartel 2 (elevado sobre los arbustos para máxima visibilidad)
@@ -526,6 +527,7 @@ const getSafePushVector = (
   const isCartel2Present =
     phase === "phase_3_done" ||
     phase === "phase_4_boletas" ||
+    phase === "phase_4_done" ||
     phase === "phase_complete"
       ? true
       : placedDecos.includes("cartel2");
@@ -745,6 +747,27 @@ const BOLETAS_MESSAGES_NAH: string[] = [
   "¡Wan se tlamantli ueyi! In boletas moneki kipiaskeh in tekitkeh casilla pampa kiyektlaliseh in tlaixquetzalistli.",
 ];
 
+// Diálogos de cierre del Capítulo 1 al interactuar con la mesa de funcionarios
+const CIERRE_CAPITULO_MESSAGES_ES: string[] = [
+  "¡Uffff! ¡Por fin terminamos de organizar todo! No voy a mentirte, pensé que sería más sencillo, ¡ja, ja!",
+  "Ahora ya sabes que cada uno de estos elementos cumple una función importante para que las elecciones se desarrollen correctamente.",
+  "Y aunque parezca que ya terminamos... ¡nuestro verdadero trabajo apenas comienza!",
+  "En cualquier momento empezarán a llegar las personas que vienen a ejercer su derecho al voto.",
+  "Algunas tendrán preguntas, otras necesitarán orientación y seguramente escucharemos uno que otro rumor sobre las elecciones.",
+  "¡Así que mantente atento! Porque nuestra siguiente misión será ayudarlas a resolver sus dudas.",
+  "¡Vamos, que ya casi llegan nuestros primeros votantes!",
+];
+
+const CIERRE_CAPITULO_MESSAGES_NAH: string[] = [
+  "¡Uffff! ¡Ipan tlamilistli tikyektlalijkeh nochitlamantli! Axtlapik nimitsiluis, nimoiluiaya achi auki yeskia, ¡ja, ja!",
+  "Axkan ya tikmati sesen tlamantli kipixtok se ueyi tekitl pampa in tlaixquetzalistli kualtsin ma mopano.",
+  "Wan maski nesi ya titlankeh... ¡totlanel tekiyo axkan peua!",
+  "San tlen tonalli pehuaskeh ajsiskeh in maseualmeh akin kinekij kitlaliseh inivoto.",
+  "Sekij kitlalaniseh tlahtolmeh, sekij monekis kinyakanaseh wan kualtsin tikakiskeh seki sasamili.",
+  "¡Yeka kualtsin xikpixto moix! Totlanel tekiyo yeski tikinpalehuiseh ika intlahtoltilistli.",
+  "¡Ma tiuikan, ya mero ajsih tototlayokauh votantes!",
+];
+
 export interface GameplaySceneProps {
   language?: "es" | "nah";
   stageImageUrl: string;
@@ -795,6 +818,7 @@ export default function GameplayScene({
     | "phase_3_deco"
     | "phase_3_done"
     | "phase_4_boletas"
+    | "phase_4_done"
     | "phase_complete"
   >("phase_0_ready");
 
@@ -967,7 +991,8 @@ export default function GameplayScene({
   }, [isTransitioning, dialogueState]);
 
   // Fin del Capitulo 1: todas las boletas colocadas y el dialogo final ya cerrado.
-  // Se notifica una sola vez (el ref evita repetirlo aunque el componente se re-renderice).
+  // Se espera 2.5 segundos tras cerrar el último globo de texto antes de concluir el capítulo,
+  // permitiendo una transición suave hacia el menú o siguiente escena sin cortes abruptos.
   const onChapterCompleteRef = useRef(onChapterComplete);
   useEffect(() => {
     onChapterCompleteRef.current = onChapterComplete;
@@ -976,8 +1001,11 @@ export default function GameplayScene({
   useEffect(() => {
     if (chapterCompletedRef.current) return;
     if (minigamePhase === "phase_complete" && dialogueState === "dismissed") {
-      chapterCompletedRef.current = true;
-      onChapterCompleteRef.current?.();
+      const timer = setTimeout(() => {
+        chapterCompletedRef.current = true;
+        onChapterCompleteRef.current?.();
+      }, 2500);
+      return () => clearTimeout(timer);
     }
   }, [minigamePhase, dialogueState]);
 
@@ -1158,13 +1186,28 @@ export default function GameplayScene({
               const nextIndices = [...currentIndices, closestIdx];
               setPlacedBoletaIndices(nextIndices);
               if (nextIndices.length >= BOLETAS_POSITIONS.length) {
-                setMinigamePhase("phase_complete");
+                setMinigamePhase("phase_4_done");
                 const messages =
                   language === "nah"
                     ? BOLETAS_MESSAGES_NAH
                     : BOLETAS_MESSAGES_ES;
                 triggerDialogue(messages, "user", 1500);
               }
+            }
+          } else if (curPhase === "phase_4_done") {
+            const target = PLACEMENT_SPOTS.mesa;
+            const iconPos = EXCLAMATION_ICON_POSITIONS.mesaFinal;
+            const distToTarget = Math.min(
+              Math.hypot(curPlayer.x - target.x, curPlayer.y - target.y),
+              Math.hypot(curPlayer.x - iconPos.x, curPlayer.y - iconPos.y),
+            );
+            if (distToTarget < 10.5) {
+              setMinigamePhase("phase_complete");
+              const messages =
+                language === "nah"
+                  ? CIERRE_CAPITULO_MESSAGES_NAH
+                  : CIERRE_CAPITULO_MESSAGES_ES;
+              triggerDialogue(messages, "user", 0);
             }
           }
         }
@@ -1237,6 +1280,7 @@ export default function GameplayScene({
       const isCartel2Present =
         phase === "phase_3_done" ||
         phase === "phase_4_boletas" ||
+        phase === "phase_4_done" ||
         phase === "phase_complete"
           ? true
           : placedDecos.includes("cartel2");
@@ -1514,7 +1558,7 @@ export default function GameplayScene({
   }, []);
 
   // Camera Dynamic Zoom & Smooth Character Tracking Parameters
-  const zoomScale = 1.0;
+  const zoomScale = 2.0;
   const maxCamShift = (1 - 1 / zoomScale) * 50; // Max shift % before exposing background edges (0 con zoom 1)
   const rawCamX = 50 - playerPos.x;
   const rawCamY = 50 - playerPos.y;
@@ -1582,6 +1626,8 @@ export default function GameplayScene({
         }
       });
       activeExclamationTarget = closestIcon;
+    } else if (minigamePhase === "phase_4_done") {
+      activeExclamationTarget = EXCLAMATION_ICON_POSITIONS.mesaFinal;
     }
   }
 
@@ -2145,6 +2191,73 @@ export default function GameplayScene({
             );
           })}
 
+        {/* 5. MESA DE FUNCIONARIOS FINAL (phase_4_done - exclamación sobre la mesa tras terminar el texto de boletas) */}
+        {minigamePhase === "phase_4_done" &&
+          dialogueState === "dismissed" &&
+          (() => {
+            const iconPos = EXCLAMATION_ICON_POSITIONS.mesaFinal;
+            const dist = Math.min(
+              Math.hypot(
+                playerPos.x - MESA_POSITION.x,
+                playerPos.y - MESA_POSITION.y,
+              ),
+              Math.hypot(playerPos.x - iconPos.x, playerPos.y - iconPos.y),
+            );
+            const isNearMesa = dist < 10.5;
+
+            return (
+              <div
+                style={{
+                  left: `${iconPos.x}%`,
+                  top: `${iconPos.y}%`,
+                  transform: "translate(-50%, -50%)",
+                  zIndex: 35,
+                }}
+                className="absolute pointer-events-none flex flex-col items-center select-none"
+              >
+                <div
+                  className="flex items-center justify-center pointer-events-none"
+                  style={{
+                    width: EXCLAMATION_ICON_WIDTH,
+                    animation: "floatExclamation 1.4s ease-in-out infinite",
+                  }}
+                >
+                  <img
+                    src="/assets/juego/exclamacion.png"
+                    alt="Hablar con funcionarios de mesa"
+                    className="w-full h-auto object-contain drop-shadow-[0_2px_5px_rgba(0,0,0,0.6)]"
+                    style={{ imageRendering: "pixelated" }}
+                  />
+                </div>
+
+                {isNearMesa && (
+                  <div
+                    className="absolute -top-[28%] left-1/2 -translate-x-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
+                    style={{
+                      animation: "floatPrompt 1.4s ease-in-out infinite",
+                    }}
+                  >
+                    <div
+                      className="whitespace-nowrap text-[#ff4da6] font-black tracking-wider flex items-center gap-1 select-none"
+                      style={{
+                        fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
+                        fontSize: isFullscreen
+                          ? "clamp(6.5px, 0.68cqw, 10px)"
+                          : "clamp(4.5px, 0.48cqw, 6px)",
+                        lineHeight: "1",
+                        textShadow:
+                          "1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 1px 0 #000, 0 -1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 2px 4px rgba(0,0,0,0.9)",
+                      }}
+                    >
+                      <span>presiona</span>
+                      <span className="text-[#ff99d6]">E</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
         {/* CASILLAS ELECTORALES COLOCADAS EN CUALQUIER ORDEN (sin sombras artificiales) */}
         {CASILLA_POSITIONS.map((pos, index) => {
           const isPlaced =
@@ -2210,6 +2323,7 @@ export default function GameplayScene({
           const isPlaced =
             minigamePhase === "phase_3_done" ||
             minigamePhase === "phase_4_boletas" ||
+            minigamePhase === "phase_4_done" ||
             minigamePhase === "phase_complete"
               ? true
               : placedDecoKeys.includes(deco.key);
@@ -2244,6 +2358,7 @@ export default function GameplayScene({
         {/* OBJETOS COLOCADOS: BOLETAS SOBRE LAS MESAS DE LAS MAMPARAS (sin sombras artificiales) */}
         {BOLETAS_POSITIONS.map((pos, index) => {
           const isPlaced =
+            minigamePhase === "phase_4_done" ||
             minigamePhase === "phase_complete"
               ? true
               : placedBoletaIndices.includes(index);
