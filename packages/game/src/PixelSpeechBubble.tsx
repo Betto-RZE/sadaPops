@@ -205,20 +205,51 @@ export function PixelSpeechBubble({
     };
   }, [currentText, currentStepIndex, typingSpeedMs]);
 
-  // Keyboard shortcut listener (default 'E' key)
+  // Animation state for tactile button press (click or keyboard: E, ENTER, SPACE)
+  const [isPressed, setIsPressed] = useState(false);
+  const pressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const triggerPressAnimation = useCallback(() => {
+    setIsPressed(true);
+    if (pressTimerRef.current) {
+      clearTimeout(pressTimerRef.current);
+    }
+    pressTimerRef.current = setTimeout(() => {
+      setIsPressed(false);
+    }, 140);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (pressTimerRef.current) {
+        clearTimeout(pressTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Keyboard shortcut listener (Action key 'E', ENTER, SPACE)
   useEffect(() => {
     if (disabled) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() === currentActionKey.toLowerCase()) {
+      const k = e.key.toLowerCase();
+      const isActionKey =
+        k === currentActionKey.toLowerCase() ||
+        k === "enter" ||
+        k === " " ||
+        e.code === "Enter" ||
+        e.code === "Space";
+
+      if (isActionKey) {
         e.preventDefault();
+        triggerPressAnimation();
         handleAdvance();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [disabled, handleAdvance, currentActionKey]);
+  }, [disabled, handleAdvance, currentActionKey, triggerPressAnimation]);
 
   const displayedText = currentText.slice(0, displayedLength);
 
@@ -284,10 +315,18 @@ export function PixelSpeechBubble({
 
         {/* Right Column: Square Pixel Art Action Button */}
         <button
-          onClick={handleAdvance}
+          onClick={() => {
+            triggerPressAnimation();
+            handleAdvance();
+          }}
+          onMouseDown={() => setIsPressed(true)}
+          onMouseUp={() => triggerPressAnimation()}
+          onMouseLeave={() => setIsPressed(false)}
+          onTouchStart={() => setIsPressed(true)}
+          onTouchEnd={() => triggerPressAnimation()}
           type="button"
-          aria-label={`Avanzar diálogo (${currentActionKey})`}
-          className="shrink-0 aspect-square bg-[#940d57] hover:bg-[#b5146c] active:bg-[#780946] text-white transition-all flex items-center justify-center cursor-pointer select-none group"
+          aria-label={`Avanzar diálogo (${currentActionKey}, Enter o Espacio)`}
+          className="shrink-0 aspect-square bg-[#940d57] hover:bg-[#b5146c] text-white transition-all flex items-center justify-center cursor-pointer select-none group"
           style={{
             width: "clamp(32px, 5.2cqw, 102px)",
             height: "clamp(32px, 5.2cqw, 102px)",
@@ -295,12 +334,19 @@ export function PixelSpeechBubble({
             borderWidth: "clamp(2px, 0.28cqw, 5.5px)",
             borderColor: "#000000",
             borderStyle: "solid",
-            boxShadow:
-              "clamp(2px, 0.35cqw, 7px) clamp(2px, 0.35cqw, 7px) 0px 0px #000000",
+            boxShadow: isPressed
+              ? "0px 0px 0px 0px #000000"
+              : "clamp(2px, 0.35cqw, 7px) clamp(2px, 0.35cqw, 7px) 0px 0px #000000",
+            transform: isPressed
+              ? "translate(clamp(2px, 0.35cqw, 7px), clamp(2px, 0.35cqw, 7px))"
+              : "translate(0px, 0px)",
+            backgroundColor: isPressed ? "#780946" : undefined,
             marginLeft: "clamp(6px, 1.2cqw, 24px)",
             marginRight: "clamp(4px, 1cqw, 20px)",
             padding: "clamp(2px, 0.35cqw, 7px)",
             fontFamily: "'Press Start 2P', 'Silkscreen', monospace, sans-serif",
+            transition:
+              "transform 70ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 70ms cubic-bezier(0.4, 0, 0.2, 1), background-color 70ms ease-out",
           }}
         >
           <div
@@ -308,12 +354,17 @@ export function PixelSpeechBubble({
             style={{
               borderRadius: "clamp(4px, 0.65cqw, 13px)",
               borderWidth: "clamp(1.5px, 0.2cqw, 4px)",
-              borderColor: "rgba(255, 255, 255, 0.85)",
+              borderColor: isPressed
+                ? "rgba(255, 255, 255, 0.45)"
+                : "rgba(255, 255, 255, 0.85)",
               borderStyle: "solid",
+              transition: "border-color 70ms ease-out",
             }}
           >
             <span
-              className="text-white font-black leading-none drop-shadow-[0_2px_0_rgba(0,0,0,0.8)] group-hover:scale-110 transition-transform"
+              className={`text-white font-black leading-none drop-shadow-[0_2px_0_rgba(0,0,0,0.8)] transition-transform ${
+                isPressed ? "scale-95" : "group-hover:scale-110"
+              }`}
               style={{
                 fontSize: "clamp(10px, 1.9cqw, 38px)",
               }}

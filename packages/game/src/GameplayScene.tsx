@@ -997,12 +997,26 @@ export default function GameplayScene({
       const k = e.key.toLowerCase();
       keysPressed[k] = true;
 
-      // Interacción con tecla 'E' en la explanada cuando no hay diálogo activo
+      // Interacción con tecla 'E', ENTER o ESPACIO en la explanada cuando no hay diálogo activo
+      const isInteractionKey =
+        k === "e" ||
+        k === "enter" ||
+        k === " " ||
+        e.code === "Enter" ||
+        e.code === "Space";
+
+      if (isInteractionKey && (k === " " || e.code === "Space")) {
+        e.preventDefault();
+      }
+
       if (
-        k === "e" &&
+        isInteractionKey &&
         dialogueStateRef.current === "dismissed" &&
         !isPausedRef.current
       ) {
+        if (k === "enter" || e.code === "Enter") {
+          e.preventDefault();
+        }
         const curPlayer = playerPosRef.current;
         const curBox = boxPosRef.current;
         const curPhase = minigamePhaseRef.current;
@@ -1500,7 +1514,7 @@ export default function GameplayScene({
   }, []);
 
   // Camera Dynamic Zoom & Smooth Character Tracking Parameters
-  const zoomScale = 2.1;
+  const zoomScale = 1.0;
   const maxCamShift = (1 - 1 / zoomScale) * 50; // Max shift % before exposing background edges (0 con zoom 1)
   const rawCamX = 50 - playerPos.x;
   const rawCamY = 50 - playerPos.y;
