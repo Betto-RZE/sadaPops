@@ -13,6 +13,7 @@ import {
   type ChapterId,
 } from "./features/capitulos/chapters";
 import { ChapterSelectScreen } from "./features/capitulos/ChapterSelectScreen";
+import { clearChapterHandoff } from "./features/capitulos/chapterHandoff";
 import {
   ChapterSceneRouter,
   preloadChapterScene,
@@ -268,18 +269,20 @@ export function PixiGameCanvas({
   // Modalidad A ("JUGAR"): historia completa y lineal desde el Capitulo 1.
   const startFullGame = useCallback(() => {
     preloadChapterScene(1);
-    changeScreenWithTransition("gameplay", () =>
-      dispatchSession({ type: "START_FULL_GAME" }),
-    );
+    changeScreenWithTransition("gameplay", () => {
+      clearChapterHandoff();
+      dispatchSession({ type: "START_FULL_GAME" });
+    });
   }, [changeScreenWithTransition]);
 
   // Modalidad B ("CAPITULOS"): solo el capitulo elegido.
   const startSingleChapter = useCallback(
     (chapterId: ChapterId) => {
       preloadChapterScene(chapterId);
-      changeScreenWithTransition("gameplay", () =>
-        dispatchSession({ type: "START_CHAPTER", chapterId }),
-      );
+      changeScreenWithTransition("gameplay", () => {
+        clearChapterHandoff();
+        dispatchSession({ type: "START_CHAPTER", chapterId });
+      });
     },
     [changeScreenWithTransition],
   );

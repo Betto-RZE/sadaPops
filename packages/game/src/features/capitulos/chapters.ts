@@ -58,8 +58,28 @@ export interface ChapterDefinition {
 }
 
 export const CHAPTERS: readonly ChapterDefinition[] = [
-  { id: 1, number: 1, title: "Funcionario de casilla", cardImage: undefined },
-  { id: 2, number: 2, title: "Desmintiendo mitos", cardImage: undefined },
+  {
+    id: 1,
+    number: 1,
+    title: "Funcionario de casilla",
+    cardImage: {
+      src: "/assets/juego/capitulos/capitulo-1.png",
+      alt: "Capítulo 1: Funcionario de casilla preparando material electoral",
+      fit: "cover",
+      position: "center",
+    },
+  },
+  {
+    id: 2,
+    number: 2,
+    title: "Desmintiendo mitos",
+    cardImage: {
+      src: "/assets/juego/capitulos/capitulo-2.png",
+      alt: "Capítulo 2: Desmintiendo mitos con la ciudadanía",
+      fit: "cover",
+      position: "center",
+    },
+  },
   { id: 3, number: 3, title: "Aprende a votar", cardImage: undefined },
 ];
 

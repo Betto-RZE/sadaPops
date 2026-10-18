@@ -28,7 +28,7 @@ export default function ChapterPlaceholderScene({
       className="absolute inset-0 w-full h-full z-20 overflow-hidden bg-[#2d572c] select-none"
     >
       <img
-        src={stageImageUrl}
+        src={chapter.cardImage?.src ?? stageImageUrl}
         alt=""
         aria-hidden="true"
         className="absolute inset-0 w-full h-full object-cover pointer-events-none"

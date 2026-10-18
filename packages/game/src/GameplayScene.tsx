@@ -10,91 +10,13 @@ import { PixelSpeechBubble, DialogueLine } from "./PixelSpeechBubble";
  * - Cada vez que se vuelve a montar arranca desde cero (sin estado residual).
  */
 
-// Frame count definitions for each of the 8 character animation folders
-const PLAYER_FRAME_COUNTS: Record<string, number> = {
-  static1: 80,
-  static2: 50,
-  static3: 57,
-  static4: 43,
-  walking1: 26,
-  walking2: 24,
-  walking3: 22,
-  walking4: 29,
-};
-
-// Preload all player animation frames into memory to eliminate image loading stutter
-const PRELOADED_PLAYER_IMAGES: Record<string, HTMLImageElement[]> = {};
-
-function preloadPlayerFolder(folder: string) {
-  if (typeof window === "undefined" || PRELOADED_PLAYER_IMAGES[folder]) return;
-  PRELOADED_PLAYER_IMAGES[folder] = [];
-  const count = PLAYER_FRAME_COUNTS[folder] || 20;
-  for (let i = 0; i < count; i++) {
-    const img = new Image();
-    img.src = `/assets/juego/player/${folder}/${i}.png`;
-    PRELOADED_PLAYER_IMAGES[folder].push(img);
-  }
-}
-
-// Libera la cache de frames del personaje y aborta descargas pendientes (se llama al salir del juego)
-function releasePlayerImages() {
-  for (const folder of Object.keys(PRELOADED_PLAYER_IMAGES)) {
-    for (const img of PRELOADED_PLAYER_IMAGES[folder]) {
-      img.src = "";
-    }
-    delete PRELOADED_PLAYER_IMAGES[folder];
-  }
-}
-
-// Animated Player Sprite Component (Plays high quality PNG frame animations from walking1-4 & static1-4)
-function AnimatedPlayerSprite({
-  isWalking,
-  lastDirection,
-}: {
-  isWalking: boolean;
-  lastDirection: "1" | "2" | "3" | "4";
-}) {
-  const [frameIndex, setFrameIndex] = useState(0);
-
-  const currentFolder = isWalking
-    ? `walking${lastDirection}`
-    : `static${lastDirection}`;
-
-  const totalFrames = PLAYER_FRAME_COUNTS[currentFolder] || 20;
-
-  // Preload animation frames into memory on folder change
-  useEffect(() => {
-    preloadPlayerFolder(currentFolder);
-  }, [currentFolder]);
-
-  // Instantly reset frame index to 0 when direction or walking state changes
-  useEffect(() => {
-    setFrameIndex(0);
-  }, [isWalking, lastDirection]);
-
-  // Frame cycling interval (exactly 24 FPS = ~41.67ms per frame for smooth animation)
-  useEffect(() => {
-    const fps24Interval = 1000 / 24;
-    const interval = setInterval(() => {
-      setFrameIndex((prev) => (prev + 1) % totalFrames);
-    }, fps24Interval);
-
-    return () => clearInterval(interval);
-  }, [currentFolder, totalFrames]);
-
-  const imageSrc = `/assets/juego/player/${currentFolder}/${frameIndex}.png`;
-
-  return (
-    <div className="relative flex flex-col items-center justify-center w-full shrink-0">
-      <img
-        src={imageSrc}
-        alt="Personaje Principal"
-        className="w-full h-auto object-contain select-none pointer-events-none drop-shadow-md shrink-0"
-        style={{ imageRendering: "pixelated" }}
-      />
-    </div>
-  );
-}
+import { setChapterHandoff } from "./features/capitulos/chapterHandoff";
+import {
+  AnimatedPlayerSprite,
+  releasePlayerImages,
+  preloadPlayerFolder,
+  PLAYER_FRAME_COUNTS,
+} from "./AnimatedPlayerSprite";
 
 // Centralized Plaza Collision Bounds (Edit these 9 numbers to dynamically adjust boundaries in real-time!)
 export const PLAZA_BOUNDS = {
@@ -288,11 +210,11 @@ export const OBJECT_COLLISION_BOXES: ObstaclesConfig = {
   },
 };
 
-const isInsideBox = (x: number, y: number, box: ObstacleBox): boolean => {
+export const isInsideBox = (x: number, y: number, box: ObstacleBox): boolean => {
   return x >= box.minX && x <= box.maxX && y >= box.minY && y <= box.maxY;
 };
 
-const isInsidePolygon = (x: number, y: number, polygon: Point2D[]): boolean => {
+export const isInsidePolygon = (x: number, y: number, polygon: Point2D[]): boolean => {
   if (!polygon || polygon.length < 3) return false;
   let inside = false;
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
@@ -308,7 +230,7 @@ const isInsidePolygon = (x: number, y: number, polygon: Point2D[]): boolean => {
 };
 
 // Diagonal Wall Sliding helper for polygon obstacles (caja & mesa)
-const tryPolygonWallSlide = (
+export const tryPolygonWallSlide = (
   currentPos: Point2D,
   dx: number,
   dy: number,
@@ -621,7 +543,7 @@ const getSafePushVector = (
   return null;
 };
 
-const getLeftBoundaryX = (y: number): number => {
+export const getLeftBoundaryX = (y: number): number => {
   if (PLAZA_BOUNDS.maxY === PLAZA_BOUNDS.minY) return PLAZA_BOUNDS.topLeftX;
   const progress = Math.min(
     1,
@@ -637,7 +559,7 @@ const getLeftBoundaryX = (y: number): number => {
 };
 
 // Returns standard diagonal right boundary % at vertical position y
-const getBaseRightBoundaryX = (y: number): number => {
+export const getBaseRightBoundaryX = (y: number): number => {
   if (PLAZA_BOUNDS.maxY === PLAZA_BOUNDS.minY) return PLAZA_BOUNDS.topRightX;
   const progress = Math.min(
     1,
@@ -653,7 +575,7 @@ const getBaseRightBoundaryX = (y: number): number => {
 };
 
 // Returns dynamic right boundary % at vertical position y (splits into upper/lower boxes with side path opening)
-const getRightBoundaryX = (y: number): number => {
+export const getRightBoundaryX = (y: number): number => {
   if (y >= PLAZA_BOUNDS.rightPathTopY && y <= PLAZA_BOUNDS.rightPathBottomY) {
     return PLAZA_BOUNDS.rightPathMaxX;
   }
@@ -997,12 +919,21 @@ export default function GameplayScene({
   useEffect(() => {
     onChapterCompleteRef.current = onChapterComplete;
   }, [onChapterComplete]);
+  const lastDirectionRef = useRef(lastDirection);
+  useEffect(() => {
+    lastDirectionRef.current = lastDirection;
+  }, [lastDirection]);
   const chapterCompletedRef = useRef(false);
   useEffect(() => {
     if (chapterCompletedRef.current) return;
     if (minigamePhase === "phase_complete" && dialogueState === "dismissed") {
       const timer = setTimeout(() => {
         chapterCompletedRef.current = true;
+        // Traspaso al Capitulo 2 (modalidad JUGAR): continua desde aqui mismo
+        setChapterHandoff({
+          playerPos: playerPosRef.current,
+          lastDirection: lastDirectionRef.current,
+        });
         onChapterCompleteRef.current?.();
       }, 2500);
       return () => clearTimeout(timer);

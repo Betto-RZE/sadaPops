@@ -40,10 +40,10 @@ describe("Registro de capitulos", () => {
     );
   });
 
-  test("los recuadros siguen SIN imagen (pendiente de arte final)", () => {
-    for (const chapter of CHAPTERS) {
-      assert.equal(chapter.cardImage, undefined, `capitulo ${chapter.id}`);
-    }
+  test("los recuadros 1 y 2 tienen su arte final asignado y el 3 sigue pendiente", () => {
+    assert.equal(CHAPTERS[0].cardImage?.src, "/assets/juego/capitulos/capitulo-1.png");
+    assert.equal(CHAPTERS[1].cardImage?.src, "/assets/juego/capitulos/capitulo-2.png");
+    assert.equal(CHAPTERS[2].cardImage, undefined);
   });
 
   test("preparacion para imagenes futuras: acepta cardImage sin alterar navegacion", () => {

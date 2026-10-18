@@ -22,13 +22,14 @@ export interface ChapterSceneProps {
   onChapterComplete: () => void;
 }
 
-// El capitulo 1 vive en su propio chunk: no se descarga hasta que se va a jugar.
-const loadChapter1 = () => import("../../GameplayScene");
-const Chapter1Scene = lazy(loadChapter1);
+// Los capitulos 1 y 2 viven en un mismo chunk diferido: no se descarga hasta que
+// se va a jugar, y el paso 1 -> 2 (JUGAR) no vuelve a suspender.
+const loadStoryScenes = () => import("./StoryChapterScenes");
+const StoryChapterScenes = lazy(loadStoryScenes);
 
 /** Empieza a descargar el chunk del capitulo mientras se cierra el iris. */
 export function preloadChapterScene(chapterId: ChapterId): void {
-  if (chapterId === 1) void loadChapter1();
+  if (chapterId === 1 || chapterId === 2) void loadStoryScenes();
 }
 
 /**
@@ -42,8 +43,8 @@ export function ChapterSceneRouter({
 }: ChapterSceneProps & { chapterId: ChapterId }) {
   switch (chapterId) {
     case 1:
-      return <Chapter1Scene {...sceneProps} />;
-    case 2: // Desmintiendo mitos (pendiente)
+    case 2:
+      return <StoryChapterScenes chapterId={chapterId} {...sceneProps} />;
     case 3: // Aprende a votar (pendiente)
       return (
         <ChapterPlaceholderScene
