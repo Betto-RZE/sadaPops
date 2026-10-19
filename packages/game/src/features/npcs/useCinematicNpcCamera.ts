@@ -67,7 +67,7 @@ export function useCinematicNpcCamera({
   firstNpc,
   isPaused,
   zoomScale = 2.0,
-  holdDurationMs = 3000,
+  holdDurationMs = 2500,
   followSmoothingSpeed = 2.8,
   returnSmoothingSpeed = 2.6,
 }: UseCinematicNpcCameraProps): UseCinematicNpcCameraReturn {

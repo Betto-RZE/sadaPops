@@ -37,6 +37,9 @@ import {
   isPositionBlockedByIdleNpc,
   NPC_COLLISION_DEFAULTS,
   type ActivePushState,
+  calculateSceneCharactersDepth,
+  calculateCharacterZIndex,
+  NPC_DEPTH_LAYERS,
 } from "./features/npcs";
 
 /**
@@ -413,6 +416,17 @@ export default function Chapter2Scene({
   const showDialogue =
     dialogueState !== "initial_delay" && dialogueState !== "dismissed";
 
+  // Sistema de profundidad visual dinámica (Fase 5.3):
+  // Ordena las capas (z-index) entre protagonista, NPCs genéricos y personajes narrativos
+  // asegurando que quienes tienen mayor coordenada Y se rendericen delante.
+  const sceneCharacters = [
+    { id: "player", y: playerPos.y },
+    ...npcs
+      .filter((n) => n.isActive)
+      .map((n) => ({ id: n.id, y: n.position.y })),
+  ];
+  const depthMap = calculateSceneCharactersDepth(sceneCharacters);
+
   return (
     <div
       data-testid="chapter-scene-2"
@@ -461,7 +475,9 @@ export default function Chapter2Scene({
             width: "6.5%",
             transform: "translate(-50%, -90%)",
             willChange: "left, top",
-            zIndex: 25,
+            zIndex:
+              depthMap["player"] ??
+              calculateCharacterZIndex(playerPos.y, "player"),
           }}
           className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
         >
@@ -482,7 +498,9 @@ export default function Chapter2Scene({
               width: GENERIC_NPC_DEFAULTS.spriteWidthPercent,
               transform: "translate(-50%, -90%)",
               willChange: "left, top",
-              zIndex: npc.position.y >= 36.0 ? 22 : 17,
+              zIndex:
+                depthMap[npc.id] ??
+                calculateCharacterZIndex(npc.position.y, npc.id),
             }}
             className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
           >
@@ -499,7 +517,7 @@ export default function Chapter2Scene({
               top: `${pos.y}%`,
               width: CASILLA_WIDTH,
               transform: "translate(-50%, -90%)",
-              zIndex: playerPos.y >= pos.y ? 18 : 28,
+              zIndex: NPC_DEPTH_LAYERS.mamparaLayer,
             }}
             className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
           >
@@ -523,8 +541,8 @@ export default function Chapter2Scene({
               playerPos.y >= MESA_POSITION.y ||
               (playerPos.y > 56.6 && playerPos.x >= 20.8) ||
               (playerPos.y <= 56.6 && playerPos.x >= 24.8)
-                ? 18
-                : 28,
+                ? NPC_DEPTH_LAYERS.mamparaLayer
+                : NPC_DEPTH_LAYERS.mesaBehindLayer,
           }}
           className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
         >
@@ -548,7 +566,11 @@ export default function Chapter2Scene({
                 width: deco.width,
                 transform: "translate(-50%, -90%)",
                 zIndex:
-                  deco.key === "cartel3" ? 35 : playerPos.y >= pos.y ? 18 : 28,
+                  deco.key === "cartel3"
+                    ? NPC_DEPTH_LAYERS.cartel3Foreground
+                    : playerPos.y >= pos.y
+                      ? NPC_DEPTH_LAYERS.mamparaLayer
+                      : NPC_DEPTH_LAYERS.mesaBehindLayer,
               }}
               className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
             >
@@ -564,7 +586,6 @@ export default function Chapter2Scene({
 
         {/* BOLETAS SOBRE LAS MAMPARAS */}
         {BOLETAS_POSITIONS.map((pos, index) => {
-          const casillaY = CASILLA_POSITIONS[index]?.y ?? 36.0;
           return (
             <div
               key={`boleta-item-${index}`}
@@ -573,7 +594,7 @@ export default function Chapter2Scene({
                 top: `${pos.y}%`,
                 width: BOLETAS_SIZES[index] || BOLETA_WIDTH,
                 transform: "translate(-50%, -90%)",
-                zIndex: playerPos.y >= casillaY ? 21 : 29,
+                zIndex: NPC_DEPTH_LAYERS.boletaLayer,
               }}
               className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
             >

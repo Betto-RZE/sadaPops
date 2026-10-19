@@ -23,7 +23,7 @@ export interface GenericNpcSpriteProps {
  * Reproduce las secuencias PNG a 24 FPS (~41.67ms por frame), idéntico al motor del jugador.
  * En estado 'idle', muestra el frame estático sin costo de temporizadores.
  */
-export function GenericNpcSprite({
+export const GenericNpcSprite = React.memo(function GenericNpcSprite({
   animation,
   className = "",
   style,
@@ -69,4 +69,4 @@ export function GenericNpcSprite({
       />
     </div>
   );
-}
+});

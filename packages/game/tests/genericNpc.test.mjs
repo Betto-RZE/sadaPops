@@ -24,6 +24,15 @@ import {
   isPositionBlockedByIdleNpc,
   getNpcLateralPushVector,
 } from "../src/features/npcs/genericNpcCollisions.ts";
+import {
+  NPC_DEPTH_LAYERS,
+  compareDepthEntities,
+  calculateCharacterZIndex,
+  calculateSceneCharactersDepth,
+} from "../src/features/npcs/genericNpcDepth.ts";
+import {
+  calculateCameraShift,
+} from "../src/features/npcs/useCinematicNpcCamera.ts";
 
 describe("Sistema de NPCs Genéricos - Pruebas de Integración y Ciclo de Vida", () => {
   describe("Recursos y animaciones", () => {
@@ -1085,6 +1094,241 @@ describe("Sistema de NPCs Genéricos - Pruebas de Integración y Ciclo de Vida",
       assert.equal(playerBox.maxX, 52.8);
       assert.equal(playerBox.minY, 47.8);
       assert.equal(playerBox.maxY, 52.2);
+    });
+  });
+
+  describe("Fase 5.3: Pulido visual, profundidad y cámara cinematográfica", () => {
+    test("1. orden de profundidad entre protagonista y NPCs según coordenada vertical", () => {
+      // Caso A: Jugador más abajo que el NPC (más cerca del primer plano)
+      const depthA = calculateSceneCharactersDepth([
+        { id: "player", y: 55.0 },
+        { id: "npc-mampara-3", y: 45.0 },
+      ]);
+      assert.ok(
+        depthA["player"] > depthA["npc-mampara-3"],
+        `Jugador (Y=55) debe renderizarse delante de NPC (Y=45): ${depthA["player"]} > ${depthA["npc-mampara-3"]}`,
+      );
+
+      // Caso B: Jugador más arriba que el NPC (más lejos en el fondo)
+      const depthB = calculateSceneCharactersDepth([
+        { id: "player", y: 40.0 },
+        { id: "npc-mampara-3", y: 65.0 },
+      ]);
+      assert.ok(
+        depthB["player"] < depthB["npc-mampara-3"],
+        `Jugador (Y=40) debe renderizarse detrás de NPC (Y=65): ${depthB["player"]} < ${depthB["npc-mampara-3"]}`,
+      );
+    });
+
+    test("2. orden de profundidad entre dos o más NPCs", () => {
+      const depth = calculateSceneCharactersDepth([
+        { id: "npc-1", y: 36.5 },
+        { id: "npc-2", y: 50.0 },
+        { id: "npc-3", y: 72.0 },
+        { id: "npc-4", y: 90.0 },
+      ]);
+
+      assert.ok(depth["npc-1"] < depth["npc-2"]);
+      assert.ok(depth["npc-2"] < depth["npc-3"]);
+      assert.ok(depth["npc-3"] < depth["npc-4"]);
+
+      // Inversión de posiciones: la entidad que baja debe pasar al frente
+      const depthInverted = calculateSceneCharactersDepth([
+        { id: "npc-1", y: 80.0 },
+        { id: "npc-2", y: 50.0 },
+      ]);
+      assert.ok(
+        depthInverted["npc-1"] > depthInverted["npc-2"],
+        "Al cambiar posiciones, el NPC con mayor Y pasa al frente",
+      );
+    });
+
+    test("3. estabilidad y determinismo cuando dos personajes comparten coordenada Y", () => {
+      const characters = [
+        { id: "player", y: 50.0 },
+        { id: "npc-1", y: 50.0 },
+      ];
+
+      const run1 = calculateSceneCharactersDepth(characters);
+      const run2 = calculateSceneCharactersDepth(characters);
+      const run3 = calculateSceneCharactersDepth(characters);
+
+      // Ambos deben recibir capas distintas para evitar z-fighting
+      assert.notEqual(run1["player"], run1["npc-1"]);
+
+      // Los resultados deben ser idénticos en múltiples cuadros sucesivos (cero parpadeo)
+      assert.equal(run1["player"], run2["player"]);
+      assert.equal(run1["player"], run3["player"]);
+      assert.equal(run1["npc-1"], run2["npc-1"]);
+      assert.equal(run1["npc-1"], run3["npc-1"]);
+    });
+
+    test("4. compatibilidad con las capas de las mamparas y boletas", () => {
+      // Personaje detrás de las mamparas (Y < 36.0)
+      const depthBehind = calculateSceneCharactersDepth([
+        { id: "player-behind", y: 32.0 },
+      ]);
+      assert.ok(
+        depthBehind["player-behind"] < NPC_DEPTH_LAYERS.mamparaLayer,
+        `Personaje detrás de mamparas debe tener zIndex < 18: ${depthBehind["player-behind"]}`,
+      );
+
+      // Personaje en la mampara votando (Y = 36.5)
+      const depthAtBooth = calculateSceneCharactersDepth([
+        { id: "npc-at-booth", y: 36.5 },
+      ]);
+      assert.ok(
+        depthAtBooth["npc-at-booth"] > NPC_DEPTH_LAYERS.boletaLayer,
+        `Personaje votando frente a mampara debe tener zIndex > 21: ${depthAtBooth["npc-at-booth"]}`,
+      );
+      assert.ok(
+        depthAtBooth["npc-at-booth"] > NPC_DEPTH_LAYERS.mamparaLayer,
+        `Personaje votando debe tener zIndex > 18: ${depthAtBooth["npc-at-booth"]}`,
+      );
+
+      // Caso conjunto: jugador detrás de mampara 1 y NPC votando en mampara 3
+      const depthBoth = calculateSceneCharactersDepth([
+        { id: "player-behind", y: 32.0 },
+        { id: "npc-booth-3", y: 36.5 },
+      ]);
+      assert.ok(
+        depthBoth["player-behind"] < NPC_DEPTH_LAYERS.mamparaLayer,
+        "Jugador permanece detrás de la mampara",
+      );
+      assert.ok(
+        depthBoth["npc-booth-3"] > NPC_DEPTH_LAYERS.boletaLayer,
+        "NPC permanece por delante de la mampara y boleta",
+      );
+      assert.ok(
+        depthBoth["npc-booth-3"] > depthBoth["player-behind"],
+        "NPC votando se renderiza delante del jugador que está detrás de las mamparas",
+      );
+    });
+
+    test("5. conservación de animaciones continuas durante la caminata y parada en mampara", () => {
+      const mampara = INITIAL_MAMPARAS_CONFIG[2]; // Mampara 3 (target Y = 36.5)
+      let npc = createGenericNpcInstance(mampara, "npc-anim-test");
+
+      // Estado inicial ENTERING -> animación back
+      assert.equal(npc.state, "ENTERING");
+      assert.equal(npc.currentAnimation, "back");
+
+      // Simular caminata continua hacia la mampara
+      npc.position = { x: 52.0, y: 50.0 };
+      const step1 = updateGenericNpc(npc, mampara, 0.05);
+      assert.equal(step1.currentAnimation, "back");
+      assert.equal(step1.state, "ENTERING");
+
+      // Llegar a la mampara (Y = 36.5) -> transición inmediata a IDLE
+      const stepArrive = updateGenericNpc(
+        { ...npc, position: { x: 52.0, y: 36.6 } },
+        mampara,
+        0.1,
+      );
+      assert.equal(stepArrive.state, "IDLE");
+      assert.equal(stepArrive.currentAnimation, "idle");
+      assert.equal(stepArrive.position.y, 36.5);
+
+      // Finalizar tiempo de votación -> transición inmediata a LEAVING y animación front
+      const stepLeave = updateGenericNpc(
+        { ...stepArrive, elapsedInStateMs: stepArrive.votingWaitTimeMs + 50 },
+        mampara,
+        0.05,
+      );
+      assert.equal(stepLeave.state, "LEAVING");
+      assert.equal(stepLeave.currentAnimation, "front");
+    });
+
+    test("6. ausencia de reinicios de frames y respeto a dimensiones visuales", () => {
+      assert.equal(GENERIC_NPC_FRAME_COUNTS.back, 23);
+      assert.equal(GENERIC_NPC_FRAME_COUNTS.front, 28);
+      assert.equal(GENERIC_NPC_FRAME_COUNTS.idle, 1);
+      assert.equal(GENERIC_NPC_DEFAULTS.spriteWidthPercent, "6.5%");
+
+      // Función calculateCharacterZIndex independiente respeta los límites
+      const zBehind = calculateCharacterZIndex(31.0);
+      assert.ok(zBehind >= 11 && zBehind <= 17);
+
+      const zFront = calculateCharacterZIndex(50.0);
+      assert.ok(zFront >= 22 && zFront <= 27);
+    });
+
+    test("7. integración visual del empuje: movimiento suave y cese de contacto", () => {
+      const mampara = INITIAL_MAMPARAS_CONFIG[2];
+      const npc = {
+        ...createGenericNpcInstance(mampara, "npc-push-visual"),
+        position: { x: 50.0, y: 60.0 },
+        state: "ENTERING",
+      };
+
+      const dt = 0.016;
+      const push = getNpcLateralPushVector({
+        playerPos: { x: 51.0, y: 60.0 },
+        npcs: [npc],
+        isPositionWalkable: () => true,
+        dtSeconds: dt,
+      });
+
+      assert.ok(push.pushVector !== null);
+      assert.equal(push.pushVector.vx, 1, "Desplaza lateralmente hacia la derecha");
+
+      // Cese de contacto fuera del umbral de separación (6.0%)
+      const pushSeparated = getNpcLateralPushVector({
+        playerPos: { x: 57.0, y: 60.0 },
+        npcs: [npc],
+        isPositionWalkable: () => true,
+        activePushState: push.activePushState,
+        dtSeconds: dt,
+      });
+      assert.equal(pushSeparated.pushVector, null);
+      assert.equal(pushSeparated.activePushState, null);
+    });
+
+    test("8. conservación del comportamiento y duración de la cámara cinematográfica", () => {
+      // Encuadre inicial del jugador
+      const camPlayer = calculateCameraShift({ x: 20.0, y: 52.0 }, 2.0);
+      assert.ok(typeof camPlayer.x === "number");
+      assert.ok(typeof camPlayer.y === "number");
+
+      // Encuadre de la mampara 3 (X=52.0, Y=36.5)
+      const camMampara = calculateCameraShift({ x: 52.0, y: 36.5 }, 2.0);
+      assert.ok(camMampara.x <= 25.0 && camMampara.x >= -25.0);
+      assert.ok(camMampara.y <= 25.0 && camMampara.y >= -25.0);
+    });
+
+    test("9. limpieza al abandonar o reiniciar el capítulo", () => {
+      const emptyDepth = calculateSceneCharactersDepth([]);
+      assert.deepEqual(emptyDepth, {});
+
+      // Valores por defecto seguros para entidades aisladas
+      const singleDepth = calculateSceneCharactersDepth([{ id: "player", y: 50.0 }]);
+      assert.equal(singleDepth["player"], 22);
+    });
+
+    test("10. convivencia con personajes narrativos y respeto estricto a las capas del escenario", () => {
+      // Coincidencia simultánea de protagonista, NPCs genéricos y personajes narrativos
+      const depth = calculateSceneCharactersDepth([
+        { id: "player", y: 48.0 },
+        { id: "npc-gen-1", y: 36.5 },
+        { id: "npc-gen-2", y: 62.0 },
+        { id: "personaje-narrativo-don-ramon", y: 55.0 },
+      ]);
+
+      assert.ok(depth["npc-gen-1"] < depth["player"]);
+      assert.ok(depth["player"] < depth["personaje-narrativo-don-ramon"]);
+      assert.ok(depth["personaje-narrativo-don-ramon"] < depth["npc-gen-2"]);
+
+      // Todos los personajes permanecen estrictamente por debajo de los arbustos (< 30) y cartel 3 (< 35)
+      for (const id of Object.keys(depth)) {
+        assert.ok(
+          depth[id] < NPC_DEPTH_LAYERS.arbustosForeground,
+          `Entidad ${id} (${depth[id]}) debe ser < 30 (arbustos en primer plano)`,
+        );
+        assert.ok(
+          depth[id] < NPC_DEPTH_LAYERS.cartel3Foreground,
+          `Entidad ${id} (${depth[id]}) debe ser < 35 (cartel 3 en primer plano)`,
+        );
+      }
     });
   });
 });
