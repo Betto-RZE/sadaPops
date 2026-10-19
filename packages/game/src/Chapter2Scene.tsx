@@ -35,6 +35,8 @@ import {
   GENERIC_NPC_DEFAULTS,
   getNpcLateralPushVector,
   isPositionBlockedByIdleNpc,
+  isPositionBlockedByNpc,
+  resolvePlayerVoluntaryMovementVsNpcs,
   NPC_COLLISION_DEFAULTS,
   type ActivePushState,
   calculateSceneCharactersDepth,
@@ -223,16 +225,6 @@ export default function Chapter2Scene({
         return;
       }
 
-      // Sistema de Colisiones Dinámicas: empuje lateral suave de los NPCs genéricos
-      const pushResult = getNpcLateralPushVector({
-        playerPos: playerPosRef.current,
-        npcs: npcsRef.current,
-        isPositionWalkable,
-        activePushState: activePushStateRef.current,
-        dtSeconds: dt,
-      });
-      activePushStateRef.current = pushResult.activePushState;
-
       // Sin movimiento de controles hasta cerrar el dialogo (incluye la espera inicial).
       // Durante diálogos se prioriza la estabilidad de la conversación y orientación.
       if (dialogueStateRef.current !== "dismissed") {
@@ -244,6 +236,14 @@ export default function Chapter2Scene({
           setLastDirection("1");
         }
         // Corrección física mínima si hay contacto directo para evitar superposiciones
+        const pushResult = getNpcLateralPushVector({
+          playerPos: playerPosRef.current,
+          npcs: npcsRef.current,
+          isPositionWalkable,
+          activePushState: activePushStateRef.current,
+          dtSeconds: dt,
+        });
+        activePushStateRef.current = pushResult.activePushState;
         if (pushResult.pushVector) {
           const pushSpeed = NPC_COLLISION_DEFAULTS.pushSpeed;
           const pDx = pushResult.pushVector.vx * pushSpeed * dt;
@@ -261,6 +261,7 @@ export default function Chapter2Scene({
         return;
       }
 
+      // 1. Leer entradas de movimiento y calcular velocidad deseada
       let dirX = 0;
       let dirY = 0;
       if (keysPressed["arrowdown"] || keysPressed["s"]) {
@@ -291,6 +292,69 @@ export default function Chapter2Scene({
       if (!isInputActive && Math.abs(velocity.x) < 0.04) velocity.x = 0;
       if (!isInputActive && Math.abs(velocity.y) < 0.04) velocity.y = 0;
 
+      // 2. Calcular desplazamiento voluntario deseado
+      const voluntaryDx = velocity.x * dt;
+      const voluntaryDy = velocity.y * dt;
+
+      // 3. Resolver colisiones preventivas y deslizamiento contra NPCs (Wall Sliding)
+      const voluntaryResult = resolvePlayerVoluntaryMovementVsNpcs({
+        currentPos: playerPosRef.current,
+        desiredDx: voluntaryDx,
+        desiredDy: voluntaryDy,
+        npcs: npcsRef.current,
+        isPositionWalkable,
+      });
+
+      const effectiveVoluntaryDx = voluntaryResult.effectiveDx;
+      const effectiveVoluntaryDy = voluntaryResult.effectiveDy;
+
+      // Si el movimiento voluntario choca contra un NPC, ajustar velocidad en ese eje
+      if (voluntaryResult.isBlockedByNpc) {
+        if (
+          Math.abs(effectiveVoluntaryDx) < Math.abs(voluntaryDx) &&
+          Math.sign(voluntaryDx) === Math.sign(velocity.x)
+        ) {
+          velocity.x = 0;
+        }
+        if (
+          Math.abs(effectiveVoluntaryDy) < Math.abs(voluntaryDy) &&
+          Math.sign(voluntaryDy) === Math.sign(velocity.y)
+        ) {
+          velocity.y = 0;
+        }
+      }
+
+      // Si el jugador intenta caminar hacia el NPC que lo empuja y ya está fuera de solapamiento directo,
+      // liberar la histéresis para evitar empujes de expulsión innecesarios y oscilaciones
+      if (activePushStateRef.current && isInputActive) {
+        const pushingNpc = npcsRef.current.find(
+          (n) => n.id === activePushStateRef.current?.npcId,
+        );
+        if (pushingNpc) {
+          const isMovingTowardsNpc =
+            (dirX > 0 && pushingNpc.position.x > playerPosRef.current.x) ||
+            (dirX < 0 && pushingNpc.position.x < playerPosRef.current.x);
+          if (isMovingTowardsNpc) {
+            activePushStateRef.current = null;
+          }
+        }
+      }
+
+      // 4. Calcular cualquier corrección externa realmente necesaria por movimiento de los NPCs
+      const voluntaryPos = {
+        x: playerPosRef.current.x + effectiveVoluntaryDx,
+        y: playerPosRef.current.y + effectiveVoluntaryDy,
+      };
+
+      const pushResult = getNpcLateralPushVector({
+        playerPos: voluntaryPos,
+        npcs: npcsRef.current,
+        isPositionWalkable,
+        activePushState: activePushStateRef.current,
+        dtSeconds: dt,
+      });
+      activePushStateRef.current = pushResult.activePushState;
+
       const pushSpeed = NPC_COLLISION_DEFAULTS.pushSpeed;
       const pushDx = pushResult.pushVector
         ? pushResult.pushVector.vx * pushSpeed * dt
@@ -299,10 +363,6 @@ export default function Chapter2Scene({
         ? pushResult.pushVector.vy * pushSpeed * dt
         : 0;
       const isPushing = pushResult.pushVector !== null;
-
-      const hasMovement =
-        Math.hypot(velocity.x, velocity.y) > 0.01 || isPushing;
-      setIsWalking(hasMovement);
 
       // Si no hay input de teclado pero hay empuje de un NPC, orientar al personaje según el empuje
       if (!isInputActive && isPushing && pushResult.pushVector) {
@@ -316,42 +376,44 @@ export default function Chapter2Scene({
         }
       }
 
-      if (hasMovement) {
-        let dx = velocity.x * dt + pushDx;
-        let dy = velocity.y * dt + pushDy;
+      const totalDx = effectiveVoluntaryDx + pushDx;
+      const totalDy = effectiveVoluntaryDy + pushDy;
 
-        // Si el jugador intenta caminar hacia el NPC que lo empuja, anular esa penetración
-        if (isPushing && pushResult.pushVector) {
-          if (pushResult.pushVector.vx > 0 && dx < pushDx) {
-            dx = pushDx;
-          } else if (pushResult.pushVector.vx < 0 && dx > pushDx) {
-            dx = pushDx;
-          }
-        }
+      const hasMovement =
+        Math.hypot(velocity.x, velocity.y) > 0.01 || isPushing || isInputActive;
+      setIsWalking(hasMovement);
 
+      // 5 y 6. Validar posición final y confirmar una única actualización por frame
+      if (Math.hypot(totalDx, totalDy) > 0.0001) {
         setPlayerPos((prev) => {
-          let effectiveDx = dx;
-          let effectiveDy = dy;
+          let effectiveDx = totalDx;
+          let effectiveDy = totalDy;
 
           const isInsideRightPath =
             prev.y >= PLAZA_BOUNDS.rightPathTopY &&
             prev.y <= PLAZA_BOUNDS.rightPathBottomY &&
             prev.x > getBaseRightBoundaryX(prev.y);
 
-          // Deslizamiento sobre los bordes diagonales de la explanada
+          // Deslizamiento sobre los bordes diagonales de la explanada (CONSERVADO INTACTO)
           if (!isInsideRightPath) {
-            if (dx < 0 && prev.x <= getLeftBoundaryX(prev.y) + 0.6) {
-              effectiveDy += Math.abs(dx) * 0.75;
+            if (totalDx < 0 && prev.x <= getLeftBoundaryX(prev.y) + 0.6) {
+              effectiveDy += Math.abs(totalDx) * 0.75;
             }
-            if (dx > 0 && prev.x >= getRightBoundaryX(prev.y) - 0.6) {
-              effectiveDy += Math.abs(dx) * 0.75;
+            if (totalDx > 0 && prev.x >= getRightBoundaryX(prev.y) - 0.6) {
+              effectiveDy += Math.abs(totalDx) * 0.75;
             }
           }
 
           const isTargetWalkable = (tx: number, ty: number): boolean => {
             return (
               isPositionWalkable(tx, ty) &&
-              !isPositionBlockedByIdleNpc({ x: tx, y: ty }, npcsRef.current)
+              !isPositionBlockedByNpc(
+                { x: tx, y: ty },
+                npcsRef.current,
+                pushResult.pushingNpc
+                  ? { excludeNpcId: pushResult.pushingNpc.id }
+                  : undefined,
+              )
             );
           };
 

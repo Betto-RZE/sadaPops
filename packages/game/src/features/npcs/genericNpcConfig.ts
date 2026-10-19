@@ -92,9 +92,9 @@ export const GENERIC_NPC_DEFAULTS = {
   /** Rango máximo de tiempo para votar (ms) */
   maxVotingWaitTimeMs: 8000,
   /** Rango mínimo de espera para la aparición de nuevos NPCs en una mampara (ms) */
-  minSpawnDelayMs: 1000,
+  minSpawnDelayMs: 3000,
   /** Rango máximo de espera para la aparición de nuevos NPCs en una mampara (ms) */
-  maxSpawnDelayMs: 3000,
+  maxSpawnDelayMs: 15000,
   /** Ancho porcentual del sprite en pantalla (alineado al del jugador 6.5%) */
   spriteWidthPercent: "6.5%",
 };
@@ -112,7 +112,7 @@ export function getRandomVotingTimeMs(
 
 /**
  * Genera un tiempo de espera aleatorio continuo para el spawn de un NPC en una mampara disponible.
- * Por defecto en [1000, 3000] ms con decimales según los requisitos de la Fase 4.
+ * Por defecto en [3000, 15000] ms (3 a 15 segundos) con decimales.
  */
 export function getRandomSpawnDelayMs(
   minMs: number = GENERIC_NPC_DEFAULTS.minSpawnDelayMs,
@@ -147,8 +147,8 @@ export const INITIAL_MAMPARAS_CONFIG: MamparaBoothConfig[] = [
     spawnTimerConfig: {
       nextSpawnDelayMs: 0,
       lastSpawnTimestampMs: 0,
-      minDelayMs: 1000,
-      maxDelayMs: 3000,
+      minDelayMs: 3000,
+      maxDelayMs: 15000,
       isEnabled: false,
     },
   },
@@ -164,8 +164,8 @@ export const INITIAL_MAMPARAS_CONFIG: MamparaBoothConfig[] = [
     spawnTimerConfig: {
       nextSpawnDelayMs: 0,
       lastSpawnTimestampMs: 0,
-      minDelayMs: 1000,
-      maxDelayMs: 3000,
+      minDelayMs: 3000,
+      maxDelayMs: 15000,
       isEnabled: false,
     },
   },
@@ -181,8 +181,8 @@ export const INITIAL_MAMPARAS_CONFIG: MamparaBoothConfig[] = [
     spawnTimerConfig: {
       nextSpawnDelayMs: 0,
       lastSpawnTimestampMs: 0,
-      minDelayMs: 1000,
-      maxDelayMs: 3000,
+      minDelayMs: 3000,
+      maxDelayMs: 15000,
       isEnabled: false,
     },
   },
@@ -198,8 +198,8 @@ export const INITIAL_MAMPARAS_CONFIG: MamparaBoothConfig[] = [
     spawnTimerConfig: {
       nextSpawnDelayMs: 0,
       lastSpawnTimestampMs: 0,
-      minDelayMs: 1000,
-      maxDelayMs: 3000,
+      minDelayMs: 3000,
+      maxDelayMs: 15000,
       isEnabled: false,
     },
   },
@@ -215,8 +215,8 @@ export const INITIAL_MAMPARAS_CONFIG: MamparaBoothConfig[] = [
     spawnTimerConfig: {
       nextSpawnDelayMs: 0,
       lastSpawnTimestampMs: 0,
-      minDelayMs: 1000,
-      maxDelayMs: 3000,
+      minDelayMs: 3000,
+      maxDelayMs: 15000,
       isEnabled: false,
     },
   },

@@ -22,6 +22,8 @@ import {
   getPlayerBoundingBox,
   checkCharactersOverlap,
   isPositionBlockedByIdleNpc,
+  isPositionBlockedByNpc,
+  resolvePlayerVoluntaryMovementVsNpcs,
   getNpcLateralPushVector,
 } from "../src/features/npcs/genericNpcCollisions.ts";
 import {
@@ -444,9 +446,9 @@ describe("Sistema de NPCs Genéricos - Pruebas de Integración y Ciclo de Vida",
         const m = step.mamparas.find((booth) => booth.id === id);
         assert.ok(m.spawnTimerConfig.isEnabled, `Mampara ${id} debe estar habilitada`);
         assert.ok(
-          m.spawnTimerConfig.nextSpawnDelayMs >= 900 &&
-            m.spawnTimerConfig.nextSpawnDelayMs <= 3000,
-          `Mampara ${id} debe tener un delay en [1000, 3000] ms menos dt`,
+          m.spawnTimerConfig.nextSpawnDelayMs >= 2900 &&
+            m.spawnTimerConfig.nextSpawnDelayMs <= 15000,
+          `Mampara ${id} debe tener un delay en [3000, 15000] ms menos dt`,
         );
       });
     });
@@ -485,13 +487,13 @@ describe("Sistema de NPCs Genéricos - Pruebas de Integración y Ciclo de Vida",
       assert.ok(state.mamparas[2].spawnTimerConfig.nextSpawnDelayMs > 0);
     });
 
-    test("7. cada mampara genera tiempos independientes entre 1000 y 3000 ms con decimales", () => {
+    test("7. cada mampara genera tiempos independientes entre 3000 y 15000 ms con decimales", () => {
       const delays = [];
       for (let i = 0; i < 50; i++) {
         const delay = getRandomSpawnDelayMs();
         assert.ok(
-          delay >= 1000 && delay <= 3000,
-          `El delay ${delay} debe estar en el intervalo [1000, 3000] ms`,
+          delay >= 3000 && delay <= 15000,
+          `El delay ${delay} debe estar en el intervalo [3000, 15000] ms`,
         );
         assert.ok(!Number.isInteger(delay), "Debe permitir valores decimales");
         delays.push(delay);
@@ -2035,6 +2037,379 @@ describe("Sistema de NPCs Genéricos - Pruebas de Integración y Ciclo de Vida",
       const camShiftPlayer = calculateCameraShift({ x: 20.0, y: 52.0 }, 2.0);
       assert.equal(camShiftPlayer.x, 25.0); // Clamped a 25.0
       assert.equal(camShiftPlayer.y, -2.0);
+    });
+  });
+
+  describe("Fase 5.6: Deslizamiento lateral sin vibraciones y colisiones preventivas", () => {
+    test("1. caminar hacia el costado izquierdo de un NPC en ENTERING", () => {
+      const npc = {
+        id: "npc-test-1",
+        position: { x: 50.0, y: 50.0 },
+        state: "ENTERING",
+        isActive: true,
+        speed: 12.0,
+      };
+      // Jugador a la izquierda del NPC
+      const currentPos = { x: 43.5, y: 50.0 };
+      // Intenta avanzar a la derecha hacia el NPC (desiredDx = 1.0, dy = 0)
+      const res = resolvePlayerVoluntaryMovementVsNpcs({
+        currentPos,
+        desiredDx: 1.0,
+        desiredDy: 0,
+        npcs: [npc],
+      });
+
+      assert.equal(res.isBlockedByNpc, true);
+      assert.equal(res.blockedNpc?.id, "npc-test-1");
+      // El avance debe quedar acotado al borde seguro (50.0 - 5.6 = 44.4) sin penetrar
+      const finalX = currentPos.x + res.effectiveDx;
+      assert.ok(finalX <= 44.401, `finalX (${finalX}) debe ser <= 44.401`);
+      const overlap = checkCharactersOverlap({ x: finalX, y: 50.0 }, npc.position);
+      assert.equal(overlap.isColliding, false, "No debe penetrar la caja del NPC");
+      assert.equal(res.effectiveDy, 0, "No debe agregar movimiento vertical artificial");
+    });
+
+    test("2. caminar hacia el costado derecho de un NPC en ENTERING", () => {
+      const npc = {
+        id: "npc-test-2",
+        position: { x: 50.0, y: 50.0 },
+        state: "ENTERING",
+        isActive: true,
+        speed: 12.0,
+      };
+      // Jugador a la derecha del NPC
+      const currentPos = { x: 56.5, y: 50.0 };
+      // Intenta avanzar a la izquierda hacia el NPC (desiredDx = -1.0, dy = 0)
+      const res = resolvePlayerVoluntaryMovementVsNpcs({
+        currentPos,
+        desiredDx: -1.0,
+        desiredDy: 0,
+        npcs: [npc],
+      });
+
+      assert.equal(res.isBlockedByNpc, true);
+      const finalX = currentPos.x + res.effectiveDx;
+      assert.ok(finalX >= 55.599, `finalX (${finalX}) debe ser >= 55.599`);
+      const overlap = checkCharactersOverlap({ x: finalX, y: 50.0 }, npc.position);
+      assert.equal(overlap.isColliding, false, "No debe penetrar la caja del NPC");
+      assert.equal(res.effectiveDy, 0, "No debe agregar movimiento vertical artificial");
+    });
+
+    test("3. repetir ambos casos de aproximación lateral con NPC en LEAVING", () => {
+      const leavingNpc = {
+        id: "npc-test-leaving",
+        position: { x: 50.0, y: 60.0 },
+        state: "LEAVING",
+        isActive: true,
+        speed: 12.0,
+      };
+
+      // Aproximación izquierda
+      const resLeft = resolvePlayerVoluntaryMovementVsNpcs({
+        currentPos: { x: 43.5, y: 60.0 },
+        desiredDx: 1.0,
+        desiredDy: 0,
+        npcs: [leavingNpc],
+      });
+      assert.equal(resLeft.isBlockedByNpc, true);
+      assert.ok(43.5 + resLeft.effectiveDx <= 44.401);
+      assert.equal(
+        checkCharactersOverlap({ x: 43.5 + resLeft.effectiveDx, y: 60.0 }, leavingNpc.position).isColliding,
+        false,
+      );
+
+      // Aproximación derecha
+      const resRight = resolvePlayerVoluntaryMovementVsNpcs({
+        currentPos: { x: 56.5, y: 60.0 },
+        desiredDx: -1.0,
+        desiredDy: 0,
+        npcs: [leavingNpc],
+      });
+      assert.equal(resRight.isBlockedByNpc, true);
+      assert.ok(56.5 + resRight.effectiveDx >= 55.599);
+      assert.equal(
+        checkCharactersOverlap({ x: 56.5 + resRight.effectiveDx, y: 60.0 }, leavingNpc.position).isColliding,
+        false,
+      );
+    });
+
+    test("4. mantener presionada la tecla horizontal contra un NPC durante varios segundos (simulación a 60 FPS)", () => {
+      const npc = {
+        id: "npc-walking",
+        position: { x: 50.0, y: 40.0 },
+        state: "ENTERING",
+        isActive: true,
+        speed: 12.0,
+      };
+
+      let playerX = 44.399; // Borde seguro
+      const playerY = 40.0;
+      const dt = 0.016;
+
+      // Simular 180 frames (3 segundos continuos a 60 FPS)
+      for (let frame = 0; frame < 180; frame++) {
+        // El NPC avanza hacia abajo
+        npc.position.y += 0.08 * dt;
+
+        const res = resolvePlayerVoluntaryMovementVsNpcs({
+          currentPos: { x: playerX, y: playerY },
+          desiredDx: 0.35, // Presionando D continuamente
+          desiredDy: 0,
+          npcs: [npc],
+        });
+
+        playerX += res.effectiveDx;
+
+        const overlap = checkCharactersOverlap(
+          { x: playerX, y: playerY },
+          npc.position,
+        );
+        assert.equal(
+          overlap.isColliding,
+          false,
+          `En frame ${frame}, el jugador no debe penetrar en el NPC`,
+        );
+      }
+
+      // Posición final debe permanecer estable en el borde seguro sin retroceso
+      assert.ok(playerX <= 44.401 && playerX >= 44.398);
+    });
+
+    test("5. caminar diagonalmente contra el NPC y deslizarse", () => {
+      const npc = {
+        id: "npc-slide",
+        position: { x: 50.0, y: 50.0 },
+        state: "ENTERING",
+        isActive: true,
+        speed: 12.0,
+      };
+
+      // Jugador a la izquierda del NPC caminando diagonalmente arriba-derecha
+      const currentPos = { x: 44.399, y: 50.0 };
+      const res = resolvePlayerVoluntaryMovementVsNpcs({
+        currentPos,
+        desiredDx: 0.35, // Hacia el NPC
+        desiredDy: -0.35, // Hacia arriba
+        npcs: [npc],
+      });
+
+      assert.equal(res.isBlockedByNpc, true);
+      // Deslizamiento vertical tangencial 100% conservado
+      assert.equal(res.effectiveDy, -0.35);
+      // Desplazamiento horizontal acotado para no penetrar
+      assert.ok(res.effectiveDx <= 0.0001);
+    });
+
+    test("6. intentar atravesar un NPC en IDLE", () => {
+      const idleNpc = {
+        id: "npc-idle",
+        position: { x: 52.0, y: 36.5 },
+        state: "IDLE",
+        isActive: true,
+        speed: 12.0,
+      };
+
+      // Intento desde la izquierda
+      const resLeft = resolvePlayerVoluntaryMovementVsNpcs({
+        currentPos: { x: 45.0, y: 36.5 },
+        desiredDx: 2.0,
+        desiredDy: 0,
+        npcs: [idleNpc],
+      });
+      assert.equal(resLeft.isBlockedByNpc, true);
+      assert.equal(
+        checkCharactersOverlap({ x: 45.0 + resLeft.effectiveDx, y: 36.5 }, idleNpc.position).isColliding,
+        false,
+      );
+
+      // Verificación con isPositionBlockedByIdleNpc
+      assert.equal(
+        isPositionBlockedByIdleNpc({ x: 52.0, y: 36.5 }, [idleNpc]),
+        true,
+      );
+      assert.equal(
+        isPositionBlockedByNpc({ x: 52.0, y: 36.5 }, [idleNpc], { states: ["IDLE"] }),
+        true,
+      );
+    });
+
+    test("7. permanecer quieto mientras un NPC se aproxima y empuja al protagonista", () => {
+      // Jugador detenido en el camino del NPC
+      const playerPos = { x: 50.0, y: 50.0 };
+      const encroachingNpc = {
+        id: "npc-encroaching",
+        position: { x: 50.0, y: 49.0 }, // Superposición física en Y
+        state: "ENTERING",
+        isActive: true,
+        speed: 12.0,
+      };
+
+      const push = getNpcLateralPushVector({
+        playerPos,
+        npcs: [encroachingNpc],
+        isPositionWalkable: () => true,
+      });
+
+      // Debe generar empuje suave de expulsión lateral
+      assert.ok(push.pushVector !== null);
+      assert.ok(Math.abs(push.pushVector.vx) > 0);
+      assert.equal(push.activePushState?.npcId, "npc-encroaching");
+    });
+
+    test("8. evitar alternancia repetitiva de posiciones (cero vibración)", () => {
+      const npc = {
+        id: "npc-stable",
+        position: { x: 50.0, y: 50.0 },
+        state: "ENTERING",
+        isActive: true,
+        speed: 12.0,
+      };
+
+      const positions = [];
+      let playerX = 44.399;
+
+      for (let frame = 0; frame < 60; frame++) {
+        const res = resolvePlayerVoluntaryMovementVsNpcs({
+          currentPos: { x: playerX, y: 50.0 },
+          desiredDx: 0.35, // Presionando tecla
+          desiredDy: 0,
+          npcs: [npc],
+        });
+        playerX += res.effectiveDx;
+        positions.push(playerX);
+      }
+
+      // Comprobar que no hay oscilación de vaivén (alternancia de signo en deltas consecutivos)
+      let reversals = 0;
+      for (let i = 2; i < positions.length; i++) {
+        const d1 = positions[i - 1] - positions[i - 2];
+        const d2 = positions[i] - positions[i - 1];
+        if ((d1 > 1e-5 && d2 < -1e-5) || (d1 < -1e-5 && d2 > 1e-5)) {
+          reversals++;
+        }
+      }
+      assert.equal(reversals, 0, "No debe haber reversiones ni vibraciones oscilatorias");
+    });
+
+    test("9. evitar atravesar NPCs con deltaTime elevado (swept collision check)", () => {
+      const npc = {
+        id: "npc-tunneling",
+        position: { x: 50.0, y: 50.0 },
+        state: "ENTERING",
+        isActive: true,
+        speed: 12.0,
+      };
+
+      // Salto masivo de dt: velocidad deseada que llevaría al jugador de x=40 a x=65 (atravesando completamente el NPC)
+      const res = resolvePlayerVoluntaryMovementVsNpcs({
+        currentPos: { x: 40.0, y: 50.0 },
+        desiredDx: 25.0,
+        desiredDy: 0,
+        npcs: [npc],
+      });
+
+      assert.equal(res.isBlockedByNpc, true);
+      const finalX = 40.0 + res.effectiveDx;
+      // Debe haberse detenido antes de la caja del NPC (<= 44.401), sin teletransportarse al otro lado
+      assert.ok(finalX <= 44.401, `finalX (${finalX}) no debe haber atravesado el NPC`);
+      assert.equal(
+        checkCharactersOverlap({ x: finalX, y: 50.0 }, npc.position).isColliding,
+        false,
+      );
+    });
+
+    test("10. mantener el comportamiento correcto de colisiones frontales y traseras", () => {
+      const npc = {
+        id: "npc-vertical",
+        position: { x: 50.0, y: 50.0 },
+        state: "ENTERING",
+        isActive: true,
+        speed: 12.0,
+      };
+
+      // Aproximación frontal (desde abajo caminando hacia arriba: Y=55.0 hacia Y=54.0 cruzando el límite 54.4)
+      const resFrontal = resolvePlayerVoluntaryMovementVsNpcs({
+        currentPos: { x: 50.0, y: 55.0 },
+        desiredDx: 0.3, // Componente diagonal horizontal
+        desiredDy: -1.0, // Hacia el NPC
+        npcs: [npc],
+      });
+      assert.equal(resFrontal.isBlockedByNpc, true);
+      // Componente vertical acotada al borde seguro sin penetrar
+      assert.ok(55.0 + resFrontal.effectiveDy >= 54.399);
+      // Componente horizontal tangencial conservada (deslizamiento horizontal sobre la base)
+      assert.equal(resFrontal.effectiveDx, 0.3);
+
+      // Aproximación trasera (desde arriba caminando hacia abajo: Y=45.0 hacia Y=46.0 cruzando el límite 45.6)
+      const resTrasera = resolvePlayerVoluntaryMovementVsNpcs({
+        currentPos: { x: 50.0, y: 45.0 },
+        desiredDx: -0.3,
+        desiredDy: 1.0,
+        npcs: [npc],
+      });
+      assert.equal(resTrasera.isBlockedByNpc, true);
+      assert.ok(45.0 + resTrasera.effectiveDy <= 45.601);
+      assert.equal(resTrasera.effectiveDx, -0.3);
+    });
+
+    test("11. respetar obstáculos y límites del escenario al validar la posición final", () => {
+      const pushingNpc = {
+        id: "pushing-npc",
+        position: { x: 50.0, y: 50.0 },
+        state: "ENTERING",
+        isActive: true,
+        speed: 12.0,
+      };
+      const obstacleNpc = {
+        id: "obstacle-npc",
+        position: { x: 42.0, y: 50.0 },
+        state: "IDLE",
+        isActive: true,
+        speed: 12.0,
+      };
+
+      // Al excluir el NPC que empuja, la posición en su caja no es bloqueada por él mismo
+      assert.equal(
+        isPositionBlockedByNpc({ x: 50.0, y: 50.0 }, [pushingNpc, obstacleNpc], {
+          excludeNpcId: "pushing-npc",
+        }),
+        false,
+      );
+
+      // Pero la posición dentro del obstáculo IDLE sí es bloqueada
+      assert.equal(
+        isPositionBlockedByNpc({ x: 42.0, y: 50.0 }, [pushingNpc, obstacleNpc], {
+          excludeNpcId: "pushing-npc",
+        }),
+        true,
+      );
+    });
+
+    test("12. evitar regresiones en los ciclos de aparición, animaciones y cámara", () => {
+      // Ciclos de aparición
+      const delay = getRandomSpawnDelayMs();
+      assert.ok(
+        delay >= GENERIC_NPC_DEFAULTS.minSpawnDelayMs &&
+          delay <= GENERIC_NPC_DEFAULTS.maxSpawnDelayMs,
+      );
+
+      // Tiempos de votación
+      const voteTime = getRandomVotingTimeMs();
+      assert.ok(
+        voteTime >= GENERIC_NPC_DEFAULTS.minVotingWaitTimeMs &&
+          voteTime <= GENERIC_NPC_DEFAULTS.maxVotingWaitTimeMs,
+      );
+
+      // Dimensiones de colisión predeterminadas
+      assert.equal(NPC_COLLISION_DEFAULTS.npcHalfWidth, 2.8);
+      assert.equal(NPC_COLLISION_DEFAULTS.npcHalfHeight, 2.2);
+      assert.equal(NPC_COLLISION_DEFAULTS.playerHalfWidth, 2.8);
+      assert.equal(NPC_COLLISION_DEFAULTS.playerHalfHeight, 2.2);
+
+      // Cámara cinematográfica mantiene centrado al votante y holdDuration
+      const shift = calculateCameraShift({ x: 52.0, y: 36.5 }, 2.0);
+      assert.equal(shift.x, -2.0);
+      assert.equal(shift.y, 13.5);
     });
   });
 });

@@ -109,6 +109,52 @@ export function checkCharactersOverlap(
   };
 }
 
+export interface BlockedByNpcOptions {
+  excludeNpcId?: string;
+  states?: Array<"ENTERING" | "IDLE" | "LEAVING">;
+  playerHalfW?: number;
+  playerHalfH?: number;
+  npcHalfW?: number;
+  npcHalfH?: number;
+}
+
+/**
+ * Comprueba si una posición candidata del jugador intersecta la caja de algún NPC activo.
+ * Permite filtrar por estados y excluir el NPC que esté empujando al jugador para no atraparlo.
+ */
+export function isPositionBlockedByNpc(
+  testPos: { x: number; y: number },
+  npcs: GenericNpc[],
+  options?: BlockedByNpcOptions,
+): boolean {
+  const playerHalfW =
+    options?.playerHalfW ?? NPC_COLLISION_DEFAULTS.playerHalfWidth;
+  const playerHalfH =
+    options?.playerHalfH ?? NPC_COLLISION_DEFAULTS.playerHalfHeight;
+  const npcHalfW = options?.npcHalfW ?? NPC_COLLISION_DEFAULTS.npcHalfWidth;
+  const npcHalfH = options?.npcHalfH ?? NPC_COLLISION_DEFAULTS.npcHalfHeight;
+  const allowedStates = options?.states;
+
+  for (const npc of npcs) {
+    if (!npc.isActive) continue;
+    if (options?.excludeNpcId && npc.id === options.excludeNpcId) continue;
+    if (allowedStates && !allowedStates.includes(npc.state as any)) continue;
+
+    const overlap = checkCharactersOverlap(
+      testPos,
+      npc.position,
+      playerHalfW,
+      playerHalfH,
+      npcHalfW,
+      npcHalfH,
+    );
+    if (overlap.isColliding) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /**
  * Comprueba si una posición candidata del jugador intersecta la caja de algún NPC en estado IDLE.
  * Los NPCs en IDLE se comportan como obstáculos sólidos estáticos.
@@ -119,22 +165,11 @@ export function isPositionBlockedByIdleNpc(
   playerHalfW: number = NPC_COLLISION_DEFAULTS.playerHalfWidth,
   playerHalfH: number = NPC_COLLISION_DEFAULTS.playerHalfHeight,
 ): boolean {
-  for (const npc of npcs) {
-    if (npc.isActive && npc.state === "IDLE") {
-      const overlap = checkCharactersOverlap(
-        testPos,
-        npc.position,
-        playerHalfW,
-        playerHalfH,
-        NPC_COLLISION_DEFAULTS.npcHalfWidth,
-        NPC_COLLISION_DEFAULTS.npcHalfHeight,
-      );
-      if (overlap.isColliding) {
-        return true;
-      }
-    }
-  }
-  return false;
+  return isPositionBlockedByNpc(testPos, npcs, {
+    states: ["IDLE"],
+    playerHalfW,
+    playerHalfH,
+  });
 }
 
 export interface CalculatePushVectorParams {
@@ -348,5 +383,170 @@ export function getNpcLateralPushVector({
     pushVector: null,
     pushingNpc: primaryNpc,
     activePushState: null,
+  };
+}
+
+export interface ResolveVoluntaryMovementParams {
+  currentPos: { x: number; y: number };
+  desiredDx: number;
+  desiredDy: number;
+  npcs: GenericNpc[];
+  isPositionWalkable?: (x: number, y: number) => boolean;
+  playerHalfW?: number;
+  playerHalfH?: number;
+  npcHalfW?: number;
+  npcHalfH?: number;
+}
+
+export interface VoluntaryMovementResult {
+  effectiveDx: number;
+  effectiveDy: number;
+  isBlockedByNpc: boolean;
+  blockedNpc: GenericNpc | null;
+}
+
+/**
+ * Resuelve preventivamente el desplazamiento voluntario del protagonista (vía teclado)
+ * contra los NPCs genéricos activos en el escenario.
+ *
+ * Principios:
+ * 1. Resolución preventiva: no permite que el jugador penetre la caja del NPC para luego ser expulsado.
+ * 2. Deslizamiento lateral (Wall Sliding): si el jugador avanza contra el costado de un NPC,
+ *    acota el avance horizontal al borde de contacto seguro y preserva la componente vertical deseada.
+ * 3. Si el jugador solo presiona izquierda o derecha, no añade movimiento vertical artificial.
+ * 4. El movimiento hacia afuera (alejándose del NPC) nunca se bloquea.
+ * 5. Elimina de raíz la alternancia entre avance por teclado y expulsión reactiva (cero vibraciones).
+ */
+export function resolvePlayerVoluntaryMovementVsNpcs({
+  currentPos,
+  desiredDx,
+  desiredDy,
+  npcs,
+  isPositionWalkable,
+  playerHalfW = NPC_COLLISION_DEFAULTS.playerHalfWidth,
+  playerHalfH = NPC_COLLISION_DEFAULTS.playerHalfHeight,
+  npcHalfW = NPC_COLLISION_DEFAULTS.npcHalfWidth,
+  npcHalfH = NPC_COLLISION_DEFAULTS.npcHalfHeight,
+}: ResolveVoluntaryMovementParams): VoluntaryMovementResult {
+  const moveMag = Math.hypot(desiredDx, desiredDy);
+  if (moveMag < 0.0001) {
+    return {
+      effectiveDx: 0,
+      effectiveDy: 0,
+      isBlockedByNpc: false,
+      blockedNpc: null,
+    };
+  }
+
+  const activeNpcs = npcs.filter((n) => n.isActive);
+  if (activeNpcs.length === 0) {
+    return {
+      effectiveDx: desiredDx,
+      effectiveDy: desiredDy,
+      isBlockedByNpc: false,
+      blockedNpc: null,
+    };
+  }
+
+  const totalHalfW = playerHalfW + npcHalfW;
+  const totalHalfH = playerHalfH + npcHalfH;
+
+  let effectiveDx = desiredDx;
+  let effectiveDy = desiredDy;
+  let isBlocked = false;
+  let blockedNpc: GenericNpc | null = null;
+
+  for (const npc of activeNpcs) {
+    const targetX = currentPos.x + effectiveDx;
+    const targetY = currentPos.y + effectiveDy;
+
+    // Comprobación de solapamiento continuo (swept box) para evitar atravesar con dt elevado
+    const trajMinX = Math.min(currentPos.x, targetX) - playerHalfW;
+    const trajMaxX = Math.max(currentPos.x, targetX) + playerHalfW;
+    const npcMinX = npc.position.x - npcHalfW;
+    const npcMaxX = npc.position.x + npcHalfW;
+
+    const trajMinY = Math.min(currentPos.y, targetY) - playerHalfH;
+    const trajMaxY = Math.max(currentPos.y, targetY) + playerHalfH;
+    const npcMinY = npc.position.y - npcHalfH;
+    const npcMaxY = npc.position.y + npcHalfH;
+
+    const sweptOverlap =
+      trajMaxX > npcMinX &&
+      trajMinX < npcMaxX &&
+      trajMaxY > npcMinY &&
+      trajMinY < npcMaxY;
+
+    if (sweptOverlap) {
+      isBlocked = true;
+      blockedNpc = npc;
+
+      const currentDeltaX = Math.abs(currentPos.x - npc.position.x);
+      const currentDeltaY = Math.abs(currentPos.y - npc.position.y);
+      const EPSILON = 0.001;
+
+      // Evaluar si el contacto es con el lateral (izq/der) o con la parte sup/inf
+      let isLateralApproach = false;
+
+      if (currentDeltaX >= totalHalfW && currentDeltaY >= totalHalfH) {
+        // Contacto en diagonal hacia una esquina: determinar cuál borde se intercepta primero
+        const gapX = currentDeltaX - totalHalfW;
+        const gapY = currentDeltaY - totalHalfH;
+        const timeX =
+          Math.abs(effectiveDx) > 0.0001 ? gapX / Math.abs(effectiveDx) : Infinity;
+        const timeY =
+          Math.abs(effectiveDy) > 0.0001 ? gapY / Math.abs(effectiveDy) : Infinity;
+        isLateralApproach = timeX <= timeY;
+      } else if (currentDeltaX >= totalHalfW) {
+        isLateralApproach = true;
+      } else if (currentDeltaY >= totalHalfH) {
+        isLateralApproach = false;
+      } else {
+        // En caso de que ya existiera solapamiento (por movimiento del NPC),
+        // evaluar cuál eje tiene mayor penetración
+        isLateralApproach = Math.abs(effectiveDx) >= Math.abs(effectiveDy);
+      }
+
+      if (isLateralApproach) {
+        // Bloquear/acotar avance horizontal hacia el NPC
+        if (currentPos.x < npc.position.x) {
+          // Jugador a la izquierda del NPC
+          if (effectiveDx > 0) {
+            const safeX = npc.position.x - totalHalfW - EPSILON;
+            effectiveDx = Math.min(effectiveDx, Math.max(0, safeX - currentPos.x));
+          }
+        } else {
+          // Jugador a la derecha del NPC
+          if (effectiveDx < 0) {
+            const safeX = npc.position.x + totalHalfW + EPSILON;
+            effectiveDx = Math.max(effectiveDx, Math.min(0, safeX - currentPos.x));
+          }
+        }
+        // La componente vertical effectiveDy (deslizamiento lateral tangencial) se conserva
+      } else {
+        // Bloquear/acotar avance vertical hacia el NPC
+        if (currentPos.y < npc.position.y) {
+          // Jugador arriba del NPC
+          if (effectiveDy > 0) {
+            const safeY = npc.position.y - totalHalfH - EPSILON;
+            effectiveDy = Math.min(effectiveDy, Math.max(0, safeY - currentPos.y));
+          }
+        } else {
+          // Jugador abajo del NPC
+          if (effectiveDy < 0) {
+            const safeY = npc.position.y + totalHalfH + EPSILON;
+            effectiveDy = Math.max(effectiveDy, Math.min(0, safeY - currentPos.y));
+          }
+        }
+        // La componente horizontal effectiveDx (deslizamiento horizontal tangencial) se conserva
+      }
+    }
+  }
+
+  return {
+    effectiveDx,
+    effectiveDy,
+    isBlockedByNpc: isBlocked,
+    blockedNpc,
   };
 }
