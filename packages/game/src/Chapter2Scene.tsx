@@ -33,6 +33,10 @@ import {
   useCinematicNpcCamera,
   GenericNpcSprite,
   GENERIC_NPC_DEFAULTS,
+  getNpcLateralPushVector,
+  isPositionBlockedByIdleNpc,
+  NPC_COLLISION_DEFAULTS,
+  type ActivePushState,
 } from "./features/npcs";
 
 /**
@@ -112,12 +116,22 @@ export default function Chapter2Scene({
 
   const isPausedRef = useRef(isPaused);
   const dialogueStateRef = useRef(dialogueState);
+  const playerPosRef = useRef(playerPos);
+  const npcsRef = useRef(npcs);
+  const activePushStateRef = useRef<ActivePushState | null>(null);
+
   useEffect(() => {
     isPausedRef.current = isPaused;
   }, [isPaused]);
   useEffect(() => {
     dialogueStateRef.current = dialogueState;
   }, [dialogueState]);
+  useEffect(() => {
+    playerPosRef.current = playerPos;
+  }, [playerPos]);
+  useEffect(() => {
+    npcsRef.current = npcs;
+  }, [npcs]);
 
   // Contador de 2.5 s (empieza cuando la pantalla esta abierta) y animacion del globo
   useEffect(() => {
@@ -182,7 +196,18 @@ export default function Chapter2Scene({
         return;
       }
 
-      // Sin movimiento hasta cerrar el dialogo (incluye la espera inicial)
+      // Sistema de Colisiones Dinámicas: empuje lateral suave de los NPCs genéricos
+      const pushResult = getNpcLateralPushVector({
+        playerPos: playerPosRef.current,
+        npcs: npcsRef.current,
+        isPositionWalkable,
+        activePushState: activePushStateRef.current,
+        dtSeconds: dt,
+      });
+      activePushStateRef.current = pushResult.activePushState;
+
+      // Sin movimiento de controles hasta cerrar el dialogo (incluye la espera inicial).
+      // Durante diálogos se prioriza la estabilidad de la conversación y orientación.
       if (dialogueStateRef.current !== "dismissed") {
         stop();
         if (
@@ -190,6 +215,20 @@ export default function Chapter2Scene({
           dialogueStateRef.current === "visible"
         ) {
           setLastDirection("1");
+        }
+        // Corrección física mínima si hay contacto directo para evitar superposiciones
+        if (pushResult.pushVector) {
+          const pushSpeed = NPC_COLLISION_DEFAULTS.pushSpeed;
+          const pDx = pushResult.pushVector.vx * pushSpeed * dt;
+          const pDy = pushResult.pushVector.vy * pushSpeed * dt;
+          setPlayerPos((prev) => {
+            const nextX = prev.x + pDx;
+            const nextY = prev.y + pDy;
+            if (isPositionWalkable(nextX, nextY)) {
+              return { x: nextX, y: nextY };
+            }
+            return prev;
+          });
         }
         animationFrameId = requestAnimationFrame(updateGameLoop);
         return;
@@ -212,7 +251,6 @@ export default function Chapter2Scene({
       }
 
       const isInputActive = dirX !== 0 || dirY !== 0;
-      setIsWalking(isInputActive);
       keyHoldTime = isInputActive ? Math.min(RAMP_TIME, keyHoldTime + dt) : 0;
 
       const rampFactor = isInputActive
@@ -226,9 +264,43 @@ export default function Chapter2Scene({
       if (!isInputActive && Math.abs(velocity.x) < 0.04) velocity.x = 0;
       if (!isInputActive && Math.abs(velocity.y) < 0.04) velocity.y = 0;
 
-      if (Math.hypot(velocity.x, velocity.y) > 0.01) {
-        const dx = velocity.x * dt;
-        const dy = velocity.y * dt;
+      const pushSpeed = NPC_COLLISION_DEFAULTS.pushSpeed;
+      const pushDx = pushResult.pushVector
+        ? pushResult.pushVector.vx * pushSpeed * dt
+        : 0;
+      const pushDy = pushResult.pushVector
+        ? pushResult.pushVector.vy * pushSpeed * dt
+        : 0;
+      const isPushing = pushResult.pushVector !== null;
+
+      const hasMovement =
+        Math.hypot(velocity.x, velocity.y) > 0.01 || isPushing;
+      setIsWalking(hasMovement);
+
+      // Si no hay input de teclado pero hay empuje de un NPC, orientar al personaje según el empuje
+      if (!isInputActive && isPushing && pushResult.pushVector) {
+        if (
+          Math.abs(pushResult.pushVector.vy) >
+          Math.abs(pushResult.pushVector.vx)
+        ) {
+          setLastDirection(pushResult.pushVector.vy > 0 ? "1" : "3");
+        } else {
+          setLastDirection(pushResult.pushVector.vx > 0 ? "4" : "2");
+        }
+      }
+
+      if (hasMovement) {
+        let dx = velocity.x * dt + pushDx;
+        let dy = velocity.y * dt + pushDy;
+
+        // Si el jugador intenta caminar hacia el NPC que lo empuja, anular esa penetración
+        if (isPushing && pushResult.pushVector) {
+          if (pushResult.pushVector.vx > 0 && dx < pushDx) {
+            dx = pushDx;
+          } else if (pushResult.pushVector.vx < 0 && dx > pushDx) {
+            dx = pushDx;
+          }
+        }
 
         setPlayerPos((prev) => {
           let effectiveDx = dx;
@@ -249,9 +321,16 @@ export default function Chapter2Scene({
             }
           }
 
+          const isTargetWalkable = (tx: number, ty: number): boolean => {
+            return (
+              isPositionWalkable(tx, ty) &&
+              !isPositionBlockedByIdleNpc({ x: tx, y: ty }, npcsRef.current)
+            );
+          };
+
           const rawTargetX = prev.x + effectiveDx;
           const rawTargetY = prev.y + effectiveDy;
-          if (isPositionWalkable(rawTargetX, rawTargetY)) {
+          if (isTargetWalkable(rawTargetX, rawTargetY)) {
             return { x: rawTargetX, y: rawTargetY };
           }
 
@@ -261,7 +340,7 @@ export default function Chapter2Scene({
             effectiveDx,
             effectiveDy,
             OBJECT_COLLISION_BOXES.mesa,
-            isPositionWalkable,
+            isTargetWalkable,
           );
           if (mesaSlide) return mesaSlide;
 
@@ -275,7 +354,7 @@ export default function Chapter2Scene({
               PLAZA_BOUNDS.rightPathMaxX,
               Math.max(getBaseRightBoundaryX(pathY), rawTargetX),
             );
-            if (isPositionWalkable(pathX, pathY)) return { x: pathX, y: pathY };
+            if (isTargetWalkable(pathX, pathY)) return { x: pathX, y: pathY };
           }
 
           const clampedY = Math.min(
@@ -286,13 +365,13 @@ export default function Chapter2Scene({
             getRightBoundaryX(clampedY),
             Math.max(getLeftBoundaryX(clampedY), rawTargetX),
           );
-          if (isPositionWalkable(clampedX, clampedY)) {
+          if (isTargetWalkable(clampedX, clampedY)) {
             return { x: clampedX, y: clampedY };
           }
-          if (isPositionWalkable(clampedX, prev.y)) {
+          if (isTargetWalkable(clampedX, prev.y)) {
             return { x: clampedX, y: prev.y };
           }
-          if (isPositionWalkable(prev.x, clampedY)) {
+          if (isTargetWalkable(prev.x, clampedY)) {
             return { x: prev.x, y: clampedY };
           }
 

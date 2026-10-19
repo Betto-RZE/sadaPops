@@ -16,6 +16,14 @@ import {
   updateGenericNpc,
   simulateNpcsStep,
 } from "../src/features/npcs/genericNpcConfig.ts";
+import {
+  NPC_COLLISION_DEFAULTS,
+  getNpcBoundingBox,
+  getPlayerBoundingBox,
+  checkCharactersOverlap,
+  isPositionBlockedByIdleNpc,
+  getNpcLateralPushVector,
+} from "../src/features/npcs/genericNpcCollisions.ts";
 
 describe("Sistema de NPCs Genéricos - Pruebas de Integración y Ciclo de Vida", () => {
   describe("Recursos y animaciones", () => {
@@ -693,6 +701,390 @@ describe("Sistema de NPCs Genéricos - Pruebas de Integración y Ciclo de Vida",
       assert.equal(state.npcs[0].id, "npc-gen-mampara-3");
       assert.equal(state.isGlobalSystemActive, false);
       assert.equal(state.mamparas.filter((m) => m.isOccupied).length, 1);
+    });
+  });
+
+  describe("Fase 5.2: Colisiones dinámicas entre NPCs genéricos y protagonista", () => {
+    const isAlwaysWalkable = () => true;
+
+    test("1. detección correcta de solapamiento entre cajas de colisión de pies", () => {
+      const playerPos = { x: 50.0, y: 50.0 };
+      const npcPos = { x: 52.0, y: 51.0 };
+
+      // totalHalfW = 2.8 + 2.8 = 5.6. deltaX = 2.0 < 5.6
+      // totalHalfH = 2.2 + 2.2 = 4.4. deltaY = 1.0 < 4.4
+      const result = checkCharactersOverlap(playerPos, npcPos);
+      assert.equal(result.isColliding, true);
+      assert.ok(Math.abs(result.overlapX - 3.6) < 0.001);
+      assert.ok(Math.abs(result.overlapY - 3.4) < 0.001);
+    });
+
+    test("2. ausencia de colisión cuando los personajes están suficientemente separados", () => {
+      const playerPos = { x: 50.0, y: 50.0 };
+      const npcPos = { x: 60.0, y: 50.0 }; // deltaX = 10.0 > 5.6
+
+      const result = checkCharactersOverlap(playerPos, npcPos);
+      assert.equal(result.isColliding, false);
+      assert.equal(result.overlapX, 0);
+      assert.equal(result.overlapY, 0);
+
+      const mampara = INITIAL_MAMPARAS_CONFIG[2];
+      const npc = {
+        ...createGenericNpcInstance(mampara, "npc-separated"),
+        position: npcPos,
+        state: "ENTERING",
+      };
+
+      const push = getNpcLateralPushVector({
+        playerPos,
+        npcs: [npc],
+        isPositionWalkable: isAlwaysWalkable,
+      });
+      assert.equal(push.pushVector, null);
+    });
+
+    test("3. empuje lateral hacia la derecha cuando el jugador está a la derecha del NPC", () => {
+      const mampara = INITIAL_MAMPARAS_CONFIG[2];
+      const npc = {
+        ...createGenericNpcInstance(mampara, "npc-push-right"),
+        position: { x: 52.0, y: 50.0 },
+        state: "ENTERING",
+      };
+      const playerPos = { x: 53.0, y: 50.0 }; // px > nx -> derecha
+
+      const push = getNpcLateralPushVector({
+        playerPos,
+        npcs: [npc],
+        isPositionWalkable: isAlwaysWalkable,
+      });
+
+      assert.ok(push.pushVector !== null);
+      assert.equal(push.pushVector.vx, 1);
+      assert.equal(push.pushVector.vy, 0);
+      assert.equal(push.activePushState.dir, 1);
+    });
+
+    test("4. empuje lateral hacia la izquierda cuando el jugador está a la izquierda del NPC", () => {
+      const mampara = INITIAL_MAMPARAS_CONFIG[2];
+      const npc = {
+        ...createGenericNpcInstance(mampara, "npc-push-left"),
+        position: { x: 52.0, y: 50.0 },
+        state: "ENTERING",
+      };
+      const playerPos = { x: 51.0, y: 50.0 }; // px < nx -> izquierda
+
+      const push = getNpcLateralPushVector({
+        playerPos,
+        npcs: [npc],
+        isPositionWalkable: isAlwaysWalkable,
+      });
+
+      assert.ok(push.pushVector !== null);
+      assert.equal(push.pushVector.vx, -1);
+      assert.equal(push.pushVector.vy, 0);
+      assert.equal(push.activePushState.dir, -1);
+    });
+
+    test("5. selección determinista y estable cuando ambos personajes están exactamente centrados en X", () => {
+      const mampara = INITIAL_MAMPARAS_CONFIG[2];
+      const npc = {
+        ...createGenericNpcInstance(mampara, "npc-centered"),
+        position: { x: 52.0, y: 50.0 },
+        state: "ENTERING",
+      };
+      const playerPos = { x: 52.0, y: 50.0 }; // px === nx
+
+      const step1 = getNpcLateralPushVector({
+        playerPos,
+        npcs: [npc],
+        isPositionWalkable: isAlwaysWalkable,
+      });
+
+      assert.ok(step1.pushVector !== null);
+      assert.equal(step1.pushVector.vx, 1, "Regla determinista: desvío a la derecha");
+      assert.equal(step1.activePushState.dir, 1);
+
+      // Siguiente cuadro manteniendo activePushState
+      const step2 = getNpcLateralPushVector({
+        playerPos,
+        npcs: [npc],
+        isPositionWalkable: isAlwaysWalkable,
+        activePushState: step1.activePushState,
+      });
+      assert.equal(step2.pushVector.vx, 1, "Conserva la misma dirección sin alternar");
+    });
+
+    test("6. cambio automático al lado contrario cuando el preferente está bloqueado", () => {
+      const mampara = INITIAL_MAMPARAS_CONFIG[2];
+      const npc = {
+        ...createGenericNpcInstance(mampara, "npc-wall"),
+        position: { x: 52.0, y: 50.0 },
+        state: "ENTERING",
+      };
+      const playerPos = { x: 53.0, y: 50.0 }; // Preferente sería derecha (vx = 1)
+
+      // Mock: derecha está bloqueada por un obstáculo (x > 53.0 es false), izquierda está libre
+      const mockWalkable = (x) => x <= 53.0;
+
+      const push = getNpcLateralPushVector({
+        playerPos,
+        npcs: [npc],
+        isPositionWalkable: mockWalkable,
+      });
+
+      assert.ok(push.pushVector !== null);
+      assert.equal(push.pushVector.vx, -1, "Debe elegir el lado contrario (izquierda)");
+      assert.equal(push.activePushState.dir, -1);
+    });
+
+    test("7. ausencia de desplazamiento cuando no existe ninguna dirección segura", () => {
+      const mampara = INITIAL_MAMPARAS_CONFIG[2];
+      const npc = {
+        ...createGenericNpcInstance(mampara, "npc-trapped"),
+        position: { x: 52.0, y: 50.0 },
+        state: "ENTERING",
+      };
+      const playerPos = { x: 52.0, y: 50.0 };
+
+      // Mock: nada es transitable alrededor
+      const mockNeverWalkable = () => false;
+
+      const push = getNpcLateralPushVector({
+        playerPos,
+        npcs: [npc],
+        isPositionWalkable: mockNeverWalkable,
+      });
+
+      assert.equal(push.pushVector, null, "No debe forzar movimiento hacia zonas bloqueadas");
+    });
+
+    test("8. respeto estricto de los límites del escenario (plaza bounds)", () => {
+      const mampara = INITIAL_MAMPARAS_CONFIG[0]; // Mampara 1 en X = 32.0%
+      const npc = {
+        ...createGenericNpcInstance(mampara, "npc-left-edge"),
+        position: { x: 32.0, y: 60.0 },
+        state: "ENTERING",
+      };
+      // Jugador entre el NPC y el borde izquierdo
+      const playerPos = { x: 31.0, y: 60.0 };
+
+      // Si la izquierda está fuera de límites (x < 31.0 es false)
+      const mockBoundary = (x) => x >= 31.0;
+
+      const push = getNpcLateralPushVector({
+        playerPos,
+        npcs: [npc],
+        isPositionWalkable: mockBoundary,
+      });
+
+      assert.ok(push.pushVector !== null);
+      assert.equal(push.pushVector.vx, 1, "Debe empujar hacia la derecha para no salir de los límites");
+    });
+
+    test("9. prevención de atravesar obstáculos sólidos mediante validación de trayectoria", () => {
+      const mampara = INITIAL_MAMPARAS_CONFIG[2];
+      const npc = {
+        ...createGenericNpcInstance(mampara, "npc-booth-near"),
+        position: { x: 52.0, y: 38.0 },
+        state: "ENTERING",
+      };
+      const playerPos = { x: 52.0, y: 37.0 };
+
+      // Mampara sólida arriba (y <= 36.5 bloqueado)
+      const mockObstacles = (x, y) => y > 36.5;
+
+      const push = getNpcLateralPushVector({
+        playerPos,
+        npcs: [npc],
+        isPositionWalkable: mockObstacles,
+      });
+
+      assert.ok(push.pushVector !== null);
+      assert.equal(push.pushVector.vy, 0, "El empuje es lateral y no empuja hacia la mampara sólida superior");
+    });
+
+    test("10. genera empuje activo con NPCs en estado ENTERING", () => {
+      const mampara = INITIAL_MAMPARAS_CONFIG[2];
+      const enteringNpc = {
+        ...createGenericNpcInstance(mampara, "npc-entering"),
+        position: { x: 52.0, y: 50.0 },
+        state: "ENTERING",
+      };
+
+      const push = getNpcLateralPushVector({
+        playerPos: { x: 52.0, y: 50.0 },
+        npcs: [enteringNpc],
+        isPositionWalkable: isAlwaysWalkable,
+      });
+
+      assert.ok(push.pushVector !== null);
+      assert.equal(push.pushingNpc.id, "npc-entering");
+    });
+
+    test("11. genera empuje activo con NPCs en estado LEAVING", () => {
+      const mampara = INITIAL_MAMPARAS_CONFIG[2];
+      const leavingNpc = {
+        ...createGenericNpcInstance(mampara, "npc-leaving"),
+        position: { x: 52.0, y: 50.0 },
+        state: "LEAVING",
+      };
+
+      const push = getNpcLateralPushVector({
+        playerPos: { x: 52.0, y: 50.0 },
+        npcs: [leavingNpc],
+        isPositionWalkable: isAlwaysWalkable,
+      });
+
+      assert.ok(push.pushVector !== null);
+      assert.equal(push.pushingNpc.id, "npc-leaving");
+    });
+
+    test("12. comportamiento estático de NPCs en IDLE: no empujan activamente y bloquean paso", () => {
+      const mampara = INITIAL_MAMPARAS_CONFIG[2];
+      const idleNpc = {
+        ...createGenericNpcInstance(mampara, "npc-idle"),
+        position: { x: 52.0, y: 36.5 },
+        state: "IDLE",
+      };
+
+      // 1. No empuja activamente
+      const push = getNpcLateralPushVector({
+        playerPos: { x: 52.0, y: 36.5 },
+        npcs: [idleNpc],
+        isPositionWalkable: isAlwaysWalkable,
+      });
+      assert.equal(push.pushVector, null, "Un NPC en IDLE no empuja activamente");
+
+      // 2. Bloquea el paso como obstáculo
+      const isBlocked = isPositionBlockedByIdleNpc({ x: 52.0, y: 37.0 }, [idleNpc]);
+      assert.equal(isBlocked, true, "isPositionBlockedByIdleNpc debe bloquear la posición");
+
+      const isClear = isPositionBlockedByIdleNpc({ x: 60.0, y: 50.0 }, [idleNpc]);
+      assert.equal(isClear, false, "Posición lejana no debe estar bloqueada");
+    });
+
+    test("13. exclusión total de NPCs en estado FINISHED", () => {
+      const mampara = INITIAL_MAMPARAS_CONFIG[2];
+      const finishedNpc = {
+        ...createGenericNpcInstance(mampara, "npc-finished"),
+        position: { x: 52.0, y: 106.0 },
+        state: "FINISHED",
+        isActive: false,
+      };
+
+      const push = getNpcLateralPushVector({
+        playerPos: { x: 52.0, y: 106.0 },
+        npcs: [finishedNpc],
+        isPositionWalkable: isAlwaysWalkable,
+      });
+      assert.equal(push.pushVector, null);
+
+      const isBlocked = isPositionBlockedByIdleNpc({ x: 52.0, y: 106.0 }, [finishedNpc]);
+      assert.equal(isBlocked, false);
+    });
+
+    test("14. comportamiento con varios NPCs: prioriza el de mayor solapamiento y evita empujar hacia el segundo", () => {
+      const mampara1 = INITIAL_MAMPARAS_CONFIG[0]; // x: 32.0
+      const mampara2 = INITIAL_MAMPARAS_CONFIG[1]; // x: 42.0
+
+      const npc1 = {
+        ...createGenericNpcInstance(mampara1, "npc-multi-1"),
+        position: { x: 32.0, y: 50.0 },
+        state: "ENTERING",
+      };
+      const npc2 = {
+        ...createGenericNpcInstance(mampara2, "npc-multi-2"),
+        position: { x: 42.0, y: 50.0 },
+        state: "ENTERING",
+      };
+
+      // Jugador en X = 33.0 (solapamiento mucho más severo con npc1 en 32.0 que con npc2 en 42.0)
+      const playerPos = { x: 33.0, y: 50.0 };
+
+      const push = getNpcLateralPushVector({
+        playerPos,
+        npcs: [npc1, npc2],
+        isPositionWalkable: isAlwaysWalkable,
+      });
+
+      assert.ok(push.pushVector !== null);
+      assert.equal(push.pushingNpc.id, "npc-multi-1", "Debe priorizar el NPC con mayor solapamiento");
+    });
+
+    test("15. ausencia de oscilaciones manteniendo la dirección mediante histéresis", () => {
+      const mampara = INITIAL_MAMPARAS_CONFIG[2];
+      const npc = {
+        ...createGenericNpcInstance(mampara, "npc-hysteresis"),
+        position: { x: 52.0, y: 50.0 },
+        state: "ENTERING",
+      };
+
+      // Inicio: jugador en 52.5 (a la derecha)
+      let activePushState = null;
+      let curX = 52.5;
+      const step = 0.25;
+
+      for (let frame = 0; frame < 15; frame++) {
+        const push = getNpcLateralPushVector({
+          playerPos: { x: curX, y: 50.0 },
+          npcs: [npc],
+          isPositionWalkable: isAlwaysWalkable,
+          activePushState,
+        });
+
+        if (curX < 52.0 + NPC_COLLISION_DEFAULTS.separationThreshold) {
+          assert.ok(push.pushVector !== null, `Frame ${frame} debe mantener empuje`);
+          assert.equal(push.pushVector.vx, 1, `Frame ${frame} debe mantener vx = +1 sin oscilar`);
+          activePushState = push.activePushState;
+          curX += step;
+        }
+      }
+    });
+
+    test("16. velocidad de empuje configurable progresiva dependiente de deltaTime", () => {
+      const dt1 = 0.016; // 16 ms (~60 FPS)
+      const pushSpeed = NPC_COLLISION_DEFAULTS.pushSpeed; // 16.0% / s
+      const displacement1 = pushSpeed * dt1;
+      assert.ok(Math.abs(displacement1 - 0.256) < 0.001);
+
+      const dt2 = 0.033; // 33 ms (~30 FPS)
+      const displacement2 = pushSpeed * dt2;
+      assert.ok(Math.abs(displacement2 - 0.528) < 0.001);
+    });
+
+    test("17. limpieza y reinicio: activePushState se desvanece al superar separationThreshold", () => {
+      const mampara = INITIAL_MAMPARAS_CONFIG[2];
+      const npc = {
+        ...createGenericNpcInstance(mampara, "npc-clear"),
+        position: { x: 52.0, y: 50.0 },
+        state: "ENTERING",
+      };
+
+      // Posición fuera de la zona de contacto (> separationThreshold = 6.0%)
+      const playerPos = { x: 59.0, y: 50.0 };
+      const push = getNpcLateralPushVector({
+        playerPos,
+        npcs: [npc],
+        isPositionWalkable: isAlwaysWalkable,
+        activePushState: { npcId: npc.id, dir: 1 },
+      });
+
+      assert.equal(push.pushVector, null);
+      assert.equal(push.activePushState, null, "activePushState debe limpiarse al separarse");
+    });
+
+    test("18. cajas de colisión calculan dimensiones exactas de 2.8% y 2.2%", () => {
+      const npcBox = getNpcBoundingBox({ x: 50.0, y: 50.0 });
+      assert.equal(npcBox.minX, 47.2);
+      assert.equal(npcBox.maxX, 52.8);
+      assert.equal(npcBox.minY, 47.8);
+      assert.equal(npcBox.maxY, 52.2);
+
+      const playerBox = getPlayerBoundingBox({ x: 50.0, y: 50.0 });
+      assert.equal(playerBox.minX, 47.2);
+      assert.equal(playerBox.maxX, 52.8);
+      assert.equal(playerBox.minY, 47.8);
+      assert.equal(playerBox.maxY, 52.2);
     });
   });
 });
