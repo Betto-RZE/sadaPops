@@ -30,6 +30,7 @@ import {
 } from "./features/capitulos/chapterHandoff";
 import {
   useGenericNpcs,
+  useCinematicNpcCamera,
   GenericNpcSprite,
   GENERIC_NPC_DEFAULTS,
 } from "./features/npcs";
@@ -317,11 +318,16 @@ export default function Chapter2Scene({
     };
   }, []);
 
-  // Camara: mismo zoom y seguimiento que el Capitulo 1 (transicion sin saltos)
+  // Camara cinematográfica dinámica: sigue suavemente al primer NPC al entrar,
+  // espera 2.5s en la mampara y regresa suavemente al jugador
   const zoomScale = 2.0;
-  const maxCamShift = (1 - 1 / zoomScale) * 50;
-  const camX = Math.min(maxCamShift, Math.max(-maxCamShift, 50 - playerPos.x));
-  const camY = Math.min(maxCamShift, Math.max(-maxCamShift, 50 - playerPos.y));
+  const { camX, camY } = useCinematicNpcCamera({
+    playerPos,
+    firstNpc: npcs[0],
+    isPaused,
+    zoomScale,
+    holdDurationMs: 2500,
+  });
 
   const introMessages =
     language === "nah" ? INTRO_CAP2_MESSAGES_NAH : INTRO_CAP2_MESSAGES_ES;
