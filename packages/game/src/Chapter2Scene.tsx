@@ -28,6 +28,11 @@ import {
   getChapterHandoff,
   type PlayerDirection,
 } from "./features/capitulos/chapterHandoff";
+import {
+  useGenericNpcs,
+  GenericNpcSprite,
+  GENERIC_NPC_DEFAULTS,
+} from "./features/npcs";
 
 /**
  * Capitulo 2: "Desmintiendo mitos".
@@ -97,6 +102,12 @@ export default function Chapter2Scene({
   const [isWalking, setIsWalking] = useState(false);
   const [dialogueState, setDialogueState] =
     useState<DialogueState>("initial_delay");
+
+  // Sistema de personajes genéricos (votantes ambientales)
+  const { npcs } = useGenericNpcs({
+    dialogueState,
+    isPaused,
+  });
 
   const isPausedRef = useRef(isPaused);
   const dialogueStateRef = useRef(dialogueState);
@@ -374,6 +385,25 @@ export default function Chapter2Scene({
             lastDirection={lastDirection}
           />
         </div>
+
+        {/* CIUDADANOS VOTANTES (NPCS GENÉRICOS) */}
+        {npcs.map((npc) => (
+          <div
+            key={npc.id}
+            data-testid={`generic-npc-${npc.id}`}
+            style={{
+              left: `${npc.position.x}%`,
+              top: `${npc.position.y}%`,
+              width: GENERIC_NPC_DEFAULTS.spriteWidthPercent,
+              transform: "translate(-50%, -90%)",
+              willChange: "left, top",
+              zIndex: npc.position.y >= 36.0 ? 22 : 17,
+            }}
+            className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
+          >
+            <GenericNpcSprite animation={npc.currentAnimation} />
+          </div>
+        ))}
 
         {/* MAMPARAS */}
         {CASILLA_POSITIONS.map((pos, index) => (

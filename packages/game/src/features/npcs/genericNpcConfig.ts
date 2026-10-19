@@ -214,9 +214,73 @@ export function createGenericNpcInstance(
     assignedMamparaId: mampara.id,
     currentAnimation: "back",
     state: "ENTERING",
-    speed: GENERIC_NPC_DEFAULTS.speed,
+    speed: GENERIC_NPC_WALK_SPEED,
     votingWaitTimeMs,
     elapsedInStateMs: 0,
     isActive: true,
   };
 }
+
+/**
+ * Velocidad constante de caminata para los NPCs genéricos (% de pantalla por segundo).
+ * Configurable fácilmente para ajustar el ritmo visual.
+ */
+export const GENERIC_NPC_WALK_SPEED = 12.0;
+
+/**
+ * Actualiza el movimiento y estado de un NPC genérico en función del tiempo transcurrido (dtSeconds).
+ *
+ * Fase 2:
+ * - Si está en estado 'ENTERING': avanza verticalmente hacia targetPosition.y.
+ * - Al alcanzar o sobrepasar targetPosition.y: se fija exactamente en la coordenada de destino,
+ *   cambia a estado 'IDLE' y activa la animación 'idle'.
+ */
+export function updateGenericNpc(
+  npc: GenericNpc,
+  targetMampara: MamparaBoothConfig,
+  dtSeconds: number,
+): GenericNpc {
+  if (!npc.isActive) return npc;
+
+  if (npc.state === "ENTERING") {
+    const targetY = targetMampara.targetPosition.y;
+    const step = npc.speed * dtSeconds;
+    const nextY = npc.position.y - step;
+
+    // Llegada a la mampara: detección exacta sin sobrepaso ni oscilaciones
+    if (nextY <= targetY) {
+      return {
+        ...npc,
+        position: {
+          x: targetMampara.targetPosition.x,
+          y: targetY,
+        },
+        state: "IDLE",
+        currentAnimation: "idle",
+        elapsedInStateMs: 0,
+      };
+    }
+
+    return {
+      ...npc,
+      position: {
+        ...npc.position,
+        y: nextY,
+      },
+      currentAnimation: "back",
+      elapsedInStateMs: npc.elapsedInStateMs + dtSeconds * 1000,
+    };
+  }
+
+  if (npc.state === "IDLE") {
+    // En Fase 2 permanece indefinidamente en IDLE en la mampara
+    return {
+      ...npc,
+      currentAnimation: "idle",
+      elapsedInStateMs: npc.elapsedInStateMs + dtSeconds * 1000,
+    };
+  }
+
+  return npc;
+}
+

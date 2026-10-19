@@ -10,6 +10,8 @@ import {
   INITIAL_MAMPARAS_CONFIG,
   createGenericNpcInstance,
   GENERIC_NPC_DEFAULTS,
+  GENERIC_NPC_WALK_SPEED,
+  updateGenericNpc,
 } from "../src/features/npcs/genericNpcConfig.ts";
 
 describe("Sistema de NPCs Genéricos - Fase 1: Preparación", () => {
@@ -105,4 +107,77 @@ describe("Sistema de NPCs Genéricos - Fase 1: Preparación", () => {
       assert.equal(npc.isActive, true);
     });
   });
+
+  describe("Fase 2: Movimiento y llegada a la mampara 3", () => {
+    test("el primer NPC está asignado exclusivamente a la mampara 3 en el centro", () => {
+      const mampara3 = INITIAL_MAMPARAS_CONFIG[2];
+      assert.equal(mampara3.id, 3);
+      assert.equal(mampara3.boothPosition.x, 52.0);
+      assert.equal(mampara3.targetPosition.y, 36.5);
+      assert.equal(mampara3.spawnPoint.y, 106.0);
+
+      const npc = createGenericNpcInstance(mampara3, "npc-gen-mampara-3");
+      assert.equal(npc.assignedMamparaId, 3);
+      assert.equal(npc.position.x, 52.0);
+      assert.equal(npc.position.y, 106.0);
+      assert.equal(npc.currentAnimation, "back");
+      assert.equal(npc.state, "ENTERING");
+    });
+
+    test("updateGenericNpc avanza fluidamente hacia arriba proporcional a dt", () => {
+      const mampara3 = INITIAL_MAMPARAS_CONFIG[2];
+      const npc = createGenericNpcInstance(mampara3, "npc-gen-mampara-3");
+      const dt = 0.5; // 500 ms
+
+      const updated = updateGenericNpc(npc, mampara3, dt);
+      const expectedY = npc.position.y - npc.speed * dt;
+
+      assert.equal(updated.position.y, expectedY);
+      assert.equal(updated.position.x, 52.0);
+      assert.equal(updated.state, "ENTERING");
+      assert.equal(updated.currentAnimation, "back");
+    });
+
+    test("al alcanzar la mampara se detiene exactamente en Y = 36.5% sin sobrepaso", () => {
+      const mampara3 = INITIAL_MAMPARAS_CONFIG[2];
+      const npc = createGenericNpcInstance(mampara3, "npc-gen-mampara-3");
+
+      // Simulamos que el NPC está a punto de llegar (Y = 36.6%)
+      const nearNpc = {
+        ...npc,
+        position: { x: 52.0, y: 36.6 },
+      };
+
+      // Con dt = 0.1s y velocidad 12%/s, el paso sería 1.2%, sobrepasando 36.5% si no se clampeara
+      const arrivedNpc = updateGenericNpc(nearNpc, mampara3, 0.1);
+
+      assert.equal(arrivedNpc.position.y, 36.5);
+      assert.equal(arrivedNpc.position.x, 52.0);
+      assert.equal(arrivedNpc.state, "IDLE");
+      assert.equal(arrivedNpc.currentAnimation, "idle");
+      assert.equal(arrivedNpc.elapsedInStateMs, 0);
+    });
+
+    test("en estado IDLE permanece indefinidamente detenido en la mampara", () => {
+      const mampara3 = INITIAL_MAMPARAS_CONFIG[2];
+      const idleNpc = {
+        ...createGenericNpcInstance(mampara3, "npc-gen-mampara-3"),
+        position: { x: 52.0, y: 36.5 },
+        state: "IDLE",
+        currentAnimation: "idle",
+      };
+
+      // Ticks posteriores en IDLE
+      const tick1 = updateGenericNpc(idleNpc, mampara3, 1.0);
+      assert.equal(tick1.position.y, 36.5);
+      assert.equal(tick1.state, "IDLE");
+      assert.equal(tick1.currentAnimation, "idle");
+
+      const tick2 = updateGenericNpc(tick1, mampara3, 2.0);
+      assert.equal(tick2.position.y, 36.5);
+      assert.equal(tick2.state, "IDLE");
+      assert.equal(tick2.currentAnimation, "idle");
+    });
+  });
 });
+
