@@ -532,7 +532,10 @@ export default function Chapter2Scene({
             }}
             className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
           >
-            <GenericNpcSprite animation={npc.currentAnimation} />
+            <GenericNpcSprite
+              animation={npc.currentAnimation}
+              isPaused={isPaused}
+            />
           </div>
         ))}
 

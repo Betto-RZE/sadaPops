@@ -15,6 +15,8 @@ export interface GenericNpcSpriteProps {
   style?: React.CSSProperties;
   /** Etiqueta accesible para lectores de pantalla */
   altText?: string;
+  /** Pausa la animación si el juego o la escena están en pausa */
+  isPaused?: boolean;
 }
 
 /**
@@ -28,6 +30,7 @@ export const GenericNpcSprite = React.memo(function GenericNpcSprite({
   className = "",
   style,
   altText = "Ciudadano Votante",
+  isPaused = false,
 }: GenericNpcSpriteProps) {
   const [frameIndex, setFrameIndex] = useState(0);
   const totalFrames = GENERIC_NPC_FRAME_COUNTS[animation] || 1;
@@ -44,15 +47,18 @@ export const GenericNpcSprite = React.memo(function GenericNpcSprite({
 
   // Ciclo de animación a 24 FPS únicamente si la animación tiene más de 1 cuadro
   useEffect(() => {
-    if (totalFrames <= 1) return;
+    if (totalFrames <= 1 || isPaused) return;
 
     const fps24Interval = 1000 / 24;
     const interval = setInterval(() => {
+      // Política de pestañas inactivas (Fase 5.5):
+      // No avanzar cuadros si el documento está en segundo plano
+      if (typeof document !== "undefined" && document.hidden) return;
       setFrameIndex((prev) => (prev + 1) % totalFrames);
     }, fps24Interval);
 
     return () => clearInterval(interval);
-  }, [animation, totalFrames]);
+  }, [animation, totalFrames, isPaused]);
 
   const imageSrc = getGenericNpcFrameSrc(animation, frameIndex);
 

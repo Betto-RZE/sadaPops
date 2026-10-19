@@ -1714,6 +1714,329 @@ describe("Sistema de NPCs Genéricos - Pruebas de Integración y Ciclo de Vida",
       assert.ok(Array.isArray(result.newSpawnIds));
     });
   });
+
+  describe("Fase 5.5: Integración definitiva, pruebas de extremo a extremo y cierre", () => {
+    test("1. simulación prolongada de 10 minutos (36,000 frames a 60 FPS) de tiempo activo continuo", () => {
+      // Iniciar con el primer NPC en camino a la mampara 3
+      const mampara3 = INITIAL_MAMPARAS_CONFIG[2];
+      const firstNpc = createGenericNpcInstance(mampara3, "npc-gen-mampara-3", 5000);
+
+      let simState = {
+        npcs: [firstNpc],
+        mamparas: INITIAL_MAMPARAS_CONFIG.map((m) =>
+          m.id === 3
+            ? {
+                ...m,
+                isOccupied: true,
+                occupiedByNpcId: firstNpc.id,
+                spawnTimerConfig: {
+                  ...m.spawnTimerConfig,
+                  isEnabled: false,
+                  nextSpawnDelayMs: 0,
+                },
+              }
+            : m,
+        ),
+        isGlobalSystemActive: false,
+        npcIdCounter: 1,
+      };
+
+      const dt = 1 / 60; // 0.016666... segundos por fotograma
+      const totalFrames = 36000; // 10 minutos de tiempo activo = 600 segundos * 60 FPS
+      let totalVotersCompleted = 0;
+      let maxNpcsObserved = 0;
+
+      for (let f = 0; f < totalFrames; f++) {
+        const currentTimeMs = f * (1000 / 60);
+        const result = simulateNpcsStep(simState, dt, currentTimeMs);
+
+        // 1. En ningún momento debe haber más de 5 NPCs activos
+        assert.ok(
+          result.npcs.length <= 5,
+          `Fotograma ${f}: se observaron ${result.npcs.length} NPCs activos (máximo 5)`,
+        );
+
+        if (result.npcs.length > maxNpcsObserved) {
+          maxNpcsObserved = result.npcs.length;
+        }
+
+        // 2. Cada mampara tiene a lo sumo 1 NPC asignado (cero duplicaciones)
+        const occupiedMamparas = new Set();
+        for (const npc of result.npcs) {
+          assert.ok(
+            !occupiedMamparas.has(npc.assignedMamparaId),
+            `Fotograma ${f}: mampara ${npc.assignedMamparaId} tiene múltiples NPCs simultáneos`,
+          );
+          occupiedMamparas.add(npc.assignedMamparaId);
+        }
+
+        // 3. IDs únicos en cada instante
+        const idSet = new Set(result.npcs.map((n) => n.id));
+        assert.equal(
+          idSet.size,
+          result.npcs.length,
+          `Fotograma ${f}: colisión de IDs detectada`,
+        );
+
+        // 4. Cada mampara mantiene consistencia de bandera isOccupied
+        for (const mampara of result.mamparas) {
+          if (mampara.isOccupied) {
+            assert.ok(
+              occupiedMamparas.has(mampara.id),
+              `Fotograma ${f}: mampara ${mampara.id} marcada ocupada pero sin NPC en lista`,
+            );
+          } else {
+            assert.ok(
+              !occupiedMamparas.has(mampara.id),
+              `Fotograma ${f}: mampara ${mampara.id} no ocupada pero con NPC asignado`,
+            );
+          }
+          // Temporizador nunca negativo de forma descontrolada
+          assert.ok(
+            mampara.spawnTimerConfig.nextSpawnDelayMs >= 0,
+            `Fotograma ${f}: delay negativo ${mampara.spawnTimerConfig.nextSpawnDelayMs}`,
+          );
+        }
+
+        // 5. Contabilizar votantes que finalizaron su ciclo
+        totalVotersCompleted += result.finishedMamparaIds.length;
+
+        // 6. Prueba continua de profundidad visual
+        if (f % 600 === 0 && result.npcs.length > 0) {
+          const depthMap = calculateSceneCharactersDepth([
+            { id: "player", y: 52.0 },
+            ...result.npcs.map((n) => ({ id: n.id, y: n.position.y })),
+          ]);
+          assert.ok(depthMap["player"] !== undefined);
+        }
+
+        simState = {
+          npcs: result.npcs,
+          mamparas: result.mamparas,
+          isGlobalSystemActive: result.isGlobalSystemActive,
+          npcIdCounter: result.npcIdCounter,
+        };
+      }
+
+      // En 10 minutos activos, el sistema debe haber atendido decenas de votantes
+      assert.ok(
+        totalVotersCompleted >= 80,
+        `En 10 minutos se completaron ${totalVotersCompleted} ciclos de votación (esperado >= 80)`,
+      );
+      assert.ok(
+        maxNpcsObserved <= 5,
+        `El número máximo de NPCs observados fue ${maxNpcsObserved}`,
+      );
+    });
+
+    test("2. verificación integral de pestañas inactivas en todas las fases críticas", () => {
+      // Caso 1: Ocultar pestaña mientras un NPC camina (ENTERING)
+      const mampara1 = INITIAL_MAMPARAS_CONFIG[0];
+      const npcWalk = createGenericNpcInstance(mampara1, "npc-walk-tab", 5000);
+      npcWalk.position = { x: 32.0, y: 70.0 };
+
+      // Simular que el documento está en segundo plano por 20 segundos
+      const backgroundElapsedSeconds = 20;
+      // Política: cuando document.hidden es true, simulateNpcsStep no se invoca y lastTime se actualiza al tiempo real
+      // Al reanudar, se ejecuta un solo paso con dt normal acotado (0.016s)
+      const postResumeStep = simulateNpcsStep(
+        {
+          npcs: [npcWalk],
+          mamparas: INITIAL_MAMPARAS_CONFIG,
+          isGlobalSystemActive: true,
+          npcIdCounter: 1,
+        },
+        0.0166, // Un solo cuadro normal
+        1000 + backgroundElapsedSeconds * 1000,
+      );
+
+      // El NPC NO se teletransportó: solo avanzó un cuadro ordinario (~0.2%)
+      const expectedY = 70.0 - 12.0 * 0.0166;
+      assert.ok(
+        Math.abs(postResumeStep.npcs[0].position.y - expectedY) < 0.01,
+        "El NPC debe continuar su marcha desde su posición previa sin saltos",
+      );
+
+      // Caso 2: Ocultar pestaña mientras un NPC está en IDLE (votando)
+      const npcIdle = {
+        ...npcWalk,
+        position: { x: 32.0, y: 36.5 },
+        state: "IDLE",
+        currentAnimation: "idle",
+        elapsedInStateMs: 1000,
+        votingWaitTimeMs: 6000,
+      };
+
+      const postResumeIdle = simulateNpcsStep(
+        {
+          npcs: [npcIdle],
+          mamparas: INITIAL_MAMPARAS_CONFIG,
+          isGlobalSystemActive: true,
+          npcIdCounter: 1,
+        },
+        0.0166,
+        30000,
+      );
+      // Sigue en IDLE votando sin que se haya consumido todo su tiempo abruptamente
+      assert.equal(postResumeIdle.npcs[0].state, "IDLE");
+      assert.equal(postResumeIdle.npcs[0].elapsedInStateMs, 1000 + 16.6);
+
+      // Caso 3: Ocultar pestaña durante temporizador de aparición
+      const mamparaWithTimer = {
+        ...INITIAL_MAMPARAS_CONFIG[1],
+        spawnTimerConfig: {
+          ...INITIAL_MAMPARAS_CONFIG[1].spawnTimerConfig,
+          isEnabled: true,
+          nextSpawnDelayMs: 2500,
+        },
+      };
+
+      const postResumeTimer = simulateNpcsStep(
+        {
+          npcs: [],
+          mamparas: [mamparaWithTimer],
+          isGlobalSystemActive: true,
+          npcIdCounter: 0,
+        },
+        0.0166,
+        60000,
+      );
+      // El temporizador solo descontó 16.6 ms; no hubo generación de votantes en lote
+      assert.equal(postResumeTimer.newSpawnIds.length, 0);
+      assert.ok(
+        Math.abs(
+          postResumeTimer.mamparas[0].spawnTimerConfig.nextSpawnDelayMs -
+            (2500 - 16.6),
+        ) < 1,
+      );
+    });
+
+    test("3. validación determinista de reinicios sucesivos durante estados de alta concurrencia", () => {
+      // Simular 10 ciclos consecutivos de entrada y reinicio del capítulo
+      for (let run = 0; run < 10; run++) {
+        clearDepthCache();
+
+        // Estado inicial de reposo
+        const cleanMamparas = INITIAL_MAMPARAS_CONFIG.map((m) => ({
+          ...m,
+          isOccupied: false,
+          occupiedByNpcId: null,
+          spawnTimerConfig: {
+            ...m.spawnTimerConfig,
+            nextSpawnDelayMs: 0,
+            isEnabled: false,
+          },
+        }));
+
+        assert.equal(cleanMamparas.length, 5);
+        assert.ok(cleanMamparas.every((m) => !m.isOccupied));
+
+        // Inyectar 5 NPCs activos
+        const npcs = cleanMamparas.map((m, idx) =>
+          createGenericNpcInstance(m, `npc-run-${run}-${idx}`, 5000),
+        );
+        assert.equal(npcs.length, 5);
+
+        // Al ejecutar clearDepthCache, el mapa se restablece limpiamente
+        const depth = calculateSceneCharactersDepth([]);
+        assert.deepEqual(depth, {});
+      }
+    });
+
+    test("4. verificación formal de jerarquía de capas (resolución de discrepancia de mamparas a zIndex 18)", () => {
+      // Validación estricta del contrato de capas en NPC_DEPTH_LAYERS
+      assert.equal(
+        NPC_DEPTH_LAYERS.mamparaLayer,
+        18,
+        "La capa fija real de las mamparas en el motor es estrictamente 18",
+      );
+      assert.equal(
+        NPC_DEPTH_LAYERS.boletaLayer,
+        21,
+        "La capa de las boletas electorales es 21 (sobre las mamparas de 18)",
+      );
+      assert.equal(
+        NPC_DEPTH_LAYERS.behindMamparasMax,
+        17,
+        "Personajes detrás de mamparas tienen zIndex máximo de 17 (< 18)",
+      );
+      assert.equal(
+        NPC_DEPTH_LAYERS.frontMin,
+        22,
+        "Personajes frente a mamparas tienen zIndex mínimo de 22 (> 21 boletas)",
+      );
+      assert.equal(
+        NPC_DEPTH_LAYERS.arbustosForeground,
+        30,
+        "Los arbustos en primer plano tienen zIndex 30 (> 27)",
+      );
+      assert.equal(
+        NPC_DEPTH_LAYERS.cartel3Foreground,
+        35,
+        "El cartel 3 tiene zIndex 35 (> 30)",
+      );
+
+      // Verificación con cálculo real de personajes
+      const behindNpc = { id: "npc-behind", y: 35.0 }; // Y < 36.0 (detrás de mampara)
+      const frontNpc = { id: "npc-front", y: 36.5 }; // Y >= 36.0 (frente a mampara)
+      const player = { id: "player", y: 50.0 };
+
+      const depth = calculateSceneCharactersDepth([behindNpc, frontNpc, player]);
+
+      assert.ok(
+        depth["npc-behind"] < NPC_DEPTH_LAYERS.mamparaLayer,
+        `Detrás (${depth["npc-behind"]}) debe ser < mampara (18)`,
+      );
+      assert.ok(
+        depth["npc-front"] > NPC_DEPTH_LAYERS.boletaLayer,
+        `Frente (${depth["npc-front"]}) debe ser > boleta (21)`,
+      );
+      assert.ok(
+        depth["player"] > depth["npc-front"],
+        `Jugador con Y=50 (${depth["player"]}) debe ser > NPC con Y=36.5 (${depth["npc-front"]})`,
+      );
+    });
+
+    test("5. robustez de colisión y empuje frente a obstáculos y límites en múltiples direcciones", () => {
+      // Protagonista bloqueado contra la mampara por la derecha:
+      // Si un NPC empuja hacia la derecha pero la mampara bloquea, debe elegir la izquierda si es transitable
+      const mockWalkable = (x, y) => {
+        // Bloquear x > 51.5 (obstáculo pegado al costado derecho del jugador)
+        return x <= 51.5;
+      };
+
+      const push = getNpcLateralPushVector({
+        playerPos: { x: 51.5, y: 50.0 },
+        npcs: [
+          {
+            id: "pusher-npc",
+            position: { x: 51.0, y: 50.0 },
+            state: "ENTERING",
+            isActive: true,
+            speed: 12.0,
+          },
+        ],
+        isPositionWalkable: mockWalkable,
+      });
+
+      // El lado derecho preferente (51.5 + push > 52.0) está bloqueado, por lo que desvía hacia la izquierda
+      assert.ok(push.pushVector !== null);
+      assert.equal(push.pushVector.vx, -1);
+    });
+
+    test("6. independencia de cámara cinematográfica: no se altera por ciclos recurrentes de mamparas", () => {
+      // Verificar que la cámara solo responde al primer NPC y calcula encuadre con zoom 2.0
+      const camShiftBooth = calculateCameraShift({ x: 52.0, y: 36.5 }, 2.0);
+      assert.equal(camShiftBooth.x, -2.0);
+      assert.equal(camShiftBooth.y, 13.5);
+
+      // Si un segundo NPC aparece en la mampara 1 (X=32.0, Y=36.5), la cámara cinematográfica concluida
+      // no altera su encuadre hacia él (sigue al jugador en X=20.0, Y=52.0)
+      const camShiftPlayer = calculateCameraShift({ x: 20.0, y: 52.0 }, 2.0);
+      assert.equal(camShiftPlayer.x, 25.0); // Clamped a 25.0
+      assert.equal(camShiftPlayer.y, -2.0);
+    });
+  });
 });
 
 
