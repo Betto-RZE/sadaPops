@@ -78,12 +78,20 @@ export function useCinematicNpcCamera({
   const [cameraState, setCameraState] =
     useState<CinematicCameraState>("INITIAL");
 
+  const isMountedRef = useRef(true);
   const stateRef = useRef<CinematicCameraState>("INITIAL");
   const camShiftRef = useRef<{ x: number; y: number }>(initialCam);
   const isPausedRef = useRef(isPaused);
   const playerPosRef = useRef(playerPos);
   const firstNpcRef = useRef(firstNpc);
   const holdElapsedMsRef = useRef(0);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     isPausedRef.current = isPaused;
@@ -98,6 +106,7 @@ export function useCinematicNpcCamera({
   }, [firstNpc]);
 
   // Detector de disparo: cuando el primer NPC comienza a caminar ('ENTERING')
+  // Optimización (Fase 5.4): depende de firstNpc?.state para evitar ejecuciones redundantes en cada frame
   useEffect(() => {
     if (
       stateRef.current === "INITIAL" &&
@@ -105,11 +114,14 @@ export function useCinematicNpcCamera({
       firstNpc.state === "ENTERING"
     ) {
       stateRef.current = "FOLLOWING_NPC";
-      setCameraState("FOLLOWING_NPC");
+      if (isMountedRef.current) {
+        setCameraState("FOLLOWING_NPC");
+      }
     }
-  }, [firstNpc]);
+  }, [firstNpc?.state]);
 
   // Detector de llegada: cuando el primer NPC cambia a 'IDLE' frente a la mampara
+  // Optimización (Fase 5.4): depende de firstNpc?.state para evitar re-suscripciones durante el movimiento
   useEffect(() => {
     if (
       stateRef.current === "FOLLOWING_NPC" &&
@@ -118,16 +130,37 @@ export function useCinematicNpcCamera({
     ) {
       stateRef.current = "HOLDING_AT_BOOTH";
       holdElapsedMsRef.current = 0;
-      setCameraState("HOLDING_AT_BOOTH");
+      if (isMountedRef.current) {
+        setCameraState("HOLDING_AT_BOOTH");
+      }
     }
-  }, [firstNpc]);
+  }, [firstNpc?.state]);
 
   // Bucle de actualización suave (rAF + dt)
   useEffect(() => {
     let animationFrameId: number;
     let lastTime = performance.now();
 
+    // Política de pestañas inactivas (Fase 5.4):
+    // Al recuperar foco/visibilidad, restablecer lastTime para evitar saltos o teletransportación de la cámara
+    const handleVisibilityChange = () => {
+      if (typeof document !== "undefined" && !document.hidden) {
+        lastTime = performance.now();
+      }
+    };
+
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+    }
+
     const loop = (currentTime: number) => {
+      // Si el documento está oculto, pausar la cámara dinámicamente sin acumular tiempo
+      if (typeof document !== "undefined" && document.hidden) {
+        lastTime = currentTime;
+        animationFrameId = requestAnimationFrame(loop);
+        return;
+      }
+
       const dt = Math.min(0.05, (currentTime - lastTime) / 1000);
       lastTime = currentTime;
 
@@ -138,12 +171,16 @@ export function useCinematicNpcCamera({
           // Seguimiento normal al jugador (directo)
           const target = calculateCameraShift(playerPosRef.current, zoomScale);
           camShiftRef.current = target;
-          setCamShift(target);
+          if (isMountedRef.current) {
+            setCamShift(target);
+          }
         } else if (currentState === "INITIAL") {
           // Normal antes de la cinemática
           const target = calculateCameraShift(playerPosRef.current, zoomScale);
           camShiftRef.current = target;
-          setCamShift(target);
+          if (isMountedRef.current) {
+            setCamShift(target);
+          }
         } else if (currentState === "FOLLOWING_NPC") {
           // Seguimiento dinámico al NPC mientras avanza hacia la mampara
           const npc = firstNpcRef.current;
@@ -157,7 +194,9 @@ export function useCinematicNpcCamera({
             camShiftRef.current.y + (target.y - camShiftRef.current.y) * blend;
 
           camShiftRef.current = { x: nextX, y: nextY };
-          setCamShift({ x: nextX, y: nextY });
+          if (isMountedRef.current) {
+            setCamShift({ x: nextX, y: nextY });
+          }
         } else if (currentState === "HOLDING_AT_BOOTH") {
           // Centrado en la mampara durante holdDurationMs (2.5 s)
           const npc = firstNpcRef.current;
@@ -171,12 +210,16 @@ export function useCinematicNpcCamera({
             camShiftRef.current.y + (target.y - camShiftRef.current.y) * blend;
 
           camShiftRef.current = { x: nextX, y: nextY };
-          setCamShift({ x: nextX, y: nextY });
+          if (isMountedRef.current) {
+            setCamShift({ x: nextX, y: nextY });
+          }
 
           holdElapsedMsRef.current += dt * 1000;
           if (holdElapsedMsRef.current >= holdDurationMs) {
             stateRef.current = "RETURNING_TO_PLAYER";
-            setCameraState("RETURNING_TO_PLAYER");
+            if (isMountedRef.current) {
+              setCameraState("RETURNING_TO_PLAYER");
+            }
           }
         } else if (currentState === "RETURNING_TO_PLAYER") {
           // Regresando suavemente al jugador
@@ -194,12 +237,16 @@ export function useCinematicNpcCamera({
           if (diffX < 0.15 && diffY < 0.15) {
             // Llegó al jugador: concluye la cinemática
             camShiftRef.current = target;
-            setCamShift(target);
             stateRef.current = "COMPLETED";
-            setCameraState("COMPLETED");
+            if (isMountedRef.current) {
+              setCamShift(target);
+              setCameraState("COMPLETED");
+            }
           } else {
             camShiftRef.current = { x: nextX, y: nextY };
-            setCamShift({ x: nextX, y: nextY });
+            if (isMountedRef.current) {
+              setCamShift({ x: nextX, y: nextY });
+            }
           }
         }
       }
@@ -211,6 +258,9 @@ export function useCinematicNpcCamera({
 
     return () => {
       cancelAnimationFrame(animationFrameId);
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+      }
     };
   }, [zoomScale, holdDurationMs, followSmoothingSpeed, returnSmoothingSpeed]);
 

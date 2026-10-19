@@ -97,6 +97,35 @@ export function calculateCharacterZIndex(
     ),
   );
 }
+let lastCharactersInput: DepthEntity[] | null = null;
+let lastDepthResult: Record<string, number> = {};
+
+/**
+ * Comprueba de forma eficiente si dos colecciones de entidades de profundidad son equivalentes
+ * para evitar recalcular ordenamientos y reasignaciones cuando las coordenadas no han variado.
+ */
+export function areDepthEntitiesEqual(
+  a: DepthEntity[] | null | undefined,
+  b: DepthEntity[] | null | undefined,
+): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i].id !== b[i].id || Math.abs(a[i].y - b[i].y) > 0.001) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * Limpia la cache interna de profundidad (útil al reiniciar capítulos o en suites de pruebas).
+ */
+export function clearDepthCache(): void {
+  lastCharactersInput = null;
+  lastDepthResult = {};
+}
 
 /**
  * Calcula un mapa de z-index relativo y continuo para todos los personajes activos en escena.
@@ -106,13 +135,24 @@ export function calculateCharacterZIndex(
  * - Los personajes detrás de las mamparas tienen zIndex < 18.
  * - Los personajes frente a las mamparas tienen zIndex >= 22 y <= 27.
  * - Todo personaje permanece detrás de arbustos (30) y cartel 3 (35).
+ * - Cuenta con memoización interna para retornar el mapa en O(N) sin reasignaciones cuando
+ *   las coordenadas no han cambiado.
  */
 export function calculateSceneCharactersDepth(
   characters: DepthEntity[],
 ): Record<string, number> {
-  const result: Record<string, number> = {};
-  if (!characters || characters.length === 0) return result;
+  if (!characters || characters.length === 0) {
+    lastCharactersInput = [];
+    lastDepthResult = {};
+    return {};
+  }
 
+  // Verificación rápida de cache: si las posiciones no cambiaron, reutilizar resultado
+  if (lastCharactersInput && areDepthEntitiesEqual(characters, lastCharactersInput)) {
+    return lastDepthResult;
+  }
+
+  const result: Record<string, number> = {};
   const behind: DepthEntity[] = [];
   const inFront: DepthEntity[] = [];
 
@@ -140,6 +180,9 @@ export function calculateSceneCharactersDepth(
       NPC_DEPTH_LAYERS.frontMin + index,
     );
   });
+
+  lastCharactersInput = characters.map((c) => ({ id: c.id, y: c.y }));
+  lastDepthResult = result;
 
   return result;
 }

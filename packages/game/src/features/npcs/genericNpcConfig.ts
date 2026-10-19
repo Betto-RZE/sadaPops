@@ -439,6 +439,21 @@ export function simulateNpcsStep(
   const getVotingTime =
     options?.getRandomVotingTime ?? (() => getRandomVotingTimeMs());
 
+  // Optimización de retorno temprano (Fase 5.4):
+  // Si el sistema global aún no se activa y no hay ningún NPC en escena,
+  // retornar el estado inmediatamente sin clonaciones de arreglos ni asignaciones de memoria
+  if (!state.isGlobalSystemActive && state.npcs.length === 0) {
+    return {
+      npcs: state.npcs,
+      mamparas: state.mamparas,
+      isGlobalSystemActive: false,
+      npcIdCounter: state.npcIdCounter,
+      justActivatedGlobal: false,
+      finishedMamparaIds: [],
+      newSpawnIds: [],
+    };
+  }
+
   let isGlobalActive = state.isGlobalSystemActive;
   let justActivatedGlobal = false;
   let mamparas = [...state.mamparas];

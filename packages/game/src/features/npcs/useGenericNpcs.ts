@@ -6,6 +6,7 @@ import {
   releaseGenericNpcImages,
   simulateNpcsStep,
 } from "./genericNpcConfig";
+import { clearDepthCache } from "./genericNpcDepth";
 
 export interface UseGenericNpcsProps {
   /**
@@ -64,12 +65,20 @@ export function useGenericNpcs({
   const [firstNpcSpawned, setFirstNpcSpawned] = useState(false);
   const [isGlobalSystemActive, setIsGlobalSystemActive] = useState(false);
 
+  const isMountedRef = useRef(true);
   const hasSpawnedRef = useRef(false);
   const isGlobalSystemActiveRef = useRef(false);
   const npcIdCounterRef = useRef(0);
   const isPausedRef = useRef(isPaused);
   const npcsRef = useRef<GenericNpc[]>(npcs);
   const mamparasRef = useRef<MamparaBoothConfig[]>(mamparas);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     isPausedRef.current = isPaused;
@@ -92,7 +101,6 @@ export function useGenericNpcs({
 
     if (isDialogueActive && !hasSpawnedRef.current) {
       hasSpawnedRef.current = true;
-      setFirstNpcSpawned(true);
 
       const mampara3 =
         mamparasRef.current.find((m) => m.id === 3) ||
@@ -105,7 +113,6 @@ export function useGenericNpcs({
       );
 
       npcsRef.current = [firstNpc];
-      setNpcs([firstNpc]);
 
       mamparasRef.current = mamparasRef.current.map((m) =>
         m.id === 3
@@ -121,7 +128,12 @@ export function useGenericNpcs({
             }
           : m,
       );
-      setMamparas([...mamparasRef.current]);
+
+      if (isMountedRef.current) {
+        setFirstNpcSpawned(true);
+        setNpcs([firstNpc]);
+        setMamparas([...mamparasRef.current]);
+      }
     }
   }, [dialogueState]);
 
@@ -132,7 +144,26 @@ export function useGenericNpcs({
     let animationFrameId: number;
     let lastTime = performance.now();
 
+    // Política de pestañas inactivas (Fase 5.4):
+    // Al recuperar visibilidad, restablecer lastTime para evitar saltos bruscos de tiempo acumulado
+    const handleVisibilityChange = () => {
+      if (typeof document !== "undefined" && !document.hidden) {
+        lastTime = performance.now();
+      }
+    };
+
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+    }
+
     const loop = (currentTime: number) => {
+      // Si el documento está oculto, pausar la simulación sin acumular tiempo
+      if (typeof document !== "undefined" && document.hidden) {
+        lastTime = currentTime;
+        animationFrameId = requestAnimationFrame(loop);
+        return;
+      }
+
       const dt = Math.min(0.05, (currentTime - lastTime) / 1000);
       lastTime = currentTime;
 
@@ -151,7 +182,9 @@ export function useGenericNpcs({
 
         if (result.justActivatedGlobal && !isGlobalSystemActiveRef.current) {
           isGlobalSystemActiveRef.current = true;
-          setIsGlobalSystemActive(true);
+          if (isMountedRef.current) {
+            setIsGlobalSystemActive(true);
+          }
         }
 
         npcIdCounterRef.current = result.npcIdCounter;
@@ -179,12 +212,14 @@ export function useGenericNpcs({
         npcsRef.current = updatedNpcs;
         mamparasRef.current = result.mamparas;
 
-        if (hasVisualChange) {
-          setNpcs(updatedNpcs);
-        }
+        if (isMountedRef.current) {
+          if (hasVisualChange) {
+            setNpcs(updatedNpcs);
+          }
 
-        if (mamparasChanged) {
-          setMamparas(result.mamparas);
+          if (mamparasChanged) {
+            setMamparas(result.mamparas);
+          }
         }
       }
 
@@ -195,14 +230,18 @@ export function useGenericNpcs({
 
     return () => {
       cancelAnimationFrame(animationFrameId);
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+      }
     };
   }, []);
 
   /**
-   * 3. Limpieza de memoria de texturas al desmontar la escena del capítulo
+   * 3. Limpieza de memoria de texturas y caché de profundidad al desmontar la escena del capítulo
    */
   useEffect(() => {
     return () => {
+      clearDepthCache();
       releaseGenericNpcImages();
     };
   }, []);
@@ -214,12 +253,15 @@ export function useGenericNpcs({
     hasSpawnedRef.current = false;
     isGlobalSystemActiveRef.current = false;
     npcIdCounterRef.current = 0;
-    setIsGlobalSystemActive(false);
-    setFirstNpcSpawned(false);
+    clearDepthCache();
     npcsRef.current = [];
-    setNpcs([]);
     mamparasRef.current = initialMamparas || INITIAL_MAMPARAS_CONFIG;
-    setMamparas([...mamparasRef.current]);
+    if (isMountedRef.current) {
+      setIsGlobalSystemActive(false);
+      setFirstNpcSpawned(false);
+      setNpcs([]);
+      setMamparas([...mamparasRef.current]);
+    }
   }, [initialMamparas]);
 
   return {

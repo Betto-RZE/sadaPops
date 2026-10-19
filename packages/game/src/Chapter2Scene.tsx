@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { PixelSpeechBubble } from "./PixelSpeechBubble";
 import {
   AnimatedPlayerSprite,
@@ -39,6 +39,8 @@ import {
   type ActivePushState,
   calculateSceneCharactersDepth,
   calculateCharacterZIndex,
+  clearDepthCache,
+  type DepthEntity,
   NPC_DEPTH_LAYERS,
 } from "./features/npcs";
 
@@ -157,9 +159,12 @@ export default function Chapter2Scene({
     }
   }, [isTransitioning, dialogueState]);
 
-  // Al desmontar se liberan los frames precargados del personaje
+  // Al desmontar se liberan los frames precargados del personaje y la caché de profundidad
   useEffect(() => {
-    return () => releasePlayerImages();
+    return () => {
+      clearDepthCache();
+      releasePlayerImages();
+    };
   }, []);
 
   // Bucle de movimiento (mismas fisicas que el Capitulo 1: 4 direcciones,
@@ -176,6 +181,18 @@ export default function Chapter2Scene({
     let animationFrameId: number;
     let lastTime = performance.now();
 
+    // Política de pestañas inactivas (Fase 5.4):
+    // Al recuperar foco/visibilidad, restablecer lastTime para evitar saltos o teletransportación física
+    const handleVisibilityChange = () => {
+      if (typeof document !== "undefined" && !document.hidden) {
+        lastTime = performance.now();
+      }
+    };
+
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+    }
+
     const maxSpeed = 22.0;
     const RAMP_TIME = 1.0;
     const frictionRate = 9.0;
@@ -190,6 +207,13 @@ export default function Chapter2Scene({
     };
 
     const updateGameLoop = (currentTime: number) => {
+      // Si el documento está oculto, pausar la física sin acumular tiempo
+      if (typeof document !== "undefined" && document.hidden) {
+        lastTime = currentTime;
+        animationFrameId = requestAnimationFrame(updateGameLoop);
+        return;
+      }
+
       const dt = Math.min(0.05, (currentTime - lastTime) / 1000);
       lastTime = currentTime;
 
@@ -397,6 +421,9 @@ export default function Chapter2Scene({
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+      }
     };
   }, []);
 
@@ -416,16 +443,17 @@ export default function Chapter2Scene({
   const showDialogue =
     dialogueState !== "initial_delay" && dialogueState !== "dismissed";
 
-  // Sistema de profundidad visual dinámica (Fase 5.3):
-  // Ordena las capas (z-index) entre protagonista, NPCs genéricos y personajes narrativos
-  // asegurando que quienes tienen mayor coordenada Y se rendericen delante.
-  const sceneCharacters = [
-    { id: "player", y: playerPos.y },
-    ...npcs
-      .filter((n) => n.isActive)
-      .map((n) => ({ id: n.id, y: n.position.y })),
-  ];
-  const depthMap = calculateSceneCharactersDepth(sceneCharacters);
+  // Sistema de profundidad visual dinámica (Fase 5.3 + 5.4):
+  // Memoiza el arreglo de entidades y reutiliza el caché O(N) si no hay cambios en la posición vertical
+  const depthMap = useMemo(() => {
+    const characters: DepthEntity[] = [
+      { id: "player", y: playerPos.y },
+      ...npcs
+        .filter((n) => n.isActive)
+        .map((n) => ({ id: n.id, y: n.position.y })),
+    ];
+    return calculateSceneCharactersDepth(characters);
+  }, [playerPos.y, npcs]);
 
   return (
     <div

@@ -181,7 +181,14 @@ export function getNpcLateralPushVector({
     };
   }
 
-  // 2. Evaluar solapamientos con el protagonista
+  // 2. Evaluar solapamientos con el protagonista con filtrado temprano escalar
+  const totalHalfW =
+    NPC_COLLISION_DEFAULTS.playerHalfWidth +
+    NPC_COLLISION_DEFAULTS.npcHalfWidth; // 5.6%
+  const totalHalfH =
+    NPC_COLLISION_DEFAULTS.playerHalfHeight +
+    NPC_COLLISION_DEFAULTS.npcHalfHeight; // 4.4%
+
   const collidingEntries: Array<{
     npc: GenericNpc;
     overlapX: number;
@@ -190,15 +197,21 @@ export function getNpcLateralPushVector({
   }> = [];
 
   for (const npc of activeMovingNpcs) {
-    const overlap = checkCharactersOverlap(playerPos, npc.position);
-    if (overlap.isColliding) {
-      collidingEntries.push({
-        npc,
-        overlapX: overlap.overlapX,
-        overlapY: overlap.overlapY,
-        score: overlap.overlapX * overlap.overlapY,
-      });
-    }
+    const deltaX = Math.abs(playerPos.x - npc.position.x);
+    if (deltaX >= totalHalfW) continue; // Descarte temprano en X
+
+    const deltaY = Math.abs(playerPos.y - npc.position.y);
+    if (deltaY >= totalHalfH) continue; // Descarte temprano en Y
+
+    const overlapX = totalHalfW - deltaX;
+    const overlapY = totalHalfH - deltaY;
+
+    collidingEntries.push({
+      npc,
+      overlapX,
+      overlapY,
+      score: overlapX * overlapY,
+    });
   }
 
   // Si no hay colisión directa, verificar si aún estamos en zona de histéresis con el NPC anterior
@@ -210,9 +223,6 @@ export function getNpcLateralPushVector({
       if (prevNpc) {
         const deltaX = Math.abs(playerPos.x - prevNpc.position.x);
         const deltaY = Math.abs(playerPos.y - prevNpc.position.y);
-        const totalHalfH =
-          NPC_COLLISION_DEFAULTS.playerHalfHeight +
-          NPC_COLLISION_DEFAULTS.npcHalfHeight;
 
         // Si aún está en la misma franja vertical y dentro del margen de separación, mantener empuje suave
         if (
@@ -273,11 +283,13 @@ export function getNpcLateralPushVector({
         other.isActive &&
         (other.state === "ENTERING" || other.state === "LEAVING")
       ) {
-        const overlap = checkCharactersOverlap(
-          { x: testX, y: testY },
-          other.position,
-        );
-        if (overlap.isColliding && overlap.overlapX > primary.overlapX) {
+        const dx = Math.abs(testX - other.position.x);
+        if (dx >= totalHalfW) continue;
+        const dy = Math.abs(testY - other.position.y);
+        if (dy >= totalHalfH) continue;
+
+        const overlapX = totalHalfW - dx;
+        if (overlapX > primary.overlapX) {
           return false;
         }
       }

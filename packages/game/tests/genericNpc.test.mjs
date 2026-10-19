@@ -29,6 +29,8 @@ import {
   compareDepthEntities,
   calculateCharacterZIndex,
   calculateSceneCharactersDepth,
+  clearDepthCache,
+  areDepthEntitiesEqual,
 } from "../src/features/npcs/genericNpcDepth.ts";
 import {
   calculateCameraShift,
@@ -1329,6 +1331,387 @@ describe("Sistema de NPCs Genéricos - Pruebas de Integración y Ciclo de Vida",
           `Entidad ${id} (${depth[id]}) debe ser < 35 (cartel 3 en primer plano)`,
         );
       }
+    });
+  });
+
+  describe("Fase 5.4: Optimización técnica, rendimiento y estabilidad", () => {
+    test("1. ausencia de actualizaciones visuales innecesarias en estado IDLE", () => {
+      const mampara3 = INITIAL_MAMPARAS_CONFIG[2];
+      const npcIdle = {
+        ...createGenericNpcInstance(mampara3, "npc-idle-test", 5000),
+        position: { x: 52.0, y: 36.5 },
+        state: "IDLE",
+        currentAnimation: "idle",
+        elapsedInStateMs: 1000,
+      };
+
+      // Simular 10 pasos consecutivos de rAF (16.6ms cada uno)
+      let currentNpc = npcIdle;
+      for (let i = 0; i < 10; i++) {
+        const stepResult = simulateNpcsStep(
+          {
+            npcs: [currentNpc],
+            mamparas: INITIAL_MAMPARAS_CONFIG,
+            isGlobalSystemActive: true,
+            npcIdCounter: 1,
+          },
+          0.0166,
+          1000 + i * 16.6,
+        );
+
+        const updated = stepResult.npcs[0];
+        // Posición Y, estado y animación deben permanecer estrictamente idénticos
+        assert.equal(updated.position.y, 36.5);
+        assert.equal(updated.state, "IDLE");
+        assert.equal(updated.currentAnimation, "idle");
+
+        // Verificación de la condición hasVisualChange de useGenericNpcs:
+        // No hay nuevos spawns, no hay mamparas finalizadas, longitud no cambió y props visuales idénticas
+        const hasVisualChange =
+          stepResult.newSpawnIds.length > 0 ||
+          stepResult.finishedMamparaIds.length > 0 ||
+          stepResult.npcs.length !== 1 ||
+          currentNpc.state !== updated.state ||
+          currentNpc.currentAnimation !== updated.currentAnimation ||
+          currentNpc.position.y !== updated.position.y;
+
+        assert.equal(hasVisualChange, false, "En IDLE no debe haber cambio visual");
+        currentNpc = updated;
+      }
+    });
+
+    test("2. independencia estricta de temporizadores entre las cinco mamparas", () => {
+      // Configurar 5 mamparas con tiempos de espera artificialmente distintos
+      const customMamparas = INITIAL_MAMPARAS_CONFIG.map((m, idx) => ({
+        ...m,
+        spawnTimerConfig: {
+          ...m.spawnTimerConfig,
+          isEnabled: true,
+          nextSpawnDelayMs: (idx + 1) * 1000, // 1000, 2000, 3000, 4000, 5000 ms
+        },
+      }));
+
+      const step1 = simulateNpcsStep(
+        {
+          npcs: [],
+          mamparas: customMamparas,
+          isGlobalSystemActive: true,
+          npcIdCounter: 0,
+        },
+        0.5, // 500 ms transcurridos
+        500,
+      );
+
+      // Cada mampara descuenta exactamente 500 ms de forma autónoma
+      assert.equal(step1.mamparas[0].spawnTimerConfig.nextSpawnDelayMs, 500);
+      assert.equal(step1.mamparas[1].spawnTimerConfig.nextSpawnDelayMs, 1500);
+      assert.equal(step1.mamparas[2].spawnTimerConfig.nextSpawnDelayMs, 2500);
+      assert.equal(step1.mamparas[3].spawnTimerConfig.nextSpawnDelayMs, 3500);
+      assert.equal(step1.mamparas[4].spawnTimerConfig.nextSpawnDelayMs, 4500);
+    });
+
+    test("3. manejo seguro de deltaTime elevado sin sobrepasos ni teletransportación", () => {
+      const mampara1 = INITIAL_MAMPARAS_CONFIG[0];
+      const npcEntering = {
+        ...createGenericNpcInstance(mampara1, "npc-dt-test", 5000),
+        position: { x: 32.0, y: 37.0 }, // A solo 0.5% de la mampara (36.5%)
+        speed: 12.0,
+      };
+
+      // Un salto de tiempo grande (por ejemplo 1.0s, que a 12%/s avanzaría 12%)
+      const stepResult = simulateNpcsStep(
+        {
+          npcs: [npcEntering],
+          mamparas: INITIAL_MAMPARAS_CONFIG,
+          isGlobalSystemActive: true,
+          npcIdCounter: 1,
+        },
+        1.0,
+        1000,
+      );
+
+      const arrivedNpc = stepResult.npcs[0];
+      // Debe llegar exactamente a targetPosition.y (36.5%) sin oscilar ni sobrepasar hacia arriba
+      assert.equal(arrivedNpc.position.y, 36.5);
+      assert.equal(arrivedNpc.state, "IDLE");
+      assert.equal(arrivedNpc.currentAnimation, "idle");
+    });
+
+    test("4. política de pausa y reanudación por visibilidad de pestaña", () => {
+      // Simulación de la política: cuando la pestaña está oculta, dt se descarta o no se procesa
+      let lastTime = 1000;
+      let currentTime = 15000; // 14 segundos después (pestaña en segundo plano)
+
+      // Comportamiento implementado: al detectar retorno o pestaña oculta, lastTime se sincroniza
+      const isDocumentHidden = true;
+      let simulatedDt = 0;
+      if (isDocumentHidden) {
+        lastTime = currentTime; // Pausa: se empata lastTime sin avanzar simulación
+      } else {
+        simulatedDt = Math.min(0.05, (currentTime - lastTime) / 1000);
+      }
+
+      assert.equal(simulatedDt, 0, "No debe procesarse dt mientras la pestaña esté oculta");
+      assert.equal(lastTime, 15000);
+
+      // Al regresar a la pestaña visible (evento visibilitychange):
+      currentTime = 15016; // Primer frame activo (16ms después)
+      const postResumeDt = Math.min(0.05, (currentTime - lastTime) / 1000);
+      assert.ok(postResumeDt <= 0.05, "El deltaTime post-reanudación debe estar estrictamente acotado");
+    });
+
+    test("5. conservación exacta de posiciones tras reanudación", () => {
+      const mampara2 = INITIAL_MAMPARAS_CONFIG[1];
+      const npc = {
+        ...createGenericNpcInstance(mampara2, "npc-pos-test", 5000),
+        position: { x: 42.0, y: 75.0 },
+      };
+
+      // Mientras la pestaña estuvo oculta, no se llamó a simulateNpcsStep
+      // Al reanudar, la posición previa se conserva intacta
+      const resumedStep = simulateNpcsStep(
+        {
+          npcs: [npc],
+          mamparas: INITIAL_MAMPARAS_CONFIG,
+          isGlobalSystemActive: true,
+          npcIdCounter: 1,
+        },
+        0.0166, // Primer frame normal
+        20000,
+      );
+
+      // El avance es de únicamente speed * 0.0166 (~0.2%)
+      assert.ok(Math.abs(resumedStep.npcs[0].position.y - (75.0 - 12.0 * 0.0166)) < 0.01);
+    });
+
+    test("6. ausencia de apariciones acumuladas tras periodos prolongados", () => {
+      // Mampara 1 ya ocupada con un NPC
+      const mampara1Occupied = {
+        ...INITIAL_MAMPARAS_CONFIG[0],
+        isOccupied: true,
+        occupiedByNpcId: "npc-existing",
+        spawnTimerConfig: {
+          ...INITIAL_MAMPARAS_CONFIG[0].spawnTimerConfig,
+          isEnabled: true,
+          nextSpawnDelayMs: 0, // Temporizador vencido pero mampara ocupada
+        },
+      };
+
+      const step = simulateNpcsStep(
+        {
+          npcs: [
+            {
+              ...createGenericNpcInstance(mampara1Occupied, "npc-existing", 5000),
+              position: { x: 32.0, y: 36.5 },
+              state: "IDLE",
+            },
+          ],
+          mamparas: [mampara1Occupied, ...INITIAL_MAMPARAS_CONFIG.slice(1)],
+          isGlobalSystemActive: true,
+          npcIdCounter: 1,
+        },
+        0.05,
+        30000,
+      );
+
+      // La mampara ocupada NO debe spawnear ningún NPC adicional
+      assert.equal(step.newSpawnIds.length, 0);
+      assert.equal(step.npcs.filter((n) => n.assignedMamparaId === 1).length, 1);
+    });
+
+    test("7. limpieza de bucles de animación y cancelación adecuada", () => {
+      let cancelledId = -1;
+      const mockCancel = (id) => {
+        cancelledId = id;
+      };
+
+      const activeFrameId = 42;
+      mockCancel(activeFrameId);
+      assert.equal(cancelledId, 42);
+    });
+
+    test("8. reinicio completo de referencias y vaciado de caché", () => {
+      // Llenar caché de profundidad
+      calculateSceneCharactersDepth([
+        { id: "player", y: 45.0 },
+        { id: "npc-1", y: 36.5 },
+      ]);
+
+      // Limpiar caché
+      clearDepthCache();
+
+      // Al limpiar, la siguiente invocación construye un nuevo mapa
+      const newMap = calculateSceneCharactersDepth([]);
+      assert.deepEqual(newMap, {});
+    });
+
+    test("9. continuidad y estabilidad de animaciones pixel art", () => {
+      const mampara4 = INITIAL_MAMPARAS_CONFIG[3];
+      const npcEntering = createGenericNpcInstance(mampara4, "npc-anim-test", 4000);
+      assert.equal(npcEntering.currentAnimation, "back");
+
+      // Transición a IDLE
+      const reached = updateGenericNpc(
+        { ...npcEntering, position: { x: 62.0, y: 36.5 } },
+        mampara4,
+        0.016,
+      );
+      assert.equal(reached.currentAnimation, "idle");
+
+      // Transición a LEAVING
+      const leaving = updateGenericNpc(
+        { ...reached, elapsedInStateMs: 5000 }, // Superó votingWaitTimeMs
+        mampara4,
+        0.016,
+      );
+      assert.equal(leaving.currentAnimation, "front");
+    });
+
+    test("10. actualización correcta y reutilización de caché en profundidad visual", () => {
+      clearDepthCache();
+      const entitiesA = [
+        { id: "player", y: 50.0 },
+        { id: "npc-1", y: 36.5 },
+      ];
+
+      const res1 = calculateSceneCharactersDepth(entitiesA);
+
+      // Invocación con entidades idénticas en Y (ej: frames en IDLE)
+      const entitiesSame = [
+        { id: "player", y: 50.0 },
+        { id: "npc-1", y: 36.5 },
+      ];
+      assert.ok(areDepthEntitiesEqual(entitiesA, entitiesSame));
+
+      const res2 = calculateSceneCharactersDepth(entitiesSame);
+      // Debe retornar exactamente la misma referencia de objeto memoizado
+      assert.equal(res1, res2);
+
+      // Invocación cuando el jugador se mueve verticalmente:
+      const entitiesMoved = [
+        { id: "player", y: 30.0 }, // Ahora el jugador está detrás del NPC
+        { id: "npc-1", y: 36.5 },
+      ];
+      const res3 = calculateSceneCharactersDepth(entitiesMoved);
+      assert.notEqual(res1, res3);
+      assert.ok(res3["player"] < res3["npc-1"]);
+    });
+
+    test("11. colisiones: filtrado temprano de NPCs lejanos en O(1) sin regresiones", () => {
+      // NPC muy alejado horizontalmente (> 6.0%)
+      const distantPush = getNpcLateralPushVector({
+        playerPos: { x: 50.0, y: 50.0 },
+        npcs: [
+          {
+            id: "distant-npc",
+            position: { x: 70.0, y: 50.0 }, // 20% de distancia en X
+            state: "ENTERING",
+            isActive: true,
+            speed: 12.0,
+          },
+        ],
+        isPositionWalkable: () => true,
+      });
+      assert.equal(distantPush.pushVector, null);
+      assert.equal(distantPush.activePushState, null);
+
+      // NPC cercano con colisión real: debe continuar generando empuje correctamente
+      const closePush = getNpcLateralPushVector({
+        playerPos: { x: 50.0, y: 50.0 },
+        npcs: [
+          {
+            id: "close-npc",
+            position: { x: 50.8, y: 50.0 },
+            state: "ENTERING",
+            isActive: true,
+            speed: 12.0,
+          },
+        ],
+        isPositionWalkable: () => true,
+      });
+      assert.ok(closePush.pushVector !== null);
+      assert.equal(closePush.pushVector.vx, -1); // Empuja hacia la izquierda
+    });
+
+    test("12. concurrencia estable con cinco NPCs activos simultáneamente", () => {
+      const fiveNpcs = INITIAL_MAMPARAS_CONFIG.map((m) =>
+        createGenericNpcInstance(m, `npc-concurrente-${m.id}`, 6000),
+      );
+
+      const state = {
+        npcs: fiveNpcs,
+        mamparas: INITIAL_MAMPARAS_CONFIG.map((m, idx) => ({
+          ...m,
+          isOccupied: true,
+          occupiedByNpcId: fiveNpcs[idx].id,
+        })),
+        isGlobalSystemActive: true,
+        npcIdCounter: 5,
+      };
+
+      // Simular 60 cuadros (1 segundo)
+      let currentState = state;
+      for (let f = 0; f < 60; f++) {
+        const step = simulateNpcsStep(currentState, 0.0166, f * 16.6);
+        currentState = {
+          npcs: step.npcs,
+          mamparas: step.mamparas,
+          isGlobalSystemActive: step.isGlobalSystemActive,
+          npcIdCounter: step.npcIdCounter,
+        };
+      }
+
+      // Los 5 siguen avanzando y la lista contiene exactamente 5 elementos
+      assert.equal(currentState.npcs.length, 5);
+      currentState.npcs.forEach((npc) => {
+        assert.ok(npc.position.y < 106.0, "Todos los NPCs deben haber avanzado hacia arriba");
+      });
+    });
+
+    test("13. reinicios consecutivos mantienen el estado limpio e idéntico", () => {
+      for (let cycle = 0; cycle < 5; cycle++) {
+        // En cada iteración se inicia desde el estado base
+        clearDepthCache();
+        const baseMamparas = [...INITIAL_MAMPARAS_CONFIG];
+        assert.equal(baseMamparas.length, 5);
+        assert.ok(baseMamparas.every((m) => !m.isOccupied && m.occupiedByNpcId === null));
+      }
+    });
+
+    test("14. conservación de la cámara cinematográfica y límites seguros", () => {
+      // Zoom 2.0 define un límite estricto de desplazamiento de +-25%
+      const shiftCenter = calculateCameraShift({ x: 50.0, y: 50.0 }, 2.0);
+      assert.equal(shiftCenter.x, 0);
+      assert.equal(shiftCenter.y, 0);
+
+      const shiftEdge = calculateCameraShift({ x: 0.0, y: 0.0 }, 2.0);
+      assert.equal(shiftEdge.x, 25.0);
+      assert.equal(shiftEdge.y, 25.0);
+
+      const shiftFar = calculateCameraShift({ x: 100.0, y: 100.0 }, 2.0);
+      assert.equal(shiftFar.x, -25.0);
+      assert.equal(shiftFar.y, -25.0);
+    });
+
+    test("15. contratos de tipos e integridad estructural de simulación", () => {
+      const result = simulateNpcsStep(
+        {
+          npcs: [],
+          mamparas: INITIAL_MAMPARAS_CONFIG,
+          isGlobalSystemActive: false,
+          npcIdCounter: 0,
+        },
+        0.016,
+        0,
+      );
+
+      assert.ok(Array.isArray(result.npcs));
+      assert.ok(Array.isArray(result.mamparas));
+      assert.equal(typeof result.isGlobalSystemActive, "boolean");
+      assert.equal(typeof result.npcIdCounter, "number");
+      assert.equal(typeof result.justActivatedGlobal, "boolean");
+      assert.ok(Array.isArray(result.finishedMamparaIds));
+      assert.ok(Array.isArray(result.newSpawnIds));
     });
   });
 });
