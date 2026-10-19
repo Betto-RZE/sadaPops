@@ -91,6 +91,10 @@ export const GENERIC_NPC_DEFAULTS = {
   minVotingWaitTimeMs: 4000,
   /** Rango máximo de tiempo para votar (ms) */
   maxVotingWaitTimeMs: 8000,
+  /** Rango mínimo de espera para la aparición de nuevos NPCs en una mampara (ms) */
+  minSpawnDelayMs: 1000,
+  /** Rango máximo de espera para la aparición de nuevos NPCs en una mampara (ms) */
+  maxSpawnDelayMs: 3000,
   /** Ancho porcentual del sprite en pantalla (alineado al del jugador 6.5%) */
   spriteWidthPercent: "6.5%",
 };
@@ -106,6 +110,16 @@ export function getRandomVotingTimeMs(
   return minMs + Math.random() * (maxMs - minMs);
 }
 
+/**
+ * Genera un tiempo de espera aleatorio continuo para el spawn de un NPC en una mampara disponible.
+ * Por defecto en [1000, 3000] ms con decimales según los requisitos de la Fase 4.
+ */
+export function getRandomSpawnDelayMs(
+  minMs: number = GENERIC_NPC_DEFAULTS.minSpawnDelayMs,
+  maxMs: number = GENERIC_NPC_DEFAULTS.maxSpawnDelayMs,
+): number {
+  return minMs + Math.random() * (maxMs - minMs);
+}
 
 /**
  * Configuración inicial de las cinco mamparas de votación con coordenadas reales del juego.
@@ -133,9 +147,9 @@ export const INITIAL_MAMPARAS_CONFIG: MamparaBoothConfig[] = [
     spawnTimerConfig: {
       nextSpawnDelayMs: 0,
       lastSpawnTimestampMs: 0,
-      minDelayMs: 3000,
-      maxDelayMs: 8000,
-      isEnabled: false, // Inactivo en Fase 1 según especificación
+      minDelayMs: 1000,
+      maxDelayMs: 3000,
+      isEnabled: false,
     },
   },
   {
@@ -150,9 +164,9 @@ export const INITIAL_MAMPARAS_CONFIG: MamparaBoothConfig[] = [
     spawnTimerConfig: {
       nextSpawnDelayMs: 0,
       lastSpawnTimestampMs: 0,
-      minDelayMs: 4000,
-      maxDelayMs: 10000,
-      isEnabled: false, // Inactivo en Fase 1 según especificación
+      minDelayMs: 1000,
+      maxDelayMs: 3000,
+      isEnabled: false,
     },
   },
   {
@@ -167,9 +181,9 @@ export const INITIAL_MAMPARAS_CONFIG: MamparaBoothConfig[] = [
     spawnTimerConfig: {
       nextSpawnDelayMs: 0,
       lastSpawnTimestampMs: 0,
-      minDelayMs: 3500,
-      maxDelayMs: 9000,
-      isEnabled: false, // Inactivo en Fase 1 según especificación
+      minDelayMs: 1000,
+      maxDelayMs: 3000,
+      isEnabled: false,
     },
   },
   {
@@ -184,9 +198,9 @@ export const INITIAL_MAMPARAS_CONFIG: MamparaBoothConfig[] = [
     spawnTimerConfig: {
       nextSpawnDelayMs: 0,
       lastSpawnTimestampMs: 0,
-      minDelayMs: 4500,
-      maxDelayMs: 11000,
-      isEnabled: false, // Inactivo en Fase 1 según especificación
+      minDelayMs: 1000,
+      maxDelayMs: 3000,
+      isEnabled: false,
     },
   },
   {
@@ -201,12 +215,13 @@ export const INITIAL_MAMPARAS_CONFIG: MamparaBoothConfig[] = [
     spawnTimerConfig: {
       nextSpawnDelayMs: 0,
       lastSpawnTimestampMs: 0,
-      minDelayMs: 5000,
-      maxDelayMs: 12000,
-      isEnabled: false, // Inactivo en Fase 1 según especificación
+      minDelayMs: 1000,
+      maxDelayMs: 3000,
+      isEnabled: false,
     },
   },
 ];
+
 
 /**
  * Fábrica para instanciar un nuevo NPC genérico asignado a una mampara.
@@ -384,6 +399,188 @@ export function updateGenericNpc(
   }
 
   return npc;
+}
+
+export interface NpcSimulationState {
+  npcs: GenericNpc[];
+  mamparas: MamparaBoothConfig[];
+  isGlobalSystemActive: boolean;
+  npcIdCounter: number;
+}
+
+export interface NpcSimulationOptions {
+  getRandomSpawnDelay?: (mamparaId: number) => number;
+  getRandomVotingTime?: (mamparaId: number) => number;
+}
+
+export interface NpcSimulationResult {
+  npcs: GenericNpc[];
+  mamparas: MamparaBoothConfig[];
+  isGlobalSystemActive: boolean;
+  npcIdCounter: number;
+  justActivatedGlobal: boolean;
+  finishedMamparaIds: number[];
+  newSpawnIds: string[];
+}
+
+/**
+ * Función pura que calcula un paso de simulación para todos los NPCs genéricos y las cinco mamparas.
+ * Gestiona el movimiento dt, la detección de la activación global (IDLE -> LEAVING del primer NPC),
+ * los temporizadores independientes de 1 a 3 segundos de cada mampara y el control de ocupación.
+ */
+export function simulateNpcsStep(
+  state: NpcSimulationState,
+  dtSeconds: number,
+  currentTimeMs: number = 0,
+  options?: NpcSimulationOptions,
+): NpcSimulationResult {
+  const getSpawnDelay =
+    options?.getRandomSpawnDelay ?? (() => getRandomSpawnDelayMs());
+  const getVotingTime =
+    options?.getRandomVotingTime ?? (() => getRandomVotingTimeMs());
+
+  let isGlobalActive = state.isGlobalSystemActive;
+  let justActivatedGlobal = false;
+  let mamparas = [...state.mamparas];
+  let npcIdCounter = state.npcIdCounter;
+  const previousList = state.npcs;
+  let updatedNpcs: GenericNpc[] = [];
+  const finishedMamparaIds: number[] = [];
+  const newSpawnIds: string[] = [];
+
+  // --- A. Actualización de NPCs activos ---
+  for (const npc of previousList) {
+    const targetMampara =
+      mamparas.find((m) => m.id === npc.assignedMamparaId) ||
+      INITIAL_MAMPARAS_CONFIG[npc.assignedMamparaId - 1];
+
+    const prevState = npc.state;
+    const updated = updateGenericNpc(npc, targetMampara, dtSeconds);
+
+    // Condición obligatoria de activación global:
+    // Ocurre exactamente cuando el primer NPC de la mampara 3 cambia de IDLE a LEAVING
+    if (
+      !isGlobalActive &&
+      npc.id === "npc-gen-mampara-3" &&
+      prevState === "IDLE" &&
+      updated.state === "LEAVING"
+    ) {
+      isGlobalActive = true;
+      justActivatedGlobal = true;
+
+      // Inicializar temporizadores de las mamparas desocupadas (1, 2, 4 y 5):
+      // Cada una genera su propio tiempo independiente de 1 a 3 segundos
+      mamparas = mamparas.map((m) => {
+        if (!m.isOccupied && m.id !== 3) {
+          return {
+            ...m,
+            spawnTimerConfig: {
+              ...m.spawnTimerConfig,
+              isEnabled: true,
+              nextSpawnDelayMs: getSpawnDelay(m.id),
+              lastSpawnTimestampMs: currentTimeMs,
+            },
+          };
+        }
+        // Mampara 3 permanece ocupada y se integrará al ciclo cuando concluya su salida
+        return {
+          ...m,
+          spawnTimerConfig: {
+            ...m.spawnTimerConfig,
+            isEnabled: true,
+            nextSpawnDelayMs: 0,
+          },
+        };
+      });
+    }
+
+    if (updated.state === "FINISHED") {
+      finishedMamparaIds.push(updated.assignedMamparaId);
+    } else {
+      updatedNpcs.push(updated);
+    }
+  }
+
+  // --- B. Liberar mamparas de los NPCs que llegaron a FINISHED ---
+  if (finishedMamparaIds.length > 0) {
+    const finishedSet = new Set(finishedMamparaIds);
+    mamparas = mamparas.map((m) => {
+      if (finishedSet.has(m.id)) {
+        return {
+          ...m,
+          isOccupied: false,
+          occupiedByNpcId: null,
+          spawnTimerConfig: {
+            ...m.spawnTimerConfig,
+            isEnabled: isGlobalActive,
+            // Comienza su temporizador de 1 a 3 segundos para el siguiente ciclo
+            nextSpawnDelayMs: isGlobalActive ? getSpawnDelay(m.id) : 0,
+            lastSpawnTimestampMs: currentTimeMs,
+          },
+        };
+      }
+      return m;
+    });
+  }
+
+  // --- C. Si el sistema global está activo, descontar temporizadores y spawnear nuevos NPCs ---
+  if (isGlobalActive) {
+    const newSpawns: GenericNpc[] = [];
+
+    mamparas = mamparas.map((m) => {
+      // Solo mamparas habilitadas que no estén ocupadas
+      if (m.spawnTimerConfig.isEnabled && !m.isOccupied) {
+        const remainingDelay =
+          m.spawnTimerConfig.nextSpawnDelayMs - dtSeconds * 1000;
+
+        if (remainingDelay <= 0) {
+          // Temporizador de 1 a 3 segundos cumplido: generar nuevo NPC exclusivo
+          npcIdCounter += 1;
+          const newNpcId = `npc-gen-${m.id}-${npcIdCounter}`;
+          const votingTime = getVotingTime(m.id);
+          const newNpc = createGenericNpcInstance(m, newNpcId, votingTime);
+
+          newSpawns.push(newNpc);
+          newSpawnIds.push(newNpc.id);
+
+          return {
+            ...m,
+            isOccupied: true,
+            occupiedByNpcId: newNpc.id,
+            spawnTimerConfig: {
+              ...m.spawnTimerConfig,
+              nextSpawnDelayMs: 0,
+              lastSpawnTimestampMs: currentTimeMs,
+            },
+          };
+        }
+
+        return {
+          ...m,
+          spawnTimerConfig: {
+            ...m.spawnTimerConfig,
+            nextSpawnDelayMs: remainingDelay,
+          },
+        };
+      }
+
+      return m;
+    });
+
+    if (newSpawns.length > 0) {
+      updatedNpcs = [...updatedNpcs, ...newSpawns];
+    }
+  }
+
+  return {
+    npcs: updatedNpcs,
+    mamparas,
+    isGlobalSystemActive: isGlobalActive,
+    npcIdCounter,
+    justActivatedGlobal,
+    finishedMamparaIds,
+    newSpawnIds,
+  };
 }
 
 

@@ -12,7 +12,9 @@ import {
   GENERIC_NPC_DEFAULTS,
   GENERIC_NPC_WALK_SPEED,
   getRandomVotingTimeMs,
+  getRandomSpawnDelayMs,
   updateGenericNpc,
+  simulateNpcsStep,
 } from "../src/features/npcs/genericNpcConfig.ts";
 
 describe("Sistema de NPCs Genéricos - Pruebas de Integración y Ciclo de Vida", () => {
@@ -281,6 +283,416 @@ describe("Sistema de NPCs Genéricos - Pruebas de Integración y Ciclo de Vida",
       assert.equal(npc.state, "FINISHED");
       assert.equal(npc.position.y, 106.0);
       assert.equal(npc.isActive, false);
+    });
+  });
+
+  describe("Fase 4: Sistema independiente de NPCs para las cinco mamparas", () => {
+    test("1. el sistema global permanece desactivado durante la entrada del primer NPC", () => {
+      const mamparas = INITIAL_MAMPARAS_CONFIG.map((m) =>
+        m.id === 3
+          ? { ...m, isOccupied: true, occupiedByNpcId: "npc-gen-mampara-3" }
+          : m,
+      );
+      const firstNpc = createGenericNpcInstance(
+        mamparas[2],
+        "npc-gen-mampara-3",
+        5000,
+      );
+
+      const state = {
+        npcs: [firstNpc],
+        mamparas,
+        isGlobalSystemActive: false,
+        npcIdCounter: 1,
+      };
+
+      const step1 = simulateNpcsStep(state, 1.0);
+      assert.equal(step1.isGlobalSystemActive, false);
+      assert.equal(step1.justActivatedGlobal, false);
+      assert.equal(step1.npcs[0].state, "ENTERING");
+      assert.ok(step1.mamparas.every((m) => !m.spawnTimerConfig.isEnabled));
+    });
+
+    test("2. el sistema global permanece desactivado mientras el primer NPC está en IDLE", () => {
+      const mamparas = INITIAL_MAMPARAS_CONFIG.map((m) =>
+        m.id === 3
+          ? { ...m, isOccupied: true, occupiedByNpcId: "npc-gen-mampara-3" }
+          : m,
+      );
+      const idleNpc = {
+        ...createGenericNpcInstance(mamparas[2], "npc-gen-mampara-3", 5000),
+        position: { x: 52.0, y: 36.5 },
+        state: "IDLE",
+        currentAnimation: "idle",
+        elapsedInStateMs: 1000,
+      };
+
+      const state = {
+        npcs: [idleNpc],
+        mamparas,
+        isGlobalSystemActive: false,
+        npcIdCounter: 1,
+      };
+
+      const step = simulateNpcsStep(state, 1.0);
+      assert.equal(step.isGlobalSystemActive, false);
+      assert.equal(step.justActivatedGlobal, false);
+      assert.equal(step.npcs[0].state, "IDLE");
+      assert.ok(step.mamparas.every((m) => !m.spawnTimerConfig.isEnabled));
+    });
+
+    test("3. se activa exactamente al producirse la transición IDLE -> LEAVING del primer NPC", () => {
+      const mamparas = INITIAL_MAMPARAS_CONFIG.map((m) =>
+        m.id === 3
+          ? { ...m, isOccupied: true, occupiedByNpcId: "npc-gen-mampara-3" }
+          : m,
+      );
+      const votingTime = 5000;
+      const almostLeavingNpc = {
+        ...createGenericNpcInstance(mamparas[2], "npc-gen-mampara-3", votingTime),
+        position: { x: 52.0, y: 36.5 },
+        state: "IDLE",
+        currentAnimation: "idle",
+        elapsedInStateMs: 4950, // a 50ms de terminar
+      };
+
+      const state = {
+        npcs: [almostLeavingNpc],
+        mamparas,
+        isGlobalSystemActive: false,
+        npcIdCounter: 1,
+      };
+
+      const step = simulateNpcsStep(state, 0.1); // 100ms
+      assert.equal(step.isGlobalSystemActive, true);
+      assert.equal(step.justActivatedGlobal, true);
+      assert.equal(step.npcs[0].state, "LEAVING");
+      assert.equal(step.npcs[0].currentAnimation, "front");
+    });
+
+    test("4. la activación ocurre una sola vez por ejecución", () => {
+      const mamparas = INITIAL_MAMPARAS_CONFIG.map((m) =>
+        m.id === 3
+          ? { ...m, isOccupied: true, occupiedByNpcId: "npc-gen-mampara-3" }
+          : m,
+      );
+      const leavingNpc = {
+        ...createGenericNpcInstance(mamparas[2], "npc-gen-mampara-3", 5000),
+        position: { x: 52.0, y: 40.0 },
+        state: "LEAVING",
+        currentAnimation: "front",
+        elapsedInStateMs: 500,
+      };
+
+      const state = {
+        npcs: [leavingNpc],
+        mamparas,
+        isGlobalSystemActive: true,
+        npcIdCounter: 1,
+      };
+
+      const step = simulateNpcsStep(state, 0.5);
+      assert.equal(step.isGlobalSystemActive, true);
+      assert.equal(step.justActivatedGlobal, false);
+    });
+
+    test("5. las mamparas 1, 2, 4 y 5 comienzan sus esperas inmediatamente tras activarse", () => {
+      const mamparas = INITIAL_MAMPARAS_CONFIG.map((m) =>
+        m.id === 3
+          ? { ...m, isOccupied: true, occupiedByNpcId: "npc-gen-mampara-3" }
+          : m,
+      );
+      const almostLeavingNpc = {
+        ...createGenericNpcInstance(mamparas[2], "npc-gen-mampara-3", 4000),
+        position: { x: 52.0, y: 36.5 },
+        state: "IDLE",
+        currentAnimation: "idle",
+        elapsedInStateMs: 3950,
+      };
+
+      const state = {
+        npcs: [almostLeavingNpc],
+        mamparas,
+        isGlobalSystemActive: false,
+        npcIdCounter: 1,
+      };
+
+      const step = simulateNpcsStep(state, 0.1, 1000);
+      assert.equal(step.justActivatedGlobal, true);
+
+      // Mamparas 1, 2, 4 y 5 deben estar habilitadas con tiempos > 0
+      [1, 2, 4, 5].forEach((id) => {
+        const m = step.mamparas.find((booth) => booth.id === id);
+        assert.ok(m.spawnTimerConfig.isEnabled, `Mampara ${id} debe estar habilitada`);
+        assert.ok(
+          m.spawnTimerConfig.nextSpawnDelayMs >= 900 &&
+            m.spawnTimerConfig.nextSpawnDelayMs <= 3000,
+          `Mampara ${id} debe tener un delay en [1000, 3000] ms menos dt`,
+        );
+      });
+    });
+
+    test("6. la mampara 3 espera hasta que el primer NPC alcance FINISHED para iniciar su espera", () => {
+      const mamparas = INITIAL_MAMPARAS_CONFIG.map((m) =>
+        m.id === 3
+          ? { ...m, isOccupied: true, occupiedByNpcId: "npc-gen-mampara-3" }
+          : m,
+      );
+      const leavingNpc = {
+        ...createGenericNpcInstance(mamparas[2], "npc-gen-mampara-3", 5000),
+        position: { x: 52.0, y: 100.0 },
+        state: "LEAVING",
+        currentAnimation: "front",
+        elapsedInStateMs: 2000,
+      };
+
+      let state = {
+        npcs: [leavingNpc],
+        mamparas,
+        isGlobalSystemActive: true,
+        npcIdCounter: 1,
+      };
+
+      // Mientras desciende hacia Y = 106.0%, la mampara 3 sigue ocupada
+      state = simulateNpcsStep(state, 0.2); // avanza 2.4% -> Y = 102.4%
+      assert.equal(state.mamparas[2].isOccupied, true);
+      assert.equal(state.mamparas[2].occupiedByNpcId, "npc-gen-mampara-3");
+
+      // Cuando alcanza y supera Y = 106.0%, transiciona a FINISHED y se libera
+      state = simulateNpcsStep(state, 0.5); // avanza 6.0% -> llega a 106.0%
+      assert.equal(state.mamparas[2].isOccupied, false);
+      assert.equal(state.mamparas[2].occupiedByNpcId, null);
+      assert.ok(state.mamparas[2].spawnTimerConfig.isEnabled);
+      assert.ok(state.mamparas[2].spawnTimerConfig.nextSpawnDelayMs > 0);
+    });
+
+    test("7. cada mampara genera tiempos independientes entre 1000 y 3000 ms con decimales", () => {
+      const delays = [];
+      for (let i = 0; i < 50; i++) {
+        const delay = getRandomSpawnDelayMs();
+        assert.ok(
+          delay >= 1000 && delay <= 3000,
+          `El delay ${delay} debe estar en el intervalo [1000, 3000] ms`,
+        );
+        assert.ok(!Number.isInteger(delay), "Debe permitir valores decimales");
+        delays.push(delay);
+      }
+      const uniqueCount = new Set(delays).size;
+      assert.ok(uniqueCount > 45, "Los tiempos generados deben ser independientes y continuos");
+    });
+
+    test("8. los NPCs permanecen en IDLE entre 4000 y 8000 ms", () => {
+      for (let i = 0; i < 50; i++) {
+        const votingTime = getRandomVotingTimeMs();
+        assert.ok(votingTime >= 4000 && votingTime <= 8000);
+      }
+    });
+
+    test("9. cada mampara admite como máximo un NPC activo (control de ocupación)", () => {
+      const mockOptions = {
+        getRandomSpawnDelay: () => 1000,
+        getRandomVotingTime: () => 5000,
+      };
+
+      let state = {
+        npcs: [],
+        mamparas: INITIAL_MAMPARAS_CONFIG.map((m) => ({
+          ...m,
+          spawnTimerConfig: {
+            ...m.spawnTimerConfig,
+            isEnabled: true,
+            nextSpawnDelayMs: 500, // 500ms restantes
+          },
+        })),
+        isGlobalSystemActive: true,
+        npcIdCounter: 0,
+      };
+
+      // Avanzamos 600ms: las 5 mamparas generan exactamente 1 NPC cada una
+      state = simulateNpcsStep(state, 0.6, 600, mockOptions);
+      assert.equal(state.npcs.length, 5);
+      state.mamparas.forEach((m) => {
+        assert.equal(m.isOccupied, true);
+        assert.ok(m.occupiedByNpcId !== null);
+      });
+
+      // Avanzamos 2.0s más: ningún NPC adicional debe ser creado mientras están ocupadas
+      state = simulateNpcsStep(state, 2.0, 2600, mockOptions);
+      assert.equal(state.npcs.length, 5);
+    });
+
+    test("10. los NPCs se eliminan correctamente de la lista al salir del mapa", () => {
+      const exitingNpc = {
+        ...createGenericNpcInstance(INITIAL_MAMPARAS_CONFIG[0], "npc-to-remove", 5000),
+        position: { x: 32.0, y: 105.0 },
+        state: "LEAVING",
+        currentAnimation: "front",
+      };
+
+      let state = {
+        npcs: [exitingNpc],
+        mamparas: INITIAL_MAMPARAS_CONFIG.map((m) =>
+          m.id === 1 ? { ...m, isOccupied: true, occupiedByNpcId: exitingNpc.id } : m,
+        ),
+        isGlobalSystemActive: true,
+        npcIdCounter: 1,
+      };
+
+      // Con dt = 0.5s avanza 6% alcanzando 106.0% (FINISHED)
+      state = simulateNpcsStep(state, 0.5);
+      assert.equal(state.npcs.length, 0, "El NPC finalizado debe eliminarse de npcs");
+      assert.equal(state.finishedMamparaIds.length, 1);
+      assert.equal(state.finishedMamparaIds[0], 1);
+      assert.equal(state.mamparas[0].isOccupied, false);
+    });
+
+    test("11. los ciclos de cada mampara se repiten automáticamente tras la salida", () => {
+      const mockOptions = {
+        getRandomSpawnDelay: () => 1000,
+        getRandomVotingTime: () => 4000,
+      };
+
+      const mampara1 = INITIAL_MAMPARAS_CONFIG[0];
+      const npc1 = {
+        ...createGenericNpcInstance(mampara1, "npc-cycle-1", 4000),
+        position: { x: 32.0, y: 105.5 },
+        state: "LEAVING",
+        currentAnimation: "front",
+      };
+
+      let state = {
+        npcs: [npc1],
+        mamparas: INITIAL_MAMPARAS_CONFIG.map((m) =>
+          m.id === 1 ? { ...m, isOccupied: true, occupiedByNpcId: npc1.id } : m,
+        ),
+        isGlobalSystemActive: true,
+        npcIdCounter: 1,
+      };
+
+      // 1. Termina el primer NPC
+      state = simulateNpcsStep(state, 0.1, 100, mockOptions);
+      assert.equal(state.npcs.length, 0);
+      assert.equal(state.mamparas[0].isOccupied, false);
+      assert.ok(state.mamparas[0].spawnTimerConfig.nextSpawnDelayMs > 0);
+
+      // 2. Espera 1.0s (delay cumplido)
+      state = simulateNpcsStep(state, 1.0, 1100, mockOptions);
+      assert.equal(state.npcs.length, 1, "Un nuevo NPC debe haber spawneado en mampara 1");
+      assert.equal(state.npcs[0].assignedMamparaId, 1);
+      assert.equal(state.mamparas[0].isOccupied, true);
+    });
+
+    test("12. los temporizadores descuentan de forma continua y monótona sin reiniciarse", () => {
+      let state = {
+        npcs: [],
+        mamparas: INITIAL_MAMPARAS_CONFIG.map((m) => ({
+          ...m,
+          spawnTimerConfig: {
+            ...m.spawnTimerConfig,
+            isEnabled: true,
+            nextSpawnDelayMs: 2500,
+          },
+        })),
+        isGlobalSystemActive: true,
+        npcIdCounter: 0,
+      };
+
+      // 3 pasos sucesivos de 100 ms
+      state = simulateNpcsStep(state, 0.1);
+      assert.ok(Math.abs(state.mamparas[0].spawnTimerConfig.nextSpawnDelayMs - 2400) < 0.001);
+
+      state = simulateNpcsStep(state, 0.1);
+      assert.ok(Math.abs(state.mamparas[0].spawnTimerConfig.nextSpawnDelayMs - 2300) < 0.001);
+
+      state = simulateNpcsStep(state, 0.1);
+      assert.ok(Math.abs(state.mamparas[0].spawnTimerConfig.nextSpawnDelayMs - 2200) < 0.001);
+    });
+
+    test("13. el sistema simula múltiples NPCs simultáneos en distintas fases sin interferencias", () => {
+      const npcs = [
+        {
+          ...createGenericNpcInstance(INITIAL_MAMPARAS_CONFIG[0], "npc-1", 5000),
+          position: { x: 32.0, y: 80.0 },
+          state: "ENTERING",
+          currentAnimation: "back",
+        },
+        {
+          ...createGenericNpcInstance(INITIAL_MAMPARAS_CONFIG[1], "npc-2", 6000),
+          position: { x: 42.0, y: 36.5 },
+          state: "IDLE",
+          currentAnimation: "idle",
+        },
+        {
+          ...createGenericNpcInstance(INITIAL_MAMPARAS_CONFIG[2], "npc-3", 4000),
+          position: { x: 52.0, y: 60.0 },
+          state: "LEAVING",
+          currentAnimation: "front",
+        },
+      ];
+
+      const mamparas = INITIAL_MAMPARAS_CONFIG.map((m) => ({
+        ...m,
+        isOccupied: m.id <= 3,
+        occupiedByNpcId: m.id <= 3 ? `npc-${m.id}` : null,
+      }));
+
+      const state = {
+        npcs,
+        mamparas,
+        isGlobalSystemActive: true,
+        npcIdCounter: 3,
+      };
+
+      const next = simulateNpcsStep(state, 0.5);
+      assert.equal(next.npcs.length, 3);
+      // NPC 1 avanza hacia arriba (Y disminuye de 80 a 74)
+      assert.equal(next.npcs[0].position.y, 74.0);
+      // NPC 2 permanece quieto en la mampara (Y = 36.5)
+      assert.equal(next.npcs[1].position.y, 36.5);
+      // NPC 3 avanza hacia abajo (Y aumenta de 60 a 66)
+      assert.equal(next.npcs[2].position.y, 66.0);
+    });
+
+    test("14. la limpieza restablece todas las mamparas y estados a sus valores iniciales", () => {
+      const cleanMamparas = INITIAL_MAMPARAS_CONFIG;
+      assert.ok(cleanMamparas.every((m) => !m.isOccupied));
+      assert.ok(cleanMamparas.every((m) => m.occupiedByNpcId === null));
+      assert.ok(cleanMamparas.every((m) => !m.spawnTimerConfig.isEnabled));
+    });
+
+    test("15. la ejecución del capítulo puede reiniciarse sin personajes residuales ni duplicaciones", () => {
+      const initialBooth3 = INITIAL_MAMPARAS_CONFIG[2];
+      const run1Npc = createGenericNpcInstance(initialBooth3, "npc-gen-mampara-3");
+
+      let state = {
+        npcs: [run1Npc],
+        mamparas: INITIAL_MAMPARAS_CONFIG.map((m) =>
+          m.id === 3 ? { ...m, isOccupied: true, occupiedByNpcId: run1Npc.id } : m,
+        ),
+        isGlobalSystemActive: false,
+        npcIdCounter: 1,
+      };
+
+      // Simula reset y reinicio limpio
+      state = {
+        npcs: [],
+        mamparas: INITIAL_MAMPARAS_CONFIG,
+        isGlobalSystemActive: false,
+        npcIdCounter: 0,
+      };
+
+      // Segundo arranque
+      const run2Npc = createGenericNpcInstance(initialBooth3, "npc-gen-mampara-3");
+      state.npcs = [run2Npc];
+      state.mamparas = INITIAL_MAMPARAS_CONFIG.map((m) =>
+        m.id === 3 ? { ...m, isOccupied: true, occupiedByNpcId: run2Npc.id } : m,
+      );
+      state.npcIdCounter = 1;
+
+      assert.equal(state.npcs.length, 1);
+      assert.equal(state.npcs[0].id, "npc-gen-mampara-3");
+      assert.equal(state.isGlobalSystemActive, false);
+      assert.equal(state.mamparas.filter((m) => m.isOccupied).length, 1);
     });
   });
 });

@@ -323,7 +323,7 @@ export default function Chapter2Scene({
   const zoomScale = 2.0;
   const { camX, camY } = useCinematicNpcCamera({
     playerPos,
-    firstNpc: npcs[0],
+    firstNpc: npcs.find((n) => n.id === "npc-gen-mampara-3") || npcs[0],
     isPaused,
     zoomScale,
     holdDurationMs: 2500,
