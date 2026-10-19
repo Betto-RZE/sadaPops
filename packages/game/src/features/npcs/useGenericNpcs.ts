@@ -38,11 +38,11 @@ export interface UseGenericNpcsReturn {
 /**
  * Hook modular para gestionar el ciclo de vida y simulación de los NPCs genéricos.
  *
- * Fase 2:
- * - Detecta el evento real en que el globo de diálogo se vuelve visible ('entering' o 'visible').
- * - Hace aparecer al primer votante genérico en Y = 106.0% con rumbo a la Mampara 3 (X = 52.0%).
- * - Actualiza su movimiento de forma fluida mediante requestAnimationFrame y delta time (dt).
- * - Al llegar a Y = 36.5%, cambia a IDLE ('generico-idle') y permanece en la mampara.
+ * Fase 3 - Ciclo completo de votación:
+ * 1. ENTERING: Aparece en Y = 106.0% con rumbo a Mampara 3 (X = 52.0%) con 'generico-back'.
+ * 2. IDLE: Se detiene en Y = 36.5%, cambia a 'generico-idle' y permanece [4000, 8000] ms.
+ * 3. LEAVING: Transiciona a 'generico-front' y camina hacia abajo hasta Y = 106.0%.
+ * 4. FINISHED: Se retira de la colección activa, se libera la mampara y se detiene el procesamiento.
  */
 export function useGenericNpcs({
   dialogueState,
@@ -105,9 +105,8 @@ export function useGenericNpcs({
   }, [dialogueState]);
 
   /**
-   * 2. Bucle de movimiento independiente de la tasa de refresco (requestAnimationFrame + dt).
-   * Solo actualiza el estado de React mientras exista algún NPC en desplazamiento ('ENTERING').
-   * Una vez alcanzada la mampara (estado 'IDLE'), cesan las re-renderizaciones periódicas.
+   * 2. Bucle de actualización independiente de la tasa de refresco (requestAnimationFrame + dt).
+   * Gestiona el ciclo completo (ENTERING -> IDLE -> LEAVING -> FINISHED) de forma fluida.
    */
   useEffect(() => {
     let animationFrameId: number;
@@ -118,12 +117,13 @@ export function useGenericNpcs({
       lastTime = currentTime;
 
       if (!isPausedRef.current && npcsRef.current.length > 0) {
-        const hasMovingNpc = npcsRef.current.some(
-          (npc) => npc.isActive && npc.state === "ENTERING",
+        const hasActiveNpc = npcsRef.current.some(
+          (npc) => npc.isActive && npc.state !== "FINISHED",
         );
 
-        if (hasMovingNpc) {
-          const updated = npcsRef.current.map((npc) => {
+        if (hasActiveNpc) {
+          const previousList = npcsRef.current;
+          const updated = previousList.map((npc) => {
             const targetMampara =
               mamparasRef.current.find((m) => m.id === npc.assignedMamparaId) ||
               INITIAL_MAMPARAS_CONFIG[2];
@@ -131,8 +131,46 @@ export function useGenericNpcs({
             return updateGenericNpc(npc, targetMampara, dt);
           });
 
-          npcsRef.current = updated;
-          setNpcs(updated);
+          // Detectar NPCs que terminaron su recorrido para liberar su mampara
+          const finishedNpcs = updated.filter(
+            (npc) => npc.state === "FINISHED",
+          );
+          if (finishedNpcs.length > 0) {
+            const finishedMamparaIds = new Set(
+              finishedNpcs.map((n) => n.assignedMamparaId),
+            );
+            setMamparas((prev) =>
+              prev.map((m) =>
+                finishedMamparaIds.has(m.id)
+                  ? { ...m, isOccupied: false, occupiedByNpcId: null }
+                  : m,
+              ),
+            );
+          }
+
+          // Filtrar los NPCs que ya finalizaron completamente
+          const remainingActive = updated.filter(
+            (npc) => npc.state !== "FINISHED",
+          );
+
+          npcsRef.current = remainingActive;
+
+          // Solo notificamos a React si hubo un cambio visible (posición, animación, estado o retiro)
+          const hasVisualChange =
+            remainingActive.length !== previousList.length ||
+            remainingActive.some((newNpc, idx) => {
+              const oldNpc = previousList[idx];
+              if (!oldNpc) return true;
+              return (
+                oldNpc.state !== newNpc.state ||
+                oldNpc.currentAnimation !== newNpc.currentAnimation ||
+                oldNpc.position.y !== newNpc.position.y
+              );
+            });
+
+          if (hasVisualChange) {
+            setNpcs(remainingActive);
+          }
         }
       }
 
@@ -158,6 +196,7 @@ export function useGenericNpcs({
   const resetNpcs = useCallback(() => {
     hasSpawnedRef.current = false;
     setFirstNpcSpawned(false);
+    npcsRef.current = [];
     setNpcs([]);
     setMamparas(initialMamparas || INITIAL_MAMPARAS_CONFIG);
   }, [initialMamparas]);

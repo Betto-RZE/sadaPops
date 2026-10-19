@@ -86,14 +86,26 @@ export const GENERIC_NPC_DEFAULTS = {
   /** Velocidad de desplazamiento (% de pantalla por segundo) */
   speed: 12.0,
   /** Tiempo por defecto de permanencia en la mampara votando (ms) */
-  defaultVotingWaitTimeMs: 4500,
+  defaultVotingWaitTimeMs: 6000,
   /** Rango mínimo de tiempo para votar (ms) */
-  minVotingWaitTimeMs: 3500,
+  minVotingWaitTimeMs: 4000,
   /** Rango máximo de tiempo para votar (ms) */
-  maxVotingWaitTimeMs: 6500,
+  maxVotingWaitTimeMs: 8000,
   /** Ancho porcentual del sprite en pantalla (alineado al del jugador 6.5%) */
   spriteWidthPercent: "6.5%",
 };
+
+/**
+ * Genera un tiempo de votación aleatorio continuo en el intervalo [minMs, maxMs] milisegundos.
+ * Por defecto en [4000, 8000] ms con decimales según los requisitos de la Fase 3.
+ */
+export function getRandomVotingTimeMs(
+  minMs: number = GENERIC_NPC_DEFAULTS.minVotingWaitTimeMs,
+  maxMs: number = GENERIC_NPC_DEFAULTS.maxVotingWaitTimeMs,
+): number {
+  return minMs + Math.random() * (maxMs - minMs);
+}
+
 
 /**
  * Configuración inicial de las cinco mamparas de votación con coordenadas reales del juego.
@@ -203,8 +215,13 @@ export const INITIAL_MAMPARAS_CONFIG: MamparaBoothConfig[] = [
 export function createGenericNpcInstance(
   mampara: MamparaBoothConfig,
   customId?: string,
-  votingWaitTimeMs: number = GENERIC_NPC_DEFAULTS.defaultVotingWaitTimeMs,
+  votingWaitTimeMs?: number,
 ): GenericNpc {
+  const chosenWaitTime =
+    typeof votingWaitTimeMs === "number" && votingWaitTimeMs > 0
+      ? votingWaitTimeMs
+      : getRandomVotingTimeMs();
+
   return {
     id: customId ?? `npc-gen-${mampara.id}-${Date.now()}`,
     position: {
@@ -215,7 +232,7 @@ export function createGenericNpcInstance(
     currentAnimation: "back",
     state: "ENTERING",
     speed: GENERIC_NPC_WALK_SPEED,
-    votingWaitTimeMs,
+    votingWaitTimeMs: chosenWaitTime,
     elapsedInStateMs: 0,
     isActive: true,
   };
@@ -230,18 +247,26 @@ export const GENERIC_NPC_WALK_SPEED = 12.0;
 /**
  * Actualiza el movimiento y estado de un NPC genérico en función del tiempo transcurrido (dtSeconds).
  *
- * Fase 2:
- * - Si está en estado 'ENTERING': avanza verticalmente hacia targetPosition.y.
- * - Al alcanzar o sobrepasar targetPosition.y: se fija exactamente en la coordenada de destino,
- *   cambia a estado 'IDLE' y activa la animación 'idle'.
+ * Fase 3 - Ciclo completo:
+ * - ENTERING: avanza verticalmente hacia targetPosition.y con animación 'back'.
+ *   Al llegar, fija coordenadas, conserva o genera votingWaitTimeMs [4000, 8000] ms,
+ *   cambia a 'IDLE' y activa 'idle'.
+ * - IDLE: permanece detenido en la mampara durante votingWaitTimeMs ms con animación 'idle'.
+ *   Al terminar el tiempo, transiciona a 'LEAVING', activa 'front' y comienza el descenso.
+ * - LEAVING: desciende verticalmente hacia exitPoint.y con animación 'front'.
+ *   Al alcanzar exitPoint.y (106.0%), fija coordenadas y transiciona a 'FINISHED'.
+ * - FINISHED: el NPC ha salido completamente de la explanada y está listo para ser retirado.
  */
 export function updateGenericNpc(
   npc: GenericNpc,
   targetMampara: MamparaBoothConfig,
   dtSeconds: number,
 ): GenericNpc {
-  if (!npc.isActive) return npc;
+  if (!npc.isActive || npc.state === "FINISHED") {
+    return { ...npc, isActive: false, state: "FINISHED" };
+  }
 
+  // 1. Estado ENTERING: caminando desde abajo hacia la mampara
   if (npc.state === "ENTERING") {
     const targetY = targetMampara.targetPosition.y;
     const step = npc.speed * dtSeconds;
@@ -249,6 +274,13 @@ export function updateGenericNpc(
 
     // Llegada a la mampara: detección exacta sin sobrepaso ni oscilaciones
     if (nextY <= targetY) {
+      const timeToTarget = (npc.position.y - targetY) / npc.speed;
+      const leftoverDt = Math.max(0, dtSeconds - timeToTarget);
+      const votingTime =
+        npc.votingWaitTimeMs > 0
+          ? npc.votingWaitTimeMs
+          : getRandomVotingTimeMs();
+
       return {
         ...npc,
         position: {
@@ -257,7 +289,8 @@ export function updateGenericNpc(
         },
         state: "IDLE",
         currentAnimation: "idle",
-        elapsedInStateMs: 0,
+        votingWaitTimeMs: votingTime,
+        elapsedInStateMs: leftoverDt * 1000,
       };
     }
 
@@ -272,15 +305,85 @@ export function updateGenericNpc(
     };
   }
 
+  // 2. Estado IDLE: detenido frente a la mampara simulando la acción de votar
   if (npc.state === "IDLE") {
-    // En Fase 2 permanece indefinidamente en IDLE en la mampara
+    const newElapsed = npc.elapsedInStateMs + dtSeconds * 1000;
+
+    // Aún en tiempo de votación: permanece detenido e inmóvil
+    if (newElapsed < npc.votingWaitTimeMs) {
+      return {
+        ...npc,
+        elapsedInStateMs: newElapsed,
+        currentAnimation: "idle",
+      };
+    }
+
+    // Cumplió el tiempo de votación: transiciona a LEAVING e inicia el descenso
+    const overdueMs = newElapsed - npc.votingWaitTimeMs;
+    const carryDt = overdueMs / 1000;
+    const exitY = targetMampara.exitPoint.y;
+    const stepDown = npc.speed * carryDt;
+    const nextY = npc.position.y + stepDown;
+
+    if (nextY >= exitY) {
+      return {
+        ...npc,
+        position: {
+          x: targetMampara.exitPoint.x,
+          y: exitY,
+        },
+        state: "FINISHED",
+        currentAnimation: "front",
+        elapsedInStateMs: overdueMs,
+        isActive: false,
+      };
+    }
+
     return {
       ...npc,
-      currentAnimation: "idle",
+      position: {
+        x: targetMampara.exitPoint.x,
+        y: nextY,
+      },
+      state: "LEAVING",
+      currentAnimation: "front",
+      elapsedInStateMs: overdueMs,
+    };
+  }
+
+  // 3. Estado LEAVING: caminando hacia abajo rumbo a la salida
+  if (npc.state === "LEAVING") {
+    const exitY = targetMampara.exitPoint.y;
+    const step = npc.speed * dtSeconds;
+    const nextY = npc.position.y + step;
+
+    // Llegó al punto de salida fuera de la pantalla visible: transiciona a FINISHED
+    if (nextY >= exitY) {
+      return {
+        ...npc,
+        position: {
+          x: targetMampara.exitPoint.x,
+          y: exitY,
+        },
+        state: "FINISHED",
+        currentAnimation: "front",
+        elapsedInStateMs: npc.elapsedInStateMs + dtSeconds * 1000,
+        isActive: false,
+      };
+    }
+
+    return {
+      ...npc,
+      position: {
+        x: targetMampara.exitPoint.x,
+        y: nextY,
+      },
+      currentAnimation: "front",
       elapsedInStateMs: npc.elapsedInStateMs + dtSeconds * 1000,
     };
   }
 
   return npc;
 }
+
 
