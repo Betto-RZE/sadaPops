@@ -216,6 +216,65 @@ export function calculatePlayerAlignedPositionWithNpc({
   return { x: candidateX, y: targetY };
 }
 
+/**
+ * Velocidad de desplazamiento/deslizamiento del protagonista al alinearse (% por segundo).
+ * Aumentada a 32.0 para una transición rápida, ágil y sin demoras.
+ */
+export const PLAYER_ALIGNMENT_WALK_SPEED = 32.0;
+
+/**
+ * Realiza un paso de caminata suave del protagonista hacia la posición alineada frente al interlocutor.
+ * Evita cualquier efecto de teletransporte, animando los pasos naturales del personaje de forma ágil.
+ */
+export function stepPlayerAlignmentWalk({
+  currentPos,
+  targetPos,
+  speed = PLAYER_ALIGNMENT_WALK_SPEED,
+  dt,
+}: {
+  currentPos: { x: number; y: number };
+  targetPos: { x: number; y: number };
+  speed?: number;
+  dt: number;
+}): {
+  nextPos: { x: number; y: number };
+  direction: "1" | "2" | "3" | "4";
+  isArrived: boolean;
+} {
+  const dx = targetPos.x - currentPos.x;
+  const dy = targetPos.y - currentPos.y;
+  const dist = Math.hypot(dx, dy);
+
+  if (dist <= 0.35) {
+    return {
+      nextPos: { x: targetPos.x, y: targetPos.y },
+      direction: "4", // Al llegar se orienta hacia la derecha frente a la mesa y al NPC
+      isArrived: true,
+    };
+  }
+
+  // Determinar dirección de animación según el eje dominante de movimiento
+  let direction: "1" | "2" | "3" | "4" = "1";
+  if (Math.abs(dy) >= Math.abs(dx)) {
+    direction = dy > 0 ? "1" : "3"; // 1: abajo, 3: arriba
+  } else {
+    direction = dx > 0 ? "4" : "2"; // 4: derecha, 2: izquierda
+  }
+
+  const stepDist = Math.min(dist, speed * dt);
+  const nextX = currentPos.x + (dx / dist) * stepDist;
+  const nextY = currentPos.y + (dy / dist) * stepDist;
+
+  const remainingDist = Math.hypot(targetPos.x - nextX, targetPos.y - nextY);
+  const isArrived = remainingDist <= 0.35;
+
+  return {
+    nextPos: isArrived ? { x: targetPos.x, y: targetPos.y } : { x: nextX, y: nextY },
+    direction: isArrived ? "4" : direction,
+    isArrived,
+  };
+}
+
 export interface DialogueLine {
   speaker?: string;
   speakerColor?: string;

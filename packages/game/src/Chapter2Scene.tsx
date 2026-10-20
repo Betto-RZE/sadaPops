@@ -55,6 +55,8 @@ import {
   MESA_INTERACTION_LEFT_POS,
   MESA_INTERACTION_DISTANCE_THRESHOLD,
   calculatePlayerAlignedPositionWithNpc,
+  stepPlayerAlignmentWalk,
+  PLAYER_ALIGNMENT_WALK_SPEED,
   ABUELA_CONVERSATION_MESSAGES_ES,
   ABUELA_CONVERSATION_MESSAGES_NAH,
 } from "./features/mitos";
@@ -204,6 +206,7 @@ export default function Chapter2Scene({
   // Conversación directa con la abuela tras presionar E en el lado izquierdo de la mesa
   type AbuelaConversationState =
     | "idle"
+    | "walking_to_spot"
     | "entering"
     | "visible"
     | "exiting"
@@ -215,6 +218,8 @@ export default function Chapter2Scene({
   useEffect(() => {
     abuelaConversationStateRef.current = abuelaConversationState;
   }, [abuelaConversationState]);
+
+  const alignmentTargetPosRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     if (abuelaConversationState === "entering") {
@@ -251,20 +256,31 @@ export default function Chapter2Scene({
   }, [isNearMesaLeft]);
 
   // Inicia la conversación con Doña Carmen:
-  // 1. Alinea al personaje principal en el eje Y respecto al interlocutor (targetY = ancianaPosRef.current.y = 66.0%)
-  // 2. Hace que el personaje principal mire hacia la derecha ("4") para mantener el efecto de conversación frente a frente
+  // 1. Calcula la posición alineada en el eje Y respecto a Doña Carmen (targetY = ancianaPosRef.current.y = 66.0%)
+  // 2. Si ya se encuentra en la posición, inicia la charla directamente orientado a la derecha ("4")
+  // 3. Si no, inicia una caminata suave animada (walking_to_spot) paso a paso sin teletransporte
   const handleStartAbuelaConversation = useCallback(() => {
     const targetY = ancianaPosRef.current.y;
-    setPlayerPos((prev) =>
-      calculatePlayerAlignedPositionWithNpc({
-        currentPos: prev,
-        targetNpcY: targetY,
-        isWalkable: isPositionWalkable,
-      }),
+    const targetPos = calculatePlayerAlignedPositionWithNpc({
+      currentPos: playerPosRef.current,
+      targetNpcY: targetY,
+      isWalkable: isPositionWalkable,
+    });
+    alignmentTargetPosRef.current = targetPos;
+
+    const dist = Math.hypot(
+      playerPosRef.current.x - targetPos.x,
+      playerPosRef.current.y - targetPos.y,
     );
-    setLastDirection("4");
-    setIsWalking(false);
-    setAbuelaConversationState("entering");
+
+    if (dist <= 0.35) {
+      setPlayerPos(targetPos);
+      setLastDirection("4");
+      setIsWalking(false);
+      setAbuelaConversationState("entering");
+    } else {
+      setAbuelaConversationState("walking_to_spot");
+    }
   }, []);
 
   const handleStartAbuelaConversationRef = useRef(handleStartAbuelaConversation);
@@ -414,6 +430,36 @@ export default function Chapter2Scene({
 
       if (isPausedRef.current) {
         stop();
+        animationFrameId = requestAnimationFrame(updateGameLoop);
+        return;
+      }
+
+      // Fase de caminata suave del protagonista para alinearse en el eje Y frente al interlocutor
+      // Evita cualquier salto brusco o teletransporte, animando los pasos naturales
+      if (abuelaConversationStateRef.current === "walking_to_spot") {
+        stop();
+        const targetPos = alignmentTargetPosRef.current;
+        if (targetPos) {
+          const stepResult = stepPlayerAlignmentWalk({
+            currentPos: playerPosRef.current,
+            targetPos,
+            speed: PLAYER_ALIGNMENT_WALK_SPEED,
+            dt,
+          });
+
+          setPlayerPos(stepResult.nextPos);
+          setLastDirection(stepResult.direction);
+
+          if (stepResult.isArrived) {
+            setIsWalking(false);
+            setLastDirection("4");
+            setAbuelaConversationState("entering");
+          } else {
+            setIsWalking(true);
+          }
+        } else {
+          setAbuelaConversationState("entering");
+        }
         animationFrameId = requestAnimationFrame(updateGameLoop);
         return;
       }

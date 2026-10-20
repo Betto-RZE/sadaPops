@@ -12,6 +12,8 @@ import {
   MESA_INTERACTION_LEFT_POS,
   MESA_INTERACTION_DISTANCE_THRESHOLD,
   calculatePlayerAlignedPositionWithNpc,
+  stepPlayerAlignmentWalk,
+  PLAYER_ALIGNMENT_WALK_SPEED,
   ABUELA_CONVERSATION_MESSAGES_ES,
   ABUELA_CONVERSATION_MESSAGES_NAH,
 } from "../src/features/mitos/ancianaConfig.ts";
@@ -477,8 +479,44 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
       assert.equal(aligned2.y, 66.0);
       assert.equal(aligned2.x, 13.5, "Ajusta X a la zona segura máxima del lado izquierdo (13.5%)");
     });
+
+    test("camina suavemente paso a paso sin teletransportación a velocidad ágil (PLAYER_ALIGNMENT_WALK_SPEED = 32.0)", () => {
+      assert.equal(PLAYER_ALIGNMENT_WALK_SPEED, 32.0, "La velocidad debe ser 32.0% para un deslizamiento ágil");
+
+      const currentPos = { x: 13.5, y: 60.0 };
+      const targetPos = { x: 13.5, y: 66.0 };
+      const speed = PLAYER_ALIGNMENT_WALK_SPEED; // 32% por segundo
+
+      // Paso 1: Transcurre 0.1s -> avanza 3.2% hacia abajo (y pasa de 60.0 a 63.2)
+      const step1 = stepPlayerAlignmentWalk({
+        currentPos,
+        targetPos,
+        speed,
+        dt: 0.1,
+      });
+
+      assert.equal(step1.isArrived, false);
+      assert.equal(step1.direction, "1", "Debe caminar hacia abajo (dirección 1)");
+      assert.equal(Math.round(step1.nextPos.y * 10) / 10, 63.2);
+      assert.equal(step1.nextPos.x, 13.5);
+
+      // Paso 2: Cerca del objetivo (distancia <= 0.35%) -> llega y gira a la derecha ("4")
+      const nearPos = { x: 13.5, y: 65.8 };
+      const step2 = stepPlayerAlignmentWalk({
+        currentPos: nearPos,
+        targetPos,
+        speed,
+        dt: 0.05,
+      });
+
+      assert.equal(step2.isArrived, true);
+      assert.equal(step2.direction, "4", "Al llegar debe orientarse hacia la derecha");
+      assert.equal(step2.nextPos.x, targetPos.x);
+      assert.equal(step2.nextPos.y, targetPos.y);
+    });
   });
 });
+
 
 
 
