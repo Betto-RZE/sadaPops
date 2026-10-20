@@ -465,4 +465,89 @@ export const ABUELA_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
   },
 ];
 
+export interface PortraitSpeakerConfig {
+  src: string;
+  alt?: string;
+  speakerNames: string[];
+  className?: string;
+}
+
+export interface PixelSpeechBubblePortraits {
+  left?: PortraitSpeakerConfig;
+  right?: PortraitSpeakerConfig;
+}
+
+/**
+ * Retratos canónicos para la conversación entre Doña Carmen e Inecito:
+ * - Izquierda: Inecito (perfil a la derecha con gorra y polo INE magenta)
+ * - Derecha: Doña Carmen (perfil a la izquierda con chongo gris, arete dorado y suéter rosa)
+ */
+export const ABUELA_CONVERSATION_PORTRAITS: PixelSpeechBubblePortraits = {
+  left: {
+    src: "/assets/juego/dialogos/retrato-inecito.png",
+    alt: "Inecito",
+    speakerNames: ["Inecito", "Inecito Cívica", "Inecito Civica"],
+  },
+  right: {
+    src: "/assets/juego/dialogos/retrato-carmen.png",
+    alt: "Doña Carmen",
+    speakerNames: ["Doña Carmen", "Tenantzin Carmen", "Carmen", "Abuela"],
+  },
+};
+
+/**
+ * Determina si el interlocutor de un retrato está activo (hablando) en la línea actual.
+ * Compara de forma insensible a mayúsculas/minúsculas y espacios en blanco.
+ */
+export function isPortraitActive(
+  speaker: string | undefined,
+  speakerNames: string[],
+): boolean {
+  if (!speaker) return false;
+  const target = speaker.trim().toLowerCase();
+  return speakerNames.some((name) => name.trim().toLowerCase() === target);
+}
+
+export interface PortraitStyleResult {
+  filter: string;
+  opacity: number;
+  transform: string;
+  zIndex: number;
+}
+
+/**
+ * Genera el estilo visual según si el personaje está hablando o en espera (apagado).
+ * - Hablando: Se muestra con su imagen normal, nítida, vibrante y en primer plano.
+ * - No hablando: Se le aplica un filtro apagado (brightness 0.38, saturate 0.55), opacidad reducida y leve repliegue.
+ */
+export function getPortraitStyle(isActive: boolean): PortraitStyleResult {
+  if (isActive) {
+    return {
+      filter: "brightness(1) saturate(1) drop-shadow(0 4px 12px rgba(0, 0, 0, 0.45))",
+      opacity: 1,
+      transform: "translateY(0px) scale(1.02)",
+      zIndex: 2,
+    };
+  }
+  return {
+    filter: "brightness(0.38) saturate(0.55) contrast(0.9) drop-shadow(0 2px 5px rgba(0, 0, 0, 0.3))",
+    opacity: 0.65,
+    transform: "translateY(6px) scale(0.96)",
+    zIndex: 1,
+  };
+}
+
+/**
+ * Determina la alineación horizontal del nombre del orador en el globo de texto:
+ * - "right" si el orador corresponde al interlocutor de la derecha (ej. Doña Carmen).
+ * - "left" si corresponde al de la izquierda (ej. Inecito) o por defecto.
+ */
+export function getSpeakerNameAlignment(
+  speaker: string | undefined,
+  portraits?: PixelSpeechBubblePortraits,
+): "left" | "right" {
+  if (!speaker || !portraits?.right) return "left";
+  return isPortraitActive(speaker, portraits.right.speakerNames) ? "right" : "left";
+}
+
 

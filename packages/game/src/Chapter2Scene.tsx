@@ -59,6 +59,7 @@ import {
   PLAYER_ALIGNMENT_WALK_SPEED,
   ABUELA_CONVERSATION_MESSAGES_ES,
   ABUELA_CONVERSATION_MESSAGES_NAH,
+  ABUELA_CONVERSATION_PORTRAITS,
 } from "./features/mitos";
 
 /**
@@ -836,11 +837,15 @@ export default function Chapter2Scene({
 
       {/* MUNDO CON CAMARA DINAMICA */}
       <div
-        className="absolute inset-0 w-full h-full z-10"
+        className="absolute inset-0 w-full h-full z-10 transition-[filter] duration-500 ease-out"
         style={{
           transform: `scale(${zoomScale}) translate(${camX}%, ${camY}%)`,
           transformOrigin: "center center",
           willChange: "transform",
+          filter:
+            showAbuelaConversation && abuelaConversationState !== "exiting"
+              ? "blur(5px)"
+              : "none",
         }}
       >
         <img
@@ -1181,8 +1186,31 @@ export default function Chapter2Scene({
       {/* CONVERSACIÓN CON LA ABUELA AL INTERACTUAR CON LA MESA */}
       {showAbuelaConversation && (
         <div className="absolute inset-0 z-40 pointer-events-none flex items-end justify-center pb-[1.8cqw] px-[2cqw] overflow-hidden select-none">
-          <div className="relative z-10 w-[96%] pointer-events-auto flex flex-col items-end">
-            {/* Botón provisional para saltar todos los textos (Test) */}
+          {/* Capa de desenfoque y oscurecimiento cinematográfico de fondo (Backdrop Blur) */}
+          <div
+            className={`absolute inset-0 pointer-events-none transition-all duration-500 ease-out ${
+              abuelaConversationState === "exiting"
+                ? "opacity-0"
+                : "opacity-100"
+            }`}
+            style={{
+              backdropFilter:
+                abuelaConversationState === "exiting"
+                  ? "blur(0px)"
+                  : "blur(6px)",
+              WebkitBackdropFilter:
+                abuelaConversationState === "exiting"
+                  ? "blur(0px)"
+                  : "blur(6px)",
+              backgroundColor:
+                abuelaConversationState === "exiting"
+                  ? "rgba(0, 0, 0, 0)"
+                  : "rgba(0, 0, 0, 0.28)",
+            }}
+          />
+
+          {/* Botón provisional para saltar todos los textos (Test) en la esquina superior derecha */}
+          <div className="absolute top-[2cqw] right-[2cqw] pointer-events-auto z-50">
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -1190,7 +1218,7 @@ export default function Chapter2Scene({
               }}
               type="button"
               title="Saltar todos los textos con un solo clic (Test)"
-              className="mb-1.5 bg-[#940d57] hover:bg-[#ff2a85] active:bg-[#780946] text-white rounded border-[2px] border-black shadow-[2px_2px_0px_0px_#000] cursor-pointer transition-colors flex items-center gap-1.5 px-3 py-1 select-none active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+              className="bg-[#940d57] hover:bg-[#ff2a85] active:bg-[#780946] text-white rounded border-[2px] border-black shadow-[2px_2px_0px_0px_#000] cursor-pointer transition-colors flex items-center gap-1.5 px-3 py-1 select-none active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
               style={{
                 fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
                 fontSize: isFullscreen ? "10px" : "8px",
@@ -1199,13 +1227,16 @@ export default function Chapter2Scene({
               <span>⏩</span>
               <span>SALTAR TEXTOS (TEST)</span>
             </button>
+          </div>
 
+          <div className="relative z-10 w-[96%] pointer-events-auto flex flex-col items-end">
             <PixelSpeechBubble
               speaker={language === "nah" ? "Tenantzin Carmen" : "Doña Carmen"}
               messages={abuelaMessages}
               actionKey="E"
               disabled={isPaused}
               isDismissing={abuelaConversationState === "exiting"}
+              portraits={ABUELA_CONVERSATION_PORTRAITS}
               onLineChange={() => {
                 setIsWalking(false);
                 setLastDirection("4");

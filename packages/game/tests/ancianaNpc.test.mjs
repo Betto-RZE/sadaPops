@@ -16,6 +16,10 @@ import {
   PLAYER_ALIGNMENT_WALK_SPEED,
   ABUELA_CONVERSATION_MESSAGES_ES,
   ABUELA_CONVERSATION_MESSAGES_NAH,
+  ABUELA_CONVERSATION_PORTRAITS,
+  isPortraitActive,
+  getPortraitStyle,
+  getSpeakerNameAlignment,
 } from "../src/features/mitos/ancianaConfig.ts";
 
 import {
@@ -513,6 +517,95 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
       assert.equal(step2.direction, "4", "Al llegar debe orientarse hacia la derecha");
       assert.equal(step2.nextPos.x, targetPos.x);
       assert.equal(step2.nextPos.y, targetPos.y);
+    });
+  });
+
+  describe("8. Retratos en diálogo y alternancia de filtro apagado/activo", () => {
+    test("posee las rutas y asignaciones canónicas de los retratos", () => {
+      assert.ok(ABUELA_CONVERSATION_PORTRAITS.left, "Debe existir interlocutor izquierdo (Inecito)");
+      assert.ok(ABUELA_CONVERSATION_PORTRAITS.right, "Debe existir interlocutor derecho (Doña Carmen)");
+
+      assert.equal(
+        ABUELA_CONVERSATION_PORTRAITS.left.src,
+        "/assets/juego/dialogos/retrato-inecito.png",
+        "Ruta del retrato de Inecito",
+      );
+      assert.equal(
+        ABUELA_CONVERSATION_PORTRAITS.right.src,
+        "/assets/juego/dialogos/retrato-carmen.png",
+        "Ruta del retrato de Doña Carmen",
+      );
+    });
+
+    test("isPortraitActive reconoce oradores en Español y Náhuatl ignorando mayúsculas y espacios", () => {
+      const inecitoNames = ABUELA_CONVERSATION_PORTRAITS.left.speakerNames;
+      const carmenNames = ABUELA_CONVERSATION_PORTRAITS.right.speakerNames;
+
+      // Inecito en Español y Náhuatl
+      assert.equal(isPortraitActive("Inecito", inecitoNames), true);
+      assert.equal(isPortraitActive("  Inecito  ", inecitoNames), true);
+      assert.equal(isPortraitActive("INECITO", inecitoNames), true);
+      assert.equal(isPortraitActive("Inecito Cívica", inecitoNames), true);
+      assert.equal(isPortraitActive("Doña Carmen", inecitoNames), false);
+
+      // Doña Carmen en Español y Náhuatl
+      assert.equal(isPortraitActive("Doña Carmen", carmenNames), true);
+      assert.equal(isPortraitActive("doña carmen", carmenNames), true);
+      assert.equal(isPortraitActive("Tenantzin Carmen", carmenNames), true);
+      assert.equal(isPortraitActive("Inecito", carmenNames), false);
+    });
+
+    test("getPortraitStyle retorna estilos vibrantes para orador activo y filtro apagado para el inactivo", () => {
+      const activeStyle = getPortraitStyle(true);
+      assert.equal(activeStyle.opacity, 1);
+      assert.ok(activeStyle.filter.includes("brightness(1)"), "Orador activo debe tener brillo normal");
+      assert.ok(activeStyle.zIndex >= 2, "Orador activo en capa superior");
+
+      const dimmedStyle = getPortraitStyle(false);
+      assert.ok(dimmedStyle.opacity < 1, "Orador inactivo debe tener opacidad reducida");
+      assert.ok(dimmedStyle.filter.includes("brightness(0.38)"), "Orador inactivo debe tener filtro apagado (brightness reducido)");
+      assert.ok(dimmedStyle.filter.includes("saturate(0.55)"), "Orador inactivo debe tener saturación atenuada");
+    });
+
+    test("todos los 16 mensajes de la conversación alternan exactamente un orador activo y uno apagado", () => {
+      const inecitoNames = ABUELA_CONVERSATION_PORTRAITS.left.speakerNames;
+      const carmenNames = ABUELA_CONVERSATION_PORTRAITS.right.speakerNames;
+
+      // Evaluar conversación en Español
+      ABUELA_CONVERSATION_MESSAGES_ES.forEach((msg, idx) => {
+        const isLeft = isPortraitActive(msg.speaker, inecitoNames);
+        const isRight = isPortraitActive(msg.speaker, carmenNames);
+
+        assert.ok(
+          (isLeft && !isRight) || (!isLeft && isRight),
+          `Mensaje ES #${idx} ("${msg.speaker}") debe activar exactamente un interlocutor y apagar al otro`,
+        );
+      });
+
+      // Evaluar conversación en Náhuatl
+      ABUELA_CONVERSATION_MESSAGES_NAH.forEach((msg, idx) => {
+        const isLeft = isPortraitActive(msg.speaker, inecitoNames);
+        const isRight = isPortraitActive(msg.speaker, carmenNames);
+
+        assert.ok(
+          (isLeft && !isRight) || (!isLeft && isRight),
+          `Mensaje NAH #${idx} ("${msg.speaker}") debe activar exactamente un interlocutor y apagar al otro`,
+        );
+      });
+    });
+
+    test("getSpeakerNameAlignment ubica el nombre a la derecha para Doña Carmen y a la izquierda para Inecito", () => {
+      // Inecito -> "left"
+      assert.equal(getSpeakerNameAlignment("Inecito", ABUELA_CONVERSATION_PORTRAITS), "left");
+      assert.equal(getSpeakerNameAlignment("Inecito Cívica", ABUELA_CONVERSATION_PORTRAITS), "left");
+
+      // Doña Carmen -> "right"
+      assert.equal(getSpeakerNameAlignment("Doña Carmen", ABUELA_CONVERSATION_PORTRAITS), "right");
+      assert.equal(getSpeakerNameAlignment("Tenantzin Carmen", ABUELA_CONVERSATION_PORTRAITS), "right");
+
+      // Fallbacks
+      assert.equal(getSpeakerNameAlignment(undefined, ABUELA_CONVERSATION_PORTRAITS), "left");
+      assert.equal(getSpeakerNameAlignment("Doña Carmen", undefined), "left");
     });
   });
 });

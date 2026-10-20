@@ -1,4 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import {
+  PixelSpeechBubblePortraits,
+  isPortraitActive,
+  getPortraitStyle,
+  getSpeakerNameAlignment,
+} from "./features/mitos/ancianaConfig";
 
 export interface DialogueLine {
   speaker?: string;
@@ -27,6 +33,8 @@ export interface PixelSpeechBubbleProps {
   className?: string;
   isDismissing?: boolean;
   disabled?: boolean;
+  /** Retratos de personajes en diálogo pegados al borde superior del globo */
+  portraits?: PixelSpeechBubblePortraits;
 }
 
 /**
@@ -52,6 +60,7 @@ export function PixelSpeechBubble({
   className = "",
   isDismissing = false,
   disabled = false,
+  portraits,
 }: PixelSpeechBubbleProps) {
   // Normalize messages prop or fallback to single text
   const normalizedLines: DialogueLine[] = useMemo(() => {
@@ -91,6 +100,20 @@ export function PixelSpeechBubble({
   const currentSpeaker = currentLine.speaker;
   const currentSpeakerColor = currentLine.speakerColor || "#a81363";
   const currentActionKey = currentLine.actionKey || actionKey;
+
+  const isLeftSpeakerActive = useMemo(() => {
+    if (!portraits?.left) return false;
+    return isPortraitActive(currentSpeaker, portraits.left.speakerNames);
+  }, [portraits?.left, currentSpeaker]);
+
+  const isRightSpeakerActive = useMemo(() => {
+    if (!portraits?.right) return false;
+    return isPortraitActive(currentSpeaker, portraits.right.speakerNames);
+  }, [portraits?.right, currentSpeaker]);
+
+  const speakerAlignment = useMemo(() => {
+    return getSpeakerNameAlignment(currentSpeaker, portraits);
+  }, [currentSpeaker, portraits]);
 
   const [displayedLength, setDisplayedLength] = useState(0);
   const [isTyping, setIsTyping] = useState(true);
@@ -261,33 +284,85 @@ export function PixelSpeechBubble({
           : "translate-y-0 opacity-100 scale-100"
       } ${className}`}
     >
+      {/* Retratos de los interlocutores pegados al borde superior del globo */}
+      {portraits && (
+        <div className="absolute inset-x-0 bottom-[96%] flex justify-between items-end px-[2cqw] pointer-events-none z-0">
+          {/* Interlocutor Izquierdo (ej: Inecito mirando hacia la derecha) */}
+          {portraits.left && (
+            <div
+              className="relative flex items-end justify-center transition-all duration-300 ease-out select-none"
+              style={{
+                width: "clamp(135px, 29cqw, 480px)",
+                height: "clamp(122px, 26.1cqw, 432px)",
+                ...getPortraitStyle(isLeftSpeakerActive),
+              }}
+            >
+              <img
+                src={portraits.left.src}
+                alt={portraits.left.alt || "Interlocutor Izquierdo"}
+                className="w-full h-full object-contain object-bottom pointer-events-none select-none"
+                style={{ imageRendering: "pixelated" }}
+              />
+            </div>
+          )}
+
+          {/* Interlocutor Derecho (ej: Doña Carmen mirando hacia la izquierda) */}
+          {portraits.right && (
+            <div
+              className="relative flex items-end justify-center transition-all duration-300 ease-out select-none"
+              style={{
+                width: "clamp(135px, 29cqw, 480px)",
+                height: "clamp(122px, 26.1cqw, 432px)",
+                ...getPortraitStyle(isRightSpeakerActive),
+              }}
+            >
+              <img
+                src={portraits.right.src}
+                alt={portraits.right.alt || "Interlocutor Derecho"}
+                className="w-full h-full object-contain object-bottom pointer-events-none select-none"
+                style={{ imageRendering: "pixelated" }}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Pixel Art Dialogue Balloon Image Asset (Cropped to exact border) */}
       <img
         src="/assets/juego/globo-texto.png"
         alt="Globo de Texto"
-        className="absolute inset-0 w-full h-full object-fill pointer-events-none z-0 drop-shadow-[0_8px_20px_rgba(0,0,0,0.65)]"
+        className="absolute inset-0 w-full h-full object-fill pointer-events-none z-10 drop-shadow-[0_8px_20px_rgba(0,0,0,0.65)]"
         style={{ imageRendering: "pixelated" }}
       />
 
       {/* Writable White Interior Container (Fits precisely within the 6.3% top & 7.6% bottom black border) */}
-      <div className="absolute inset-x-0 top-[7.5%] bottom-[8.5%] px-[4%] flex items-center justify-between z-10">
-        {/* Left Column: Speaker in top-left, Text directly below */}
+      <div className="absolute inset-x-0 top-[7.5%] bottom-[8.5%] px-[4%] flex items-center justify-between z-20">
+        {/* Left Column: Speaker in header, Text directly below */}
         <div className="flex-1 h-full flex flex-col justify-start items-start pr-[1cqw] overflow-hidden pt-[0.2cqw]">
-          {currentSpeaker && (
-            <span
-              className="font-bold uppercase tracking-wider select-none shrink-0"
-              style={{
-                color: currentSpeakerColor,
-                fontFamily:
-                  "'Press Start 2P', 'Silkscreen', monospace, sans-serif",
-                fontSize: "clamp(10px, 1.6cqw, 32px)",
-                marginBottom: "clamp(2px, 0.35cqw, 8px)",
-                textShadow: "1px 1px 0px rgba(255,255,255,0.9)",
-              }}
-            >
-              {currentSpeaker}
-            </span>
-          )}
+          {/* Fila del nombre del interlocutor: alineado dinámicamente según su retrato */}
+          <div
+            className={`w-full flex ${
+              speakerAlignment === "right"
+                ? "justify-end text-right"
+                : "justify-start text-left"
+            } transition-all duration-200 ease-out`}
+          >
+            {currentSpeaker && (
+              <span
+                className="font-bold uppercase tracking-wider select-none shrink-0"
+                style={{
+                  color: currentSpeakerColor,
+                  fontFamily:
+                    "'Press Start 2P', 'Silkscreen', monospace, sans-serif",
+                  fontSize: "clamp(10px, 1.6cqw, 32px)",
+                  marginBottom: "clamp(2px, 0.35cqw, 8px)",
+                  textShadow: "1px 1px 0px rgba(255,255,255,0.9)",
+                }}
+              >
+                {currentSpeaker}
+              </span>
+            )}
+          </div>
           <p
             className="text-black font-semibold select-none overflow-y-auto w-full"
             style={{
