@@ -1,4 +1,5 @@
 'use client';
+
 import dynamic from 'next/dynamic';
 
 const CanvasGame = dynamic(
@@ -6,7 +7,7 @@ const CanvasGame = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="w-full h-64 flex items-center justify-center bg-slate-900 rounded-2xl border border-purple-900/50 text-purple-300 font-medium animate-pulse">
+      <div className="w-full h-64 flex items-center justify-center bg-slate-900 rounded-2xl text-slate-300 font-mono text-sm animate-pulse">
         Cargando motor del juego pixel art (PixiJS/Kaplay)...
       </div>
     ),
