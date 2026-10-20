@@ -9,6 +9,11 @@ import {
   updateAncianaSpawnDelay,
   ANCIANA_ARRIVAL_MESSAGES_ES,
   ANCIANA_ARRIVAL_MESSAGES_NAH,
+  MESA_INTERACTION_LEFT_POS,
+  MESA_INTERACTION_DISTANCE_THRESHOLD,
+  calculatePlayerAlignedPositionWithNpc,
+  ABUELA_CONVERSATION_MESSAGES_ES,
+  ABUELA_CONVERSATION_MESSAGES_NAH,
 } from "../src/features/mitos/ancianaConfig.ts";
 
 import {
@@ -373,4 +378,107 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
       assert.ok(ANCIANA_ARRIVAL_MESSAGES_NAH[1].length > 0);
     });
   });
+
+  describe("8. Interacción en el lado izquierdo de la mesa y conversación con la abuela", () => {
+    test("define coordenadas precisas en el lado izquierdo de la mesa directiva", () => {
+      assert.equal(MESA_INTERACTION_LEFT_POS.x, 14.0);
+      assert.equal(MESA_INTERACTION_LEFT_POS.y, 60.0);
+      assert.equal(MESA_INTERACTION_DISTANCE_THRESHOLD, 14.0);
+
+      // La mesa está en X=19.0; la anciana en X=26.0 (derecha); la interacción en X=14.0 (izquierda)
+      assert.ok(
+        MESA_INTERACTION_LEFT_POS.x < 19.0,
+        "El icono debe situarse a la izquierda del centro de la mesa",
+      );
+      assert.ok(
+        MESA_INTERACTION_LEFT_POS.x < ANCIANA_DEFAULTS.targetPosition.x,
+        "El jugador debe interactuar desde el lado opuesto a la anciana",
+      );
+    });
+
+    test("la visibilidad del icono (!) solo se activa cuando ancianaDialogueState === 'dismissed'", () => {
+      const computeShowExclamation = (ancianaDialogueState, abuelaConversationState) =>
+        ancianaDialogueState === "dismissed" && abuelaConversationState === "idle";
+
+      // Durante la llegada o diálogo de anuncio activo: falso
+      assert.equal(computeShowExclamation("idle", "idle"), false);
+      assert.equal(computeShowExclamation("entering", "idle"), false);
+      assert.equal(computeShowExclamation("visible", "idle"), false);
+      assert.equal(computeShowExclamation("exiting", "idle"), false);
+
+      // Una vez terminado el globo de texto ("dismissed") y sin conversación previa: verdadero
+      assert.equal(computeShowExclamation("dismissed", "idle"), true);
+
+      // Al iniciar o mantener la conversación con la abuela: se oculta el icono
+      assert.equal(computeShowExclamation("dismissed", "entering"), false);
+      assert.equal(computeShowExclamation("dismissed", "visible"), false);
+      assert.equal(computeShowExclamation("dismissed", "dismissed"), false);
+    });
+
+    test("la proximidad (isNearMesaLeft) detecta al jugador cerca del lado izquierdo de la mesa", () => {
+      const checkNear = (playerPos) => {
+        const d = Math.hypot(
+          playerPos.x - MESA_INTERACTION_LEFT_POS.x,
+          playerPos.y - MESA_INTERACTION_LEFT_POS.y,
+        );
+        return d <= MESA_INTERACTION_DISTANCE_THRESHOLD;
+      };
+
+      // Jugador junto al lado izquierdo de la mesa
+      assert.equal(checkNear({ x: 14.0, y: 60.0 }), true);
+      assert.equal(checkNear({ x: 12.0, y: 62.0 }), true);
+      assert.equal(checkNear({ x: 18.0, y: 55.0 }), true);
+
+      // Jugador lejos (ej. al otro lado del mapa o entrada derecha)
+      assert.equal(checkNear({ x: 80.0, y: 60.0 }), false);
+      assert.equal(checkNear({ x: 100.0, y: 66.0 }), false);
+    });
+
+    test("los mensajes de la conversación con Doña Carmen están configurados para español y náhuatl", () => {
+      assert.equal(ABUELA_CONVERSATION_MESSAGES_ES.length, 16);
+      assert.equal(ABUELA_CONVERSATION_MESSAGES_NAH.length, 16);
+
+      // Verificación de primera y última línea en español
+      assert.equal(ABUELA_CONVERSATION_MESSAGES_ES[0].speaker, "Doña Carmen");
+      assert.equal(ABUELA_CONVERSATION_MESSAGES_ES[0].speakerColor, "#8d3800");
+      assert.equal(
+        ABUELA_CONVERSATION_MESSAGES_ES[0].text,
+        "¡Muy buenos días, jovencito! Qué bonito les quedó todo por aquí. Se nota que trabajaron bastante.",
+      );
+
+      assert.equal(ABUELA_CONVERSATION_MESSAGES_ES[1].speaker, "Inecito");
+      assert.equal(ABUELA_CONVERSATION_MESSAGES_ES[1].speakerColor, "#a81363");
+
+      assert.equal(ABUELA_CONVERSATION_MESSAGES_ES[15].speaker, "Inecito");
+      assert.equal(
+        ABUELA_CONVERSATION_MESSAGES_ES[15].text,
+        "¡Exactamente! Su voto es suyo y su decisión debe ser respetada.",
+      );
+
+      // Verificación de náhuatl
+      assert.equal(ABUELA_CONVERSATION_MESSAGES_NAH[0].speaker, "Tenantzin Carmen");
+      assert.equal(ABUELA_CONVERSATION_MESSAGES_NAH[1].speaker, "Inecito Cívica");
+    });
+
+    test("alinea al personaje principal en el eje Y respecto al interlocutor (calculatePlayerAlignedPositionWithNpc)", () => {
+      // Caso 1: Jugador ubicado en { x: 13.0, y: 58.0 }, interlocutor a targetNpcY = 66.0%
+      const aligned1 = calculatePlayerAlignedPositionWithNpc({
+        currentPos: { x: 13.0, y: 58.0 },
+        targetNpcY: 66.0,
+      });
+      assert.equal(aligned1.y, 66.0, "Debe alinearse exactamente en Y = 66.0%");
+      assert.equal(aligned1.x, 13.0, "Conserva X segura (13.0 <= 13.5)");
+
+      // Caso 2: Jugador ubicado en X > 13.5 (ej. x: 16.0, y: 54.0)
+      const aligned2 = calculatePlayerAlignedPositionWithNpc({
+        currentPos: { x: 16.0, y: 54.0 },
+        targetNpcY: 66.0,
+      });
+      assert.equal(aligned2.y, 66.0);
+      assert.equal(aligned2.x, 13.5, "Ajusta X a la zona segura máxima del lado izquierdo (13.5%)");
+    });
+  });
 });
+
+
+

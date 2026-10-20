@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { PixelSpeechBubble } from "./PixelSpeechBubble";
 import {
   AnimatedPlayerSprite,
@@ -22,6 +22,7 @@ import {
   getLeftBoundaryX,
   getRightBoundaryX,
   getBaseRightBoundaryX,
+  EXCLAMATION_ICON_WIDTH,
 } from "./GameplayScene";
 import type { ChapterSceneProps } from "./features/capitulos/ChapterSceneRouter";
 import {
@@ -51,6 +52,11 @@ import {
   AncianaSprite,
   ANCIANA_DEFAULTS,
   releaseAncianaImages,
+  MESA_INTERACTION_LEFT_POS,
+  MESA_INTERACTION_DISTANCE_THRESHOLD,
+  calculatePlayerAlignedPositionWithNpc,
+  ABUELA_CONVERSATION_MESSAGES_ES,
+  ABUELA_CONVERSATION_MESSAGES_NAH,
 } from "./features/mitos";
 
 /**
@@ -195,6 +201,77 @@ export default function Chapter2Scene({
     }
   }, [ancianaDialogueState]);
 
+  // Conversación directa con la abuela tras presionar E en el lado izquierdo de la mesa
+  type AbuelaConversationState =
+    | "idle"
+    | "entering"
+    | "visible"
+    | "exiting"
+    | "dismissed";
+
+  const [abuelaConversationState, setAbuelaConversationState] =
+    useState<AbuelaConversationState>("idle");
+  const abuelaConversationStateRef = useRef(abuelaConversationState);
+  useEffect(() => {
+    abuelaConversationStateRef.current = abuelaConversationState;
+  }, [abuelaConversationState]);
+
+  useEffect(() => {
+    if (abuelaConversationState === "entering") {
+      const timer = setTimeout(() => setAbuelaConversationState("visible"), 350);
+      return () => clearTimeout(timer);
+    }
+    if (abuelaConversationState === "exiting") {
+      const timer = setTimeout(() => setAbuelaConversationState("dismissed"), 350);
+      return () => clearTimeout(timer);
+    }
+  }, [abuelaConversationState]);
+
+  // El icono de exclamación (!) aparece en el lado izquierdo de la mesa únicamente
+  // cuando concluye el globo de texto previo tras decir "¡Vamos a ver en qué podemos ayudarla!"
+  // y mientras la conversación con la abuela aún no haya iniciado.
+  const showMesaExclamation =
+    ancianaDialogueState === "dismissed" && abuelaConversationState === "idle";
+  const showMesaExclamationRef = useRef(showMesaExclamation);
+  useEffect(() => {
+    showMesaExclamationRef.current = showMesaExclamation;
+  }, [showMesaExclamation]);
+
+  // Detección de proximidad al lado izquierdo de la mesa
+  const distToMesaLeft = Math.hypot(
+    playerPos.x - MESA_INTERACTION_LEFT_POS.x,
+    playerPos.y - MESA_INTERACTION_LEFT_POS.y,
+  );
+  const isNearMesaLeft =
+    showMesaExclamation &&
+    distToMesaLeft <= MESA_INTERACTION_DISTANCE_THRESHOLD;
+  const isNearMesaLeftRef = useRef(isNearMesaLeft);
+  useEffect(() => {
+    isNearMesaLeftRef.current = isNearMesaLeft;
+  }, [isNearMesaLeft]);
+
+  // Inicia la conversación con Doña Carmen:
+  // 1. Alinea al personaje principal en el eje Y respecto al interlocutor (targetY = ancianaPosRef.current.y = 66.0%)
+  // 2. Hace que el personaje principal mire hacia la derecha ("4") para mantener el efecto de conversación frente a frente
+  const handleStartAbuelaConversation = useCallback(() => {
+    const targetY = ancianaPosRef.current.y;
+    setPlayerPos((prev) =>
+      calculatePlayerAlignedPositionWithNpc({
+        currentPos: prev,
+        targetNpcY: targetY,
+        isWalkable: isPositionWalkable,
+      }),
+    );
+    setLastDirection("4");
+    setIsWalking(false);
+    setAbuelaConversationState("entering");
+  }, []);
+
+  const handleStartAbuelaConversationRef = useRef(handleStartAbuelaConversation);
+  useEffect(() => {
+    handleStartAbuelaConversationRef.current = handleStartAbuelaConversation;
+  }, [handleStartAbuelaConversation]);
+
   const isPausedRef = useRef(isPaused);
   const dialogueStateRef = useRef(dialogueState);
   const playerPosRef = useRef(playerPos);
@@ -275,7 +352,22 @@ export default function Chapter2Scene({
   useEffect(() => {
     const keysPressed: Record<string, boolean> = {};
     const handleKeyDown = (e: KeyboardEvent) => {
-      keysPressed[e.key.toLowerCase()] = true;
+      const key = e.key.toLowerCase();
+      keysPressed[key] = true;
+
+      // Al presionar E cerca del lado izquierdo de la mesa con la exclamación activa,
+      // se inicia la conversación con la abuela, alineando al protagonista en Y y mirando hacia la derecha
+      if (key === "e") {
+        if (
+          showMesaExclamationRef.current &&
+          isNearMesaLeftRef.current &&
+          abuelaConversationStateRef.current === "idle" &&
+          !isPausedRef.current
+        ) {
+          e.preventDefault();
+          handleStartAbuelaConversationRef.current();
+        }
+      }
     };
     const handleKeyUp = (e: KeyboardEvent) => {
       keysPressed[e.key.toLowerCase()] = false;
@@ -326,12 +418,15 @@ export default function Chapter2Scene({
         return;
       }
 
-      // Sin movimiento de controles hasta cerrar el diálogo inicial o el de la anciana.
+      // Sin movimiento de controles hasta cerrar el diálogo inicial, el de llegada de la anciana,
+      // o la conversación directa con la abuela.
       // Durante diálogos se prioriza la estabilidad de la conversación y orientación.
       const isAnyDialogueActive =
         dialogueStateRef.current !== "dismissed" ||
         (ancianaDialogueStateRef.current !== "idle" &&
-          ancianaDialogueStateRef.current !== "dismissed");
+          ancianaDialogueStateRef.current !== "dismissed") ||
+        (abuelaConversationStateRef.current !== "idle" &&
+          abuelaConversationStateRef.current !== "dismissed");
 
       if (isAnyDialogueActive) {
         stop();
@@ -342,6 +437,12 @@ export default function Chapter2Scene({
           ancianaDialogueStateRef.current === "visible"
         ) {
           setLastDirection("1");
+        } else if (
+          abuelaConversationStateRef.current === "entering" ||
+          abuelaConversationStateRef.current === "visible"
+        ) {
+          // Orientar al protagonista hacia la derecha (mirando hacia la abuela y la mesa)
+          setLastDirection("4");
         }
         // Corrección física mínima si hay contacto directo para evitar superposiciones
         const pushResult = getNpcLateralPushVector({
@@ -628,6 +729,14 @@ export default function Chapter2Scene({
   const showAncianaDialogue =
     ancianaDialogueState !== "idle" && ancianaDialogueState !== "dismissed";
 
+  const abuelaMessages =
+    language === "nah"
+      ? ABUELA_CONVERSATION_MESSAGES_NAH
+      : ABUELA_CONVERSATION_MESSAGES_ES;
+  const showAbuelaConversation =
+    abuelaConversationState !== "idle" &&
+    abuelaConversationState !== "dismissed";
+
   // Sistema de profundidad visual dinámica (Fase 5.3 + 5.4):
   // Memoiza el arreglo de entidades y reutiliza el caché O(N) si no hay cambios en la posición vertical
   const depthMap = useMemo(() => {
@@ -648,6 +757,18 @@ export default function Chapter2Scene({
       data-testid="chapter-scene-2"
       className="absolute inset-0 w-full h-full z-20 overflow-hidden bg-[#2d572c] select-none"
     >
+      {/* Microanimaciones para el icono flotante de exclamación y texto pixel art */}
+      <style>{`
+        @keyframes floatExclamation {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-5px); }
+        }
+        @keyframes floatPrompt {
+          0%, 100% { transform: translate(-50%, 0px); }
+          50% { transform: translate(-50%, -3px); }
+        }
+      `}</style>
+
       {/* HUD: volver al menu (abre el modal de confirmacion) */}
       <div className="absolute top-3 left-3 z-30 pointer-events-none">
         <button
@@ -797,6 +918,73 @@ export default function Chapter2Scene({
           />
         </div>
 
+        {/* SIGNO DE EXCLAMACIÓN (!) EN EL LADO IZQUIERDO DE LA MESA */}
+        {showMesaExclamation && (
+          <div
+            data-testid="mesa-left-exclamation"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (
+                !isPaused &&
+                showMesaExclamation &&
+                abuelaConversationState === "idle"
+              ) {
+                handleStartAbuelaConversation();
+              }
+            }}
+            style={{
+              left: `${MESA_INTERACTION_LEFT_POS.x}%`,
+              top: `${MESA_INTERACTION_LEFT_POS.y}%`,
+              width: EXCLAMATION_ICON_WIDTH,
+              transform: "translate(-50%, -50%)",
+              zIndex: NPC_DEPTH_LAYERS.mamparaLayer + 5,
+              cursor: isNearMesaLeft ? "pointer" : "default",
+            }}
+            className="absolute flex items-center justify-center select-none"
+          >
+            <div
+              style={{
+                animation: "floatExclamation 1.4s ease-in-out infinite",
+                width: "100%",
+              }}
+              className="relative flex items-center justify-center pointer-events-auto"
+            >
+              <img
+                src="/assets/juego/exclamacion.png"
+                alt="Conversar con la abuela"
+                className="w-full h-auto object-contain drop-shadow-[0_2px_5px_rgba(0,0,0,0.6)]"
+                style={{ imageRendering: "pixelated" }}
+              />
+
+              {/* Texto pixel art 'presiona E' al acercarse al lado izquierdo de la mesa */}
+              {isNearMesaLeft && (
+                <div
+                  className="absolute -top-[28%] left-1/2 -translate-x-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
+                  style={{
+                    animation: "floatPrompt 1.4s ease-in-out infinite",
+                  }}
+                >
+                  <div
+                    className="whitespace-nowrap text-[#ff4da6] font-black tracking-wider flex items-center gap-1 select-none"
+                    style={{
+                      fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
+                      fontSize: isFullscreen
+                        ? "clamp(6.5px, 0.68cqw, 10px)"
+                        : "clamp(4.5px, 0.48cqw, 6px)",
+                      lineHeight: "1",
+                      textShadow:
+                        "1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 1px 0 #000, 0 -1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 2px 4px rgba(0,0,0,0.9)",
+                    }}
+                  >
+                    <span>presiona</span>
+                    <span className="text-[#ff99d6]">E</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* DECORACIONES */}
         {DECORACIONES_LIST.map((deco) => {
           const pos = DECORACIONES_POSITIONS[deco.key];
@@ -939,6 +1127,44 @@ export default function Chapter2Scene({
                 setLastDirection("1");
               }}
               onDismiss={() => setAncianaDialogueState("exiting")}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* CONVERSACIÓN CON LA ABUELA AL INTERACTUAR CON LA MESA */}
+      {showAbuelaConversation && (
+        <div className="absolute inset-0 z-40 pointer-events-none flex items-end justify-center pb-[1.8cqw] px-[2cqw] overflow-hidden select-none">
+          <div className="relative z-10 w-[96%] pointer-events-auto flex flex-col items-end">
+            {/* Botón provisional para saltar todos los textos (Test) */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setAbuelaConversationState("exiting");
+              }}
+              type="button"
+              title="Saltar todos los textos con un solo clic (Test)"
+              className="mb-1.5 bg-[#940d57] hover:bg-[#ff2a85] active:bg-[#780946] text-white rounded border-[2px] border-black shadow-[2px_2px_0px_0px_#000] cursor-pointer transition-colors flex items-center gap-1.5 px-3 py-1 select-none active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+              style={{
+                fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
+                fontSize: isFullscreen ? "10px" : "8px",
+              }}
+            >
+              <span>⏩</span>
+              <span>SALTAR TEXTOS (TEST)</span>
+            </button>
+
+            <PixelSpeechBubble
+              speaker={language === "nah" ? "Tenantzin Carmen" : "Doña Carmen"}
+              messages={abuelaMessages}
+              actionKey="E"
+              disabled={isPaused}
+              isDismissing={abuelaConversationState === "exiting"}
+              onLineChange={() => {
+                setIsWalking(false);
+                setLastDirection("4");
+              }}
+              onDismiss={() => setAbuelaConversationState("exiting")}
             />
           </div>
         </div>

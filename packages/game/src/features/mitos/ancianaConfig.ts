@@ -170,3 +170,240 @@ export const ANCIANA_ARRIVAL_MESSAGES_NAH: string[] = [
   "¡Oh! Tikitah se tenantzin omopacho itech tomexa.",
   "¡Tikitatij tlen ika uelis tikpalehuiseh!",
 ];
+
+/**
+ * Posición canónica del icono de exclamación (!) en el lado izquierdo de la mesa de votación.
+ * Esta posición fija ({ x: 14.0, y: 60.0 }) será el estándar para la interacción al hablar con cada personaje en la mesa.
+ * - Mesa de votación: { x: 19.0, y: 74.0 }
+ * - Personaje frente a la mesa (lado derecho): { x: 26.0, y: 66.0 }
+ * - Icono de interacción (lado izquierdo): { x: 14.0, y: 60.0 }
+ */
+export const MESA_INTERACTION_LEFT_POS = { x: 14.0, y: 60.0 };
+
+/**
+ * Radio de proximidad (%) para mostrar el texto pixel art 'presiona E' y permitir iniciar la conversación.
+ */
+export const MESA_INTERACTION_DISTANCE_THRESHOLD = 14.0;
+
+/**
+ * Calcula la posición del protagonista al interactuar con el icono de exclamación:
+ * - Se alinea en el eje Y respecto al personaje interlocutor (ej. Doña Carmen a Y = 66.0%).
+ * - Mantiene o ajusta la coordenada X dentro de la franja segura y caminable del lado izquierdo de la mesa (máximo 13.5%).
+ */
+export function calculatePlayerAlignedPositionWithNpc({
+  currentPos,
+  targetNpcY,
+  isWalkable = () => true,
+  safeMaxX = 13.5,
+}: {
+  currentPos: { x: number; y: number };
+  targetNpcY: number;
+  isWalkable?: (x: number, y: number) => boolean;
+  safeMaxX?: number;
+}): { x: number; y: number } {
+  const targetY = targetNpcY;
+  let candidateX = Math.min(currentPos.x, safeMaxX);
+
+  if (!isWalkable(candidateX, targetY)) {
+    for (let testX = safeMaxX; testX >= 6.0; testX -= 0.5) {
+      if (isWalkable(testX, targetY)) {
+        candidateX = testX;
+        break;
+      }
+    }
+  }
+
+  return { x: candidateX, y: targetY };
+}
+
+export interface DialogueLine {
+  speaker?: string;
+  speakerColor?: string;
+  text: string;
+  actionKey?: string;
+  target?: "user" | "npc";
+}
+
+/**
+ * Colores temáticos de identificación por interlocutor:
+ * - Doña Carmen: Terracota cálido (#8d3800)
+ * - Inecito: Magenta institucional INE (#a81363)
+ */
+export const DIALOGUE_SPEAKER_COLORS = {
+  carmen: "#8d3800",
+  inecito: "#a81363",
+};
+
+/**
+ * Conversación completa entre Doña Carmen e Inecito en el Capítulo 2 (Español).
+ */
+export const ABUELA_CONVERSATION_MESSAGES_ES: DialogueLine[] = [
+  {
+    speaker: "Doña Carmen",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.carmen,
+    text: "¡Muy buenos días, jovencito! Qué bonito les quedó todo por aquí. Se nota que trabajaron bastante.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Buenos días! Muchas gracias, doña Carmen. Nos llevó un buen rato, pero valió la pena. ¿Viene lista para votar?",
+  },
+  {
+    speaker: "Doña Carmen",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.carmen,
+    text: "¡Claro que sí! Aunque, fíjate que ayer me reuní a tomar café con unas amigas y terminamos hablando de las elecciones.",
+  },
+  {
+    speaker: "Doña Carmen",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.carmen,
+    text: "Una de ellas dijo que, a nuestra edad, ya casi no tiene caso venir a votar. ¡Y otra hasta aseguró que después de cierta edad ya no nos dejan!",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Uy! Parece que ese café vino acompañado de unos cuantos rumores, ¡ja, ja!",
+  },
+  {
+    speaker: "Doña Carmen",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.carmen,
+    text: "¡Ya lo creo! Pero me quedé pensando... ¿será verdad que cuando uno se hace mayor pierde el derecho a votar?",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Por supuesto que no! En México no existe una edad máxima para votar. Mientras cumpla los requisitos electorales, puede seguir participando sin importar cuántos años tenga.",
+  },
+  {
+    speaker: "Doña Carmen",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.carmen,
+    text: "¡Ah, qué bueno! Porque yo todavía tengo mucha cuerda para rato.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Y no es la única! Le voy a contar algo interesante.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "En las elecciones de 2024, las personas de entre 60 y 79 años tuvieron una participación de aproximadamente el 71% al 76%.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Eso significa que alrededor de 7 de cada 10 personas de esas edades acudieron a votar!",
+  },
+  {
+    speaker: "Doña Carmen",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.carmen,
+    text: "¡Mira nada más! Y mis amigas diciendo que ya estamos muy grandes para estas cosas.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Todo lo contrario! Las personas adultas mayores forman parte importante de la participación ciudadana.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Y recuerde que la edad tampoco significa que alguien más tenga que decidir por usted.",
+  },
+  {
+    speaker: "Doña Carmen",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.carmen,
+    text: "¡Eso sí que no! Una cosa es que me ayuden a encontrar mis lentes y otra muy distinta que quieran decidir por mí, ¡ja, ja!",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Exactamente! Su voto es suyo y su decisión debe ser respetada.",
+  },
+];
+
+/**
+ * Conversación completa entre Doña Carmen (Tenantzin Carmen) e Inecito (Inecito Cívica) en Náhuatl.
+ */
+export const ABUELA_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
+  {
+    speaker: "Tenantzin Carmen",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.carmen,
+    text: "¡Kuali tonali, telpokatl! ¡Kualtsin omokauh nochi nikan! Tikitah miak antekitikeh.",
+  },
+  {
+    speaker: "Inecito Cívica",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Kuali tonali! Tlazohkamati, tenantzin Carmen. Otechkuili miak tiempo, pero kuali okiski. ¿Ya timoyektlalijtok pampa titlapejpenis?",
+  },
+  {
+    speaker: "Tenantzin Carmen",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.carmen,
+    text: "¡Kema! Maski yalua onitlakualtik iuan notlatikauan wan otitlanonotskeh itech tlapejpenalistli.",
+  },
+  {
+    speaker: "Tenantzin Carmen",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.carmen,
+    text: "Se de yehuan okijto tla toxiuik ya amo kipia sentido titekitiseh. ¡Wan okse okijto tla satepan de se xiuitl ya amo techkauiliah!",
+  },
+  {
+    speaker: "Inecito Cívica",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Uy! Nesi in café oualikak miak istlakatili, ¡ja, ja!",
+  },
+  {
+    speaker: "Tenantzin Carmen",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.carmen,
+    text: "¡Kema! Pero onimotlatlanili... ¿melauak kuak timoueuetia tikpoloua motonal pampa titlapejpenis?",
+  },
+  {
+    speaker: "Inecito Cívica",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Amo, para nada! Mexihko amo onkak límite de edad pampa titlapejpenis. Kuak tikpia mo credencial, uelis titekitis maski kachi tixiuitl.",
+  },
+  {
+    speaker: "Tenantzin Carmen",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.carmen,
+    text: "¡Kualtsin! Pampa neh nikpia miak chikaualistli.",
+  },
+  {
+    speaker: "Inecito Cívica",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Amo san tehuatzin! Nimitsiluis se tlamantli kualtsin.",
+  },
+  {
+    speaker: "Inecito Cívica",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Itech tlapejpenalistli de 2024, tlacameh de 60 hasta 79 xiuitl otlapejpenijkeh kachi de 71% hasta 76%.",
+  },
+  {
+    speaker: "Inecito Cívica",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Inon kijtosneki 7 de cada 10 maseualmeh oajsikah pampa tlapejpeniseh!",
+  },
+  {
+    speaker: "Tenantzin Carmen",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.carmen,
+    text: "¡Xikita san tlen! Wan notlatikauan kijtouayah ya tiueuetkeh.",
+  },
+  {
+    speaker: "Inecito Cívica",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Al revés! In huehuetqueh wan ilamatqueh kipiah se tekitl kachi kualtsin itech participación ciudadana.",
+  },
+  {
+    speaker: "Inecito Cívica",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Wan xikilnamiki: mo edad amo kijtosneki okse maseual kitlapejpenis mopampa.",
+  },
+  {
+    speaker: "Tenantzin Carmen",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.carmen,
+    text: "¡Inon amo! Se tlamantli tla nechpaleuiah nikinnextis no lentes, wan okse tla kinekiseh kitlapejpeniseh nopampa, ¡ja, ja!",
+  },
+  {
+    speaker: "Inecito Cívica",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Melauak! Mo voto moxe wan moneki ma kitlakitah motlanemililis.",
+  },
+];
+
+
