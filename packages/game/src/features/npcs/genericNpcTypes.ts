@@ -58,6 +58,8 @@ export interface GenericNpc {
 
   /** Indica si el NPC está activo y debe procesarse en el bucle del juego */
   isActive: boolean;
+  /** Eje principal de desplazamiento cuando está en movimiento ('vertical' por defecto, 'horizontal' para caminatas laterales) */
+  movementAxis?: "vertical" | "horizontal";
 }
 
 /**

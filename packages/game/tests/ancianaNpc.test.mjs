@@ -216,7 +216,7 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
       );
     });
 
-    test("anciana en movimiento (walking -> ENTERING) genera empuje lateral progresivo sobre el protagonista", () => {
+    test("anciana en movimiento horizontal (side / ENTERING) empuja al protagonista hacia arriba o hacia abajo", () => {
       const ancianaAsNpc = {
         id: "anciana",
         position: { x: 50.0, y: 66.0 },
@@ -227,22 +227,63 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
         votingWaitTimeMs: 0,
         elapsedInStateMs: 0,
         isActive: true,
+        movementAxis: "horizontal",
       };
 
-      // Jugador ubicado directamente en el trayecto de la anciana
-      const playerPos = { x: 48.0, y: 66.0 };
-
-      const pushResult = getNpcLateralPushVector({
-        playerPos,
+      // Caso 1: Jugador centrado en Y (y = 66.0) frente a la anciana -> empuje vertical hacia abajo (+1)
+      const playerPosDown = { x: 48.0, y: 66.0 };
+      const pushDown = getNpcLateralPushVector({
+        playerPos: playerPosDown,
         npcs: [ancianaAsNpc],
         isPositionWalkable: isAlwaysWalkable,
         dtSeconds: 0.016,
       });
 
-      assert.ok(pushResult.pushVector !== null, "Debe generar un vector de empuje");
-      assert.equal(pushResult.pushingNpc?.id, "anciana");
-      // El empuje lateral desvía horizontalmente al jugador para despejar el camino
-      assert.equal(pushResult.pushVector.vx, -1);
+      assert.ok(pushDown.pushVector !== null, "Debe generar un vector de empuje");
+      assert.equal(pushDown.pushingNpc?.id, "anciana");
+      assert.equal(pushDown.pushVector.vx, 0, "No debe empujar horizontalmente");
+      assert.equal(pushDown.pushVector.vy, 1, "Debe empujar verticalmente hacia abajo (+1)");
+
+      // Caso 2: Jugador por encima en Y (y = 65.0) -> empuje vertical hacia arriba (-1)
+      const playerPosUp = { x: 48.0, y: 65.0 };
+      const pushUp = getNpcLateralPushVector({
+        playerPos: playerPosUp,
+        npcs: [ancianaAsNpc],
+        isPositionWalkable: isAlwaysWalkable,
+        dtSeconds: 0.016,
+      });
+
+      assert.ok(pushUp.pushVector !== null, "Debe generar un vector de empuje");
+      assert.equal(pushUp.pushVector.vx, 0, "No debe empujar horizontalmente");
+      assert.equal(pushUp.pushVector.vy, -1, "Debe empujar verticalmente hacia arriba (-1)");
+    });
+
+    test("si el lado preferente vertical está bloqueado, empuja automáticamente hacia el lado contrario", () => {
+      const ancianaAsNpc = {
+        id: "anciana",
+        position: { x: 50.0, y: 66.0 },
+        assignedMamparaId: 1,
+        currentAnimation: "side",
+        state: "ENTERING",
+        speed: ANCIANA_DEFAULTS.speed,
+        votingWaitTimeMs: 0,
+        elapsedInStateMs: 0,
+        isActive: true,
+        movementAxis: "horizontal",
+      };
+
+      // Jugador centrado en Y (preferiría abajo), pero abajo está bloqueado por un obstáculo
+      const isBlockedBelow = (_x, y) => y <= 66.0;
+
+      const push = getNpcLateralPushVector({
+        playerPos: { x: 50.0, y: 66.0 },
+        npcs: [ancianaAsNpc],
+        isPositionWalkable: isBlockedBelow,
+        dtSeconds: 0.016,
+      });
+
+      assert.ok(push.pushVector !== null);
+      assert.equal(push.pushVector.vy, -1, "Debe alternar hacia arriba (-1) al estar bloqueado abajo");
     });
 
     test("anciana frente a la mesa (arrived -> IDLE) actúa como obstáculo sólido con deslizamiento de pared", () => {

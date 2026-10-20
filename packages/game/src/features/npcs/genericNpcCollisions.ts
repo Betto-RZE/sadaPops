@@ -34,7 +34,19 @@ export interface CharacterOverlapResult {
 
 export interface ActivePushState {
   npcId: string;
-  dir: number; // +1 = derecha, -1 = izquierda
+  dir: number; // +1 = derecha/abajo, -1 = izquierda/arriba
+  axis?: "x" | "y";
+}
+
+/**
+ * Determina si el NPC se desplaza horizontalmente (de lado a lado).
+ * - NPCs que vienen de abajo hacia arriba (verticales) empujan hacia los costados (izq/der).
+ * - NPCs que vienen de lado a lado (horizontales, ej. de derecha a izq) empujan hacia arriba o hacia abajo.
+ */
+export function isNpcMovingHorizontally(npc: GenericNpc): boolean {
+  if (npc.movementAxis === "horizontal") return true;
+  if (npc.movementAxis === "vertical") return false;
+  return (npc.currentAnimation as string) === "side";
 }
 
 export interface NpcPushVectorResult {
@@ -258,23 +270,53 @@ export function getNpcLateralPushVector({
       if (prevNpc) {
         const deltaX = Math.abs(playerPos.x - prevNpc.position.x);
         const deltaY = Math.abs(playerPos.y - prevNpc.position.y);
+        const isHorizontal = isNpcMovingHorizontally(prevNpc);
 
-        // Si aún está en la misma franja vertical y dentro del margen de separación, mantener empuje suave
-        if (
-          deltaX < NPC_COLLISION_DEFAULTS.separationThreshold &&
-          deltaY < totalHalfH
-        ) {
-          const step = pushSpeed * dtSeconds;
-          const targetX = playerPos.x + activePushState.dir * step;
+        if (isHorizontal) {
+          // Si el NPC viene de lado a lado, la histéresis empuja en Y (arriba o abajo)
           if (
-            isPositionWalkable(targetX, playerPos.y) &&
-            !isPositionBlockedByIdleNpc({ x: targetX, y: playerPos.y }, npcs)
+            deltaY < NPC_COLLISION_DEFAULTS.separationThreshold &&
+            deltaX < totalHalfW
           ) {
-            return {
-              pushVector: { vx: activePushState.dir, vy: 0 },
-              pushingNpc: prevNpc,
-              activePushState,
-            };
+            const step = pushSpeed * dtSeconds;
+            const targetY = playerPos.y + activePushState.dir * step;
+            if (
+              isPositionWalkable(playerPos.x, targetY) &&
+              !isPositionBlockedByIdleNpc({ x: playerPos.x, y: targetY }, npcs)
+            ) {
+              return {
+                pushVector: { vx: 0, vy: activePushState.dir },
+                pushingNpc: prevNpc,
+                activePushState: {
+                  npcId: prevNpc.id,
+                  dir: activePushState.dir,
+                  axis: "y",
+                },
+              };
+            }
+          }
+        } else {
+          // Si el NPC viene de abajo hacia arriba/viceversa, la histéresis empuja en X (costados)
+          if (
+            deltaX < NPC_COLLISION_DEFAULTS.separationThreshold &&
+            deltaY < totalHalfH
+          ) {
+            const step = pushSpeed * dtSeconds;
+            const targetX = playerPos.x + activePushState.dir * step;
+            if (
+              isPositionWalkable(targetX, playerPos.y) &&
+              !isPositionBlockedByIdleNpc({ x: targetX, y: playerPos.y }, npcs)
+            ) {
+              return {
+                pushVector: { vx: activePushState.dir, vy: 0 },
+                pushingNpc: prevNpc,
+                activePushState: {
+                  npcId: prevNpc.id,
+                  dir: activePushState.dir,
+                  axis: "x",
+                },
+              };
+            }
           }
         }
       }
@@ -291,17 +333,7 @@ export function getNpcLateralPushVector({
   collidingEntries.sort((a, b) => b.score - a.score);
   const primary = collidingEntries[0];
   const primaryNpc = primary.npc;
-
-  // 4. Determinar la dirección horizontal preferente
-  let preferredDir: number;
-  if (activePushState && activePushState.npcId === primaryNpc.id) {
-    // Mantener la dirección establecida para evitar oscilaciones
-    preferredDir = activePushState.dir;
-  } else {
-    // Regla determinista: si playerPos.x >= npc.position.x preferir derecha (+1), sino izquierda (-1).
-    // Si están exactamente centrados (playerPos.x === npc.position.x), se desvía deterministamente a la derecha (+1).
-    preferredDir = playerPos.x >= primaryNpc.position.x ? 1 : -1;
-  }
+  const isHorizontal = isNpcMovingHorizontally(primaryNpc);
 
   const step = pushSpeed * dtSeconds;
   const otherNpcs = npcs.filter((n) => n.id !== primaryNpc.id);
@@ -332,50 +364,121 @@ export function getNpcLateralPushVector({
     return true;
   };
 
-  // 5. Evaluar candidatos de escape en orden de prioridad
+  // 4 y 5. Evaluar candidatos de escape según la orientación del desplazamiento del NPC
+  if (isHorizontal) {
+    // EL NPC VIENE DE LADO A LADO (ej. de derecha a izq): EMPUJAR HACIA ARRIBA O HACIA ABAJO
+    let preferredDir: number;
+    if (
+      activePushState &&
+      activePushState.npcId === primaryNpc.id &&
+      activePushState.axis === "y"
+    ) {
+      preferredDir = activePushState.dir;
+    } else {
+      // Regla determinista: si el jugador está por debajo o centrado en Y, empujar hacia abajo (+1), si está por encima hacia arriba (-1)
+      preferredDir = playerPos.y >= primaryNpc.position.y ? 1 : -1;
+    }
 
-  // Candidato A: Desvío lateral preferente
-  const testXA = playerPos.x + preferredDir * step;
-  if (isCandidateSafe(testXA, playerPos.y)) {
-    return {
-      pushVector: { vx: preferredDir, vy: 0 },
-      pushingNpc: primaryNpc,
-      activePushState: { npcId: primaryNpc.id, dir: preferredDir },
-    };
-  }
+    // Candidato A: Desvío vertical preferente (arriba o abajo)
+    const testYA = playerPos.y + preferredDir * step;
+    if (isCandidateSafe(playerPos.x, testYA)) {
+      return {
+        pushVector: { vx: 0, vy: preferredDir },
+        pushingNpc: primaryNpc,
+        activePushState: { npcId: primaryNpc.id, dir: preferredDir, axis: "y" },
+      };
+    }
 
-  // Candidato B: Desvío lateral opuesto si el preferente está bloqueado
-  const oppositeDir = -preferredDir;
-  const testXB = playerPos.x + oppositeDir * step;
-  if (isCandidateSafe(testXB, playerPos.y)) {
-    return {
-      pushVector: { vx: oppositeDir, vy: 0 },
-      pushingNpc: primaryNpc,
-      activePushState: { npcId: primaryNpc.id, dir: oppositeDir },
-    };
-  }
+    // Candidato B: Desvío vertical opuesto
+    const oppositeDir = -preferredDir;
+    const testYB = playerPos.y + oppositeDir * step;
+    if (isCandidateSafe(playerPos.x, testYB)) {
+      return {
+        pushVector: { vx: 0, vy: oppositeDir },
+        pushingNpc: primaryNpc,
+        activePushState: { npcId: primaryNpc.id, dir: oppositeDir, axis: "y" },
+      };
+    }
 
-  // Candidato C: Diagonal hacia abajo (hacia la explanada abierta)
-  const diagStepX = preferredDir * step * 0.7071;
-  const diagStepY = step * 0.7071;
-  const testXC = playerPos.x + diagStepX;
-  const testYC = playerPos.y + diagStepY;
-  if (isCandidateSafe(testXC, testYC)) {
-    return {
-      pushVector: { vx: preferredDir * 0.7071, vy: 0.7071 },
-      pushingNpc: primaryNpc,
-      activePushState: { npcId: primaryNpc.id, dir: preferredDir },
-    };
-  }
+    // Candidato C: Diagonal con desvío vertical y componente horizontal hacia el espacio libre
+    const diagStepX = step * 0.7071;
+    const diagStepY = preferredDir * step * 0.7071;
+    const escapeXDir = playerPos.x <= primaryNpc.position.x ? -1 : 1;
+    const testXC = playerPos.x + escapeXDir * diagStepX;
+    const testYC = playerPos.y + diagStepY;
+    if (isCandidateSafe(testXC, testYC)) {
+      return {
+        pushVector: { vx: escapeXDir * 0.7071, vy: preferredDir * 0.7071 },
+        pushingNpc: primaryNpc,
+        activePushState: { npcId: primaryNpc.id, dir: preferredDir, axis: "y" },
+      };
+    }
 
-  // Candidato D: Diagonal opuesta hacia abajo
-  const testXD = playerPos.x - diagStepX;
-  if (isCandidateSafe(testXD, testYC)) {
-    return {
-      pushVector: { vx: -preferredDir * 0.7071, vy: 0.7071 },
-      pushingNpc: primaryNpc,
-      activePushState: { npcId: primaryNpc.id, dir: oppositeDir },
-    };
+    // Candidato D: Diagonal opuesta en Y
+    const testYD = playerPos.y - diagStepY;
+    if (isCandidateSafe(testXC, testYD)) {
+      return {
+        pushVector: { vx: escapeXDir * 0.7071, vy: oppositeDir * 0.7071 },
+        pushingNpc: primaryNpc,
+        activePushState: { npcId: primaryNpc.id, dir: oppositeDir, axis: "y" },
+      };
+    }
+  } else {
+    // EL NPC VIENE DE ABAJO HACIA ARRIBA / ARRIBA HACIA ABAJO: EMPUJAR HACIA LOS COSTADOS (IZQ, DER)
+    let preferredDir: number;
+    if (
+      activePushState &&
+      activePushState.npcId === primaryNpc.id &&
+      activePushState.axis !== "y"
+    ) {
+      preferredDir = activePushState.dir;
+    } else {
+      preferredDir = playerPos.x >= primaryNpc.position.x ? 1 : -1;
+    }
+
+    // Candidato A: Desvío lateral preferente (derecha o izquierda)
+    const testXA = playerPos.x + preferredDir * step;
+    if (isCandidateSafe(testXA, playerPos.y)) {
+      return {
+        pushVector: { vx: preferredDir, vy: 0 },
+        pushingNpc: primaryNpc,
+        activePushState: { npcId: primaryNpc.id, dir: preferredDir, axis: "x" },
+      };
+    }
+
+    // Candidato B: Desvío lateral opuesto si el preferente está bloqueado
+    const oppositeDir = -preferredDir;
+    const testXB = playerPos.x + oppositeDir * step;
+    if (isCandidateSafe(testXB, playerPos.y)) {
+      return {
+        pushVector: { vx: oppositeDir, vy: 0 },
+        pushingNpc: primaryNpc,
+        activePushState: { npcId: primaryNpc.id, dir: oppositeDir, axis: "x" },
+      };
+    }
+
+    // Candidato C: Diagonal hacia abajo (hacia la explanada abierta)
+    const diagStepX = preferredDir * step * 0.7071;
+    const diagStepY = step * 0.7071;
+    const testXC = playerPos.x + diagStepX;
+    const testYC = playerPos.y + diagStepY;
+    if (isCandidateSafe(testXC, testYC)) {
+      return {
+        pushVector: { vx: preferredDir * 0.7071, vy: 0.7071 },
+        pushingNpc: primaryNpc,
+        activePushState: { npcId: primaryNpc.id, dir: preferredDir, axis: "x" },
+      };
+    }
+
+    // Candidato D: Diagonal opuesta hacia abajo
+    const testXD = playerPos.x - diagStepX;
+    if (isCandidateSafe(testXD, testYC)) {
+      return {
+        pushVector: { vx: -preferredDir * 0.7071, vy: 0.7071 },
+        pushingNpc: primaryNpc,
+        activePushState: { npcId: primaryNpc.id, dir: oppositeDir, axis: "x" },
+      };
+    }
   }
 
   // Si todas las direcciones están bloqueadas, no forzar desplazamiento

@@ -209,12 +209,13 @@ export default function Chapter2Scene({
       id: "anciana",
       position: anciana.position,
       assignedMamparaId: 1,
-      currentAnimation: "idle",
+      currentAnimation: (anciana.currentAnimation as any) ?? "idle",
       state: anciana.status === "walking" ? "ENTERING" : "IDLE",
       speed: anciana.status === "walking" ? ANCIANA_DEFAULTS.speed : 0,
       votingWaitTimeMs: 0,
       elapsedInStateMs: 0,
       isActive: true,
+      movementAxis: "horizontal",
     };
 
     return [...npcs, ancianaNpc];
@@ -440,7 +441,9 @@ export default function Chapter2Scene({
         if (pushingNpc) {
           const isMovingTowardsNpc =
             (dirX > 0 && pushingNpc.position.x > playerPosRef.current.x) ||
-            (dirX < 0 && pushingNpc.position.x < playerPosRef.current.x);
+            (dirX < 0 && pushingNpc.position.x < playerPosRef.current.x) ||
+            (dirY > 0 && pushingNpc.position.y > playerPosRef.current.y) ||
+            (dirY < 0 && pushingNpc.position.y < playerPosRef.current.y);
           if (isMovingTowardsNpc) {
             activePushStateRef.current = null;
           }
