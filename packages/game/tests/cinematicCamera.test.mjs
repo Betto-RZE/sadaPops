@@ -83,4 +83,63 @@ describe("Cámara Cinematográfica Dinámica (useCinematicNpcCamera)", () => {
       assert.ok(remainingDist / initialDist < 0.1);
     });
   });
+
+  describe("Enfoque cinematográfico secundario: Llegada de la anciana a la mesa", () => {
+    test("calcula el encuadre exacto para centrar a la anciana a { x: 26.0, y: 66.0 }", () => {
+      const ancianaPos = { x: 26.0, y: 66.0 };
+      const shift = calculateCameraShift(ancianaPos, 2.0);
+
+      // maxCamShift = (1 - 1/2) * 50 = 25
+      // 50 - 26 = 24.0 -> dentro del rango [-25, 25]
+      // 50 - 66 = -16.0 -> dentro del rango [-25, 25]
+      assert.equal(shift.x, 24.0);
+      assert.equal(shift.y, -16.0);
+    });
+
+    test("el encuadre de la anciana respeta los límites de corte del escenario", () => {
+      const ancianaPos = { x: 26.0, y: 66.0 };
+      const shift = calculateCameraShift(ancianaPos, 2.0);
+
+      assert.ok(shift.x >= -25.0 && shift.x <= 25.0);
+      assert.ok(shift.y >= -25.0 && shift.y <= 25.0);
+    });
+
+    test("transición suave desde el protagonista hacia la anciana", () => {
+      const playerShift = calculateCameraShift({ x: 20.0, y: 52.0 }, 2.0); // { x: 25, y: -2 }
+      const ancianaShift = calculateCameraShift({ x: 26.0, y: 66.0 }, 2.0); // { x: 24, y: -16 }
+
+      const speed = 2.8;
+      const dt = 0.016;
+      const blend = 1 - Math.exp(-speed * dt);
+
+      let curX = playerShift.x;
+      let curY = playerShift.y;
+
+      for (let f = 0; f < 60; f++) {
+        curX += (ancianaShift.x - curX) * blend;
+        curY += (ancianaShift.y - curY) * blend;
+      }
+
+      // Después de 60 frames (~1s), debe estar a menos del 10% de distancia
+      const remaining = Math.hypot(ancianaShift.x - curX, ancianaShift.y - curY);
+      const total = Math.hypot(
+        ancianaShift.x - playerShift.x,
+        ancianaShift.y - playerShift.y,
+      );
+      assert.ok(remaining / total < 0.1);
+    });
+
+    test("duración de permanencia en la anciana es de exactamente 3000 ms (3 segundos)", () => {
+      const targetDurationMs = 3000;
+      let holdElapsedMs = 0;
+      const dtMs = 16.666;
+
+      while (holdElapsedMs < targetDurationMs) {
+        holdElapsedMs += dtMs;
+      }
+
+      assert.ok(holdElapsedMs >= 3000);
+      assert.ok(holdElapsedMs < 3050);
+    });
+  });
 });

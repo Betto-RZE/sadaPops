@@ -39,12 +39,19 @@ import {
   resolvePlayerVoluntaryMovementVsNpcs,
   NPC_COLLISION_DEFAULTS,
   type ActivePushState,
+  type GenericNpc,
   calculateSceneCharactersDepth,
   calculateCharacterZIndex,
   clearDepthCache,
   type DepthEntity,
   NPC_DEPTH_LAYERS,
 } from "./features/npcs";
+import {
+  useAncianaNpc,
+  AncianaSprite,
+  ANCIANA_DEFAULTS,
+  releaseAncianaImages,
+} from "./features/mitos";
 
 /**
  * Capitulo 2: "Desmintiendo mitos".
@@ -66,6 +73,16 @@ export const INTRO_CAP2_MESSAGES_NAH: string[] = [
   "Satepan kuak miak tikyektlalijkeh in casilla, ¡kualtsin tikitah nochi kisa ken timochiyayaj!",
   "Sesen maseual akin ajsi kipixtok itlanemililis pampa tlapejpenis, itlamachilis wan tlatotonki se tlatlanilistli.",
   "Wan maski totlanel tekiyo yeski ma kualtsin mopano in tlaixquetzalistli, no uelis tikinyakanaseh akin kipiah tlatlanilistli.",
+];
+
+export const ANCIANA_ARRIVAL_MESSAGES_ES: string[] = [
+  "¡Oh! Parece que una señora se acercó a nuestra mesa.",
+  "¡Vamos a ver en qué podemos ayudarla!",
+];
+
+export const ANCIANA_ARRIVAL_MESSAGES_NAH: string[] = [
+  "¡Oh! Tikitah se tenantzin omopacho itech tomexa.",
+  "¡Tikitatij tlen ika uelis tikpalehuiseh!",
 ];
 
 /** Espera antes del primer globo de texto al iniciar el capitulo. */
@@ -116,16 +133,98 @@ export default function Chapter2Scene({
     useState<DialogueState>("initial_delay");
 
   // Sistema de personajes genéricos (votantes ambientales)
-  const { npcs } = useGenericNpcs({
+  const { npcs, isGlobalSystemActive } = useGenericNpcs({
     dialogueState,
     isPaused,
   });
+
+  // La anciana aparece 4 segundos después de que el primer NPC genérico termina su animación de IDLE
+  const isFirstNpcIdleFinished =
+    isGlobalSystemActive ||
+    npcs.some(
+      (n) =>
+        n.id === "npc-gen-mampara-3" &&
+        (n.state === "LEAVING" || n.state === "FINISHED"),
+    );
+
+  // Personaje narrativo: La Anciana (Abuela) que llega a hacer preguntas
+  const anciana = useAncianaNpc({
+    isPaused,
+    isTriggered: isFirstNpcIdleFinished,
+    spawnDelayMs: 4000,
+  });
+  const ancianaPosRef = useRef(anciana.position);
+  useEffect(() => {
+    ancianaPosRef.current = anciana.position;
+  }, [anciana.position]);
+
+  // Diálogo activado al llegar la anciana a la mesa directiva
+  type AncianaDialogueState =
+    | "idle"
+    | "entering"
+    | "visible"
+    | "exiting"
+    | "dismissed";
+
+  const [ancianaDialogueState, setAncianaDialogueState] =
+    useState<AncianaDialogueState>("idle");
+  const ancianaDialogueStateRef = useRef(ancianaDialogueState);
+  useEffect(() => {
+    ancianaDialogueStateRef.current = ancianaDialogueState;
+  }, [ancianaDialogueState]);
+
+  // Disparar diálogo de la anciana al llegar a la mesa y cerrar el intro
+  useEffect(() => {
+    if (
+      anciana.status === "arrived" &&
+      ancianaDialogueState === "idle" &&
+      dialogueState === "dismissed"
+    ) {
+      setAncianaDialogueState("entering");
+    }
+  }, [anciana.status, ancianaDialogueState, dialogueState]);
+
+  useEffect(() => {
+    if (ancianaDialogueState === "entering") {
+      const timer = setTimeout(() => setAncianaDialogueState("visible"), 350);
+      return () => clearTimeout(timer);
+    }
+    if (ancianaDialogueState === "exiting") {
+      const timer = setTimeout(() => setAncianaDialogueState("dismissed"), 350);
+      return () => clearTimeout(timer);
+    }
+  }, [ancianaDialogueState]);
 
   const isPausedRef = useRef(isPaused);
   const dialogueStateRef = useRef(dialogueState);
   const playerPosRef = useRef(playerPos);
   const npcsRef = useRef(npcs);
   const activePushStateRef = useRef<ActivePushState | null>(null);
+
+  // Lista unificada de NPCs con colisión física idéntica (genéricos + anciana)
+  const allCollidableNpcs = useMemo<GenericNpc[]>(() => {
+    if (!anciana.isActive) return npcs;
+
+    const ancianaNpc: GenericNpc = {
+      id: "anciana",
+      position: anciana.position,
+      assignedMamparaId: 1,
+      currentAnimation: "idle",
+      state: anciana.status === "walking" ? "ENTERING" : "IDLE",
+      speed: anciana.status === "walking" ? ANCIANA_DEFAULTS.speed : 0,
+      votingWaitTimeMs: 0,
+      elapsedInStateMs: 0,
+      isActive: true,
+    };
+
+    return [...npcs, ancianaNpc];
+  }, [npcs, anciana.isActive, anciana.position, anciana.status]);
+
+  const allCollidableNpcsRef = useRef(allCollidableNpcs);
+
+  useEffect(() => {
+    allCollidableNpcsRef.current = allCollidableNpcs;
+  }, [allCollidableNpcs]);
 
   useEffect(() => {
     isPausedRef.current = isPaused;
@@ -161,11 +260,12 @@ export default function Chapter2Scene({
     }
   }, [isTransitioning, dialogueState]);
 
-  // Al desmontar se liberan los frames precargados del personaje y la caché de profundidad
+  // Al desmontar se liberan los frames precargados de los personajes y la caché de profundidad
   useEffect(() => {
     return () => {
       clearDepthCache();
       releasePlayerImages();
+      releaseAncianaImages();
     };
   }, []);
 
@@ -225,20 +325,27 @@ export default function Chapter2Scene({
         return;
       }
 
-      // Sin movimiento de controles hasta cerrar el dialogo (incluye la espera inicial).
+      // Sin movimiento de controles hasta cerrar el diálogo inicial o el de la anciana.
       // Durante diálogos se prioriza la estabilidad de la conversación y orientación.
-      if (dialogueStateRef.current !== "dismissed") {
+      const isAnyDialogueActive =
+        dialogueStateRef.current !== "dismissed" ||
+        (ancianaDialogueStateRef.current !== "idle" &&
+          ancianaDialogueStateRef.current !== "dismissed");
+
+      if (isAnyDialogueActive) {
         stop();
         if (
           dialogueStateRef.current === "entering" ||
-          dialogueStateRef.current === "visible"
+          dialogueStateRef.current === "visible" ||
+          ancianaDialogueStateRef.current === "entering" ||
+          ancianaDialogueStateRef.current === "visible"
         ) {
           setLastDirection("1");
         }
         // Corrección física mínima si hay contacto directo para evitar superposiciones
         const pushResult = getNpcLateralPushVector({
           playerPos: playerPosRef.current,
-          npcs: npcsRef.current,
+          npcs: allCollidableNpcsRef.current,
           isPositionWalkable,
           activePushState: activePushStateRef.current,
           dtSeconds: dt,
@@ -301,7 +408,7 @@ export default function Chapter2Scene({
         currentPos: playerPosRef.current,
         desiredDx: voluntaryDx,
         desiredDy: voluntaryDy,
-        npcs: npcsRef.current,
+        npcs: allCollidableNpcsRef.current,
         isPositionWalkable,
       });
 
@@ -327,7 +434,7 @@ export default function Chapter2Scene({
       // Si el jugador intenta caminar hacia el NPC que lo empuja y ya está fuera de solapamiento directo,
       // liberar la histéresis para evitar empujes de expulsión innecesarios y oscilaciones
       if (activePushStateRef.current && isInputActive) {
-        const pushingNpc = npcsRef.current.find(
+        const pushingNpc = allCollidableNpcsRef.current.find(
           (n) => n.id === activePushStateRef.current?.npcId,
         );
         if (pushingNpc) {
@@ -348,7 +455,7 @@ export default function Chapter2Scene({
 
       const pushResult = getNpcLateralPushVector({
         playerPos: voluntaryPos,
-        npcs: npcsRef.current,
+        npcs: allCollidableNpcsRef.current,
         isPositionWalkable,
         activePushState: activePushStateRef.current,
         dtSeconds: dt,
@@ -409,7 +516,7 @@ export default function Chapter2Scene({
               isPositionWalkable(tx, ty) &&
               !isPositionBlockedByNpc(
                 { x: tx, y: ty },
-                npcsRef.current,
+                allCollidableNpcsRef.current,
                 pushResult.pushingNpc
                   ? { excludeNpcId: pushResult.pushingNpc.id }
                   : undefined,
@@ -489,8 +596,9 @@ export default function Chapter2Scene({
     };
   }, []);
 
-  // Camara cinematográfica dinámica: sigue suavemente al primer NPC al entrar,
-  // espera 2.5s en la mampara y regresa suavemente al jugador
+  // Cámara cinematográfica dinámica:
+  // 1. Sigue suavemente al primer NPC al entrar, espera 2.5s en la mampara y regresa suavemente al jugador.
+  // 2. Al llegar la anciana a la mesa, enfoca a la anciana durante 3 segundos y regresa suavemente al jugador.
   const zoomScale = 2.0;
   const { camX, camY } = useCinematicNpcCamera({
     playerPos,
@@ -498,6 +606,11 @@ export default function Chapter2Scene({
     isPaused,
     zoomScale,
     holdDurationMs: 2500,
+    focusTarget: {
+      position: anciana.position,
+      isActive: anciana.status === "arrived",
+      durationMs: 3000,
+    },
   });
 
   const introMessages =
@@ -505,17 +618,27 @@ export default function Chapter2Scene({
   const showDialogue =
     dialogueState !== "initial_delay" && dialogueState !== "dismissed";
 
+  const ancianaMessages =
+    language === "nah"
+      ? ANCIANA_ARRIVAL_MESSAGES_NAH
+      : ANCIANA_ARRIVAL_MESSAGES_ES;
+  const showAncianaDialogue =
+    ancianaDialogueState !== "idle" && ancianaDialogueState !== "dismissed";
+
   // Sistema de profundidad visual dinámica (Fase 5.3 + 5.4):
   // Memoiza el arreglo de entidades y reutiliza el caché O(N) si no hay cambios en la posición vertical
   const depthMap = useMemo(() => {
     const characters: DepthEntity[] = [
       { id: "player", y: playerPos.y },
+      ...(anciana.isActive
+        ? [{ id: "anciana", y: anciana.position.y }]
+        : []),
       ...npcs
         .filter((n) => n.isActive)
         .map((n) => ({ id: n.id, y: n.position.y })),
     ];
     return calculateSceneCharactersDepth(characters);
-  }, [playerPos.y, npcs]);
+  }, [playerPos.y, anciana.isActive, anciana.position.y, npcs]);
 
   return (
     <div
@@ -600,6 +723,30 @@ export default function Chapter2Scene({
             />
           </div>
         ))}
+
+        {/* PERSONAJE NARRATIVO: LA ANCIANA (ABUELA) */}
+        {anciana.isActive && (
+          <div
+            data-testid="anciana-npc"
+            style={{
+              left: `${anciana.position.x}%`,
+              top: `${anciana.position.y}%`,
+              width: ANCIANA_DEFAULTS.spriteWidthPercent,
+              transform: "translate(-50%, -90%)",
+              willChange: "left, top",
+              zIndex:
+                depthMap["anciana"] ??
+                calculateCharacterZIndex(anciana.position.y, "anciana"),
+            }}
+            className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
+          >
+            <AncianaSprite
+              animation={anciana.currentAnimation}
+              isWalking={anciana.isWalking}
+              isPaused={isPaused}
+            />
+          </div>
+        )}
 
         {/* MAMPARAS */}
         {CASILLA_POSITIONS.map((pos, index) => (
@@ -751,6 +898,44 @@ export default function Chapter2Scene({
                 setLastDirection("1");
               }}
               onDismiss={() => setDialogueState("exiting")}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* DIÁLOGO DE LLEGADA DE LA ANCIANA A LA MESA */}
+      {showAncianaDialogue && (
+        <div className="absolute inset-0 z-40 pointer-events-none flex items-end justify-center pb-[1.8cqw] px-[2cqw] overflow-hidden select-none">
+          <div className="relative z-10 w-[96%] pointer-events-auto flex flex-col items-end">
+            {/* Botón provisional para saltar todos los textos (Test) */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setAncianaDialogueState("exiting");
+              }}
+              type="button"
+              title="Saltar todos los textos con un solo clic (Test)"
+              className="mb-1.5 bg-[#940d57] hover:bg-[#ff2a85] active:bg-[#780946] text-white rounded border-[2px] border-black shadow-[2px_2px_0px_0px_#000] cursor-pointer transition-colors flex items-center gap-1.5 px-3 py-1 select-none active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+              style={{
+                fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
+                fontSize: isFullscreen ? "10px" : "8px",
+              }}
+            >
+              <span>⏩</span>
+              <span>SALTAR TEXTOS (TEST)</span>
+            </button>
+
+            <PixelSpeechBubble
+              speaker={language === "nah" ? "Inecito Cívica" : "Inecito"}
+              messages={ancianaMessages}
+              actionKey="E"
+              disabled={isPaused}
+              isDismissing={ancianaDialogueState === "exiting"}
+              onLineChange={() => {
+                setIsWalking(false);
+                setLastDirection("1");
+              }}
+              onDismiss={() => setAncianaDialogueState("exiting")}
             />
           </div>
         </div>

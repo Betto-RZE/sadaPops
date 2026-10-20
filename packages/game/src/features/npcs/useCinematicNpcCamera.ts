@@ -6,13 +6,29 @@ export type CinematicCameraState =
   | "FOLLOWING_NPC" // Siguiendo suavemente al NPC mientras camina hacia la mampara
   | "HOLDING_AT_BOOTH" // Pausa de 2.5s con la cámara centrada en la mampara
   | "RETURNING_TO_PLAYER" // Regresando dinámicamente y con animación suave hacia el jugador
-  | "COMPLETED"; // Regreso completado: cámara en modo normal
+  | "COMPLETED" // Regreso completado: cámara en modo normal
+  | "FOCUSING_TARGET" // Enfocando suavemente hacia un objetivo narrativo (anciana)
+  | "HOLDING_AT_TARGET"; // Manteniendo el enfoque en el objetivo durante X ms (3s)
+
+export interface CinematicTargetEntity {
+  position: { x: number; y: number };
+  state: string;
+}
+
+export interface CinematicFocusTarget {
+  /** Posición en % de coordenadas mundiales del objetivo { x, y } */
+  position: { x: number; y: number };
+  /** Indica si el evento de enfoque está activo y debe ejecutarse */
+  isActive: boolean;
+  /** Duración de permanencia en el objetivo en ms (por defecto 3000 ms = 3 segundos) */
+  durationMs?: number;
+}
 
 export interface UseCinematicNpcCameraProps {
   /** Posición actual del protagonista { x, y } en % */
   playerPos: { x: number; y: number };
-  /** Primer NPC genérico en escena (o null/undefined si no existe aún) */
-  firstNpc: GenericNpc | null | undefined;
+  /** Primer NPC o personaje en escena al que seguirá la cámara (o null/undefined) */
+  firstNpc: CinematicTargetEntity | null | undefined;
   /** Indica si el juego está en pausa */
   isPaused: boolean;
   /** Escala de zoom de la cámara (por defecto 2.0) */
@@ -23,6 +39,8 @@ export interface UseCinematicNpcCameraProps {
   followSmoothingSpeed?: number;
   /** Velocidad de interpolación exponencial al regresar al jugador (por defecto 2.6) */
   returnSmoothingSpeed?: number;
+  /** Objetivo secundario opcional de enfoque narrativo (ej. la anciana al llegar a la mesa) */
+  focusTarget?: CinematicFocusTarget | null;
 }
 
 export interface UseCinematicNpcCameraReturn {
@@ -70,6 +88,7 @@ export function useCinematicNpcCamera({
   holdDurationMs = 2500,
   followSmoothingSpeed = 2.8,
   returnSmoothingSpeed = 2.6,
+  focusTarget = null,
 }: UseCinematicNpcCameraProps): UseCinematicNpcCameraReturn {
   const initialCam = calculateCameraShift(playerPos, zoomScale);
   const [camShift, setCamShift] = useState<{ x: number; y: number }>(
@@ -84,6 +103,8 @@ export function useCinematicNpcCamera({
   const isPausedRef = useRef(isPaused);
   const playerPosRef = useRef(playerPos);
   const firstNpcRef = useRef(firstNpc);
+  const focusTargetRef = useRef(focusTarget);
+  const hasTriggeredFocusTargetRef = useRef(false);
   const holdElapsedMsRef = useRef(0);
 
   useEffect(() => {
@@ -104,6 +125,10 @@ export function useCinematicNpcCamera({
   useEffect(() => {
     firstNpcRef.current = firstNpc;
   }, [firstNpc]);
+
+  useEffect(() => {
+    focusTargetRef.current = focusTarget;
+  }, [focusTarget]);
 
   // Detector de disparo: cuando el primer NPC comienza a caminar ('ENTERING')
   // Optimización (Fase 5.4): depende de firstNpc?.state para evitar ejecuciones redundantes en cada frame
@@ -135,6 +160,20 @@ export function useCinematicNpcCamera({
       }
     }
   }, [firstNpc?.state]);
+
+  // Detector de enfoque secundario / objetivo narrativo (anciana al llegar a la mesa)
+  useEffect(() => {
+    if (focusTarget?.isActive && !hasTriggeredFocusTargetRef.current) {
+      hasTriggeredFocusTargetRef.current = true;
+      stateRef.current = "FOCUSING_TARGET";
+      holdElapsedMsRef.current = 0;
+      if (isMountedRef.current) {
+        setCameraState("FOCUSING_TARGET");
+      }
+    } else if (!focusTarget?.isActive) {
+      hasTriggeredFocusTargetRef.current = false;
+    }
+  }, [focusTarget?.isActive]);
 
   // Bucle de actualización suave (rAF + dt)
   useEffect(() => {
@@ -221,6 +260,57 @@ export function useCinematicNpcCamera({
               setCameraState("RETURNING_TO_PLAYER");
             }
           }
+        } else if (currentState === "FOCUSING_TARGET") {
+          // Enfoque suave hacia el objetivo narrativo secundario (la anciana)
+          const targetWorld =
+            focusTargetRef.current?.position ?? playerPosRef.current;
+          const target = calculateCameraShift(targetWorld, zoomScale);
+
+          const blend = 1 - Math.exp(-followSmoothingSpeed * dt);
+          const nextX =
+            camShiftRef.current.x + (target.x - camShiftRef.current.x) * blend;
+          const nextY =
+            camShiftRef.current.y + (target.y - camShiftRef.current.y) * blend;
+
+          camShiftRef.current = { x: nextX, y: nextY };
+          if (isMountedRef.current) {
+            setCamShift({ x: nextX, y: nextY });
+          }
+
+          const diffX = Math.abs(target.x - nextX);
+          const diffY = Math.abs(target.y - nextY);
+          if (diffX < 0.25 && diffY < 0.25) {
+            stateRef.current = "HOLDING_AT_TARGET";
+            holdElapsedMsRef.current = 0;
+            if (isMountedRef.current) {
+              setCameraState("HOLDING_AT_TARGET");
+            }
+          }
+        } else if (currentState === "HOLDING_AT_TARGET") {
+          // Mantener el enfoque centrado en el objetivo narrativo durante durationMs (3s)
+          const targetWorld =
+            focusTargetRef.current?.position ?? playerPosRef.current;
+          const target = calculateCameraShift(targetWorld, zoomScale);
+
+          const blend = 1 - Math.exp(-followSmoothingSpeed * dt);
+          const nextX =
+            camShiftRef.current.x + (target.x - camShiftRef.current.x) * blend;
+          const nextY =
+            camShiftRef.current.y + (target.y - camShiftRef.current.y) * blend;
+
+          camShiftRef.current = { x: nextX, y: nextY };
+          if (isMountedRef.current) {
+            setCamShift({ x: nextX, y: nextY });
+          }
+
+          holdElapsedMsRef.current += dt * 1000;
+          const duration = focusTargetRef.current?.durationMs ?? 3000;
+          if (holdElapsedMsRef.current >= duration) {
+            stateRef.current = "RETURNING_TO_PLAYER";
+            if (isMountedRef.current) {
+              setCameraState("RETURNING_TO_PLAYER");
+            }
+          }
         } else if (currentState === "RETURNING_TO_PLAYER") {
           // Regresando suavemente al jugador
           const target = calculateCameraShift(playerPosRef.current, zoomScale);
@@ -267,7 +357,9 @@ export function useCinematicNpcCamera({
   const isCinematicActive =
     cameraState === "FOLLOWING_NPC" ||
     cameraState === "HOLDING_AT_BOOTH" ||
-    cameraState === "RETURNING_TO_PLAYER";
+    cameraState === "RETURNING_TO_PLAYER" ||
+    cameraState === "FOCUSING_TARGET" ||
+    cameraState === "HOLDING_AT_TARGET";
 
   return {
     camX: camShift.x,
