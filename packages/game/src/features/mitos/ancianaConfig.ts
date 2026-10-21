@@ -283,15 +283,15 @@ export interface DialogueLine {
   target?: "user" | "npc";
 }
 
-/**
- * Colores temáticos de identificación por interlocutor:
- * - Doña Carmen: Terracota cálido (#8d3800)
- * - Inecito: Magenta institucional INE (#a81363)
- */
 export const DIALOGUE_SPEAKER_COLORS = {
   carmen: "#8d3800",
   inecito: "#a81363",
+  joven: "#1d4ed8",
+  indigena: "#047857",
+  transgenero: "#9333ea",
+  discapacitado: "#0284c7",
 };
+
 
 /**
  * Conversación completa entre Doña Carmen e Inecito en el Capítulo 2 (Español).
@@ -548,6 +548,427 @@ export function getSpeakerNameAlignment(
 ): "left" | "right" {
   if (!speaker || !portraits?.right) return "left";
   return isPortraitActive(speaker, portraits.right.speakerNames) ? "right" : "left";
+}
+
+/**
+ * Identificadores únicos de los 5 personajes narrativos en el Capítulo 2.
+ */
+export type NarrativeCharacterId =
+  | "anciana"
+  | "joven"
+  | "indigena"
+  | "transgenero"
+  | "discapacitado";
+
+/**
+ * Orden estricto y secuencial de llegada de los personajes:
+ * 1. anciana
+ * 2. joven
+ * 3. indigena
+ * 4. transgenero
+ * 5. discapacitado
+ */
+export const NARRATIVE_CHARACTERS_ORDER: readonly NarrativeCharacterId[] = [
+  "anciana",
+  "joven",
+  "indigena",
+  "transgenero",
+  "discapacitado",
+] as const;
+
+/**
+ * Retardo exacto de 10 segundos (10,000 ms) entre que concluye la conversación
+ * con un personaje y comienza la llegada del siguiente personaje.
+ */
+export const BETWEEN_CHARACTERS_DELAY_MS = 10000;
+
+/**
+ * Diálogos de llegada para El Joven (Español y Náhuatl).
+ */
+export const JOVEN_ARRIVAL_MESSAGES_ES: string[] = [
+  "¡Viene llegando un joven a la casilla!",
+  "¡Vamos a ver si tiene alguna duda con su voto!",
+];
+
+export const JOVEN_ARRIVAL_MESSAGES_NAH: string[] = [
+  "¡Se telpokatl oajsik itech tomexa!",
+  "¡Tikitatij tlen ika uelis tikpalehuiseh!",
+];
+
+/**
+ * Conversación para El Joven (Español y Náhuatl).
+ */
+export const JOVEN_CONVERSATION_MESSAGES_ES: DialogueLine[] = [
+  {
+    speaker: "El Joven",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.joven,
+    text: "Hola, buenos días. Es la primera vez que vengo a votar y la verdad tenía mis dudas.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Hola! Qué gusto tenerte por aquí. Las juventudes son fundamentales para la vida democrática.",
+  },
+  {
+    speaker: "El Joven",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.joven,
+    text: "Escuché en redes sociales que votar no sirve de nada, pero quise comprobarlo por mí mismo.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Hiciste muy bien! Cada voto cuenta y es recibido y contado por la propia ciudadanía.",
+  },
+];
+
+export const JOVEN_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
+  {
+    speaker: "Telpokatl",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.joven,
+    text: "Kuali tonali. Inin achto vez nioh nitlapejpena wan onikpixtoya tlatlanilistli.",
+  },
+  {
+    speaker: "Inecito Cívica",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Kuali tonali! ¡Tlen kualtsin tinikan! Telpokameh kachi monekih itech democracia.",
+  },
+  {
+    speaker: "Telpokatl",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.joven,
+    text: "Onikkak tla voto amo techpaleuia, pero onineki nimomakis melauak.",
+  },
+  {
+    speaker: "Inecito Cívica",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Kualtsin otikchiuh! Sesen voto kipia chikaualistli wan maseualmeh kiyekanah.",
+  },
+];
+
+/**
+ * Diálogos de llegada para La Mujer Indígena (Español y Náhuatl).
+ */
+export const INDIGENA_ARRIVAL_MESSAGES_ES: string[] = [
+  "¡Una ciudadana de comunidad originaria se acerca a la mesa!",
+  "¡Asegurémonos de orientarla respetando sus derechos lingüísticos y culturales!",
+];
+
+export const INDIGENA_ARRIVAL_MESSAGES_NAH: string[] = [
+  "¡Se maseualsiuatl omopacho itech tocasilla!",
+  "¡Tikitatij tlen itekiyo wan ma timotlapouikah kualtsin!",
+];
+
+/**
+ * Conversación para La Mujer Indígena (Español y Náhuatl).
+ */
+export const INDIGENA_CONVERSATION_MESSAGES_ES: DialogueLine[] = [
+  {
+    speaker: "Citlali",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.indigena,
+    text: "Buenos días. Vengo desde mi comunidad y quería saber sobre los apoyos y materiales en nuestra lengua.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Bienvenida, Citlali! El INE cuenta con materiales informativos y traductores en lenguas originarias.",
+  },
+  {
+    speaker: "Citlali",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.indigena,
+    text: "Es un orgullo que nuestra voz y nuestras tradiciones se reconozcan en cada proceso electoral.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Así es, la diversidad cultural enriquece nuestra nación. ¡Tu participación es invaluable!",
+  },
+];
+
+export const INDIGENA_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
+  {
+    speaker: "Maseualsiuatl Citlali",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.indigena,
+    text: "Kuali tonali. Niualauh de no altepe wan nikneki nimatis tla onkak amatl ika totlahtol.",
+  },
+  {
+    speaker: "Inecito Cívica",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Kuali xiohualakan Citlali! INE kipia tlahtolcuepalistli wan amameh ika maseualtlahtoli.",
+  },
+  {
+    speaker: "Maseualsiuatl Citlali",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.indigena,
+    text: "Cenca kualtsin ma kitlakitah totlahtol wan toyehyelis itech tlapejpenalistli.",
+  },
+  {
+    speaker: "Inecito Cívica",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Melauak, nochi ti-mexihkayotl timoyolchikauah kuak nochtin titekitih.",
+  },
+];
+
+/**
+ * Diálogos de llegada para Transgénero (Español y Náhuatl).
+ */
+export const TRANS_ARRIVAL_MESSAGES_ES: string[] = [
+  "¡Se acerca una votante a nuestra casilla!",
+  "¡Recuerda que en el INE todas las identidades y expresiones de género son plenamente respetadas!",
+];
+
+export const TRANS_ARRIVAL_MESSAGES_NAH: string[] = [
+  "¡Se siuatl oajsik pampa tlapejpenis!",
+  "¡Xikilnamiki nochtin maseualmeh kipiah tlatlakitalistli!",
+];
+
+/**
+ * Conversación para Transgénero (Español y Náhuatl).
+ */
+export const TRANS_CONVERSATION_MESSAGES_ES: DialogueLine[] = [
+  {
+    speaker: "Morgan",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.transgenero,
+    text: "Hola, buen día. Quería verificar si mi credencial con identidad de género actualizada es válida aquí.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Totalmente válida! En el INE existe el Protocolo Trans para garantizar el voto libre de discriminación.",
+  },
+  {
+    speaker: "Morgan",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.transgenero,
+    text: "Me alegra saberlo, a veces da un poco de temor enfrentar situaciones incómodas en las casillas.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Aquí todos los funcionarios de casilla estamos comprometidos a proteger tu derecho al voto en igualdad.",
+  },
+];
+
+export const TRANS_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
+  {
+    speaker: "Morgan",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.transgenero,
+    text: "Kuali tonali. Oniknekia niktlatlanis tla no credencial yankuik kiseliah nikan.",
+  },
+  {
+    speaker: "Inecito Cívica",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Kema, mochipa! INE kipia tlayekanalistli pampa amo onkas discriminación.",
+  },
+  {
+    speaker: "Morgan",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.transgenero,
+    text: "Nechpaktia nikmatis, kemantika tikpixtokeh tlamoutilistli kuak timopachouah.",
+  },
+  {
+    speaker: "Inecito Cívica",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Nikan nochtin funcionarios tikinpaleuiah nochtin maseualmeh ika tlatlakitalistli.",
+  },
+];
+
+/**
+ * Diálogos de llegada para Persona con Discapacidad (Español y Náhuatl).
+ */
+export const DISCAPACITADO_ARRIVAL_MESSAGES_ES: string[] = [
+  "¡Un ciudadano en silla de ruedas se aproxima a la mesa!",
+  "¡Verifiquemos que las instalaciones y la atención sean totalmente accesibles!",
+];
+
+export const DISCAPACITADO_ARRIVAL_MESSAGES_NAH: string[] = [
+  "¡Se tlacatl ika silla de ruedas oajsik!",
+  "¡Tikitah ma kipia nochi tlamantli kualtsin pampa tlapejpenis!",
+];
+
+/**
+ * Conversación para Persona con Discapacidad (Español y Náhuatl).
+ */
+export const DISCAPACITADO_CONVERSATION_MESSAGES_ES: DialogueLine[] = [
+  {
+    speaker: "Don Roberto",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.discapacitado,
+    text: "Buenos días. Agradezco que la casilla cuente con rampas y espacios adecuados para mi silla de ruedas.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Buenos días, Don Roberto! Garantizar la accesibilidad e inclusión es una prioridad absoluta del INE.",
+  },
+  {
+    speaker: "Don Roberto",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.discapacitado,
+    text: "También me comentaron que cuentan con plantillas Braille y mamparas móviles accesibles.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Exactamente! Toda la ciudadanía tiene derecho a emitir su sufragio de forma autónoma y digna.",
+  },
+];
+
+export const DISCAPACITADO_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
+  {
+    speaker: "Tlacatl Roberto",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.discapacitado,
+    text: "Kuali tonali. Tlazohkamati pampa nikan onkak ojtli kualtsin pampa no silla de ruedas.",
+  },
+  {
+    speaker: "Inecito Cívica",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Kuali tonali Don Roberto! Accesibilidad kipia achto tekitl itech INE.",
+  },
+  {
+    speaker: "Tlacatl Roberto",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.discapacitado,
+    text: "No onechilwijkeh tla kipiah mamparas especiales wan plantillas Braille.",
+  },
+  {
+    speaker: "Inecito Cívica",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Melauak! Nochtin maseualmeh uelis tlapejpeniseh ika tlatlakitalistli wan autonomía.",
+  },
+];
+
+export interface NarrativeCharacterConfig {
+  id: NarrativeCharacterId;
+  nameEs: string;
+  nameNah: string;
+  speakerColor: string;
+  portraitSrc: string;
+  altText: string;
+  speakerNames: string[];
+  arrivalMessagesEs: string[];
+  arrivalMessagesNah: string[];
+  conversationMessagesEs: DialogueLine[];
+  conversationMessagesNah: DialogueLine[];
+}
+
+/**
+ * Diccionario de configuración de los 5 personajes narrativos.
+ */
+export const NARRATIVE_CHARACTERS_CONFIG: Record<
+  NarrativeCharacterId,
+  NarrativeCharacterConfig
+> = {
+  anciana: {
+    id: "anciana",
+    nameEs: "Doña Carmen",
+    nameNah: "Tenantzin Carmen",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.carmen,
+    portraitSrc: "/assets/juego/dialogos/retrato-carmen.png",
+    altText: "Doña Carmen",
+    speakerNames: ["Doña Carmen", "Tenantzin Carmen", "Carmen", "Abuela"],
+    arrivalMessagesEs: ANCIANA_ARRIVAL_MESSAGES_ES,
+    arrivalMessagesNah: ANCIANA_ARRIVAL_MESSAGES_NAH,
+    conversationMessagesEs: ABUELA_CONVERSATION_MESSAGES_ES,
+    conversationMessagesNah: ABUELA_CONVERSATION_MESSAGES_NAH,
+  },
+  joven: {
+    id: "joven",
+    nameEs: "El Joven",
+    nameNah: "Telpokatl",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.joven,
+    portraitSrc: "/assets/juego/dialogos/retrato-joven.png",
+    altText: "El Joven",
+    speakerNames: ["El Joven", "Joven", "Telpokatl"],
+    arrivalMessagesEs: JOVEN_ARRIVAL_MESSAGES_ES,
+    arrivalMessagesNah: JOVEN_ARRIVAL_MESSAGES_NAH,
+    conversationMessagesEs: JOVEN_CONVERSATION_MESSAGES_ES,
+    conversationMessagesNah: JOVEN_CONVERSATION_MESSAGES_NAH,
+  },
+  indigena: {
+    id: "indigena",
+    nameEs: "Citlali",
+    nameNah: "Maseualsiuatl Citlali",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.indigena,
+    portraitSrc: "/assets/juego/dialogos/retrato-indigena.png",
+    altText: "Citlali",
+    speakerNames: [
+      "Citlali",
+      "La Mujer Indígena",
+      "Maseualsiuatl Citlali",
+      "Indígena",
+      "Indigena",
+    ],
+    arrivalMessagesEs: INDIGENA_ARRIVAL_MESSAGES_ES,
+    arrivalMessagesNah: INDIGENA_ARRIVAL_MESSAGES_NAH,
+    conversationMessagesEs: INDIGENA_CONVERSATION_MESSAGES_ES,
+    conversationMessagesNah: INDIGENA_CONVERSATION_MESSAGES_NAH,
+  },
+  transgenero: {
+    id: "transgenero",
+    nameEs: "Morgan",
+    nameNah: "Morgan",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.transgenero,
+    portraitSrc: "/assets/juego/dialogos/retrato-trans.png",
+    altText: "Morgan",
+    speakerNames: ["Morgan", "Chica Trans", "Transgénero", "Transgenero"],
+    arrivalMessagesEs: TRANS_ARRIVAL_MESSAGES_ES,
+    arrivalMessagesNah: TRANS_ARRIVAL_MESSAGES_NAH,
+    conversationMessagesEs: TRANS_CONVERSATION_MESSAGES_ES,
+    conversationMessagesNah: TRANS_CONVERSATION_MESSAGES_NAH,
+  },
+  discapacitado: {
+    id: "discapacitado",
+    nameEs: "Don Roberto",
+    nameNah: "Tlacatl Roberto",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.discapacitado,
+    portraitSrc: "/assets/juego/dialogos/retrato-discapacitado.png",
+    altText: "Don Roberto",
+    speakerNames: [
+      "Don Roberto",
+      "Roberto",
+      "Tlacatl Roberto",
+      "Persona con Discapacidad",
+      "Discapacitado",
+    ],
+    arrivalMessagesEs: DISCAPACITADO_ARRIVAL_MESSAGES_ES,
+    arrivalMessagesNah: DISCAPACITADO_ARRIVAL_MESSAGES_NAH,
+    conversationMessagesEs: DISCAPACITADO_CONVERSATION_MESSAGES_ES,
+    conversationMessagesNah: DISCAPACITADO_CONVERSATION_MESSAGES_NAH,
+  },
+};
+
+/**
+ * Retorna la configuración de retratos para el globo de diálogo de cualquier personaje narrativo.
+ * Inecito siempre se ubica a la izquierda y el NPC a la derecha.
+ */
+export function getNarrativeCharacterPortraits(
+  characterId: NarrativeCharacterId,
+): PixelSpeechBubblePortraits {
+  const config = NARRATIVE_CHARACTERS_CONFIG[characterId];
+  return {
+    left: {
+      src: "/assets/juego/dialogos/retrato-inecito.png",
+      alt: "Inecito",
+      speakerNames: ["Inecito", "Inecito Cívica", "Inecito Civica"],
+    },
+    right: {
+      src: config.portraitSrc,
+      alt: config.nameEs,
+      speakerNames: config.speakerNames,
+    },
+  };
+}
+
+/**
+ * Función pura que calcula el progreso del retardo de 10 segundos entre personajes.
+ */
+export function updateQueueTransitionDelay({
+  elapsedMs,
+  dtSeconds,
+  delayMs = BETWEEN_CHARACTERS_DELAY_MS,
+}: {
+  elapsedMs: number;
+  dtSeconds: number;
+  delayMs?: number;
+}): { newElapsedMs: number; isReady: boolean } {
+  const newElapsedMs = elapsedMs + dtSeconds * 1000;
+  return {
+    newElapsedMs,
+    isReady: newElapsedMs >= delayMs,
+  };
 }
 
 

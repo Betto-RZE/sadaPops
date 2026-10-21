@@ -20,7 +20,17 @@ import {
   isPortraitActive,
   getPortraitStyle,
   getSpeakerNameAlignment,
+  NARRATIVE_CHARACTERS_ORDER,
+  NARRATIVE_CHARACTERS_CONFIG,
+  BETWEEN_CHARACTERS_DELAY_MS,
+  updateQueueTransitionDelay,
+  getNarrativeCharacterPortraits,
+  JOVEN_CONVERSATION_MESSAGES_ES,
+  INDIGENA_CONVERSATION_MESSAGES_ES,
+  TRANS_CONVERSATION_MESSAGES_ES,
+  DISCAPACITADO_CONVERSATION_MESSAGES_ES,
 } from "../src/features/mitos/ancianaConfig.ts";
+
 
 import {
   calculateCharacterZIndex,
@@ -608,7 +618,204 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
       assert.equal(getSpeakerNameAlignment("Doña Carmen", undefined), "left");
     });
   });
+
+  describe("9. Cola secuencial de los 5 personajes narrativos y retardo de 10 segundos", () => {
+    test("el orden de los personajes es estricto: 1. anciana, 2. joven, 3. indigena, 4. transgenero, 5. discapacitado", () => {
+      assert.equal(NARRATIVE_CHARACTERS_ORDER.length, 5);
+      assert.deepEqual(NARRATIVE_CHARACTERS_ORDER, [
+        "anciana",
+        "joven",
+        "indigena",
+        "transgenero",
+        "discapacitado",
+      ]);
+    });
+
+    test("el retardo entre personajes está calibrado exactamente en 10 segundos (10,000 ms)", () => {
+      assert.equal(BETWEEN_CHARACTERS_DELAY_MS, 10000);
+    });
+
+    test("cada uno de los 5 personajes posee configuración completa y válida", () => {
+      NARRATIVE_CHARACTERS_ORDER.forEach((id) => {
+        const config = NARRATIVE_CHARACTERS_CONFIG[id];
+        assert.ok(config, `El personaje ${id} debe tener configuración`);
+        assert.equal(config.id, id);
+        assert.ok(config.nameEs.length > 0, `nameEs no debe estar vacío para ${id}`);
+        assert.ok(config.nameNah.length > 0, `nameNah no debe estar vacío para ${id}`);
+        assert.ok(config.speakerColor.startsWith("#"), `speakerColor válido para ${id}`);
+        assert.ok(config.portraitSrc.startsWith("/assets/juego/dialogos/retrato-"), `portraitSrc válido para ${id}`);
+        assert.ok(config.speakerNames.length >= 2, `speakerNames debe incluir variantes para ${id}`);
+        assert.ok(config.arrivalMessagesEs.length >= 1, `arrivalMessagesEs para ${id}`);
+        assert.ok(config.arrivalMessagesNah.length >= 1, `arrivalMessagesNah para ${id}`);
+        assert.ok(config.conversationMessagesEs.length >= 2, `conversationMessagesEs para ${id}`);
+        assert.ok(config.conversationMessagesNah.length >= 2, `conversationMessagesNah para ${id}`);
+      });
+    });
+
+    test("las rutas de los retratos de los 5 personajes corresponden a los archivos canónicos", () => {
+      assert.equal(
+        NARRATIVE_CHARACTERS_CONFIG.anciana.portraitSrc,
+        "/assets/juego/dialogos/retrato-carmen.png",
+      );
+      assert.equal(
+        NARRATIVE_CHARACTERS_CONFIG.joven.portraitSrc,
+        "/assets/juego/dialogos/retrato-joven.png",
+      );
+      assert.equal(
+        NARRATIVE_CHARACTERS_CONFIG.indigena.portraitSrc,
+        "/assets/juego/dialogos/retrato-indigena.png",
+      );
+      assert.equal(
+        NARRATIVE_CHARACTERS_CONFIG.transgenero.portraitSrc,
+        "/assets/juego/dialogos/retrato-trans.png",
+      );
+      assert.equal(
+        NARRATIVE_CHARACTERS_CONFIG.discapacitado.portraitSrc,
+        "/assets/juego/dialogos/retrato-discapacitado.png",
+      );
+    });
+
+    test("getNarrativeCharacterPortraits sitúa siempre a Inecito a la izquierda y al personaje a la derecha", () => {
+      NARRATIVE_CHARACTERS_ORDER.forEach((id) => {
+        const portraits = getNarrativeCharacterPortraits(id);
+        assert.ok(portraits.left, `Debe existir interlocutor izquierdo para ${id}`);
+        assert.ok(portraits.right, `Debe existir interlocutor derecho para ${id}`);
+
+        assert.equal(
+          portraits.left.src,
+          "/assets/juego/dialogos/retrato-inecito.png",
+          "Inecito debe ser el retrato izquierdo en todos los diálogos",
+        );
+        assert.equal(
+          portraits.right.src,
+          NARRATIVE_CHARACTERS_CONFIG[id].portraitSrc,
+          `El retrato derecho debe ser el correspondiente a ${id}`,
+        );
+      });
+    });
+
+    test("updateQueueTransitionDelay descuenta el retardo de 10 segundos con precisión", () => {
+      // 0s transcurridos
+      const t0 = updateQueueTransitionDelay({
+        elapsedMs: 0,
+        dtSeconds: 0,
+        delayMs: BETWEEN_CHARACTERS_DELAY_MS,
+      });
+      assert.equal(t0.newElapsedMs, 0);
+      assert.equal(t0.isReady, false);
+
+      // 4 segundos transcurridos
+      const t1 = updateQueueTransitionDelay({
+        elapsedMs: 0,
+        dtSeconds: 4.0,
+      });
+      assert.equal(t1.newElapsedMs, 4000);
+      assert.equal(t1.isReady, false);
+
+      // 9.5 segundos transcurridos
+      const t2 = updateQueueTransitionDelay({
+        elapsedMs: t1.newElapsedMs,
+        dtSeconds: 5.5,
+      });
+      assert.equal(t2.newElapsedMs, 9500);
+      assert.equal(t2.isReady, false);
+
+      // 10.0 segundos cumplidos (transición completada)
+      const t3 = updateQueueTransitionDelay({
+        elapsedMs: t2.newElapsedMs,
+        dtSeconds: 0.5,
+      });
+      assert.equal(t3.newElapsedMs, 10000);
+      assert.equal(t3.isReady, true);
+    });
+
+    test("simula el avance secuencial completo de los 5 personajes con retardo de 10s entre ellos", () => {
+      let currentIndex = 0;
+      let status = "walking";
+      let pos = { ...ANCIANA_DEFAULTS.startPosition }; // { x: 102.0, y: 66.0 }
+
+      const completedCharacters = [];
+
+      for (let i = 0; i < NARRATIVE_CHARACTERS_ORDER.length; i++) {
+        const charId = NARRATIVE_CHARACTERS_ORDER[currentIndex];
+
+        // 1. Caminata en línea recta de x: 102 a x: 26
+        assert.equal(pos.x, 102.0);
+        assert.equal(pos.y, 66.0);
+
+        const walk = stepAncianaMovement({
+          currentPos: pos,
+          targetPos: ANCIANA_DEFAULTS.targetPosition,
+          speed: ANCIANA_DEFAULTS.speed,
+          dt: 10.0, // tiempo suficiente para llegar
+        });
+
+        assert.equal(walk.isArrived, true);
+        assert.equal(walk.nextPos.x, 26.0);
+        status = "arrived";
+
+        // 2. Interacción y conversación
+        status = "in_conversation";
+
+        // 3. Conclusión de la conversación
+        completedCharacters.push(charId);
+
+        if (currentIndex < NARRATIVE_CHARACTERS_ORDER.length - 1) {
+          status = "waiting_next_character";
+
+          // 4. Retardo de 10 segundos
+          const delayCheck = updateQueueTransitionDelay({
+            elapsedMs: 0,
+            dtSeconds: 10.0,
+          });
+          assert.equal(delayCheck.isReady, true);
+
+          // Siguiente personaje avanza
+          currentIndex++;
+          pos = { ...ANCIANA_DEFAULTS.startPosition };
+          status = "walking";
+        } else {
+          status = "all_completed";
+        }
+      }
+
+      assert.equal(completedCharacters.length, 5);
+      assert.deepEqual(completedCharacters, [
+        "anciana",
+        "joven",
+        "indigena",
+        "transgenero",
+        "discapacitado",
+      ]);
+      assert.equal(status, "all_completed");
+    });
+
+    test("todos los diálogos de los 5 personajes alternan correctamente hablante activo y apagado", () => {
+      NARRATIVE_CHARACTERS_ORDER.forEach((id) => {
+        const config = NARRATIVE_CHARACTERS_CONFIG[id];
+        const portraits = getNarrativeCharacterPortraits(id);
+
+        config.conversationMessagesEs.forEach((line, idx) => {
+          const isLeft = isPortraitActive(line.speaker, portraits.left.speakerNames);
+          const isRight = isPortraitActive(line.speaker, portraits.right.speakerNames);
+
+          assert.ok(
+            (isLeft && !isRight) || (!isLeft && isRight),
+            `Línea ${idx} de ${id} (${line.speaker}) debe alternar exactamente un orador`,
+          );
+
+          const alignment = getSpeakerNameAlignment(line.speaker, portraits);
+          assert.equal(
+            alignment,
+            isRight ? "right" : "left",
+            `Alineación de nombre para ${line.speaker} en ${id}`,
+          );
+        });
+      });
+    });
+  });
 });
+
 
 
 

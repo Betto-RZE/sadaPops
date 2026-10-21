@@ -48,8 +48,8 @@ import {
   NPC_DEPTH_LAYERS,
 } from "./features/npcs";
 import {
-  useAncianaNpc,
-  AncianaSprite,
+  useNarrativeNpcsQueue,
+  NarrativeNpcSprite,
   ANCIANA_DEFAULTS,
   releaseAncianaImages,
   MESA_INTERACTION_LEFT_POS,
@@ -57,9 +57,7 @@ import {
   calculatePlayerAlignedPositionWithNpc,
   stepPlayerAlignmentWalk,
   PLAYER_ALIGNMENT_WALK_SPEED,
-  ABUELA_CONVERSATION_MESSAGES_ES,
-  ABUELA_CONVERSATION_MESSAGES_NAH,
-  ABUELA_CONVERSATION_PORTRAITS,
+  getNarrativeCharacterPortraits,
 } from "./features/mitos";
 
 /**
@@ -156,56 +154,57 @@ export default function Chapter2Scene({
         (n.state === "LEAVING" || n.state === "FINISHED"),
     );
 
-  // Personaje narrativo: La Anciana (Abuela) que llega a hacer preguntas
-  const anciana = useAncianaNpc({
+  // Cola secuencial de personajes narrativos (1. Anciana, 2. Joven, 3. Indígena, 4. Transgénero, 5. Discapacitado)
+  const narrativeQueue = useNarrativeNpcsQueue({
     isPaused,
     isTriggered: isFirstNpcIdleFinished,
-    spawnDelayMs: 4000,
+    initialSpawnDelayMs: 4000,
+    betweenCharactersDelayMs: 10000,
   });
-  const ancianaPosRef = useRef(anciana.position);
+  const narrativeQueuePosRef = useRef(narrativeQueue.position);
   useEffect(() => {
-    ancianaPosRef.current = anciana.position;
-  }, [anciana.position]);
+    narrativeQueuePosRef.current = narrativeQueue.position;
+  }, [narrativeQueue.position]);
 
-  // Diálogo activado al llegar la anciana a la mesa directiva
-  type AncianaDialogueState =
+  // Diálogo activado al llegar un personaje a la mesa directiva
+  type NpcArrivalDialogueState =
     | "idle"
     | "entering"
     | "visible"
     | "exiting"
     | "dismissed";
 
-  const [ancianaDialogueState, setAncianaDialogueState] =
-    useState<AncianaDialogueState>("idle");
-  const ancianaDialogueStateRef = useRef(ancianaDialogueState);
+  const [arrivalDialogueState, setArrivalDialogueState] =
+    useState<NpcArrivalDialogueState>("idle");
+  const arrivalDialogueStateRef = useRef(arrivalDialogueState);
   useEffect(() => {
-    ancianaDialogueStateRef.current = ancianaDialogueState;
-  }, [ancianaDialogueState]);
+    arrivalDialogueStateRef.current = arrivalDialogueState;
+  }, [arrivalDialogueState]);
 
-  // Disparar diálogo de la anciana al llegar a la mesa y cerrar el intro
+  // Disparar diálogo de anuncio de llegada al llegar el personaje a la mesa y cerrar el intro
   useEffect(() => {
     if (
-      anciana.status === "arrived" &&
-      ancianaDialogueState === "idle" &&
+      narrativeQueue.status === "arrived" &&
+      arrivalDialogueState === "idle" &&
       dialogueState === "dismissed"
     ) {
-      setAncianaDialogueState("entering");
+      setArrivalDialogueState("entering");
     }
-  }, [anciana.status, ancianaDialogueState, dialogueState]);
+  }, [narrativeQueue.status, arrivalDialogueState, dialogueState]);
 
   useEffect(() => {
-    if (ancianaDialogueState === "entering") {
-      const timer = setTimeout(() => setAncianaDialogueState("visible"), 350);
+    if (arrivalDialogueState === "entering") {
+      const timer = setTimeout(() => setArrivalDialogueState("visible"), 350);
       return () => clearTimeout(timer);
     }
-    if (ancianaDialogueState === "exiting") {
-      const timer = setTimeout(() => setAncianaDialogueState("dismissed"), 350);
+    if (arrivalDialogueState === "exiting") {
+      const timer = setTimeout(() => setArrivalDialogueState("dismissed"), 350);
       return () => clearTimeout(timer);
     }
-  }, [ancianaDialogueState]);
+  }, [arrivalDialogueState]);
 
-  // Conversación directa con la abuela tras presionar E en el lado izquierdo de la mesa
-  type AbuelaConversationState =
+  // Conversación directa con el personaje tras presionar E en el lado izquierdo de la mesa
+  type NpcConversationState =
     | "idle"
     | "walking_to_spot"
     | "entering"
@@ -213,31 +212,41 @@ export default function Chapter2Scene({
     | "exiting"
     | "dismissed";
 
-  const [abuelaConversationState, setAbuelaConversationState] =
-    useState<AbuelaConversationState>("idle");
-  const abuelaConversationStateRef = useRef(abuelaConversationState);
+  const [npcConversationState, setNpcConversationState] =
+    useState<NpcConversationState>("idle");
+  const npcConversationStateRef = useRef(npcConversationState);
   useEffect(() => {
-    abuelaConversationStateRef.current = abuelaConversationState;
-  }, [abuelaConversationState]);
+    npcConversationStateRef.current = npcConversationState;
+  }, [npcConversationState]);
 
   const alignmentTargetPosRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
-    if (abuelaConversationState === "entering") {
-      const timer = setTimeout(() => setAbuelaConversationState("visible"), 350);
+    if (npcConversationState === "entering") {
+      const timer = setTimeout(() => setNpcConversationState("visible"), 350);
       return () => clearTimeout(timer);
     }
-    if (abuelaConversationState === "exiting") {
-      const timer = setTimeout(() => setAbuelaConversationState("dismissed"), 350);
+    if (npcConversationState === "exiting") {
+      const timer = setTimeout(() => {
+        setNpcConversationState("dismissed");
+        // Al terminar el diálogo, concluye la conversación en la cola y arranca el retardo de 10 segundos
+        narrativeQueue.dismissConversation();
+        setArrivalDialogueState("idle");
+      }, 350);
       return () => clearTimeout(timer);
     }
-  }, [abuelaConversationState]);
+    if (npcConversationState === "dismissed") {
+      setNpcConversationState("idle");
+    }
+  }, [npcConversationState, narrativeQueue]);
 
-  // El icono de exclamación (!) aparece en el lado izquierdo de la mesa únicamente
-  // cuando concluye el globo de texto previo tras decir "¡Vamos a ver en qué podemos ayudarla!"
-  // y mientras la conversación con la abuela aún no haya iniciado.
+  // El icono de exclamación (!) aparece en el lado izquierdo de la mesa cuando
+  // el personaje actual está en la mesa, su anuncio de llegada ha concluido
+  // y la conversación directa aún no haya iniciado.
   const showMesaExclamation =
-    ancianaDialogueState === "dismissed" && abuelaConversationState === "idle";
+    narrativeQueue.status === "arrived" &&
+    arrivalDialogueState === "dismissed" &&
+    npcConversationState === "idle";
   const showMesaExclamationRef = useRef(showMesaExclamation);
   useEffect(() => {
     showMesaExclamationRef.current = showMesaExclamation;
@@ -256,12 +265,12 @@ export default function Chapter2Scene({
     isNearMesaLeftRef.current = isNearMesaLeft;
   }, [isNearMesaLeft]);
 
-  // Inicia la conversación con Doña Carmen:
-  // 1. Calcula la posición alineada en el eje Y respecto a Doña Carmen (targetY = ancianaPosRef.current.y = 66.0%)
+  // Inicia la conversación con el interlocutor actual en la mesa:
+  // 1. Calcula la posición alineada en el eje Y respecto al personaje (targetY = 66.0%)
   // 2. Si ya se encuentra en la posición, inicia la charla directamente orientado a la derecha ("4")
   // 3. Si no, inicia una caminata suave animada (walking_to_spot) paso a paso sin teletransporte
-  const handleStartAbuelaConversation = useCallback(() => {
-    const targetY = ancianaPosRef.current.y;
+  const handleStartNpcConversation = useCallback(() => {
+    const targetY = narrativeQueuePosRef.current.y;
     const targetPos = calculatePlayerAlignedPositionWithNpc({
       currentPos: playerPosRef.current,
       targetNpcY: targetY,
@@ -274,20 +283,23 @@ export default function Chapter2Scene({
       playerPosRef.current.y - targetPos.y,
     );
 
+    narrativeQueue.startConversation();
+
     if (dist <= 0.35) {
       setPlayerPos(targetPos);
       setLastDirection("4");
       setIsWalking(false);
-      setAbuelaConversationState("entering");
+      setNpcConversationState("entering");
     } else {
-      setAbuelaConversationState("walking_to_spot");
+      setNpcConversationState("walking_to_spot");
     }
-  }, []);
+  }, [narrativeQueue]);
 
-  const handleStartAbuelaConversationRef = useRef(handleStartAbuelaConversation);
+  const handleStartNpcConversationRef = useRef(handleStartNpcConversation);
   useEffect(() => {
-    handleStartAbuelaConversationRef.current = handleStartAbuelaConversation;
-  }, [handleStartAbuelaConversation]);
+    handleStartNpcConversationRef.current = handleStartNpcConversation;
+  }, [handleStartNpcConversation]);
+
 
   const isPausedRef = useRef(isPaused);
   const dialogueStateRef = useRef(dialogueState);
@@ -295,25 +307,32 @@ export default function Chapter2Scene({
   const npcsRef = useRef(npcs);
   const activePushStateRef = useRef<ActivePushState | null>(null);
 
-  // Lista unificada de NPCs con colisión física idéntica (genéricos + anciana)
+  // Lista unificada de NPCs con colisión física idéntica (genéricos + personaje narrativo activo)
   const allCollidableNpcs = useMemo<GenericNpc[]>(() => {
-    if (!anciana.isActive) return npcs;
+    if (!narrativeQueue.isActive) return npcs;
 
-    const ancianaNpc: GenericNpc = {
-      id: "anciana",
-      position: anciana.position,
+    const narrativeNpc: GenericNpc = {
+      id: narrativeQueue.currentCharacterId,
+      position: narrativeQueue.position,
       assignedMamparaId: 1,
-      currentAnimation: (anciana.currentAnimation as any) ?? "idle",
-      state: anciana.status === "walking" ? "ENTERING" : "IDLE",
-      speed: anciana.status === "walking" ? ANCIANA_DEFAULTS.speed : 0,
+      currentAnimation: "side" as any,
+      state: narrativeQueue.status === "walking" ? "ENTERING" : "IDLE",
+      speed: narrativeQueue.status === "walking" ? ANCIANA_DEFAULTS.speed : 0,
       votingWaitTimeMs: 0,
       elapsedInStateMs: 0,
       isActive: true,
       movementAxis: "horizontal",
     };
 
-    return [...npcs, ancianaNpc];
-  }, [npcs, anciana.isActive, anciana.position, anciana.status]);
+    return [...npcs, narrativeNpc];
+  }, [
+    npcs,
+    narrativeQueue.isActive,
+    narrativeQueue.currentCharacterId,
+    narrativeQueue.position,
+    narrativeQueue.status,
+  ]);
+
 
   const allCollidableNpcsRef = useRef(allCollidableNpcs);
 
@@ -373,18 +392,19 @@ export default function Chapter2Scene({
       keysPressed[key] = true;
 
       // Al presionar E cerca del lado izquierdo de la mesa con la exclamación activa,
-      // se inicia la conversación con la abuela, alineando al protagonista en Y y mirando hacia la derecha
+      // se inicia la conversación con el personaje, alineando al protagonista en Y y mirando hacia la derecha
       if (key === "e") {
         if (
           showMesaExclamationRef.current &&
           isNearMesaLeftRef.current &&
-          abuelaConversationStateRef.current === "idle" &&
+          npcConversationStateRef.current === "idle" &&
           !isPausedRef.current
         ) {
           e.preventDefault();
-          handleStartAbuelaConversationRef.current();
+          handleStartNpcConversationRef.current();
         }
       }
+
     };
     const handleKeyUp = (e: KeyboardEvent) => {
       keysPressed[e.key.toLowerCase()] = false;
@@ -437,7 +457,7 @@ export default function Chapter2Scene({
 
       // Fase de caminata suave del protagonista para alinearse en el eje Y frente al interlocutor
       // Evita cualquier salto brusco o teletransporte, animando los pasos naturales
-      if (abuelaConversationStateRef.current === "walking_to_spot") {
+      if (npcConversationStateRef.current === "walking_to_spot") {
         stop();
         const targetPos = alignmentTargetPosRef.current;
         if (targetPos) {
@@ -454,43 +474,44 @@ export default function Chapter2Scene({
           if (stepResult.isArrived) {
             setIsWalking(false);
             setLastDirection("4");
-            setAbuelaConversationState("entering");
+            setNpcConversationState("entering");
           } else {
             setIsWalking(true);
           }
         } else {
-          setAbuelaConversationState("entering");
+          setNpcConversationState("entering");
         }
         animationFrameId = requestAnimationFrame(updateGameLoop);
         return;
       }
 
-      // Sin movimiento de controles hasta cerrar el diálogo inicial, el de llegada de la anciana,
-      // o la conversación directa con la abuela.
+      // Sin movimiento de controles hasta cerrar el diálogo inicial, el de llegada del personaje,
+      // o la conversación directa con él.
       // Durante diálogos se prioriza la estabilidad de la conversación y orientación.
       const isAnyDialogueActive =
         dialogueStateRef.current !== "dismissed" ||
-        (ancianaDialogueStateRef.current !== "idle" &&
-          ancianaDialogueStateRef.current !== "dismissed") ||
-        (abuelaConversationStateRef.current !== "idle" &&
-          abuelaConversationStateRef.current !== "dismissed");
+        (arrivalDialogueStateRef.current !== "idle" &&
+          arrivalDialogueStateRef.current !== "dismissed") ||
+        (npcConversationStateRef.current !== "idle" &&
+          npcConversationStateRef.current !== "dismissed");
 
       if (isAnyDialogueActive) {
         stop();
         if (
           dialogueStateRef.current === "entering" ||
           dialogueStateRef.current === "visible" ||
-          ancianaDialogueStateRef.current === "entering" ||
-          ancianaDialogueStateRef.current === "visible"
+          arrivalDialogueStateRef.current === "entering" ||
+          arrivalDialogueStateRef.current === "visible"
         ) {
           setLastDirection("1");
         } else if (
-          abuelaConversationStateRef.current === "entering" ||
-          abuelaConversationStateRef.current === "visible"
+          npcConversationStateRef.current === "entering" ||
+          npcConversationStateRef.current === "visible"
         ) {
-          // Orientar al protagonista hacia la derecha (mirando hacia la abuela y la mesa)
+          // Orientar al protagonista hacia la derecha (mirando hacia el personaje y la mesa)
           setLastDirection("4");
         }
+
         // Corrección física mínima si hay contacto directo para evitar superposiciones
         const pushResult = getNpcLateralPushVector({
           playerPos: playerPosRef.current,
@@ -749,7 +770,7 @@ export default function Chapter2Scene({
 
   // Cámara cinematográfica dinámica:
   // 1. Sigue suavemente al primer NPC al entrar, espera 2.5s en la mampara y regresa suavemente al jugador.
-  // 2. Al llegar la anciana a la mesa, enfoca a la anciana durante 3 segundos y regresa suavemente al jugador.
+  // 2. Al llegar un personaje a la mesa, enfoca al personaje durante 3 segundos y regresa suavemente al jugador.
   const zoomScale = 2.0;
   const { camX, camY } = useCinematicNpcCamera({
     playerPos,
@@ -758,8 +779,8 @@ export default function Chapter2Scene({
     zoomScale,
     holdDurationMs: 2500,
     focusTarget: {
-      position: anciana.position,
-      isActive: anciana.status === "arrived",
+      position: narrativeQueue.position,
+      isActive: narrativeQueue.status === "arrived",
       durationMs: 3000,
     },
   });
@@ -769,35 +790,52 @@ export default function Chapter2Scene({
   const showDialogue =
     dialogueState !== "initial_delay" && dialogueState !== "dismissed";
 
-  const ancianaMessages =
-    language === "nah"
-      ? ANCIANA_ARRIVAL_MESSAGES_NAH
-      : ANCIANA_ARRIVAL_MESSAGES_ES;
-  const showAncianaDialogue =
-    ancianaDialogueState !== "idle" && ancianaDialogueState !== "dismissed";
+  const currentNarrativeConfig = narrativeQueue.currentCharacterConfig;
 
-  const abuelaMessages =
+  const currentArrivalMessages =
     language === "nah"
-      ? ABUELA_CONVERSATION_MESSAGES_NAH
-      : ABUELA_CONVERSATION_MESSAGES_ES;
-  const showAbuelaConversation =
-    abuelaConversationState !== "idle" &&
-    abuelaConversationState !== "dismissed";
+      ? currentNarrativeConfig.arrivalMessagesNah
+      : currentNarrativeConfig.arrivalMessagesEs;
+  const showArrivalDialogue =
+    arrivalDialogueState !== "idle" && arrivalDialogueState !== "dismissed";
+
+  const currentConversationMessages =
+    language === "nah"
+      ? currentNarrativeConfig.conversationMessagesNah
+      : currentNarrativeConfig.conversationMessagesEs;
+  const showConversation =
+    npcConversationState !== "idle" && npcConversationState !== "dismissed";
+
+  const currentPortraits = useMemo(() => {
+    return getNarrativeCharacterPortraits(narrativeQueue.currentCharacterId);
+  }, [narrativeQueue.currentCharacterId]);
 
   // Sistema de profundidad visual dinámica (Fase 5.3 + 5.4):
   // Memoiza el arreglo de entidades y reutiliza el caché O(N) si no hay cambios en la posición vertical
   const depthMap = useMemo(() => {
     const characters: DepthEntity[] = [
       { id: "player", y: playerPos.y },
-      ...(anciana.isActive
-        ? [{ id: "anciana", y: anciana.position.y }]
+      ...(narrativeQueue.isActive
+        ? [
+            {
+              id: narrativeQueue.currentCharacterId,
+              y: narrativeQueue.position.y,
+            },
+          ]
         : []),
       ...npcs
         .filter((n) => n.isActive)
         .map((n) => ({ id: n.id, y: n.position.y })),
     ];
     return calculateSceneCharactersDepth(characters);
-  }, [playerPos.y, anciana.isActive, anciana.position.y, npcs]);
+  }, [
+    playerPos.y,
+    narrativeQueue.isActive,
+    narrativeQueue.currentCharacterId,
+    narrativeQueue.position.y,
+    npcs,
+  ]);
+
 
   return (
     <div
@@ -843,10 +881,11 @@ export default function Chapter2Scene({
           transformOrigin: "center center",
           willChange: "transform",
           filter:
-            showAbuelaConversation && abuelaConversationState !== "exiting"
+            showConversation && npcConversationState !== "exiting"
               ? "blur(5px)"
               : "none",
         }}
+
       >
         <img
           src={stageImageUrl}
@@ -899,29 +938,33 @@ export default function Chapter2Scene({
           </div>
         ))}
 
-        {/* PERSONAJE NARRATIVO: LA ANCIANA (ABUELA) */}
-        {anciana.isActive && (
+        {/* PERSONAJE NARRATIVO ACTIVO EN LA COLA */}
+        {narrativeQueue.isActive && (
           <div
-            data-testid="anciana-npc"
+            data-testid={`narrative-npc-${narrativeQueue.currentCharacterId}`}
             style={{
-              left: `${anciana.position.x}%`,
-              top: `${anciana.position.y}%`,
+              left: `${narrativeQueue.position.x}%`,
+              top: `${narrativeQueue.position.y}%`,
               width: ANCIANA_DEFAULTS.spriteWidthPercent,
               transform: "translate(-50%, -90%)",
               willChange: "left, top",
               zIndex:
-                depthMap["anciana"] ??
-                calculateCharacterZIndex(anciana.position.y, "anciana"),
+                depthMap[narrativeQueue.currentCharacterId] ??
+                calculateCharacterZIndex(
+                  narrativeQueue.position.y,
+                  narrativeQueue.currentCharacterId,
+                ),
             }}
             className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
           >
-            <AncianaSprite
-              animation={anciana.currentAnimation}
-              isWalking={anciana.isWalking}
+            <NarrativeNpcSprite
+              characterId={narrativeQueue.currentCharacterId}
+              isWalking={narrativeQueue.isWalking}
               isPaused={isPaused}
             />
           </div>
         )}
+
 
         {/* MAMPARAS */}
         {CASILLA_POSITIONS.map((pos, index) => (
@@ -978,9 +1021,9 @@ export default function Chapter2Scene({
               if (
                 !isPaused &&
                 showMesaExclamation &&
-                abuelaConversationState === "idle"
+                npcConversationState === "idle"
               ) {
-                handleStartAbuelaConversation();
+                handleStartNpcConversation();
               }
             }}
             style={{
@@ -1002,10 +1045,11 @@ export default function Chapter2Scene({
             >
               <img
                 src="/assets/juego/exclamacion.png"
-                alt="Conversar con la abuela"
+                alt="Conversar con el votante"
                 className="w-full h-auto object-contain drop-shadow-[0_2px_5px_rgba(0,0,0,0.6)]"
                 style={{ imageRendering: "pixelated" }}
               />
+
 
               {/* Texto pixel art 'presiona E' al acercarse al lado izquierdo de la mesa */}
               {isNearMesaLeft && (
@@ -1145,15 +1189,34 @@ export default function Chapter2Scene({
         </div>
       )}
 
-      {/* DIÁLOGO DE LLEGADA DE LA ANCIANA A LA MESA */}
-      {showAncianaDialogue && (
+      {/* INDICADOR DE TRANSICIÓN ENTRE PERSONAJES (10 SEGUNDOS) */}
+      {narrativeQueue.status === "waiting_next_character" && (
+        <div className="absolute top-3 right-3 z-30 pointer-events-auto flex items-center gap-2 bg-[#1b3a1a]/95 border-[2px] border-[#a3e635] px-3 py-1.5 rounded shadow-[2px_2px_0px_0px_#000]">
+          <span
+            className="text-white text-xs font-mono"
+            style={{ fontFamily: "'Press Start 2P', monospace", fontSize: "8px" }}
+          >
+            Próximo votante en: {Math.ceil(narrativeQueue.remainingTransitionMs / 1000)}s
+          </span>
+          <button
+            type="button"
+            onClick={() => narrativeQueue.skipToNextCharacter()}
+            className="bg-[#940d57] hover:bg-[#ff2a85] text-white text-[7px] px-2 py-0.5 rounded border border-white cursor-pointer font-mono font-bold"
+          >
+            ⏩ Omitir espera (Test)
+          </button>
+        </div>
+      )}
+
+      {/* DIÁLOGO DE LLEGADA DEL PERSONAJE A LA MESA */}
+      {showArrivalDialogue && (
         <div className="absolute inset-0 z-40 pointer-events-none flex items-end justify-center pb-[1.8cqw] px-[2cqw] overflow-hidden select-none">
           <div className="relative z-10 w-[96%] pointer-events-auto flex flex-col items-end">
             {/* Botón provisional para saltar todos los textos (Test) */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                setAncianaDialogueState("exiting");
+                setArrivalDialogueState("exiting");
               }}
               type="button"
               title="Saltar todos los textos con un solo clic (Test)"
@@ -1169,41 +1232,41 @@ export default function Chapter2Scene({
 
             <PixelSpeechBubble
               speaker={language === "nah" ? "Inecito Cívica" : "Inecito"}
-              messages={ancianaMessages}
+              messages={currentArrivalMessages}
               actionKey="E"
               disabled={isPaused}
-              isDismissing={ancianaDialogueState === "exiting"}
+              isDismissing={arrivalDialogueState === "exiting"}
               onLineChange={() => {
                 setIsWalking(false);
                 setLastDirection("1");
               }}
-              onDismiss={() => setAncianaDialogueState("exiting")}
+              onDismiss={() => setArrivalDialogueState("exiting")}
             />
           </div>
         </div>
       )}
 
-      {/* CONVERSACIÓN CON LA ABUELA AL INTERACTUAR CON LA MESA */}
-      {showAbuelaConversation && (
+      {/* CONVERSACIÓN CON EL PERSONAJE AL INTERACTUAR CON LA MESA */}
+      {showConversation && (
         <div className="absolute inset-0 z-40 pointer-events-none flex items-end justify-center pb-[1.8cqw] px-[2cqw] overflow-hidden select-none">
           {/* Capa de desenfoque y oscurecimiento cinematográfico de fondo (Backdrop Blur) */}
           <div
             className={`absolute inset-0 pointer-events-none transition-all duration-500 ease-out ${
-              abuelaConversationState === "exiting"
+              npcConversationState === "exiting"
                 ? "opacity-0"
                 : "opacity-100"
             }`}
             style={{
               backdropFilter:
-                abuelaConversationState === "exiting"
+                npcConversationState === "exiting"
                   ? "blur(0px)"
                   : "blur(6px)",
               WebkitBackdropFilter:
-                abuelaConversationState === "exiting"
+                npcConversationState === "exiting"
                   ? "blur(0px)"
                   : "blur(6px)",
               backgroundColor:
-                abuelaConversationState === "exiting"
+                npcConversationState === "exiting"
                   ? "rgba(0, 0, 0, 0)"
                   : "rgba(0, 0, 0, 0.28)",
             }}
@@ -1214,7 +1277,7 @@ export default function Chapter2Scene({
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                setAbuelaConversationState("exiting");
+                setNpcConversationState("exiting");
               }}
               type="button"
               title="Saltar todos los textos con un solo clic (Test)"
@@ -1231,21 +1294,26 @@ export default function Chapter2Scene({
 
           <div className="relative z-10 w-[96%] pointer-events-auto flex flex-col items-end">
             <PixelSpeechBubble
-              speaker={language === "nah" ? "Tenantzin Carmen" : "Doña Carmen"}
-              messages={abuelaMessages}
+              speaker={
+                language === "nah"
+                  ? currentNarrativeConfig.nameNah
+                  : currentNarrativeConfig.nameEs
+              }
+              messages={currentConversationMessages}
               actionKey="E"
               disabled={isPaused}
-              isDismissing={abuelaConversationState === "exiting"}
-              portraits={ABUELA_CONVERSATION_PORTRAITS}
+              isDismissing={npcConversationState === "exiting"}
+              portraits={currentPortraits}
               onLineChange={() => {
                 setIsWalking(false);
                 setLastDirection("4");
               }}
-              onDismiss={() => setAbuelaConversationState("exiting")}
+              onDismiss={() => setNpcConversationState("exiting")}
             />
           </div>
         </div>
       )}
+
     </div>
   );
 }
