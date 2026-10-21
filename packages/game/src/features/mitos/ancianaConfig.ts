@@ -408,35 +408,35 @@ export const ABUELA_CONVERSATION_MESSAGES_ES: DialogueLine[] = [
   {
     speaker: "Inecito",
     speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
-    text: "¿Pusiste atención a los datos de la elección? A ver si recuerdas:",
+    text: "Ahora dime tú: ¿qué sucede con el derecho al voto cuando una persona envejece?",
     target: "user",
     portraitOverride: {
       leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.png",
       dimRight: true,
     },
     trivia: {
-      question: "¿Existe una edad máxima o límite para votar en las elecciones de México?",
+      question: "Ahora dime tú: ¿qué sucede con el derecho al voto cuando una persona envejece?",
       options: [
         {
           id: "opt-a",
-          text: "A) Sí, a los 75 años",
+          text: "A) Después de los 70 años ya no puede votar.",
           isCorrect: false,
           feedback:
-            "¡No es así! En México no existe una edad límite para votar. Cualquier persona con credencial vigente tiene garantizado su derecho constitucional.",
+            "¡Cuidado! Eso es un mito. En México no existe una edad máxima para votar. Las personas adultas mayores conservan su derecho a elegir por sí mismas.",
         },
         {
           id: "opt-b",
-          text: "B) No hay edad máxima",
+          text: "B) Puede seguir votando sin importar su edad.",
           isCorrect: true,
           feedback:
-            "¡Exacto! No existe límite de edad para votar. Además, en 2024 las personas de 60 a 79 años tuvieron una destacada participación ciudadana de más del 70%.",
+            "¡Exactamente! La edad no es un impedimento para votar. De hecho, en las elecciones de 2024, alrededor de 7 de cada 10 personas de entre 60 y 79 años participaron. ¡Doña Carmen no es la única que sigue haciendo escuchar su voz!",
         },
         {
           id: "opt-c",
-          text: "C) Sí, a los 85 años",
+          text: "C) Solamente puede votar si un familiar la acompaña.",
           isCorrect: false,
           feedback:
-            "¡Incorrecto! La ley electoral mexicana no impone ningún tope de edad máxima para ejercer el derecho al voto.",
+            "¡No exactamente! Las personas adultas mayores pueden acudir a votar por su cuenta. Si necesitan ayuda, pueden solicitarla, pero no es obligatorio que un familiar las acompañe ni que decida por ellas.",
         },
       ],
     },
@@ -446,19 +446,31 @@ export const ABUELA_CONVERSATION_MESSAGES_ES: DialogueLine[] = [
   {
     speaker: "Doña Carmen",
     speakerColor: DIALOGUE_SPEAKER_COLORS.carmen,
-    text: "¡Qué maravilla de explicación! Ahora sí voy con toda la confianza y una gran sonrisa a emitir mi voto.",
-    target: "npc",
-  },
-  {
-    speaker: "Inecito",
-    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
-    text: "¡Al contrario, doña Carmen! Es un auténtico honor atenderla. ¡Que disfrute mucho su jornada electoral!",
+    text: "¡Muchas gracias, Inecito! Ahora sí me voy a votar bien tranquila.",
     target: "npc",
   },
   {
     speaker: "Doña Carmen",
     speakerColor: DIALOGUE_SPEAKER_COLORS.carmen,
-    text: "¡Muchísimas gracias, jovencito! Y mucho ánimo para ti y para todos los funcionarios de casilla. ¡Hasta luego!",
+    text: "Y cuando vuelva a reunirme con mis amigas, ¡ya tengo algo nuevo que contarles!",
+    target: "npc",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Me alegra haberla ayudado! Y dígales que nunca se es demasiado grande para ejercer nuestros derechos.",
+    target: "npc",
+  },
+  {
+    speaker: "Doña Carmen",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.carmen,
+    text: "¡Eso haré! Aunque primero voy a decirles que me deben otro cafecito, ¡ja, ja!",
+    target: "npc",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Ja, ja! ¡Que tenga un excelente día, doña Carmen!",
     target: "npc",
   },
 ];
@@ -554,35 +566,35 @@ export const ABUELA_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
   {
     speaker: "Inecito Cívica",
     speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
-    text: "Wan tehuatzin... ¿otikkak kualtsin in tlapoualistli? Xikilnamiki:",
+    text: "Axan xinechilui tehuatzin: ¿tlen pano ika derecho al voto kuak se maseual moueuetia?",
     target: "user",
     portraitOverride: {
       leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.png",
       dimRight: true,
     },
     trivia: {
-      question: "¿Onkak límite de edad pampa titlapejpenis Mexihko?",
+      question: "Axan xinechilui tehuatzin: ¿tlen pano ika derecho al voto kuak se maseual moueuetia?",
       options: [
         {
           id: "opt-a",
-          text: "A) Kema, 75 xiuitl",
+          text: "A) Satepan de 70 xiuitl ya amo uelis.",
           isCorrect: false,
           feedback:
-            "¡Amo melauak! Mexihko amo onkak límite de edad pampa titlapejpenis. Nochtin uelis tlapejpeniseh.",
+            "¡Ximomati! Inon san se istlakatili. Mexihko amo onkak edad máxima pampa titlapejpenis. Huehuetqueh wan ilamatqueh kipiah intekiyo ma tlapejpenikan.",
         },
         {
           id: "opt-b",
-          text: "B) Amo onkak límite",
+          text: "B) Uelis tlapejpenis maski kachi tixiuitl.",
           isCorrect: true,
           feedback:
-            "¡Melauak! Amo onkak edad máxima. Itech 2024, tlacameh de 60 hasta 79 xiuitl otlapejpenijkeh kachi de 70%.",
+            "¡Melauak! Xiuitl amo kitlalia ningún límite. Itech 2024, 7 de cada 10 maseualmeh de 60 hasta 79 xiuitl otlapejpenijkeh. ¡Tenantzin Carmen amo isel!",
         },
         {
           id: "opt-c",
-          text: "C) Kema, 85 xiuitl",
+          text: "C) San tla se familiar kiyekana.",
           isCorrect: false,
           feedback:
-            "¡Istlakatili! Constitución mexicana amo kitlalia ningún límite de edad pampa voto.",
+            "¡Amo melauak! Huehuetqueh uelis tlapejpeniseh insel. Tla moneki paleuilistli uelis kitlatlaniseh, pero amo obligatorio ma kinyekanakan.",
         },
       ],
     },
@@ -592,19 +604,31 @@ export const ABUELA_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
   {
     speaker: "Tenantzin Carmen",
     speakerColor: DIALOGUE_SPEAKER_COLORS.carmen,
-    text: "¡Tlen kualtsin otinechilui! Axan nioh ika pakilistli pampa nitlapejpenis.",
-    target: "npc",
-  },
-  {
-    speaker: "Inecito Cívica",
-    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
-    text: "¡Tlazohkamati tenantzin Carmen! Kualtsin ximopanolti itech inin tonali.",
+    text: "¡Cenca tlazohkamati, Inecito! Axan nioh nitlapejpenatij ika yolseuilistli.",
     target: "npc",
   },
   {
     speaker: "Tenantzin Carmen",
     speakerColor: DIALOGUE_SPEAKER_COLORS.carmen,
-    text: "¡Tlazohkamati telpokatl! Xitekitikan kualtsin nochtin funcionarios. ¡Tikitaseh!",
+    text: "Wan kuak nimonotsas iuan notlatikauan, ¡ya nikpia yankuik tlamantli pampa nikiniluis!",
+    target: "npc",
+  },
+  {
+    speaker: "Inecito Cívica",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Nechpaktia onimitsonpaleui! Wan xikinilui amo keman titlatlamikeh pampa tikyolchikauaseh toderechos.",
+    target: "npc",
+  },
+  {
+    speaker: "Tenantzin Carmen",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.carmen,
+    text: "¡Inon nikchiuas! Pero achto nikiniluis nechhuikiliah okse café, ¡ja, ja!",
+    target: "npc",
+  },
+  {
+    speaker: "Inecito Cívica",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Ja, ja! ¡Kualtsin ximopanolti inin tonali, tenantzin Carmen!",
     target: "npc",
   },
 ];

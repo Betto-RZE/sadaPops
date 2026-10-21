@@ -451,9 +451,9 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
     });
 
     test("los mensajes de la conversación con Doña Carmen están configurados para español y náhuatl con estructura de 3 partes", () => {
-      // 20 líneas en total: Parte 1 (16 líneas), Parte 2 (1 pregunta trivia), Parte 3 (3 líneas de despedida)
-      assert.equal(ABUELA_CONVERSATION_MESSAGES_ES.length, 20);
-      assert.equal(ABUELA_CONVERSATION_MESSAGES_NAH.length, 20);
+      // 22 líneas en total: Parte 1 (16 líneas), Parte 2 (1 pregunta trivia), Parte 3 (5 líneas de despedida)
+      assert.equal(ABUELA_CONVERSATION_MESSAGES_ES.length, 22);
+      assert.equal(ABUELA_CONVERSATION_MESSAGES_NAH.length, 22);
 
       // Verificación de primera línea (Parte 1: Inicio de mito)
       assert.equal(ABUELA_CONVERSATION_MESSAGES_ES[0].speaker, "Doña Carmen");
@@ -468,6 +468,10 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
       assert.equal(triviaMsgEs.speaker, "Inecito");
       assert.equal(triviaMsgEs.target, "user");
       assert.equal(
+        triviaMsgEs.text,
+        "Ahora dime tú: ¿qué sucede con el derecho al voto cuando una persona envejece?",
+      );
+      assert.equal(
         triviaMsgEs.portraitOverride?.leftSrc,
         "/assets/juego/dialogos/retrato-inecito-pregunta.png",
       );
@@ -478,11 +482,15 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
         1,
         "Exactamente una opción debe ser correcta",
       );
+      assert.equal(triviaMsgEs.trivia.options[1].isCorrect, true);
+      assert.ok(triviaMsgEs.trivia.options[1].feedback.includes("7 de cada 10"));
 
-      // Verificación de líneas 17 a 19 (Parte 3: Despedida entre personajes)
+      // Verificación de líneas 17 a 21 (Parte 3: Despedida entre personajes)
       assert.equal(ABUELA_CONVERSATION_MESSAGES_ES[17].speaker, "Doña Carmen");
-      assert.equal(ABUELA_CONVERSATION_MESSAGES_ES[18].speaker, "Inecito");
-      assert.equal(ABUELA_CONVERSATION_MESSAGES_ES[19].speaker, "Doña Carmen");
+      assert.equal(ABUELA_CONVERSATION_MESSAGES_ES[18].speaker, "Doña Carmen");
+      assert.equal(ABUELA_CONVERSATION_MESSAGES_ES[19].speaker, "Inecito");
+      assert.equal(ABUELA_CONVERSATION_MESSAGES_ES[20].speaker, "Doña Carmen");
+      assert.equal(ABUELA_CONVERSATION_MESSAGES_ES[21].speaker, "Inecito");
 
       // Verificación de náhuatl
       assert.equal(ABUELA_CONVERSATION_MESSAGES_NAH[0].speaker, "Tenantzin Carmen");
@@ -596,11 +604,11 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
       assert.ok(dimmedStyle.filter.includes("saturate(0.55)"), "Orador inactivo debe tener saturación atenuada");
     });
 
-    test("todos los 20 mensajes de la conversación alternan exactamente un orador activo y uno apagado", () => {
+    test("todos los 22 mensajes de la conversación alternan exactamente un orador activo y uno apagado", () => {
       const inecitoNames = ABUELA_CONVERSATION_PORTRAITS.left.speakerNames;
       const carmenNames = ABUELA_CONVERSATION_PORTRAITS.right.speakerNames;
 
-      // Evaluar conversación en Español (20 mensajes)
+      // Evaluar conversación en Español (22 mensajes)
       ABUELA_CONVERSATION_MESSAGES_ES.forEach((msg, idx) => {
         const isLeft = isPortraitActive(msg.speaker, inecitoNames);
         const isRight = isPortraitActive(msg.speaker, carmenNames);
@@ -611,7 +619,7 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
         );
       });
 
-      // Evaluar conversación en Náhuatl (20 mensajes)
+      // Evaluar conversación en Náhuatl (22 mensajes)
       ABUELA_CONVERSATION_MESSAGES_NAH.forEach((msg, idx) => {
         const isLeft = isPortraitActive(msg.speaker, inecitoNames);
         const isRight = isPortraitActive(msg.speaker, carmenNames);
@@ -949,7 +957,7 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
       const selectedOption = triviaLine.trivia.options.find((o) => o.id === selectedOptionId);
       assert.ok(selectedOption);
       assert.equal(selectedOption.isCorrect, true);
-      assert.ok(selectedOption.feedback.includes("70%"), "Debe mostrar el feedback correspondiente");
+      assert.ok(selectedOption.feedback.includes("7 de cada 10"), "Debe mostrar el feedback correspondiente");
 
       // Ahora el avance sí está permitido
       assert.equal(simulateKeyAdvance(isWaitingForAnswer), true, "El avance debe estar desbloqueado");
