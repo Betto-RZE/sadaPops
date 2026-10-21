@@ -13,9 +13,9 @@ export function PixelFullscreenButton({
     <button
       onClick={onToggle}
       type="button"
-      title={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
+      title={isFullscreen ? 'Salir de pantalla completa (F)' : 'Pantalla completa (F)'}
       aria-label={
-        isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'
+        isFullscreen ? 'Salir de pantalla completa (F)' : 'Pantalla completa (F)'
       }
       className="group relative flex items-center justify-center p-2.5 sm:p-3 bg-white hover:bg-[#E3007E] text-slate-900 hover:text-white border-[3px] border-black rounded-lg transition-all duration-150 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none cursor-pointer z-50 select-none"
       style={{ imageRendering: 'pixelated' }}

@@ -381,6 +381,30 @@ export function PixiGameCanvas({
     }
   }, []);
 
+  // Atajo de teclado: Tecla 'F' / 'f' para entrar y salir de pantalla completa
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignorar si el usuario está interactuando con un campo de texto
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      if (e.key === "f" || e.key === "F" || e.code === "KeyF") {
+        e.preventDefault();
+        toggleFullscreen();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [toggleFullscreen]);
+
   // Draw splash background on canvas when in splash mode
   useEffect(() => {
     if (currentScreen !== "splash" || !canvasRef.current) return;

@@ -413,281 +413,284 @@ export function PixelSpeechBubble({
       />
 
       {/* Writable White Interior Container (Fits precisely within the 6.3% top & 7.6% bottom black border) */}
-      <div className="absolute inset-x-0 top-[7.5%] bottom-[8.5%] px-[4%] flex items-center justify-between z-20">
-        {/* Left Column: Speaker in header, Text / Trivia directly below */}
-        <div className="flex-1 h-full flex flex-col justify-start items-start pr-[1cqw] overflow-hidden pt-[0.2cqw]">
-          {/* Fila del nombre del interlocutor: alineado dinámicamente según su retrato */}
-          <div
-            className={`w-full flex ${
-              speakerAlignment === "right"
-                ? "justify-end text-right"
-                : "justify-start text-left"
-            } transition-all duration-200 ease-out`}
-          >
-            {currentSpeaker && (
-              <span
-                className="font-bold uppercase tracking-wider select-none shrink-0"
-                style={{
-                  color: currentSpeakerColor,
-                  fontFamily:
-                    "'Press Start 2P', 'Silkscreen', monospace, sans-serif",
-                  fontSize: "clamp(10px, 1.6cqw, 32px)",
-                  marginBottom: "clamp(2px, 0.35cqw, 8px)",
-                  textShadow: "1px 1px 0px rgba(255,255,255,0.9)",
-                }}
-              >
-                {currentSpeaker}
-              </span>
-            )}
-          </div>
-
-          {!currentLine.trivia ? (
-            /* Diálogo estándar */
-            <p
-              className="text-black font-semibold select-none overflow-y-auto w-full"
+      <div className="absolute inset-x-0 top-[7%] bottom-[8%] px-[3.5%] flex flex-col justify-between z-20">
+        {/* Fila superior: Nombre del interlocutor a lo ancho completo del globo */}
+        <div
+          className={`w-full flex ${
+            speakerAlignment === "right"
+              ? "justify-end text-right"
+              : "justify-start text-left"
+          } transition-all duration-200 ease-out pt-[0.15cqw] shrink-0`}
+        >
+          {currentSpeaker && (
+            <span
+              className="font-bold uppercase tracking-wider select-none shrink-0"
               style={{
+                color: currentSpeakerColor,
                 fontFamily:
-                  "'Pixelify Sans', 'Silkscreen', 'Press Start 2P', monospace, sans-serif",
-                fontSize: "clamp(11.5px, 2.0cqw, 40px)",
-                lineHeight: 1.2,
-                textShadow: "0 1px 0 rgba(255,255,255,0.85)",
+                  "'Press Start 2P', 'Silkscreen', monospace, sans-serif",
+                fontSize: "clamp(10px, 1.55cqw, 32px)",
+                marginBottom: "clamp(2px, 0.25cqw, 6px)",
+                textShadow: "1px 1px 0px rgba(255,255,255,0.9)",
               }}
             >
-              {displayedText}
-              {isTyping && (
-                <span
-                  className="inline-block bg-[#a81363] animate-pulse align-middle"
-                  style={{
-                    width: "0.42em",
-                    height: "0.92em",
-                    marginLeft: "0.2em",
-                  }}
-                  aria-hidden="true"
-                />
-              )}
-            </p>
-          ) : (
-            /* Diálogo con trivia interactiva (Parte 2) */
-            <div className="w-full flex-1 flex flex-col justify-start overflow-hidden">
-              {/* Pregunta: desaparece suavemente al responder */}
-              <div
-                className={`transition-all duration-300 ease-out overflow-hidden ${
-                  selectedOptionId
-                    ? "max-h-0 opacity-0 -translate-y-2 pointer-events-none mb-0"
-                    : "max-h-36 opacity-100 translate-y-0 mb-[0.4cqw]"
-                }`}
-              >
-                <p
-                  className="text-black font-semibold select-none overflow-y-auto w-full"
-                  style={{
-                    fontFamily:
-                      "'Pixelify Sans', 'Silkscreen', 'Press Start 2P', monospace, sans-serif",
-                    fontSize: "clamp(11px, 1.8cqw, 36px)",
-                    lineHeight: 1.2,
-                    textShadow: "0 1px 0 rgba(255,255,255,0.85)",
-                  }}
-                >
-                  {displayedText}
-                  {isTyping && (
-                    <span
-                      className="inline-block bg-[#a81363] animate-pulse align-middle"
-                      style={{
-                        width: "0.42em",
-                        height: "0.92em",
-                        marginLeft: "0.2em",
-                      }}
-                      aria-hidden="true"
-                    />
-                  )}
-                </p>
-              </div>
-
-              {/* Estado 1: 3 botones en fila antes de responder */}
-              {!selectedOptionId && (
-                <div className="w-full grid grid-cols-3 gap-[1cqw] mt-auto pb-[0.2cqw]">
-                  {currentLine.trivia.options.map((opt) => (
-                    <button
-                      key={opt.id}
-                      onClick={() => handleSelectOption(opt.id)}
-                      type="button"
-                      className="group relative flex items-center justify-center text-center px-[0.8cqw] py-[0.6cqw] rounded-[clamp(4px,0.6cqw,12px)] border-[clamp(2px,0.25cqw,4px)] border-black bg-[#fff5f9] hover:bg-[#fce7f3] active:bg-[#fbcfe8] shadow-[clamp(2px,0.28cqw,5px)_clamp(2px,0.28cqw,5px)_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer transition-all duration-150 select-none"
-                      style={{
-                        fontFamily:
-                          "'Pixelify Sans', 'Press Start 2P', monospace, sans-serif",
-                      }}
-                    >
-                      <span
-                        className="text-[#940d57] group-hover:text-[#b5146c] font-bold tracking-tight leading-snug"
-                        style={{
-                          fontSize: "clamp(10px, 1.5cqw, 30px)",
-                        }}
-                      >
-                        {opt.text}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* Estado 2: Botón seleccionado sube suavemente + feedback abajo */}
-              {selectedOption && (
-                <div className="w-full flex-1 flex flex-col justify-start overflow-hidden animate-fadeIn transition-all duration-300 ease-out">
-                  {/* Botón seleccionado que 'se sube' con animación suave */}
-                  <div
-                    className="w-full flex items-center justify-between px-[1.2cqw] py-[0.4cqw] rounded-[clamp(4px,0.6cqw,10px)] border-[clamp(2px,0.25cqw,4px)] shadow-[clamp(2px,0.25cqw,4px)_clamp(2px,0.25cqw,4px)_0px_0px_#000] transition-all duration-300 ease-out shrink-0"
-                    style={{
-                      backgroundColor: selectedOption.isCorrect
-                        ? "#f0fdf4"
-                        : "#fef2f2",
-                      borderColor: selectedOption.isCorrect
-                        ? "#16a34a"
-                        : "#dc2626",
-                    }}
-                  >
-                    <div className="flex items-center gap-[0.8cqw] min-w-0">
-                      <span
-                        className="font-bold shrink-0"
-                        style={{
-                          fontFamily:
-                            "'Press Start 2P', 'Silkscreen', monospace",
-                          fontSize: "clamp(8px, 1.2cqw, 22px)",
-                          color: selectedOption.isCorrect
-                            ? "#15803d"
-                            : "#b91c1c",
-                        }}
-                      >
-                        {selectedOption.isCorrect
-                          ? "✅ TU RESPUESTA:"
-                          : "❌ TU RESPUESTA:"}
-                      </span>
-                      <span
-                        className="font-bold text-black truncate"
-                        style={{
-                          fontFamily: "'Pixelify Sans', monospace",
-                          fontSize: "clamp(11px, 1.6cqw, 32px)",
-                        }}
-                      >
-                        {selectedOption.text}
-                      </span>
-                    </div>
-
-                    <span
-                      className="font-black uppercase tracking-wider shrink-0 ml-[1cqw]"
-                      style={{
-                        fontFamily:
-                          "'Press Start 2P', 'Silkscreen', monospace",
-                        fontSize: "clamp(8px, 1.1cqw, 20px)",
-                        color: selectedOption.isCorrect ? "#15803d" : "#b91c1c",
-                      }}
-                    >
-                      {selectedOption.isCorrect ? "¡CORRECTO!" : "¡INCORRECTO!"}
-                    </span>
-                  </div>
-
-                  {/* Info explicativa con animación suave de entrada debajo de la respuesta */}
-                  <div className="w-full mt-[0.35cqw] flex-1 overflow-y-auto pr-[0.5cqw]">
-                    <p
-                      className="text-black font-semibold select-none"
-                      style={{
-                        fontFamily:
-                          "'Pixelify Sans', 'Silkscreen', monospace, sans-serif",
-                        fontSize: "clamp(10.5px, 1.6cqw, 32px)",
-                        lineHeight: 1.2,
-                        textShadow: "0 1px 0 rgba(255,255,255,0.85)",
-                      }}
-                    >
-                      {selectedOption.feedback}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
+              {currentSpeaker}
+            </span>
           )}
         </div>
 
-        {/* Right Column: Square Pixel Art Action Button */}
-        <button
-          onClick={() => {
-            if (isWaitingForAnswer) return;
-            triggerPressAnimation();
-            handleAdvance();
-          }}
-          disabled={isWaitingForAnswer}
-          onMouseDown={() => !isWaitingForAnswer && setIsPressed(true)}
-          onMouseUp={() => !isWaitingForAnswer && triggerPressAnimation()}
-          onMouseLeave={() => setIsPressed(false)}
-          onTouchStart={() => !isWaitingForAnswer && setIsPressed(true)}
-          onTouchEnd={() => !isWaitingForAnswer && triggerPressAnimation()}
-          type="button"
-          aria-label={
-            isWaitingForAnswer
-              ? "Selecciona una de las 3 opciones para continuar"
-              : `Avanzar diálogo (${currentActionKey}, Enter o Espacio)`
-          }
-          className={`shrink-0 aspect-square text-white transition-all flex items-center justify-center select-none group ${
-            isWaitingForAnswer
-              ? "bg-neutral-600 opacity-40 cursor-not-allowed pointer-events-none"
-              : "bg-[#940d57] hover:bg-[#b5146c] cursor-pointer"
-          }`}
-          style={{
-            width: "clamp(32px, 5.2cqw, 102px)",
-            height: "clamp(32px, 5.2cqw, 102px)",
-            borderRadius: "clamp(6px, 0.9cqw, 18px)",
-            borderWidth: "clamp(2px, 0.28cqw, 5.5px)",
-            borderColor: "#000000",
-            borderStyle: "solid",
-            boxShadow: isWaitingForAnswer
-              ? "none"
-              : isPressed
-                ? "0px 0px 0px 0px #000000"
-                : "clamp(2px, 0.35cqw, 7px) clamp(2px, 0.35cqw, 7px) 0px 0px #000000",
-            transform:
-              isPressed && !isWaitingForAnswer
-                ? "translate(clamp(2px, 0.35cqw, 7px), clamp(2px, 0.35cqw, 7px))"
-                : "translate(0px, 0px)",
-            backgroundColor: isWaitingForAnswer
-              ? "#525252"
-              : isPressed
-                ? "#780946"
-                : undefined,
-            marginLeft: "clamp(6px, 1.2cqw, 24px)",
-            marginRight: "clamp(4px, 1cqw, 20px)",
-            padding: "clamp(2px, 0.35cqw, 7px)",
-            fontFamily: "'Press Start 2P', 'Silkscreen', monospace, sans-serif",
-            transition:
-              "transform 70ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 70ms cubic-bezier(0.4, 0, 0.2, 1), background-color 70ms ease-out, opacity 200ms ease-out",
-          }}
-        >
-          <div
-            className="w-full h-full flex items-center justify-center bg-gradient-to-b from-white/20 to-transparent"
+        {/* Fila inferior: Contenido de Diálogo / Trivia + Botón de Acción [E] */}
+        <div className="w-full flex-1 min-h-0 flex items-center justify-between overflow-hidden">
+          {/* Columna de Texto o Trivia */}
+          <div className="flex-1 h-full flex flex-col justify-center items-start pr-[1cqw] overflow-hidden">
+            {!currentLine.trivia ? (
+              /* Diálogo estándar */
+              <p
+                className="text-black font-semibold select-none overflow-y-auto w-full"
+                style={{
+                  fontFamily:
+                    "'Pixelify Sans', 'Silkscreen', 'Press Start 2P', monospace, sans-serif",
+                  fontSize: "clamp(11.5px, 2.0cqw, 40px)",
+                  lineHeight: 1.2,
+                  textShadow: "0 1px 0 rgba(255,255,255,0.85)",
+                }}
+              >
+                {displayedText}
+                {isTyping && (
+                  <span
+                    className="inline-block bg-[#a81363] animate-pulse align-middle"
+                    style={{
+                      width: "0.42em",
+                      height: "0.92em",
+                      marginLeft: "0.2em",
+                    }}
+                    aria-hidden="true"
+                  />
+                )}
+              </p>
+            ) : (
+              /* Diálogo con trivia interactiva (Parte 2) */
+              <div className="w-full flex-1 flex flex-col justify-center overflow-hidden">
+                {/* Pregunta: desaparece suavemente al responder */}
+                <div
+                  className={`transition-all duration-300 ease-out overflow-hidden ${
+                    selectedOptionId
+                      ? "max-h-0 opacity-0 -translate-y-2 pointer-events-none mb-0"
+                      : "max-h-36 opacity-100 translate-y-0 mb-[0.25cqw]"
+                  }`}
+                >
+                  <p
+                    className="text-black font-semibold select-none overflow-y-auto w-full"
+                    style={{
+                      fontFamily:
+                        "'Pixelify Sans', 'Silkscreen', 'Press Start 2P', monospace, sans-serif",
+                      fontSize: "clamp(11px, 1.7cqw, 34px)",
+                      lineHeight: 1.2,
+                      textShadow: "0 1px 0 rgba(255,255,255,0.85)",
+                    }}
+                  >
+                    {displayedText}
+                    {isTyping && (
+                      <span
+                        className="inline-block bg-[#a81363] animate-pulse align-middle"
+                        style={{
+                          width: "0.42em",
+                          height: "0.92em",
+                          marginLeft: "0.2em",
+                        }}
+                        aria-hidden="true"
+                      />
+                    )}
+                  </p>
+                </div>
+
+                {/* Estado 1: 3 botones en fila antes de responder (elevados un poco más arriba) */}
+                {!selectedOptionId && (
+                  <div className="w-full grid grid-cols-3 gap-[1cqw] mt-[0.2cqw] mb-[0.45cqw]">
+                    {currentLine.trivia.options.map((opt) => (
+                      <button
+                        key={opt.id}
+                        onClick={() => handleSelectOption(opt.id)}
+                        type="button"
+                        className="group relative flex items-center justify-center text-center px-[0.8cqw] py-[0.42cqw] rounded-[clamp(4px,0.6cqw,12px)] border-[clamp(2px,0.25cqw,4px)] border-black bg-[#fff5f9] hover:bg-[#fce7f3] active:bg-[#fbcfe8] shadow-[clamp(2px,0.28cqw,5px)_clamp(2px,0.28cqw,5px)_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer transition-all duration-150 select-none"
+                        style={{
+                          fontFamily:
+                            "'Pixelify Sans', 'Press Start 2P', monospace, sans-serif",
+                        }}
+                      >
+                        <span
+                          className="text-[#940d57] group-hover:text-[#b5146c] font-bold tracking-tight leading-snug"
+                          style={{
+                            fontSize: "clamp(10px, 1.45cqw, 28px)",
+                          }}
+                        >
+                          {opt.text}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Estado 2: Botón seleccionado sube suavemente + feedback abajo */}
+                {selectedOption && (
+                  <div className="w-full flex-1 flex flex-col justify-start overflow-hidden animate-fadeIn transition-all duration-300 ease-out pb-[0.2cqw]">
+                    {/* Botón seleccionado que 'se sube' con animación suave */}
+                    <div
+                      className="w-full flex items-center justify-between px-[1.2cqw] py-[0.35cqw] rounded-[clamp(4px,0.6cqw,10px)] border-[clamp(2px,0.25cqw,4px)] shadow-[clamp(2px,0.25cqw,4px)_clamp(2px,0.25cqw,4px)_0px_0px_#000] transition-all duration-300 ease-out shrink-0"
+                      style={{
+                        backgroundColor: selectedOption.isCorrect
+                          ? "#f0fdf4"
+                          : "#fef2f2",
+                        borderColor: selectedOption.isCorrect
+                          ? "#16a34a"
+                          : "#dc2626",
+                      }}
+                    >
+                      <div className="flex items-center gap-[0.8cqw] min-w-0">
+                        <span
+                          className="font-bold shrink-0"
+                          style={{
+                            fontFamily:
+                              "'Press Start 2P', 'Silkscreen', monospace",
+                            fontSize: "clamp(8px, 1.2cqw, 22px)",
+                            color: selectedOption.isCorrect
+                              ? "#15803d"
+                              : "#b91c1c",
+                          }}
+                        >
+                          {selectedOption.isCorrect
+                            ? "✅ TU RESPUESTA:"
+                            : "❌ TU RESPUESTA:"}
+                        </span>
+                        <span
+                          className="font-bold text-black truncate"
+                          style={{
+                            fontFamily: "'Pixelify Sans', monospace",
+                            fontSize: "clamp(11px, 1.6cqw, 32px)",
+                          }}
+                        >
+                          {selectedOption.text}
+                        </span>
+                      </div>
+
+                      <span
+                        className="font-black uppercase tracking-wider shrink-0 ml-[1cqw]"
+                        style={{
+                          fontFamily:
+                            "'Press Start 2P', 'Silkscreen', monospace",
+                          fontSize: "clamp(8px, 1.1cqw, 20px)",
+                          color: selectedOption.isCorrect ? "#15803d" : "#b91c1c",
+                        }}
+                      >
+                        {selectedOption.isCorrect ? "¡CORRECTO!" : "¡INCORRECTO!"}
+                      </span>
+                    </div>
+
+                    {/* Info explicativa con animación suave de entrada debajo de la respuesta */}
+                    <div className="w-full mt-[0.25cqw] flex-1 overflow-y-auto pr-[0.5cqw]">
+                      <p
+                        className="text-black font-semibold select-none"
+                        style={{
+                          fontFamily:
+                            "'Pixelify Sans', 'Silkscreen', monospace, sans-serif",
+                          fontSize: "clamp(10.5px, 1.55cqw, 30px)",
+                          lineHeight: 1.2,
+                          textShadow: "0 1px 0 rgba(255,255,255,0.85)",
+                        }}
+                      >
+                        {selectedOption.feedback}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Right Column: Square Pixel Art Action Button */}
+          <button
+            onClick={() => {
+              if (isWaitingForAnswer) return;
+              triggerPressAnimation();
+              handleAdvance();
+            }}
+            disabled={isWaitingForAnswer}
+            onMouseDown={() => !isWaitingForAnswer && setIsPressed(true)}
+            onMouseUp={() => !isWaitingForAnswer && triggerPressAnimation()}
+            onMouseLeave={() => setIsPressed(false)}
+            onTouchStart={() => !isWaitingForAnswer && setIsPressed(true)}
+            onTouchEnd={() => !isWaitingForAnswer && triggerPressAnimation()}
+            type="button"
+            aria-label={
+              isWaitingForAnswer
+                ? "Selecciona una de las 3 opciones para continuar"
+                : `Avanzar diálogo (${currentActionKey}, Enter o Espacio)`
+            }
+            className={`shrink-0 aspect-square text-white transition-all flex items-center justify-center select-none group ${
+              isWaitingForAnswer
+                ? "bg-neutral-600 opacity-40 cursor-not-allowed pointer-events-none"
+                : "bg-[#940d57] hover:bg-[#b5146c] cursor-pointer"
+            }`}
             style={{
-              borderRadius: "clamp(4px, 0.65cqw, 13px)",
-              borderWidth: "clamp(1.5px, 0.2cqw, 4px)",
-              borderColor: isWaitingForAnswer
-                ? "rgba(255, 255, 255, 0.2)"
-                : isPressed
-                  ? "rgba(255, 255, 255, 0.45)"
-                  : "rgba(255, 255, 255, 0.85)",
+              width: "clamp(30px, 4.8cqw, 96px)",
+              height: "clamp(30px, 4.8cqw, 96px)",
+              borderRadius: "clamp(6px, 0.9cqw, 18px)",
+              borderWidth: "clamp(2px, 0.28cqw, 5.5px)",
+              borderColor: "#000000",
               borderStyle: "solid",
-              transition: "border-color 70ms ease-out",
+              boxShadow: isWaitingForAnswer
+                ? "none"
+                : isPressed
+                  ? "0px 0px 0px 0px #000000"
+                  : "clamp(2px, 0.35cqw, 7px) clamp(2px, 0.35cqw, 7px) 0px 0px #000000",
+              transform:
+                isPressed && !isWaitingForAnswer
+                  ? "translate(clamp(2px, 0.35cqw, 7px), clamp(2px, 0.35cqw, 7px))"
+                  : "translate(0px, 0px)",
+              backgroundColor: isWaitingForAnswer
+                ? "#525252"
+                : isPressed
+                  ? "#780946"
+                  : undefined,
+              marginLeft: "clamp(4px, 0.8cqw, 16px)",
+              marginRight: "clamp(2px, 0.3cqw, 6px)",
+              padding: "clamp(2px, 0.35cqw, 7px)",
+              fontFamily: "'Press Start 2P', 'Silkscreen', monospace, sans-serif",
+              transition:
+                "transform 70ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 70ms cubic-bezier(0.4, 0, 0.2, 1), background-color 70ms ease-out, opacity 200ms ease-out",
             }}
           >
-            <span
-              className={`text-white font-black leading-none drop-shadow-[0_2px_0_rgba(0,0,0,0.8)] transition-transform ${
-                isWaitingForAnswer
-                  ? "opacity-40"
-                  : isPressed
-                    ? "scale-95"
-                    : "group-hover:scale-110"
-              }`}
+            <div
+              className="w-full h-full flex items-center justify-center bg-gradient-to-b from-white/20 to-transparent"
               style={{
-                fontSize: "clamp(10px, 1.9cqw, 38px)",
+                borderRadius: "clamp(4px, 0.65cqw, 13px)",
+                borderWidth: "clamp(1.5px, 0.2cqw, 4px)",
+                borderColor: isWaitingForAnswer
+                  ? "rgba(255, 255, 255, 0.2)"
+                  : isPressed
+                    ? "rgba(255, 255, 255, 0.45)"
+                    : "rgba(255, 255, 255, 0.85)",
+                borderStyle: "solid",
+                transition: "border-color 70ms ease-out",
               }}
             >
-              {currentActionKey}
-            </span>
-          </div>
-        </button>
+              <span
+                className={`text-white font-black leading-none drop-shadow-[0_2px_0_rgba(0,0,0,0.8)] transition-transform ${
+                  isWaitingForAnswer
+                    ? "opacity-40"
+                    : isPressed
+                      ? "scale-95"
+                      : "group-hover:scale-110"
+                }`}
+                style={{
+                  fontSize: "clamp(10px, 1.9cqw, 38px)",
+                }}
+              >
+                {currentActionKey}
+              </span>
+            </div>
+          </button>
+        </div>
       </div>
     </div>
   );
