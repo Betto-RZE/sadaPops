@@ -275,12 +275,33 @@ export function stepPlayerAlignmentWalk({
   };
 }
 
+export interface TriviaOption {
+  id: string;
+  text: string;
+  isCorrect: boolean;
+  feedback: string;
+}
+
+export interface DialogueTrivia {
+  question?: string;
+  options: TriviaOption[];
+}
+
+export interface PortraitOverride {
+  leftSrc?: string;
+  rightSrc?: string;
+  hideRight?: boolean;
+  dimRight?: boolean;
+}
+
 export interface DialogueLine {
   speaker?: string;
   speakerColor?: string;
   text: string;
   actionKey?: string;
   target?: "user" | "npc";
+  portraitOverride?: PortraitOverride;
+  trivia?: DialogueTrivia;
 }
 
 export const DIALOGUE_SPEAKER_COLORS = {
@@ -295,8 +316,13 @@ export const DIALOGUE_SPEAKER_COLORS = {
 
 /**
  * Conversación completa entre Doña Carmen e Inecito en el Capítulo 2 (Español).
+ * Estructura en 3 partes:
+ * 1. Plática con mito y respuesta con datos (líneas 1 a 16)
+ * 2. Inecito se dirige a ti y te hace una pregunta con 3 opciones (línea 17)
+ * 3. Despedida entre personajes (líneas 18 a 20)
  */
 export const ABUELA_CONVERSATION_MESSAGES_ES: DialogueLine[] = [
+  // PARTE 1: Plática con mito y respuesta con datos CCPC
   {
     speaker: "Doña Carmen",
     speakerColor: DIALOGUE_SPEAKER_COLORS.carmen,
@@ -377,12 +403,72 @@ export const ABUELA_CONVERSATION_MESSAGES_ES: DialogueLine[] = [
     speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
     text: "¡Exactamente! Su voto es suyo y su decisión debe ser respetada.",
   },
+
+  // PARTE 2: Inecito se dirige a ti y te hace una pregunta con 3 opciones
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¿Pusiste atención a los datos de la elección? A ver si recuerdas:",
+    target: "user",
+    portraitOverride: {
+      leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.png",
+      dimRight: true,
+    },
+    trivia: {
+      question: "¿Existe una edad máxima o límite para votar en las elecciones de México?",
+      options: [
+        {
+          id: "opt-a",
+          text: "A) Sí, a los 75 años",
+          isCorrect: false,
+          feedback:
+            "¡No es así! En México no existe una edad límite para votar. Cualquier persona con credencial vigente tiene garantizado su derecho constitucional.",
+        },
+        {
+          id: "opt-b",
+          text: "B) No hay edad máxima",
+          isCorrect: true,
+          feedback:
+            "¡Exacto! No existe límite de edad para votar. Además, en 2024 las personas de 60 a 79 años tuvieron una destacada participación ciudadana de más del 70%.",
+        },
+        {
+          id: "opt-c",
+          text: "C) Sí, a los 85 años",
+          isCorrect: false,
+          feedback:
+            "¡Incorrecto! La ley electoral mexicana no impone ningún tope de edad máxima para ejercer el derecho al voto.",
+        },
+      ],
+    },
+  },
+
+  // PARTE 3: Despedida entre personajes (Inecito vuelve a su retrato original)
+  {
+    speaker: "Doña Carmen",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.carmen,
+    text: "¡Qué maravilla de explicación! Ahora sí voy con toda la confianza y una gran sonrisa a emitir mi voto.",
+    target: "npc",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Al contrario, doña Carmen! Es un auténtico honor atenderla. ¡Que disfrute mucho su jornada electoral!",
+    target: "npc",
+  },
+  {
+    speaker: "Doña Carmen",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.carmen,
+    text: "¡Muchísimas gracias, jovencito! Y mucho ánimo para ti y para todos los funcionarios de casilla. ¡Hasta luego!",
+    target: "npc",
+  },
 ];
 
 /**
  * Conversación completa entre Doña Carmen (Tenantzin Carmen) e Inecito (Inecito Cívica) en Náhuatl.
+ * Estructura en 3 partes.
  */
 export const ABUELA_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
+  // PARTE 1: Plática con mito y respuesta con datos
   {
     speaker: "Tenantzin Carmen",
     speakerColor: DIALOGUE_SPEAKER_COLORS.carmen,
@@ -462,6 +548,64 @@ export const ABUELA_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
     speaker: "Inecito Cívica",
     speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
     text: "¡Melauak! Mo voto moxe wan moneki ma kitlakitah motlanemililis.",
+  },
+
+  // PARTE 2: Inecito se dirige a ti en Náhuatl
+  {
+    speaker: "Inecito Cívica",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Wan tehuatzin... ¿otikkak kualtsin in tlapoualistli? Xikilnamiki:",
+    target: "user",
+    portraitOverride: {
+      leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.png",
+      dimRight: true,
+    },
+    trivia: {
+      question: "¿Onkak límite de edad pampa titlapejpenis Mexihko?",
+      options: [
+        {
+          id: "opt-a",
+          text: "A) Kema, 75 xiuitl",
+          isCorrect: false,
+          feedback:
+            "¡Amo melauak! Mexihko amo onkak límite de edad pampa titlapejpenis. Nochtin uelis tlapejpeniseh.",
+        },
+        {
+          id: "opt-b",
+          text: "B) Amo onkak límite",
+          isCorrect: true,
+          feedback:
+            "¡Melauak! Amo onkak edad máxima. Itech 2024, tlacameh de 60 hasta 79 xiuitl otlapejpenijkeh kachi de 70%.",
+        },
+        {
+          id: "opt-c",
+          text: "C) Kema, 85 xiuitl",
+          isCorrect: false,
+          feedback:
+            "¡Istlakatili! Constitución mexicana amo kitlalia ningún límite de edad pampa voto.",
+        },
+      ],
+    },
+  },
+
+  // PARTE 3: Despedida en Náhuatl
+  {
+    speaker: "Tenantzin Carmen",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.carmen,
+    text: "¡Tlen kualtsin otinechilui! Axan nioh ika pakilistli pampa nitlapejpenis.",
+    target: "npc",
+  },
+  {
+    speaker: "Inecito Cívica",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Tlazohkamati tenantzin Carmen! Kualtsin ximopanolti itech inin tonali.",
+    target: "npc",
+  },
+  {
+    speaker: "Tenantzin Carmen",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.carmen,
+    text: "¡Tlazohkamati telpokatl! Xitekitikan kualtsin nochtin funcionarios. ¡Tikitaseh!",
+    target: "npc",
   },
 ];
 
@@ -599,6 +743,7 @@ export const JOVEN_ARRIVAL_MESSAGES_NAH: string[] = [
  * Conversación para El Joven (Español y Náhuatl).
  */
 export const JOVEN_CONVERSATION_MESSAGES_ES: DialogueLine[] = [
+  // PARTE 1: Plática con mito y respuesta con datos
   {
     speaker: "El Joven",
     speakerColor: DIALOGUE_SPEAKER_COLORS.joven,
@@ -619,9 +764,62 @@ export const JOVEN_CONVERSATION_MESSAGES_ES: DialogueLine[] = [
     speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
     text: "¡Hiciste muy bien! Cada voto cuenta y es recibido y contado por la propia ciudadanía.",
   },
+
+  // PARTE 2: Inecito se dirige a ti y te hace una pregunta con 3 opciones
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡A ver qué tanto sabes del voto joven! Responde la siguiente pregunta:",
+    target: "user",
+    portraitOverride: {
+      leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.png",
+      dimRight: true,
+    },
+    trivia: {
+      question: "¿A partir de qué edad se tiene el derecho y la obligación cívica de votar en México?",
+      options: [
+        {
+          id: "opt-a",
+          text: "A) A los 16 años",
+          isCorrect: false,
+          feedback:
+            "¡Casi! Aunque en algunos países se debate, en México la ciudadanía para votar se adquiere legalmente a los 18 años.",
+        },
+        {
+          id: "opt-b",
+          text: "B) A los 18 años cumplidos",
+          isCorrect: true,
+          feedback:
+            "¡Correcto! A los 18 años adquieres tu credencial de elector del INE y puedes participar plenamente en todas las decisiones cívicas.",
+        },
+        {
+          id: "opt-c",
+          text: "C) A los 21 años",
+          isCorrect: false,
+          feedback:
+            "¡Incorrecto! No es necesario esperar hasta los 21 años. Desde los 18 años cumplidos ya tienes derecho al voto.",
+        },
+      ],
+    },
+  },
+
+  // PARTE 3: Despedida entre personajes
+  {
+    speaker: "El Joven",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.joven,
+    text: "¡Muchas gracias! Ya me quedó clarísimo. ¡Paso a mi mampara a votar!",
+    target: "npc",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Mucho éxito en tu primera votación! ¡Tu participación hace la diferencia!",
+    target: "npc",
+  },
 ];
 
 export const JOVEN_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
+  // PARTE 1
   {
     speaker: "Telpokatl",
     speakerColor: DIALOGUE_SPEAKER_COLORS.joven,
@@ -642,6 +840,58 @@ export const JOVEN_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
     speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
     text: "¡Kualtsin otikchiuh! Sesen voto kipia chikaualistli wan maseualmeh kiyekanah.",
   },
+
+  // PARTE 2
+  {
+    speaker: "Inecito Cívica",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Xikita tehuatzin... ¿Kech xiuitl moneki pampa titlapejpenis Mexihko?",
+    target: "user",
+    portraitOverride: {
+      leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.png",
+      dimRight: true,
+    },
+    trivia: {
+      question: "¿Kech xiuitl moneki pampa titlapejpenis?",
+      options: [
+        {
+          id: "opt-a",
+          text: "A) 16 xiuitl",
+          isCorrect: false,
+          feedback:
+            "¡Amo! Mexihko moneki 18 xiuitl pampa titlapejpenis.",
+        },
+        {
+          id: "opt-b",
+          text: "B) 18 xiuitl",
+          isCorrect: true,
+          feedback:
+            "¡Melauak! Kuak tikchiua 18 xiuitl tikselia mo credencial INE wan uelis titlapejpenis.",
+        },
+        {
+          id: "opt-c",
+          text: "C) 21 xiuitl",
+          isCorrect: false,
+          feedback:
+            "¡Amo moneki 21 xiuitl! Desde 18 xiuitl ya uelis titekitis.",
+        },
+      ],
+    },
+  },
+
+  // PARTE 3
+  {
+    speaker: "Telpokatl",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.joven,
+    text: "¡Tlazohkamati! Axan nioh nitlapejpenatij itech mampara.",
+    target: "npc",
+  },
+  {
+    speaker: "Inecito Cívica",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Kualtsin ximopanolti! Mo participación cenca moneki.",
+    target: "npc",
+  },
 ];
 
 /**
@@ -661,6 +911,7 @@ export const INDIGENA_ARRIVAL_MESSAGES_NAH: string[] = [
  * Conversación para La Mujer Indígena (Español y Náhuatl).
  */
 export const INDIGENA_CONVERSATION_MESSAGES_ES: DialogueLine[] = [
+  // PARTE 1
   {
     speaker: "Citlali",
     speakerColor: DIALOGUE_SPEAKER_COLORS.indigena,
@@ -681,9 +932,62 @@ export const INDIGENA_CONVERSATION_MESSAGES_ES: DialogueLine[] = [
     speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
     text: "Así es, la diversidad cultural enriquece nuestra nación. ¡Tu participación es invaluable!",
   },
+
+  // PARTE 2
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Pon a prueba tus conocimientos sobre diversidad cívica!",
+    target: "user",
+    portraitOverride: {
+      leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.png",
+      dimRight: true,
+    },
+    trivia: {
+      question: "¿El INE produce materiales y guías electorales traducidos a lenguas originarias?",
+      options: [
+        {
+          id: "opt-a",
+          text: "A) No, sólo en español",
+          isCorrect: false,
+          feedback:
+            "¡Falso! El INE traduce contenidos a decenas de lenguas y variantes indígenas en todo México.",
+        },
+        {
+          id: "opt-b",
+          text: "B) Sí, en diversas lenguas",
+          isCorrect: true,
+          feedback:
+            "¡Correcto! El INE garantiza información accesible en múltiples lenguas originarias para proteger los derechos de los pueblos indígenas.",
+        },
+        {
+          id: "opt-c",
+          text: "C) Sólo si se solicita un año antes",
+          isCorrect: false,
+          feedback:
+            "¡Incorrecto! La inclusión lingüística es permanente y no requiere trámites especiales previos.",
+        },
+      ],
+    },
+  },
+
+  // PARTE 3
+  {
+    speaker: "Citlali",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.indigena,
+    text: "Tlazohkamati por su calidez y respeto. ¡Voy a ejercer mi voto!",
+    target: "npc",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡A ti, Citlali! Que tu voz resuene con fuerza en la democracia.",
+    target: "npc",
+  },
 ];
 
 export const INDIGENA_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
+  // PARTE 1
   {
     speaker: "Maseualsiuatl Citlali",
     speakerColor: DIALOGUE_SPEAKER_COLORS.indigena,
@@ -704,6 +1008,58 @@ export const INDIGENA_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
     speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
     text: "Melauak, nochi ti-mexihkayotl timoyolchikauah kuak nochtin titekitih.",
   },
+
+  // PARTE 2
+  {
+    speaker: "Inecito Cívica",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¿Melauak INE kipia amameh ika maseualtlahtoli?",
+    target: "user",
+    portraitOverride: {
+      leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.png",
+      dimRight: true,
+    },
+    trivia: {
+      question: "¿INE kipia amameh ika maseualtlahtoli?",
+      options: [
+        {
+          id: "opt-a",
+          text: "A) Amo, san español",
+          isCorrect: false,
+          feedback:
+            "¡Amo! INE kipia miak amameh ika maseualtlahtolmeh.",
+        },
+        {
+          id: "opt-b",
+          text: "B) Kema, miak tlahtoli",
+          isCorrect: true,
+          feedback:
+            "¡Melauak! INE kipia materiales ika miak maseualtlahtolmeh pampa kitlakitah toyehyelis.",
+        },
+        {
+          id: "opt-c",
+          text: "C) San ika se permiso",
+          isCorrect: false,
+          feedback:
+            "¡Amo moneki permiso! In inclusión mochipa onkak.",
+        },
+      ],
+    },
+  },
+
+  // PARTE 3
+  {
+    speaker: "Maseualsiuatl Citlali",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.indigena,
+    text: "Cenca tlazohkamati. Axan nioh nitlapejpena.",
+    target: "npc",
+  },
+  {
+    speaker: "Inecito Cívica",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Tlazohkamati Citlali! Ma kualtsin mopano inin tonali.",
+    target: "npc",
+  },
 ];
 
 /**
@@ -723,6 +1079,7 @@ export const TRANS_ARRIVAL_MESSAGES_NAH: string[] = [
  * Conversación para Transgénero (Español y Náhuatl).
  */
 export const TRANS_CONVERSATION_MESSAGES_ES: DialogueLine[] = [
+  // PARTE 1
   {
     speaker: "Morgan",
     speakerColor: DIALOGUE_SPEAKER_COLORS.transgenero,
@@ -743,9 +1100,62 @@ export const TRANS_CONVERSATION_MESSAGES_ES: DialogueLine[] = [
     speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
     text: "Aquí todos los funcionarios de casilla estamos comprometidos a proteger tu derecho al voto en igualdad.",
   },
+
+  // PARTE 2
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¿Conoces los protocolos de inclusión del INE? Contesta esta pregunta:",
+    target: "user",
+    portraitOverride: {
+      leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.png",
+      dimRight: true,
+    },
+    trivia: {
+      question: "¿Se puede impedir votar a una persona trans si su expresión de género no coincide con la foto anterior?",
+      options: [
+        {
+          id: "opt-a",
+          text: "A) Sí, se le niega el voto",
+          isCorrect: false,
+          feedback:
+            "¡Absolutamente no! El Protocolo Trans prohíbe tajantemente cualquier discriminación por expresión o identidad de género.",
+        },
+        {
+          id: "opt-b",
+          text: "B) No, el Protocolo Trans lo garantiza",
+          isCorrect: true,
+          feedback:
+            "¡Correcto! En ninguna casilla se puede discriminar ni negar el sufragio a personas trans. Su derecho está plenamente protegido.",
+        },
+        {
+          id: "opt-c",
+          text: "C) Sólo si presenta un testigo",
+          isCorrect: false,
+          feedback:
+            "¡Falso! La persona votante no requiere presentar testigos ni pruebas adicionales para ejercer su derecho.",
+        },
+      ],
+    },
+  },
+
+  // PARTE 3
+  {
+    speaker: "Morgan",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.transgenero,
+    text: "¡Qué tranquilidad da saberlo! Muchísimas gracias por el trato digno.",
+    target: "npc",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡El respeto y la no discriminación son principios de nuestra democracia!",
+    target: "npc",
+  },
 ];
 
 export const TRANS_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
+  // PARTE 1
   {
     speaker: "Morgan",
     speakerColor: DIALOGUE_SPEAKER_COLORS.transgenero,
@@ -766,6 +1176,58 @@ export const TRANS_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
     speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
     text: "Nikan nochtin funcionarios tikinpaleuiah nochtin maseualmeh ika tlatlakitalistli.",
   },
+
+  // PARTE 2
+  {
+    speaker: "Inecito Cívica",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¿Uelis kintsakuiliseh in voto in maseualmeh trans?",
+    target: "user",
+    portraitOverride: {
+      leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.png",
+      dimRight: true,
+    },
+    trivia: {
+      question: "¿Uelis kintsakuiliseh in voto in maseualmeh trans?",
+      options: [
+        {
+          id: "opt-a",
+          text: "A) Kema, amo uelis",
+          isCorrect: false,
+          feedback:
+            "¡Amo! Mochipa kipiah tlatlakitalistli pampa tlapejpeniseh.",
+        },
+        {
+          id: "opt-b",
+          text: "B) Amo, Protocolo Trans kinpaleuia",
+          isCorrect: true,
+          feedback:
+            "¡Melauak! Protocolo Trans kitlalia tla amo onkas ningún tipo de discriminación.",
+        },
+        {
+          id: "opt-c",
+          text: "C) San ika se testigo",
+          isCorrect: false,
+          feedback:
+            "¡Amo moneki testigo! In derecho cívico nochtin kipiah.",
+        },
+      ],
+    },
+  },
+
+  // PARTE 3
+  {
+    speaker: "Morgan",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.transgenero,
+    text: "¡Cenca tlazohkamati! Axan nioh nitlapejpena ika pakilistli.",
+    target: "npc",
+  },
+  {
+    speaker: "Inecito Cívica",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Tlazohkamati Morgan! Kualtsin ximopanolti.",
+    target: "npc",
+  },
 ];
 
 /**
@@ -785,6 +1247,7 @@ export const DISCAPACITADO_ARRIVAL_MESSAGES_NAH: string[] = [
  * Conversación para Persona con Discapacidad (Español y Náhuatl).
  */
 export const DISCAPACITADO_CONVERSATION_MESSAGES_ES: DialogueLine[] = [
+  // PARTE 1
   {
     speaker: "Don Roberto",
     speakerColor: DIALOGUE_SPEAKER_COLORS.discapacitado,
@@ -805,9 +1268,62 @@ export const DISCAPACITADO_CONVERSATION_MESSAGES_ES: DialogueLine[] = [
     speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
     text: "¡Exactamente! Toda la ciudadanía tiene derecho a emitir su sufragio de forma autónoma y digna.",
   },
+
+  // PARTE 2
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¿Sabías qué herramientas existen para la accesibilidad del voto?",
+    target: "user",
+    portraitOverride: {
+      leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.png",
+      dimRight: true,
+    },
+    trivia: {
+      question: "¿Qué apoyos de accesibilidad implementa el INE en las casillas electorales?",
+      options: [
+        {
+          id: "opt-a",
+          text: "A) Ninguno, sólo apoyo familiar",
+          isCorrect: false,
+          feedback:
+            "¡Falso! El INE dota a todas las casillas con herramientas institucionales para garantizar el voto autónomo.",
+        },
+        {
+          id: "opt-b",
+          text: "B) Mamparas móviles y plantillas Braille",
+          isCorrect: true,
+          feedback:
+            "¡Correcto! Las casillas disponen de mamparas especiales más bajas para sillas de ruedas, plantillas Braille y acceso preferente.",
+        },
+        {
+          id: "opt-c",
+          text: "C) Sólo voto por correo previo",
+          isCorrect: false,
+          feedback:
+            "¡Incorrecto! La accesibilidad presencial está garantizada el día de la jornada electoral en cada casilla.",
+        },
+      ],
+    },
+  },
+
+  // PARTE 3
+  {
+    speaker: "Don Roberto",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.discapacitado,
+    text: "¡Excelente labor! Con estas herramientas votar es accesible para todos. ¡Procedo a la mampara!",
+    target: "npc",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Muchas gracias Don Roberto! Que tenga una magnífica experiencia de votación.",
+    target: "npc",
+  },
 ];
 
 export const DISCAPACITADO_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
+  // PARTE 1
   {
     speaker: "Tlacatl Roberto",
     speakerColor: DIALOGUE_SPEAKER_COLORS.discapacitado,
@@ -827,6 +1343,58 @@ export const DISCAPACITADO_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
     speaker: "Inecito Cívica",
     speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
     text: "¡Melauak! Nochtin maseualmeh uelis tlapejpeniseh ika tlatlakitalistli wan autonomía.",
+  },
+
+  // PARTE 2
+  {
+    speaker: "Inecito Cívica",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¿Tlen tlamantli kipia INE pampa accesibilidad?",
+    target: "user",
+    portraitOverride: {
+      leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.png",
+      dimRight: true,
+    },
+    trivia: {
+      question: "¿Tlen tlamantli kipia INE pampa accesibilidad?",
+      options: [
+        {
+          id: "opt-a",
+          text: "A) Ahtle tlamantli",
+          isCorrect: false,
+          feedback:
+            "¡Amo! INE kipia mamparas wan plantillas Braille.",
+        },
+        {
+          id: "opt-b",
+          text: "B) Mamparas accesibles wan Braille",
+          isCorrect: true,
+          feedback:
+            "¡Melauak! INE kipia nochi tlamantli pampa maseualmeh uelis tlapejpeniseh ika autonomía.",
+        },
+        {
+          id: "opt-c",
+          text: "C) San tla tlatlanih achto",
+          isCorrect: false,
+          feedback:
+            "¡Amo! Mochipa onkak itech casilla.",
+        },
+      ],
+    },
+  },
+
+  // PARTE 3
+  {
+    speaker: "Tlacatl Roberto",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.discapacitado,
+    text: "¡Cenca kualtsin! Axan nioh nitlapejpenatij.",
+    target: "npc",
+  },
+  {
+    speaker: "Inecito Cívica",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Tlazohkamati Don Roberto! Kualtsin ximopanolti.",
+    target: "npc",
   },
 ];
 

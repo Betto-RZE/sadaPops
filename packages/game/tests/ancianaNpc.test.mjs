@@ -450,11 +450,12 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
       assert.equal(checkNear({ x: 100.0, y: 66.0 }), false);
     });
 
-    test("los mensajes de la conversación con Doña Carmen están configurados para español y náhuatl", () => {
-      assert.equal(ABUELA_CONVERSATION_MESSAGES_ES.length, 16);
-      assert.equal(ABUELA_CONVERSATION_MESSAGES_NAH.length, 16);
+    test("los mensajes de la conversación con Doña Carmen están configurados para español y náhuatl con estructura de 3 partes", () => {
+      // 20 líneas en total: Parte 1 (16 líneas), Parte 2 (1 pregunta trivia), Parte 3 (3 líneas de despedida)
+      assert.equal(ABUELA_CONVERSATION_MESSAGES_ES.length, 20);
+      assert.equal(ABUELA_CONVERSATION_MESSAGES_NAH.length, 20);
 
-      // Verificación de primera y última línea en español
+      // Verificación de primera línea (Parte 1: Inicio de mito)
       assert.equal(ABUELA_CONVERSATION_MESSAGES_ES[0].speaker, "Doña Carmen");
       assert.equal(ABUELA_CONVERSATION_MESSAGES_ES[0].speakerColor, "#8d3800");
       assert.equal(
@@ -462,18 +463,36 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
         "¡Muy buenos días, jovencito! Qué bonito les quedó todo por aquí. Se nota que trabajaron bastante.",
       );
 
-      assert.equal(ABUELA_CONVERSATION_MESSAGES_ES[1].speaker, "Inecito");
-      assert.equal(ABUELA_CONVERSATION_MESSAGES_ES[1].speakerColor, "#a81363");
-
-      assert.equal(ABUELA_CONVERSATION_MESSAGES_ES[15].speaker, "Inecito");
+      // Verificación de línea 16 (Parte 2: Inecito se dirige al jugador con trivia interactiva)
+      const triviaMsgEs = ABUELA_CONVERSATION_MESSAGES_ES[16];
+      assert.equal(triviaMsgEs.speaker, "Inecito");
+      assert.equal(triviaMsgEs.target, "user");
       assert.equal(
-        ABUELA_CONVERSATION_MESSAGES_ES[15].text,
-        "¡Exactamente! Su voto es suyo y su decisión debe ser respetada.",
+        triviaMsgEs.portraitOverride?.leftSrc,
+        "/assets/juego/dialogos/retrato-inecito-pregunta.png",
       );
+      assert.ok(triviaMsgEs.trivia, "Debe contener el objeto de trivia");
+      assert.equal(triviaMsgEs.trivia.options.length, 3, "Debe contener 3 opciones de respuesta");
+      assert.equal(
+        triviaMsgEs.trivia.options.filter((o) => o.isCorrect).length,
+        1,
+        "Exactamente una opción debe ser correcta",
+      );
+
+      // Verificación de líneas 17 a 19 (Parte 3: Despedida entre personajes)
+      assert.equal(ABUELA_CONVERSATION_MESSAGES_ES[17].speaker, "Doña Carmen");
+      assert.equal(ABUELA_CONVERSATION_MESSAGES_ES[18].speaker, "Inecito");
+      assert.equal(ABUELA_CONVERSATION_MESSAGES_ES[19].speaker, "Doña Carmen");
 
       // Verificación de náhuatl
       assert.equal(ABUELA_CONVERSATION_MESSAGES_NAH[0].speaker, "Tenantzin Carmen");
-      assert.equal(ABUELA_CONVERSATION_MESSAGES_NAH[1].speaker, "Inecito Cívica");
+      assert.equal(ABUELA_CONVERSATION_MESSAGES_NAH[16].speaker, "Inecito Cívica");
+      assert.equal(
+        ABUELA_CONVERSATION_MESSAGES_NAH[16].portraitOverride?.leftSrc,
+        "/assets/juego/dialogos/retrato-inecito-pregunta.png",
+      );
+      assert.equal(ABUELA_CONVERSATION_MESSAGES_NAH[16].trivia?.options.length, 3);
+      assert.equal(ABUELA_CONVERSATION_MESSAGES_NAH[17].speaker, "Tenantzin Carmen");
     });
 
     test("alinea al personaje principal en el eje Y respecto al interlocutor (calculatePlayerAlignedPositionWithNpc)", () => {
@@ -577,11 +596,11 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
       assert.ok(dimmedStyle.filter.includes("saturate(0.55)"), "Orador inactivo debe tener saturación atenuada");
     });
 
-    test("todos los 16 mensajes de la conversación alternan exactamente un orador activo y uno apagado", () => {
+    test("todos los 20 mensajes de la conversación alternan exactamente un orador activo y uno apagado", () => {
       const inecitoNames = ABUELA_CONVERSATION_PORTRAITS.left.speakerNames;
       const carmenNames = ABUELA_CONVERSATION_PORTRAITS.right.speakerNames;
 
-      // Evaluar conversación en Español
+      // Evaluar conversación en Español (20 mensajes)
       ABUELA_CONVERSATION_MESSAGES_ES.forEach((msg, idx) => {
         const isLeft = isPortraitActive(msg.speaker, inecitoNames);
         const isRight = isPortraitActive(msg.speaker, carmenNames);
@@ -592,7 +611,7 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
         );
       });
 
-      // Evaluar conversación en Náhuatl
+      // Evaluar conversación en Náhuatl (20 mensajes)
       ABUELA_CONVERSATION_MESSAGES_NAH.forEach((msg, idx) => {
         const isLeft = isPortraitActive(msg.speaker, inecitoNames);
         const isRight = isPortraitActive(msg.speaker, carmenNames);
@@ -602,6 +621,47 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
           `Mensaje NAH #${idx} ("${msg.speaker}") debe activar exactamente un interlocutor y apagar al otro`,
         );
       });
+    });
+
+    test("estructura en 3 partes de la conversación (Mito -> Trivia con Inecito -> Despedida)", () => {
+      // 1. Parte 1: Mito y respuesta con datos (líneas 0 a 15)
+      for (let i = 0; i <= 15; i++) {
+        assert.ok(!ABUELA_CONVERSATION_MESSAGES_ES[i].trivia, `Línea ${i} no debe tener trivia`);
+        assert.equal(ABUELA_CONVERSATION_MESSAGES_ES[i].portraitOverride, undefined);
+      }
+
+      // 2. Parte 2: Inecito se dirige al jugador y hace la pregunta con 3 opciones (línea 16)
+      const triviaLine = ABUELA_CONVERSATION_MESSAGES_ES[16];
+      assert.equal(triviaLine.speaker, "Inecito");
+      assert.equal(triviaLine.target, "user");
+      assert.equal(
+        triviaLine.portraitOverride?.leftSrc,
+        "/assets/juego/dialogos/retrato-inecito-pregunta.png",
+        "El retrato debe cambiar a la imagen frontal de pregunta",
+      );
+      assert.ok(triviaLine.trivia, "Debe tener objeto trivia");
+      assert.equal(triviaLine.trivia.options.length, 3, "Debe tener 3 botones de respuesta en fila");
+      triviaLine.trivia.options.forEach((opt) => {
+        assert.ok(opt.id.length > 0);
+        assert.ok(opt.text.length > 0);
+        assert.ok(opt.feedback.length > 0, "Cada opción debe tener texto de info/feedback");
+      });
+      assert.equal(
+        triviaLine.trivia.options.filter((o) => o.isCorrect).length,
+        1,
+        "Debe haber exactamente 1 respuesta correcta",
+      );
+
+      // 3. Parte 3: Despedida entre personajes con regreso al retrato anterior (líneas 17 a 19)
+      for (let i = 17; i < ABUELA_CONVERSATION_MESSAGES_ES.length; i++) {
+        const line = ABUELA_CONVERSATION_MESSAGES_ES[i];
+        assert.ok(!line.trivia, `Línea de despedida ${i} no debe tener trivia`);
+        assert.equal(
+          line.portraitOverride,
+          undefined,
+          `Línea ${i} debe regresar al retrato canónico de perfil`,
+        );
+      }
     });
 
     test("getSpeakerNameAlignment ubica el nombre a la derecha para Doña Carmen y a la izquierda para Inecito", () => {
@@ -812,6 +872,93 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
           );
         });
       });
+    });
+  });
+
+  describe("10. Estructura de conversaciones en 3 partes y trivia interactiva", () => {
+    test("los 5 personajes narrativos implementan la estructura en 3 partes (Mito -> Pregunta Inecito -> Despedida)", () => {
+      NARRATIVE_CHARACTERS_ORDER.forEach((id) => {
+        const config = NARRATIVE_CHARACTERS_CONFIG[id];
+        const messages = config.conversationMessagesEs;
+
+        // Debe tener al menos 6 líneas: Parte 1 (>=2), Parte 2 (1), Parte 3 (>=2)
+        assert.ok(
+          messages.length >= 6,
+          `El personaje ${id} debe tener suficientes mensajes para las 3 partes`,
+        );
+
+        // Ubicar la línea de trivia (Parte 2)
+        const triviaIndex = messages.findIndex((m) => m.trivia !== undefined);
+        assert.ok(
+          triviaIndex > 0,
+          `El personaje ${id} debe tener una línea de trivia interactiva en Parte 2`,
+        );
+
+        const triviaLine = messages[triviaIndex];
+        assert.equal(triviaLine.speaker, "Inecito", "Inecito debe ser el orador en la trivia");
+        assert.equal(triviaLine.target, "user", "Inecito debe dirigirse al usuario en la trivia");
+        assert.equal(
+          triviaLine.portraitOverride?.leftSrc,
+          "/assets/juego/dialogos/retrato-inecito-pregunta.png",
+          "Inecito debe usar el retrato frontal con manos abiertas",
+        );
+
+        // Verificar 3 botones de respuesta en fila
+        assert.equal(triviaLine.trivia?.options.length, 3, "Debe tener exactamente 3 opciones");
+        const correctOptions = triviaLine.trivia?.options.filter((o) => o.isCorrect);
+        assert.equal(correctOptions?.length, 1, "Debe haber exactamente 1 opción correcta");
+        triviaLine.trivia?.options.forEach((opt) => {
+          assert.ok(opt.feedback.length > 0, "Cada opción debe tener info explicativa");
+        });
+
+        // Parte 3: Despedida entre personajes (después de la trivia)
+        const farewellLines = messages.slice(triviaIndex + 1);
+        assert.ok(farewellLines.length >= 2, `Parte 3 debe tener despedida para ${id}`);
+        farewellLines.forEach((fl) => {
+          assert.equal(fl.trivia, undefined, "Líneas de despedida no deben tener trivia");
+          assert.equal(
+            fl.portraitOverride,
+            undefined,
+            "Líneas de despedida deben regresar al retrato canónico",
+          );
+        });
+      });
+    });
+
+    test("simulación lógica de bloqueo de avance y desbloqueo tras responder la trivia", () => {
+      const triviaLine = ABUELA_CONVERSATION_MESSAGES_ES[16];
+      let selectedOptionId = null;
+
+      // Estado 1: Pregunta visible, sin responder
+      let isTrivia = Boolean(triviaLine.trivia && triviaLine.trivia.options.length > 0);
+      let isWaitingForAnswer = isTrivia && selectedOptionId === null;
+      assert.equal(isWaitingForAnswer, true, "Debe estar esperando respuesta");
+
+      // Intento de avance con teclado (E, Enter, Espacio): debe estar bloqueado
+      const simulateKeyAdvance = (isWaiting) => {
+        if (isWaiting) return false; // Bloqueado
+        return true; // Permitido
+      };
+      assert.equal(simulateKeyAdvance(isWaitingForAnswer), false, "El avance debe estar estrictamente bloqueado");
+
+      // Estado 2: El usuario selecciona la opción 'opt-b' (correcta)
+      selectedOptionId = "opt-b";
+      isWaitingForAnswer = isTrivia && selectedOptionId === null;
+      assert.equal(isWaitingForAnswer, false, "Ya no debe estar esperando respuesta");
+
+      const selectedOption = triviaLine.trivia.options.find((o) => o.id === selectedOptionId);
+      assert.ok(selectedOption);
+      assert.equal(selectedOption.isCorrect, true);
+      assert.ok(selectedOption.feedback.includes("70%"), "Debe mostrar el feedback correspondiente");
+
+      // Ahora el avance sí está permitido
+      assert.equal(simulateKeyAdvance(isWaitingForAnswer), true, "El avance debe estar desbloqueado");
+
+      // Estado 3: Al avanzar a la línea 17 (Parte 3), se reinicia selectedOptionId
+      selectedOptionId = null;
+      const nextLine = ABUELA_CONVERSATION_MESSAGES_ES[17];
+      assert.equal(nextLine.speaker, "Doña Carmen");
+      assert.equal(nextLine.portraitOverride, undefined, "Regresa al retrato canónico de Doña Carmen");
     });
   });
 });

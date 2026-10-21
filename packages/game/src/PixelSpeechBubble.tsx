@@ -4,16 +4,18 @@ import {
   isPortraitActive,
   getPortraitStyle,
   getSpeakerNameAlignment,
+  TriviaOption,
+  DialogueTrivia,
+  PortraitOverride,
+  DialogueLine,
 } from "./features/mitos/ancianaConfig";
 
-export interface DialogueLine {
-  speaker?: string;
-  speakerColor?: string;
-  text: string;
-  actionKey?: string;
-  /** Destinatario del diálogo: "user" (habla con nosotros -> frente/cámara) | "npc" (habla con otro personaje -> derecha) */
-  target?: "user" | "npc";
-}
+export type {
+  TriviaOption,
+  DialogueTrivia,
+  PortraitOverride,
+  DialogueLine,
+};
 
 export interface PixelSpeechBubbleProps {
   /** Optional single speaker (fallback for lines without specific speaker) */
@@ -47,6 +49,7 @@ export interface PixelSpeechBubbleProps {
  * - Press [E] on final message: closes speech bubble and invokes onDismiss
  * - 100% pixel art fonts ('Pixelify Sans' & 'Press Start 2P')
  * - Proportional container-query scaling across window and fullscreen modes
+ * - Interactive Trivia / Quiz support with smooth transitions, answer elevation, and mandatory selection
  */
 export function PixelSpeechBubble({
   speaker = "Inecito",
@@ -75,6 +78,8 @@ export function PixelSpeechBubble({
           text: item.text,
           actionKey: item.actionKey ?? actionKey,
           target: item.target,
+          portraitOverride: item.portraitOverride,
+          trivia: item.trivia,
         };
       });
     }
@@ -91,12 +96,36 @@ export function PixelSpeechBubble({
     actionKey,
   };
 
+  // Estado para la trivia interactiva en la línea actual
+  const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
+
+  // Reiniciar selección al cambiar de paso en la conversación
   useEffect(() => {
-    if (currentLine && currentLine.text) {
+    setSelectedOptionId(null);
+  }, [currentStepIndex]);
+
+  const isTrivia = Boolean(
+    currentLine.trivia &&
+      currentLine.trivia.options &&
+      currentLine.trivia.options.length > 0,
+  );
+  const isWaitingForAnswer = Boolean(isTrivia && selectedOptionId === null);
+
+  const selectedOption = useMemo(() => {
+    if (!currentLine.trivia || !selectedOptionId) return null;
+    return (
+      currentLine.trivia.options.find((opt) => opt.id === selectedOptionId) ||
+      null
+    );
+  }, [currentLine.trivia, selectedOptionId]);
+
+  useEffect(() => {
+    if (currentLine && (currentLine.text || currentLine.trivia)) {
       onLineChange?.(currentLine, currentStepIndex);
     }
   }, [currentStepIndex, currentLine, onLineChange]);
-  const currentText = currentLine.text;
+
+  const currentText = currentLine.text || currentLine.trivia?.question || "";
   const currentSpeaker = currentLine.speaker;
   const currentSpeakerColor = currentLine.speakerColor || "#a81363";
   const currentActionKey = currentLine.actionKey || actionKey;
@@ -126,7 +155,9 @@ export function PixelSpeechBubble({
         .map((m) =>
           typeof m === "string"
             ? m
-            : `${m.speaker || ""}:${m.text}:${m.actionKey || ""}`,
+            : `${m.speaker || ""}:${m.text}:${m.actionKey || ""}:${
+                m.trivia?.question || ""
+              }`,
         )
         .join("|||");
     }
@@ -142,6 +173,7 @@ export function PixelSpeechBubble({
       setCurrentStepIndex(0);
       setDisplayedLength(0);
       setIsTyping(true);
+      setSelectedOptionId(null);
     }
   }, [messagesFingerprint]);
 
@@ -155,7 +187,7 @@ export function PixelSpeechBubble({
   }, [currentText.length]);
 
   const handleAdvance = useCallback(() => {
-    if (disabled || normalizedLines.length === 0) return;
+    if (disabled || isWaitingForAnswer || normalizedLines.length === 0) return;
 
     // 1. Press E while typing: skip typewriter animation immediately
     if (isTyping) {
@@ -182,6 +214,7 @@ export function PixelSpeechBubble({
     onDismiss();
   }, [
     disabled,
+    isWaitingForAnswer,
     normalizedLines,
     isTyping,
     skipTyping,
@@ -189,6 +222,21 @@ export function PixelSpeechBubble({
     onAdvance,
     onDismiss,
   ]);
+
+  // Selección de una respuesta en la trivia
+  const handleSelectOption = useCallback(
+    (optionId: string) => {
+      if (!isWaitingForAnswer) return;
+      if (typingTimerRef.current) {
+        clearTimeout(typingTimerRef.current);
+        typingTimerRef.current = null;
+      }
+      setIsTyping(false);
+      setDisplayedLength(currentText.length);
+      setSelectedOptionId(optionId);
+    },
+    [isWaitingForAnswer, currentText.length],
+  );
 
   // Real-time typewriter animation effect
   useEffect(() => {
@@ -265,6 +313,15 @@ export function PixelSpeechBubble({
 
       if (isActionKey) {
         e.preventDefault();
+        // Si el texto aún se está escribiendo, saltar el typewriter para leer la pregunta completa
+        if (isTyping) {
+          skipTyping();
+          return;
+        }
+        // Si hay una trivia esperando respuesta, BLOQUEAR estrictamente el avance
+        if (isWaitingForAnswer) {
+          return;
+        }
         triggerPressAnimation();
         handleAdvance();
       }
@@ -272,7 +329,15 @@ export function PixelSpeechBubble({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [disabled, handleAdvance, currentActionKey, triggerPressAnimation]);
+  }, [
+    disabled,
+    handleAdvance,
+    currentActionKey,
+    triggerPressAnimation,
+    isTyping,
+    skipTyping,
+    isWaitingForAnswer,
+  ]);
 
   const displayedText = currentText.slice(0, displayedLength);
 
@@ -287,7 +352,7 @@ export function PixelSpeechBubble({
       {/* Retratos de los interlocutores pegados al borde superior del globo */}
       {portraits && (
         <div className="absolute inset-x-0 bottom-[96%] flex justify-between items-end px-[2cqw] pointer-events-none z-0">
-          {/* Interlocutor Izquierdo (ej: Inecito mirando hacia la derecha) */}
+          {/* Interlocutor Izquierdo (ej: Inecito mirando hacia la derecha o al frente en trivia) */}
           {portraits.left && (
             <div
               className="relative flex items-end justify-center transition-all duration-300 ease-out select-none"
@@ -298,7 +363,9 @@ export function PixelSpeechBubble({
               }}
             >
               <img
-                src={portraits.left.src}
+                src={
+                  currentLine.portraitOverride?.leftSrc || portraits.left.src
+                }
                 alt={portraits.left.alt || "Interlocutor Izquierdo"}
                 className="w-full h-full object-contain object-bottom pointer-events-none select-none"
                 style={{ imageRendering: "pixelated" }}
@@ -307,17 +374,27 @@ export function PixelSpeechBubble({
           )}
 
           {/* Interlocutor Derecho (ej: Doña Carmen mirando hacia la izquierda) */}
-          {portraits.right && (
+          {portraits.right && !currentLine.portraitOverride?.hideRight && (
             <div
               className="relative flex items-end justify-center transition-all duration-300 ease-out select-none"
               style={{
                 width: "clamp(135px, 29cqw, 480px)",
                 height: "clamp(122px, 26.1cqw, 432px)",
-                ...getPortraitStyle(isRightSpeakerActive),
+                ...(currentLine.portraitOverride?.dimRight
+                  ? {
+                      filter:
+                        "brightness(0.28) saturate(0.4) contrast(0.85) drop-shadow(0 2px 4px rgba(0,0,0,0.3))",
+                      opacity: 0.45,
+                      transform: "translateY(8px) scale(0.94)",
+                      zIndex: 1,
+                    }
+                  : getPortraitStyle(isRightSpeakerActive)),
               }}
             >
               <img
-                src={portraits.right.src}
+                src={
+                  currentLine.portraitOverride?.rightSrc || portraits.right.src
+                }
                 alt={portraits.right.alt || "Interlocutor Derecho"}
                 className="w-full h-full object-contain object-bottom pointer-events-none select-none"
                 style={{ imageRendering: "pixelated" }}
@@ -337,7 +414,7 @@ export function PixelSpeechBubble({
 
       {/* Writable White Interior Container (Fits precisely within the 6.3% top & 7.6% bottom black border) */}
       <div className="absolute inset-x-0 top-[7.5%] bottom-[8.5%] px-[4%] flex items-center justify-between z-20">
-        {/* Left Column: Speaker in header, Text directly below */}
+        {/* Left Column: Speaker in header, Text / Trivia directly below */}
         <div className="flex-1 h-full flex flex-col justify-start items-start pr-[1cqw] overflow-hidden pt-[0.2cqw]">
           {/* Fila del nombre del interlocutor: alineado dinámicamente según su retrato */}
           <div
@@ -363,45 +440,195 @@ export function PixelSpeechBubble({
               </span>
             )}
           </div>
-          <p
-            className="text-black font-semibold select-none overflow-y-auto w-full"
-            style={{
-              fontFamily:
-                "'Pixelify Sans', 'Silkscreen', 'Press Start 2P', monospace, sans-serif",
-              fontSize: "clamp(11.5px, 2.0cqw, 40px)",
-              lineHeight: 1.2,
-              textShadow: "0 1px 0 rgba(255,255,255,0.85)",
-            }}
-          >
-            {displayedText}
-            {isTyping && (
-              <span
-                className="inline-block bg-[#a81363] animate-pulse align-middle"
-                style={{
-                  width: "0.42em",
-                  height: "0.92em",
-                  marginLeft: "0.2em",
-                }}
-                aria-hidden="true"
-              />
-            )}
-          </p>
+
+          {!currentLine.trivia ? (
+            /* Diálogo estándar */
+            <p
+              className="text-black font-semibold select-none overflow-y-auto w-full"
+              style={{
+                fontFamily:
+                  "'Pixelify Sans', 'Silkscreen', 'Press Start 2P', monospace, sans-serif",
+                fontSize: "clamp(11.5px, 2.0cqw, 40px)",
+                lineHeight: 1.2,
+                textShadow: "0 1px 0 rgba(255,255,255,0.85)",
+              }}
+            >
+              {displayedText}
+              {isTyping && (
+                <span
+                  className="inline-block bg-[#a81363] animate-pulse align-middle"
+                  style={{
+                    width: "0.42em",
+                    height: "0.92em",
+                    marginLeft: "0.2em",
+                  }}
+                  aria-hidden="true"
+                />
+              )}
+            </p>
+          ) : (
+            /* Diálogo con trivia interactiva (Parte 2) */
+            <div className="w-full flex-1 flex flex-col justify-start overflow-hidden">
+              {/* Pregunta: desaparece suavemente al responder */}
+              <div
+                className={`transition-all duration-300 ease-out overflow-hidden ${
+                  selectedOptionId
+                    ? "max-h-0 opacity-0 -translate-y-2 pointer-events-none mb-0"
+                    : "max-h-36 opacity-100 translate-y-0 mb-[0.4cqw]"
+                }`}
+              >
+                <p
+                  className="text-black font-semibold select-none overflow-y-auto w-full"
+                  style={{
+                    fontFamily:
+                      "'Pixelify Sans', 'Silkscreen', 'Press Start 2P', monospace, sans-serif",
+                    fontSize: "clamp(11px, 1.8cqw, 36px)",
+                    lineHeight: 1.2,
+                    textShadow: "0 1px 0 rgba(255,255,255,0.85)",
+                  }}
+                >
+                  {displayedText}
+                  {isTyping && (
+                    <span
+                      className="inline-block bg-[#a81363] animate-pulse align-middle"
+                      style={{
+                        width: "0.42em",
+                        height: "0.92em",
+                        marginLeft: "0.2em",
+                      }}
+                      aria-hidden="true"
+                    />
+                  )}
+                </p>
+              </div>
+
+              {/* Estado 1: 3 botones en fila antes de responder */}
+              {!selectedOptionId && (
+                <div className="w-full grid grid-cols-3 gap-[1cqw] mt-auto pb-[0.2cqw]">
+                  {currentLine.trivia.options.map((opt) => (
+                    <button
+                      key={opt.id}
+                      onClick={() => handleSelectOption(opt.id)}
+                      type="button"
+                      className="group relative flex items-center justify-center text-center px-[0.8cqw] py-[0.6cqw] rounded-[clamp(4px,0.6cqw,12px)] border-[clamp(2px,0.25cqw,4px)] border-black bg-[#fff5f9] hover:bg-[#fce7f3] active:bg-[#fbcfe8] shadow-[clamp(2px,0.28cqw,5px)_clamp(2px,0.28cqw,5px)_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer transition-all duration-150 select-none"
+                      style={{
+                        fontFamily:
+                          "'Pixelify Sans', 'Press Start 2P', monospace, sans-serif",
+                      }}
+                    >
+                      <span
+                        className="text-[#940d57] group-hover:text-[#b5146c] font-bold tracking-tight leading-snug"
+                        style={{
+                          fontSize: "clamp(10px, 1.5cqw, 30px)",
+                        }}
+                      >
+                        {opt.text}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Estado 2: Botón seleccionado sube suavemente + feedback abajo */}
+              {selectedOption && (
+                <div className="w-full flex-1 flex flex-col justify-start overflow-hidden animate-fadeIn transition-all duration-300 ease-out">
+                  {/* Botón seleccionado que 'se sube' con animación suave */}
+                  <div
+                    className="w-full flex items-center justify-between px-[1.2cqw] py-[0.4cqw] rounded-[clamp(4px,0.6cqw,10px)] border-[clamp(2px,0.25cqw,4px)] shadow-[clamp(2px,0.25cqw,4px)_clamp(2px,0.25cqw,4px)_0px_0px_#000] transition-all duration-300 ease-out shrink-0"
+                    style={{
+                      backgroundColor: selectedOption.isCorrect
+                        ? "#f0fdf4"
+                        : "#fef2f2",
+                      borderColor: selectedOption.isCorrect
+                        ? "#16a34a"
+                        : "#dc2626",
+                    }}
+                  >
+                    <div className="flex items-center gap-[0.8cqw] min-w-0">
+                      <span
+                        className="font-bold shrink-0"
+                        style={{
+                          fontFamily:
+                            "'Press Start 2P', 'Silkscreen', monospace",
+                          fontSize: "clamp(8px, 1.2cqw, 22px)",
+                          color: selectedOption.isCorrect
+                            ? "#15803d"
+                            : "#b91c1c",
+                        }}
+                      >
+                        {selectedOption.isCorrect
+                          ? "✅ TU RESPUESTA:"
+                          : "❌ TU RESPUESTA:"}
+                      </span>
+                      <span
+                        className="font-bold text-black truncate"
+                        style={{
+                          fontFamily: "'Pixelify Sans', monospace",
+                          fontSize: "clamp(11px, 1.6cqw, 32px)",
+                        }}
+                      >
+                        {selectedOption.text}
+                      </span>
+                    </div>
+
+                    <span
+                      className="font-black uppercase tracking-wider shrink-0 ml-[1cqw]"
+                      style={{
+                        fontFamily:
+                          "'Press Start 2P', 'Silkscreen', monospace",
+                        fontSize: "clamp(8px, 1.1cqw, 20px)",
+                        color: selectedOption.isCorrect ? "#15803d" : "#b91c1c",
+                      }}
+                    >
+                      {selectedOption.isCorrect ? "¡CORRECTO!" : "¡INCORRECTO!"}
+                    </span>
+                  </div>
+
+                  {/* Info explicativa con animación suave de entrada debajo de la respuesta */}
+                  <div className="w-full mt-[0.35cqw] flex-1 overflow-y-auto pr-[0.5cqw]">
+                    <p
+                      className="text-black font-semibold select-none"
+                      style={{
+                        fontFamily:
+                          "'Pixelify Sans', 'Silkscreen', monospace, sans-serif",
+                        fontSize: "clamp(10.5px, 1.6cqw, 32px)",
+                        lineHeight: 1.2,
+                        textShadow: "0 1px 0 rgba(255,255,255,0.85)",
+                      }}
+                    >
+                      {selectedOption.feedback}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Right Column: Square Pixel Art Action Button */}
         <button
           onClick={() => {
+            if (isWaitingForAnswer) return;
             triggerPressAnimation();
             handleAdvance();
           }}
-          onMouseDown={() => setIsPressed(true)}
-          onMouseUp={() => triggerPressAnimation()}
+          disabled={isWaitingForAnswer}
+          onMouseDown={() => !isWaitingForAnswer && setIsPressed(true)}
+          onMouseUp={() => !isWaitingForAnswer && triggerPressAnimation()}
           onMouseLeave={() => setIsPressed(false)}
-          onTouchStart={() => setIsPressed(true)}
-          onTouchEnd={() => triggerPressAnimation()}
+          onTouchStart={() => !isWaitingForAnswer && setIsPressed(true)}
+          onTouchEnd={() => !isWaitingForAnswer && triggerPressAnimation()}
           type="button"
-          aria-label={`Avanzar diálogo (${currentActionKey}, Enter o Espacio)`}
-          className="shrink-0 aspect-square bg-[#940d57] hover:bg-[#b5146c] text-white transition-all flex items-center justify-center cursor-pointer select-none group"
+          aria-label={
+            isWaitingForAnswer
+              ? "Selecciona una de las 3 opciones para continuar"
+              : `Avanzar diálogo (${currentActionKey}, Enter o Espacio)`
+          }
+          className={`shrink-0 aspect-square text-white transition-all flex items-center justify-center select-none group ${
+            isWaitingForAnswer
+              ? "bg-neutral-600 opacity-40 cursor-not-allowed pointer-events-none"
+              : "bg-[#940d57] hover:bg-[#b5146c] cursor-pointer"
+          }`}
           style={{
             width: "clamp(32px, 5.2cqw, 102px)",
             height: "clamp(32px, 5.2cqw, 102px)",
@@ -409,19 +636,26 @@ export function PixelSpeechBubble({
             borderWidth: "clamp(2px, 0.28cqw, 5.5px)",
             borderColor: "#000000",
             borderStyle: "solid",
-            boxShadow: isPressed
-              ? "0px 0px 0px 0px #000000"
-              : "clamp(2px, 0.35cqw, 7px) clamp(2px, 0.35cqw, 7px) 0px 0px #000000",
-            transform: isPressed
-              ? "translate(clamp(2px, 0.35cqw, 7px), clamp(2px, 0.35cqw, 7px))"
-              : "translate(0px, 0px)",
-            backgroundColor: isPressed ? "#780946" : undefined,
+            boxShadow: isWaitingForAnswer
+              ? "none"
+              : isPressed
+                ? "0px 0px 0px 0px #000000"
+                : "clamp(2px, 0.35cqw, 7px) clamp(2px, 0.35cqw, 7px) 0px 0px #000000",
+            transform:
+              isPressed && !isWaitingForAnswer
+                ? "translate(clamp(2px, 0.35cqw, 7px), clamp(2px, 0.35cqw, 7px))"
+                : "translate(0px, 0px)",
+            backgroundColor: isWaitingForAnswer
+              ? "#525252"
+              : isPressed
+                ? "#780946"
+                : undefined,
             marginLeft: "clamp(6px, 1.2cqw, 24px)",
             marginRight: "clamp(4px, 1cqw, 20px)",
             padding: "clamp(2px, 0.35cqw, 7px)",
             fontFamily: "'Press Start 2P', 'Silkscreen', monospace, sans-serif",
             transition:
-              "transform 70ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 70ms cubic-bezier(0.4, 0, 0.2, 1), background-color 70ms ease-out",
+              "transform 70ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 70ms cubic-bezier(0.4, 0, 0.2, 1), background-color 70ms ease-out, opacity 200ms ease-out",
           }}
         >
           <div
@@ -429,16 +663,22 @@ export function PixelSpeechBubble({
             style={{
               borderRadius: "clamp(4px, 0.65cqw, 13px)",
               borderWidth: "clamp(1.5px, 0.2cqw, 4px)",
-              borderColor: isPressed
-                ? "rgba(255, 255, 255, 0.45)"
-                : "rgba(255, 255, 255, 0.85)",
+              borderColor: isWaitingForAnswer
+                ? "rgba(255, 255, 255, 0.2)"
+                : isPressed
+                  ? "rgba(255, 255, 255, 0.45)"
+                  : "rgba(255, 255, 255, 0.85)",
               borderStyle: "solid",
               transition: "border-color 70ms ease-out",
             }}
           >
             <span
               className={`text-white font-black leading-none drop-shadow-[0_2px_0_rgba(0,0,0,0.8)] transition-transform ${
-                isPressed ? "scale-95" : "group-hover:scale-110"
+                isWaitingForAnswer
+                  ? "opacity-40"
+                  : isPressed
+                    ? "scale-95"
+                    : "group-hover:scale-110"
               }`}
               style={{
                 fontSize: "clamp(10px, 1.9cqw, 38px)",
