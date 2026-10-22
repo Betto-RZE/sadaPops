@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { ArrowRight, Flower2, TrendingUp } from 'lucide-react';
 import { cn } from '@/shared/utils';
-import { PixelMap, PixelMapAnchor, useMapData } from '@/features/mapa-dalias';
+import { PixelMap, DahliaLayer, FloatingPetals, useMapData } from '@/features/mapa-dalias';
 
 export function Hero() {
   const [selectedStateId, setSelectedStateId] = useState<string | null>('21'); // 21 = Puebla por defecto
@@ -16,20 +16,8 @@ export function Hero() {
   return (
     <section className="relative w-full bg-white overflow-hidden py-16 md:py-20 border-b border-gray-100">
       
-      {/* Decorative background elements (compass lines / petals) */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {/* Subtle grid/compass lines */}
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full border border-gray-100/50" />
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[1200px] h-[1200px] rounded-full border border-gray-100/50" />
-        <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gray-100/50" />
-        <div className="absolute top-1/2 left-0 right-0 h-px bg-gray-100/50" />
-        
-        {/* Decorative Petals */}
-        <div className="absolute top-10 left-[20%] w-8 h-8 bg-dalia-200 rounded-full blur-sm opacity-50 rotate-45 rounded-tr-none" />
-        <div className="absolute top-1/3 left-[40%] w-12 h-12 bg-dalia-400 rounded-full blur-sm opacity-30 -rotate-12 rounded-tr-none" />
-        <div className="absolute bottom-20 left-[10%] w-10 h-10 bg-dalia-300 rounded-full blur-[2px] opacity-60 rotate-90 rounded-tr-none" />
-        <div className="absolute top-[20%] right-[10%] w-14 h-14 bg-dalia-200 rounded-full blur-md opacity-40 -rotate-45 rounded-tr-none" />
-      </div>
+      {/* Capa de Pétalos Flotantes Pixel Art inspirados en mockheroine4.jpeg */}
+      <FloatingPetals />
 
       <div className="mx-auto max-w-[1440px] px-6 lg:px-12 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -82,19 +70,8 @@ export function Hero() {
                 onHoverState={setHoveredStateId}
                 className="w-full shadow-2xl rounded-2xl border-stone-200/80"
               >
-                {/* Dalia interactiva sobre el estado seleccionado mediante PixelMapAnchor */}
-                {selectedStateId && (
-                  <PixelMapAnchor stateId={selectedStateId}>
-                    <div className="flex items-center justify-center -mt-3 pointer-events-auto cursor-pointer animate-bounce">
-                      <div className="relative">
-                        <span className="absolute -inset-1 rounded-full bg-pink-500/40 blur-sm animate-pulse" />
-                        <div className="relative flex items-center justify-center h-7 w-7 rounded-full bg-gradient-to-tr from-pink-600 to-rose-400 text-white shadow-lg border-2 border-white">
-                          <Flower2 className="h-4 w-4" />
-                        </div>
-                      </div>
-                    </div>
-                  </PixelMapAnchor>
-                )}
+                {/* Capa de Dalias Voxel animadas con oleada escalonada */}
+                <DahliaLayer />
               </PixelMap>
             </div>
 
