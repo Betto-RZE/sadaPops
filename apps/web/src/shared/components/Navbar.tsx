@@ -30,7 +30,7 @@ export function Navbar() {
         >
           <div className="relative w-36 sm:w-44 md:w-52 h-16 sm:h-20">
             <Image
-              src="/logo-ine-oficial.png"
+              src="/Logo_ine_2026.svg"
               alt="Instituto Nacional Electoral - INE"
               fill
               className="object-contain object-left"
