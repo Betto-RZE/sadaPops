@@ -51,16 +51,21 @@ export function PixelMapAnchor({
   const isElevated = hoveredStateId === stateId || (!hoveredStateId && selectedStateId === stateId);
   const liftPx = ELEVATION_VOXELS * data.pixelScale;
 
+  // Ordenamiento en eje Z por coordenada Y (las flores más al sur se renderizan al frente)
+  // Base 20 + posición vertical entera (0..435)
+  const zDepth = 20 + Math.round(state.anchor.y);
+
   return (
     <div
       data-state-id={stateId}
       className={cn(
-        'absolute pointer-events-auto z-20 transition-transform duration-150 ease-out',
+        'absolute pointer-events-none transition-transform duration-150 ease-out',
         className
       )}
       style={{
         left: `${leftPercent}%`,
         top: `${topPercent}%`,
+        zIndex: isElevated ? zDepth + 500 : zDepth,
         transform: isElevated
           ? `translate(-50%, calc(-50% - ${liftPx}px))`
           : 'translate(-50%, -50%)',
