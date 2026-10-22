@@ -1,5 +1,4 @@
 import { Navbar } from '@/shared/components/Navbar';
-import { AsistenteCivicoButton } from '@/shared/components/AsistenteCivicoButton';
 import { Hero } from '@/features/landing/Hero';
 import { ModuleCards } from '@/features/landing/ModuleCards';
 
@@ -12,9 +11,6 @@ export default function LandingPage() {
         <ModuleCards />
       </main>
       
-      {/* Botón flotante Asistente Cívico */}
-      <AsistenteCivicoButton />
-
       {/* Footer sobrio */}
       <footer className="w-full py-8 text-center text-[10px] font-bold tracking-widest uppercase text-brand-navy/50 border-t border-black/5 bg-[#EEEDEA]/60 backdrop-blur-sm">
         <div className="mx-auto max-w-[1440px] px-6 lg:px-12 flex flex-col sm:flex-row justify-between items-center gap-4">

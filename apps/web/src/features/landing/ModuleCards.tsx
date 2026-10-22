@@ -4,7 +4,7 @@ import { cn } from '@/shared/utils';
 
 export function ModuleCards() {
   return (
-    <section className="w-full bg-white py-16 pb-32">
+    <section className="w-full bg-transparent py-16 pb-32">
       <div className="mx-auto max-w-[1440px] px-6 lg:px-12 relative">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           

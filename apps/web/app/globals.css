@@ -6,7 +6,10 @@
 
 :root {
   --foreground-rgb: 28, 37, 65; /* brand-navy */
-  --background-rgb: 238, 237, 234; /* #EEEDEA Paper off-white fallback */
+}
+
+html, body {
+  min-height: 100vh;
 }
 
 body {
@@ -14,9 +17,9 @@ body {
   background-color: #EEEDEA;
   background-image: url('/bg/bg-ine-hero.webp');
   background-repeat: repeat;
-  background-size: cover;
   background-position: center top;
-  min-height: 100vh;
+  background-attachment: fixed;
+  background-size: cover;
 }
 
 .font-pixel {

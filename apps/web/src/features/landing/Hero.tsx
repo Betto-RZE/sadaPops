@@ -14,7 +14,7 @@ export function Hero() {
   const activeState = data?.stateById.get(activeId);
 
   return (
-    <section className="relative w-full bg-white overflow-hidden py-16 md:py-20 border-b border-gray-100">
+    <section className="relative w-full bg-transparent overflow-hidden py-16 md:py-20">
       
       {/* Capa de Pétalos Flotantes Pixel Art inspirados en mockheroine4.jpeg */}
       <FloatingPetals />
