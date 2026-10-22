@@ -2,24 +2,24 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { HERO_PETALS, type PetalConfig } from './config/petals';
+import { MAP_INTRO_DELAY_MS } from './PixelMap';
 import { cn } from '../../shared/utils';
 
 export interface FloatingPetalsProps {
-  /** Configuración personalizada de pétalos; por defecto usa HERO_PETALS (18 pétalos, 11 izq / 7 der) */
+  /** Configuración personalizada de pétalos; por defecto usa HERO_PETALS (concentrados en los bordes) */
   petals?: PetalConfig[];
   /** Clases CSS adicionales */
   className?: string;
 }
 
 /**
- * FloatingPetals — Capa de pétalos flotantes animados con CSS ligero (Hito H4 - RF-11).
+ * FloatingPetals — Capa de pétalos flotantes animados con caída continua y brisa suave (Hito H6).
  *
  * Características:
- *   - Utiliza exclusivamente sprites prehorneados (`petal-{1..3}-r{0..3}.png`) para no degradar el pixel art con rotaciones CSS.
- *   - Flotación con CSS `transform: translate3d(0, y, 0)` a 60 fps sin repintados de layout.
- *   - Pausa automática de la animación cuando el elemento sale del viewport (`IntersectionObserver`).
- *   - Soporte para `prefers-reduced-motion` (desactiva la animación continua y muestra los pétalos posados estáticos).
- *   - `pointer-events: none` total para no interferir con clicks en el mapa ni en botones de la interfaz.
+ *   - Los pétalos caen suavemente desde arriba hacia abajo con un suave balanceo lateral sinusoidal.
+ *   - Utiliza exclusivamente sprites prehorneados (`petal-{1..3}-r{0..3}.png`) para preservar píxeles nítidos.
+ *   - Entra en Fase 2 (segundo 1.8s) tras la lectura de las primeras palabras del titular.
+ *   - Desactivación y estado estático seguro con `prefers-reduced-motion`.
  */
 export function FloatingPetals({
   petals = HERO_PETALS,
@@ -27,6 +27,21 @@ export function FloatingPetals({
 }: FloatingPetalsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(true);
+  const [hasStarted, setHasStarted] = useState(false);
+
+  // Iniciar la caída de pétalos en Fase 2 (aprox 1.8s) para no estorbar la lectura del titular inicial
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setHasStarted(true);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setHasStarted(true);
+    }, MAP_INTRO_DELAY_MS - 200); // 1.8s
+
+    return () => window.clearTimeout(timer);
+  }, []);
 
   // Pausar animación cuando la sección no está en pantalla para ahorrar GPU/batería
   useEffect(() => {
@@ -48,61 +63,81 @@ export function FloatingPetals({
     <div
       ref={containerRef}
       aria-hidden="true"
-      className={cn('absolute inset-0 pointer-events-none overflow-hidden select-none z-10', className)}
+      className={cn(
+        'absolute inset-0 pointer-events-none overflow-hidden select-none z-10 transition-opacity duration-1000',
+        hasStarted ? 'opacity-100' : 'opacity-0',
+        className
+      )}
     >
       <style>{`
-        @keyframes float-petal {
+        @keyframes petal-fall {
           0% {
-            transform: translate3d(0, 0, 0);
+            transform: translate3d(0, -12vh, 0);
+            opacity: 0;
+          }
+          10% {
+            opacity: 0.9;
           }
           50% {
-            transform: translate3d(0, -var(--float-dist, 8px), 0);
+            transform: translate3d(var(--sway-x, 14px), 52vh, 0);
+            opacity: 0.85;
+          }
+          90% {
+            opacity: 0.9;
           }
           100% {
-            transform: translate3d(0, 0, 0);
+            transform: translate3d(calc(var(--sway-x, 14px) * -0.5), 114vh, 0);
+            opacity: 0;
           }
         }
 
-        .petal-floating {
-          animation-name: float-petal;
+        .petal-falling {
+          animation-name: petal-fall;
           animation-iteration-count: infinite;
-          animation-timing-function: ease-in-out;
-          will-change: transform;
+          animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+          will-change: transform, opacity;
         }
 
         @media (prefers-reduced-motion: reduce) {
-          .petal-floating {
+          .petal-falling {
             animation: none !important;
             transform: none !important;
+            opacity: 0.75 !important;
           }
         }
       `}</style>
 
-      {petals.map((petal) => {
+      {petals.map((petal, idx) => {
         const spriteSrc = `/petals/petal-${petal.shape}-r${petal.rot}.png`;
+        // Mecido lateral suave en px (+ o - según el índice)
+        const swayPx = (idx % 2 === 0 ? 1 : -1) * (10 + (idx * 5) % 15);
+        // Duración de la caída completa (entre 7s y 11s)
+        const fallDuration = (7.5 + ((petal.id * 1.3) % 3.5)).toFixed(2);
+        // Retardo inicial escalonado para que no caigan todos al mismo tiempo
+        const fallDelay = (0.2 + ((petal.id * 0.75) % 4.5)).toFixed(2);
 
         return (
           <div
             key={petal.id}
             className={cn(
-              'absolute pointer-events-none transition-opacity duration-700',
+              'absolute pointer-events-none',
               petal.desktopOnly ? 'hidden md:block' : 'block'
             )}
             style={{
               left: `${petal.x}%`,
-              top: `${petal.y}%`,
+              top: '0%',
             }}
           >
             <div
               className={cn(
                 'relative select-none pointer-events-none',
-                isVisible ? 'petal-floating' : ''
+                hasStarted && isVisible ? 'petal-falling' : 'opacity-0'
               )}
               style={
                 {
-                  '--float-dist': `${petal.floatDistancePx}px`,
-                  animationDuration: `${petal.durationSec}s`,
-                  animationDelay: `${petal.delaySec}s`,
+                  '--sway-x': `${swayPx}px`,
+                  animationDuration: `${fallDuration}s`,
+                  animationDelay: `${fallDelay}s`,
                   animationPlayState: isVisible ? 'running' : 'paused',
                 } as React.CSSProperties
               }
@@ -112,7 +147,7 @@ export function FloatingPetals({
                 alt=""
                 loading="eager"
                 decoding="async"
-                className="select-none pointer-events-none block drop-shadow-[0_2px_4px_rgba(30,21,84,0.12)]"
+                className="select-none pointer-events-none block drop-shadow-[0_2px_5px_rgba(30,21,84,0.14)]"
                 style={{
                   imageRendering: 'pixelated',
                 }}
