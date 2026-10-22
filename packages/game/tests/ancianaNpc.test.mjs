@@ -968,6 +968,37 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
       assert.equal(nextLine.speaker, "Doña Carmen");
       assert.equal(nextLine.portraitOverride, undefined, "Regresa al retrato canónico de Doña Carmen");
     });
+
+    test("Mateo (el joven) tiene la estructura en 3 partes, trivia CCPC de participación y alineación correcta", () => {
+      const messages = JOVEN_CONVERSATION_MESSAGES_ES;
+      assert.equal(messages.length, 36, "Debe tener 36 líneas de diálogo");
+
+      // Parte 1: Primera línea de Mateo
+      assert.equal(messages[0].speaker, "Mateo");
+      assert.ok(messages[0].text.includes("Qué onda... oye, ¿aquí es donde se vota?"));
+
+      // Parte 2: Pregunta interactiva
+      const triviaLine = messages[30];
+      assert.equal(triviaLine.speaker, "Inecito");
+      assert.ok(triviaLine.trivia);
+      assert.ok(triviaLine.trivia.question.includes("por qué importa participar en las elecciones"));
+      assert.equal(triviaLine.trivia.options.length, 3);
+      assert.equal(triviaLine.trivia.options[1].isCorrect, true);
+      assert.ok(triviaLine.trivia.options[1].feedback.includes("Cada voto válido cuenta por igual"));
+
+      // Parte 3: Despedida de Mateo
+      assert.equal(messages[31].speaker, "Mateo");
+      assert.ok(messages[31].text.includes("Bueno, bro, creo que ya entendí"));
+      assert.equal(messages[35].speaker, "Inecito");
+      assert.ok(messages[35].text.includes("¡Que tengas una excelente primera experiencia!"));
+
+      // Verificación de retratos y alineación de orador
+      const portraits = getNarrativeCharacterPortraits("joven");
+      assert.equal(getSpeakerNameAlignment("Mateo", portraits), "right");
+      assert.equal(getSpeakerNameAlignment("Inecito", portraits), "left");
+      assert.equal(isPortraitActive("Mateo", portraits.right.speakerNames), true);
+      assert.equal(isPortraitActive("Inecito", portraits.left.speakerNames), true);
+    });
   });
 });
 

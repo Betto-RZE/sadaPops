@@ -308,6 +308,7 @@ export const DIALOGUE_SPEAKER_COLORS = {
   carmen: "#8d3800",
   inecito: "#a81363",
   joven: "#1d4ed8",
+  mateo: "#1d4ed8",
   indigena: "#047857",
   transgenero: "#9333ea",
   discapacitado: "#0284c7",
@@ -751,93 +752,246 @@ export const NARRATIVE_CHARACTERS_ORDER: readonly NarrativeCharacterId[] = [
 export const BETWEEN_CHARACTERS_DELAY_MS = 10000;
 
 /**
- * Diálogos de llegada para El Joven (Español y Náhuatl).
+ * Diálogos de llegada para Mateo (El Joven) (Español y Náhuatl).
  */
 export const JOVEN_ARRIVAL_MESSAGES_ES: string[] = [
-  "¡Viene llegando un joven a la casilla!",
+  "¡Viene llegando Mateo a la casilla!",
   "¡Vamos a ver si tiene alguna duda con su voto!",
 ];
 
 export const JOVEN_ARRIVAL_MESSAGES_NAH: string[] = [
-  "¡Se telpokatl oajsik itech tomexa!",
+  "¡Se telpokatl Mateo oajsik itech tomexa!",
   "¡Tikitatij tlen ika uelis tikpalehuiseh!",
 ];
 
 /**
- * Conversación para El Joven (Español y Náhuatl).
+ * Conversación para Mateo (El Joven) (Español y Náhuatl).
+ * Estructura en 3 partes:
+ * 1. Plática con mito y respuesta con datos CCPC (líneas 1 a 30)
+ * 2. Inecito se dirige a ti y te hace una pregunta con 3 opciones (línea 31)
+ * 3. Despedida entre personajes (líneas 32 a 36)
  */
 export const JOVEN_CONVERSATION_MESSAGES_ES: DialogueLine[] = [
   // PARTE 1: Plática con mito y respuesta con datos
   {
-    speaker: "El Joven",
+    speaker: "Mateo",
     speakerColor: DIALOGUE_SPEAKER_COLORS.joven,
-    text: "Hola, buenos días. Es la primera vez que vengo a votar y la verdad tenía mis dudas.",
+    text: "Qué onda... oye, ¿aquí es donde se vota?",
   },
   {
     speaker: "Inecito",
     speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
-    text: "¡Hola! Qué gusto tenerte por aquí. Las juventudes son fundamentales para la vida democrática.",
+    text: "¡Hola! Así es, bienvenido. ¿Es tu primera vez participando en una elección?",
   },
   {
-    speaker: "El Joven",
+    speaker: "Mateo",
     speakerColor: DIALOGUE_SPEAKER_COLORS.joven,
-    text: "Escuché en redes sociales que votar no sirve de nada, pero quise comprobarlo por mí mismo.",
+    text: "Sí, tengo 19. La verdad ni pensaba venir, pero mis papás estuvieron insistiendo toda la mañana.",
   },
   {
     speaker: "Inecito",
     speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
-    text: "¡Hiciste muy bien! Cada voto cuenta y es recibido y contado por la propia ciudadanía.",
+    text: "¡Ja, ja! Bueno, al menos ya estás aquí. ¿Y qué te parece tu primera experiencia?",
+  },
+  {
+    speaker: "Mateo",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.joven,
+    text: "Pues... no sé. Se me hace medio aburrido todo esto.",
+  },
+  {
+    speaker: "Mateo",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.joven,
+    text: "Además, somos millones de personas votando. ¿De verdad alguien cree que mi voto va a cambiar algo?",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Ahhh! Ya veo. Entonces no es que tengas dudas sobre cómo votar, sino sobre si vale la pena hacerlo.",
+  },
+  {
+    speaker: "Mateo",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.joven,
+    text: "¡Exacto! O sea, si voto o no voto, todo va a seguir igual, ¿no?",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Entiendo por qué lo piensas. Cuando hablamos de millones de personas, un solo voto puede parecer insignificante.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Pero hay algo importante: cada voto válido se cuenta y tiene el mismo valor, sin importar la edad de quien lo emite.",
+  },
+  {
+    speaker: "Mateo",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.joven,
+    text: "Ya, pero sigue siendo uno entre millones.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Es verdad. Un solo voto no garantiza cambiar el resultado de una elección.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Pero imagina que miles de personas pensaran exactamente lo mismo que tú y decidieran no participar.",
+  },
+  {
+    speaker: "Mateo",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.joven,
+    text: "Pues... serían un montón de personas que no votaron.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Exactamente! Y de hecho, eso nos lleva a un dato interesante.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "En la elección presidencial de México de 2024, participó aproximadamente el 61% de las personas registradas para votar.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Eso significa que cerca de 4 de cada 10 no acudieron a las urnas.",
+  },
+  {
+    speaker: "Mateo",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.joven,
+    text: "¿Neta? Pensé que casi todos iban a votar.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Pues no. Y eso nos recuerda que la participación ciudadana no ocurre automáticamente.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Cada persona decide si participa, y esas decisiones, cuando se suman, influyen en cuántas voces quedan representadas en los resultados.",
+  },
+  {
+    speaker: "Mateo",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.joven,
+    text: "Bueno... visto así, sí tiene algo más de sentido.",
+  },
+  {
+    speaker: "Mateo",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.joven,
+    text: "Pero tampoco voy a votar nada más porque mis papás me lo digan.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Y haces bien en querer tomar tu propia decisión!",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Tu voto debe ser libre. Nadie tiene derecho a imponerte por quién votar.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Lo importante es que puedas informarte, conocer las opciones y decidir por ti mismo.",
+  },
+  {
+    speaker: "Mateo",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.joven,
+    text: "Eso me agrada más. Porque una cosa es participar y otra hacer lo que alguien más quiere.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Exactamente! La democracia también necesita personas que piensen, cuestionen y tomen decisiones informadas.",
+  },
+  {
+    speaker: "Mateo",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.joven,
+    text: "Va, creo que ya entendí.",
+  },
+  {
+    speaker: "Mateo",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.joven,
+    text: "Eso sí... espero que votar sea más rápido que esta plática, ¡ja, ja!",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Ja, ja! Bueno, por lo menos ahora sabes un poco más de lo que sabías cuando llegaste.",
   },
 
   // PARTE 2: Inecito se dirige a ti y te hace una pregunta con 3 opciones
   {
     speaker: "Inecito",
     speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
-    text: "¡A ver qué tanto sabes del voto joven! Responde la siguiente pregunta:",
+    text: "¡Ahora quiero saber qué aprendiste! Si somos millones de personas, ¿por qué importa participar en las elecciones?",
     target: "user",
     portraitOverride: {
       leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.png",
       dimRight: true,
     },
     trivia: {
-      question: "¿A partir de qué edad se tiene el derecho y la obligación cívica de votar en México?",
+      question:
+        "¡Ahora quiero saber qué aprendiste! Si somos millones de personas, ¿por qué importa participar en las elecciones?",
       options: [
         {
           id: "opt-a",
-          text: "A) A los 16 años",
+          text: "A) Porque el voto de los jóvenes vale más.",
           isCorrect: false,
           feedback:
-            "¡Casi! Aunque en algunos países se debate, en México la ciudadanía para votar se adquiere legalmente a los 18 años.",
+            "¡Casi, pero no! La edad no hace que un voto valga más que otro. Todos los votos válidos tienen el mismo valor.",
         },
         {
           id: "opt-b",
-          text: "B) A los 18 años cumplidos",
+          text: "B) Porque cada voto cuenta y, juntos, influyen en los resultados.",
           isCorrect: true,
           feedback:
-            "¡Correcto! A los 18 años adquieres tu credencial de elector del INE y puedes participar plenamente en todas las decisiones cívicas.",
+            "¡Exactamente! Cada voto válido cuenta por igual. Aunque una sola persona no determine el resultado, la participación de muchas personas puede marcar diferencias importantes.",
         },
         {
           id: "opt-c",
-          text: "C) A los 21 años",
+          text: "C) Porque votar garantiza que gane nuestra opción favorita.",
           isCorrect: false,
           feedback:
-            "¡Incorrecto! No es necesario esperar hasta los 21 años. Desde los 18 años cumplidos ya tienes derecho al voto.",
+            "¡No necesariamente! Votar no garantiza que gane la opción que preferimos. El resultado depende del conjunto de votos emitidos.",
         },
       ],
     },
   },
 
-  // PARTE 3: Despedida entre personajes
+  // PARTE 3: Despedida de Mateo
   {
-    speaker: "El Joven",
+    speaker: "Mateo",
     speakerColor: DIALOGUE_SPEAKER_COLORS.joven,
-    text: "¡Muchas gracias! Ya me quedó clarísimo. ¡Paso a mi mampara a votar!",
+    text: "Bueno, bro, creo que ya entendí mejor cómo está la cosa.",
+    target: "npc",
+  },
+  {
+    speaker: "Mateo",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.joven,
+    text: "Al final, lo importante es que la decisión sea mía y no nada más hacer lo que dicen mis papás.",
     target: "npc",
   },
   {
     speaker: "Inecito",
     speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
-    text: "¡Mucho éxito en tu primera votación! ¡Tu participación hace la diferencia!",
+    text: "¡Exactamente! Infórmate, conoce tus opciones y recuerda que nadie debe decidir por ti.",
+    target: "npc",
+  },
+  {
+    speaker: "Mateo",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.joven,
+    text: "¡Va! Gracias por explicarme sin echarme otro sermón, ¡ja, ja!",
+    target: "npc",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Ja, ja! ¡Que tengas una excelente primera experiencia!",
     target: "npc",
   },
 ];
@@ -845,7 +999,7 @@ export const JOVEN_CONVERSATION_MESSAGES_ES: DialogueLine[] = [
 export const JOVEN_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
   // PARTE 1
   {
-    speaker: "Telpokatl",
+    speaker: "Telpokatl Mateo",
     speakerColor: DIALOGUE_SPEAKER_COLORS.joven,
     text: "Kuali tonali. Inin achto vez nioh nitlapejpena wan onikpixtoya tlatlanilistli.",
   },
@@ -855,7 +1009,7 @@ export const JOVEN_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
     text: "¡Kuali tonali! ¡Tlen kualtsin tinikan! Telpokameh kachi monekih itech democracia.",
   },
   {
-    speaker: "Telpokatl",
+    speaker: "Telpokatl Mateo",
     speakerColor: DIALOGUE_SPEAKER_COLORS.joven,
     text: "Onikkak tla voto amo techpaleuia, pero onineki nimomakis melauak.",
   },
@@ -869,35 +1023,35 @@ export const JOVEN_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
   {
     speaker: "Inecito Cívica",
     speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
-    text: "Xikita tehuatzin... ¿Kech xiuitl moneki pampa titlapejpenis Mexihko?",
+    text: "Xikita tehuatzin... ¿Tleka moneki timotlapejpenis itech tlapejpenalistli?",
     target: "user",
     portraitOverride: {
       leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.png",
       dimRight: true,
     },
     trivia: {
-      question: "¿Kech xiuitl moneki pampa titlapejpenis?",
+      question: "¿Tleka moneki timotlapejpenis itech tlapejpenalistli?",
       options: [
         {
           id: "opt-a",
-          text: "A) 16 xiuitl",
+          text: "A) Pampa telpokameh kachi kipiah valor",
           isCorrect: false,
           feedback:
-            "¡Amo! Mexihko moneki 18 xiuitl pampa titlapejpenis.",
+            "¡Amo! Nochtin votos kipiah san se valor.",
         },
         {
           id: "opt-b",
-          text: "B) 18 xiuitl",
+          text: "B) Pampa sesen voto pohua wan sansehkan kipiah chikaualistli",
           isCorrect: true,
           feedback:
-            "¡Melauak! Kuak tikchiua 18 xiuitl tikselia mo credencial INE wan uelis titlapejpenis.",
+            "¡Melauak! Sesen voto cenca moneki wan nochtin sansehkan titekitih.",
         },
         {
           id: "opt-c",
-          text: "C) 21 xiuitl",
+          text: "C) Pampa kuak titlapejpena mochipa tlatlanis",
           isCorrect: false,
           feedback:
-            "¡Amo moneki 21 xiuitl! Desde 18 xiuitl ya uelis titekitis.",
+            "¡Amo mochipa! In resultado kisa itech nochtin votos.",
         },
       ],
     },
@@ -905,7 +1059,7 @@ export const JOVEN_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
 
   // PARTE 3
   {
-    speaker: "Telpokatl",
+    speaker: "Telpokatl Mateo",
     speakerColor: DIALOGUE_SPEAKER_COLORS.joven,
     text: "¡Tlazohkamati! Axan nioh nitlapejpenatij itech mampara.",
     target: "npc",
@@ -1458,12 +1612,18 @@ export const NARRATIVE_CHARACTERS_CONFIG: Record<
   },
   joven: {
     id: "joven",
-    nameEs: "El Joven",
-    nameNah: "Telpokatl",
+    nameEs: "Mateo",
+    nameNah: "Telpokatl Mateo",
     speakerColor: DIALOGUE_SPEAKER_COLORS.joven,
     portraitSrc: "/assets/juego/dialogos/retrato-joven.png",
-    altText: "El Joven",
-    speakerNames: ["El Joven", "Joven", "Telpokatl"],
+    altText: "Mateo",
+    speakerNames: [
+      "Mateo",
+      "El Joven",
+      "Joven",
+      "Telpokatl",
+      "Telpokatl Mateo",
+    ],
     arrivalMessagesEs: JOVEN_ARRIVAL_MESSAGES_ES,
     arrivalMessagesNah: JOVEN_ARRIVAL_MESSAGES_NAH,
     conversationMessagesEs: JOVEN_CONVERSATION_MESSAGES_ES,
