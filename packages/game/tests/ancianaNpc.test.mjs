@@ -1047,6 +1047,54 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
       assert.equal(isPortraitActive("María", portraits.right.speakerNames), true);
       assert.equal(isPortraitActive("Inecito", portraits.left.speakerNames), true);
     });
+
+    test("Alex (mujer trans) tiene la estructura en 3 partes, trivia de Protocolo Trans INE 2017 y alineación correcta", () => {
+      const messages = TRANS_CONVERSATION_MESSAGES_ES;
+      assert.equal(messages.length, 32, "Debe tener 32 líneas de diálogo");
+
+      // Parte 1: Primera línea de Alex
+      assert.equal(messages[0].speaker, "Alex");
+      assert.ok(messages[0].text.includes("Hola, buenos días. Disculpa, ¿puedo hacerte una pregunta antes de votar?"));
+
+      // Verificación del Protocolo Trans INE 2017
+      const protocolLine = messages.find((m) => m.text.includes("protocolo para garantizar que las personas trans puedan votar"));
+      assert.ok(protocolLine, "Debe incluir la referencia al Protocolo Trans del INE");
+      assert.ok(protocolLine.text.includes("2017"));
+
+      // Parte 2: Pregunta interactiva (línea 26)
+      const triviaLine = messages[26];
+      assert.equal(triviaLine.speaker, "Inecito");
+      assert.ok(triviaLine.trivia);
+      assert.ok(
+        triviaLine.trivia.question.includes(
+          "¿Qué sucede si la apariencia de una persona trans no coincide con la fotografía de su credencial para votar?"
+        )
+      );
+      assert.equal(triviaLine.trivia.options.length, 3);
+      assert.equal(triviaLine.trivia.options[1].isCorrect, true, "La opción B debe ser la correcta");
+      assert.ok(
+        triviaLine.trivia.options[1].feedback.includes(
+          "El INE cuenta con un protocolo para garantizar el voto de las personas trans sin discriminación"
+        )
+      );
+
+      // Parte 3: Despedida de Alex
+      assert.equal(messages[27].speaker, "Alex");
+      assert.ok(
+        messages[27].text.includes(
+          "¡Muchas gracias, Inecito! La verdad, venía bastante nerviosa y ahora me siento mucho más tranquila."
+        )
+      );
+      assert.equal(messages[31].speaker, "Inecito");
+      assert.ok(messages[31].text.includes("¡Que tengas un excelente día!"));
+
+      // Verificación de retratos y alineación de orador
+      const portraits = getNarrativeCharacterPortraits("transgenero");
+      assert.equal(getSpeakerNameAlignment("Alex", portraits), "right");
+      assert.equal(getSpeakerNameAlignment("Inecito", portraits), "left");
+      assert.equal(isPortraitActive("Alex", portraits.right.speakerNames), true);
+      assert.equal(isPortraitActive("Inecito", portraits.left.speakerNames), true);
+    });
   });
 });
 

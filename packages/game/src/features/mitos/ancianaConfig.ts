@@ -312,6 +312,8 @@ export const DIALOGUE_SPEAKER_COLORS = {
   indigena: "#047857",
   maria: "#047857",
   transgenero: "#9333ea",
+  alex: "#9333ea",
+  morgan: "#9333ea",
   discapacitado: "#0284c7",
 };
 
@@ -1385,93 +1387,226 @@ export const INDIGENA_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
 ];
 
 /**
- * Diálogos de llegada para Transgénero (Español y Náhuatl).
+ * Diálogos de llegada para Alex (Transgénero) (Español y Náhuatl).
  */
 export const TRANS_ARRIVAL_MESSAGES_ES: string[] = [
-  "¡Se acerca una votante a nuestra casilla!",
-  "¡Recuerda que en el INE todas las identidades y expresiones de género son plenamente respetadas!",
+  "¡Viene llegando Alex a la casilla!",
+  "¡Asegurémonos de orientarla garantizando su derecho al voto libre de discriminación!",
 ];
 
 export const TRANS_ARRIVAL_MESSAGES_NAH: string[] = [
-  "¡Se siuatl oajsik pampa tlapejpenis!",
+  "¡Se siuatl Alex oajsik pampa tlapejpenis!",
   "¡Xikilnamiki nochtin maseualmeh kipiah tlatlakitalistli!",
 ];
 
 /**
- * Conversación para Transgénero (Español y Náhuatl).
+ * Conversación para Alex (Transgénero) (Español y Náhuatl).
+ * Estructura en 3 partes:
+ * 1. Plática con mito y respuesta con datos del Protocolo Trans INE 2017 (líneas 1 a 26)
+ * 2. Inecito se dirige a ti y te hace una pregunta con 3 opciones (línea 27)
+ * 3. Despedida entre personajes (líneas 28 a 32)
  */
 export const TRANS_CONVERSATION_MESSAGES_ES: DialogueLine[] = [
-  // PARTE 1
+  // PARTE 1: Plática con mito y respuesta con datos
   {
-    speaker: "Morgan",
+    speaker: "Alex",
     speakerColor: DIALOGUE_SPEAKER_COLORS.transgenero,
-    text: "Hola, buen día. Quería verificar si mi credencial con identidad de género actualizada es válida aquí.",
+    text: "Hola, buenos días. Disculpa, ¿puedo hacerte una pregunta antes de votar?",
   },
   {
     speaker: "Inecito",
     speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
-    text: "¡Totalmente válida! En el INE existe el Protocolo Trans para garantizar el voto libre de discriminación.",
+    text: "¡Por supuesto! Buenos días, bienvenida. ¿En qué puedo ayudarte?",
   },
   {
-    speaker: "Morgan",
+    speaker: "Alex",
     speakerColor: DIALOGUE_SPEAKER_COLORS.transgenero,
-    text: "Me alegra saberlo, a veces da un poco de temor enfrentar situaciones incómodas en las casillas.",
+    text: "Bueno... es que tengo una pequeña preocupación con mi credencial.",
   },
   {
     speaker: "Inecito",
     speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
-    text: "Aquí todos los funcionarios de casilla estamos comprometidos a proteger tu derecho al voto en igualdad.",
+    text: "¿Con tu credencial? Cuéntame, ¿qué sucede?",
+  },
+  {
+    speaker: "Alex",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.transgenero,
+    text: "Soy una mujer trans y la fotografía de mi INE es de hace varios años.",
+  },
+  {
+    speaker: "Alex",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.transgenero,
+    text: "Desde entonces mi apariencia ha cambiado bastante, y una amiga me dijo que podrían impedirme votar porque ya no me parezco tanto a la foto.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Ahhh! Ya entiendo por qué estás preocupada.",
+  },
+  {
+    speaker: "Alex",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.transgenero,
+    text: "Sí... y la verdad no quiero que se haga un problema frente a todos.",
+  },
+  {
+    speaker: "Alex",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.transgenero,
+    text: "Yo solamente quiero venir, votar y continuar con mi día como cualquier otra persona.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Y tienes todo el derecho de hacerlo, Alex.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Quiero explicarte algo importante: tu identidad o expresión de género no es motivo para negarte el voto.",
+  },
+  {
+    speaker: "Alex",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.transgenero,
+    text: "¿Entonces no pueden rechazarme solamente porque mi apariencia cambió?",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Exactamente! De hecho, el INE aprobó en 2017 un protocolo para garantizar que las personas trans puedan votar sin discriminación.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Este protocolo establece medidas para evitar que las diferencias entre la apariencia de una persona y los datos o fotografía de su credencial se conviertan, por sí solas, en un impedimento para votar.",
+  },
+  {
+    speaker: "Alex",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.transgenero,
+    text: "¡No sabía que existía un protocolo así!",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Así es! Y hay algo más: no pueden exigirte documentos adicionales para comprobar tu identidad de género.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Por supuesto, se siguen verificando los requisitos electorales habituales, pero nadie debe tratarte de manera diferente por ser una persona trans.",
+  },
+  {
+    speaker: "Alex",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.transgenero,
+    text: "Eso me tranquiliza bastante.",
+  },
+  {
+    speaker: "Alex",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.transgenero,
+    text: "Porque a veces parece que tenemos que dar explicaciones sobre quiénes somos, incluso cuando solamente queremos hacer algo cotidiano.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Entiendo. Y justamente por eso existen medidas para proteger el ejercicio de los derechos de todas las personas.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Una casilla electoral debe ser un espacio de respeto, donde nadie tenga que sentirse avergonzado o intimidado por su identidad.",
+  },
+  {
+    speaker: "Alex",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.transgenero,
+    text: "¡Exactamente! Yo no estoy pidiendo un trato especial. Solo quiero que se respeten mis derechos.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Y eso es lo correcto! La igualdad significa que todas las personas puedan ejercer sus derechos sin discriminación.",
+  },
+  {
+    speaker: "Alex",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.transgenero,
+    text: "Me alegra escuchar eso. Ya me siento mucho más tranquila.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Qué bueno! Y recuerda que, si alguna vez enfrentas una situación de discriminación, tienes derecho a solicitar orientación y que se respeten los procedimientos establecidos.",
+  },
+  {
+    speaker: "Alex",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.transgenero,
+    text: "Muchas gracias, Inecito. Ahora sé que una fotografía antigua no debería impedirme ejercer mi derecho al voto.",
   },
 
-  // PARTE 2
+  // PARTE 2: Pregunta interactiva
   {
     speaker: "Inecito",
     speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
-    text: "¿Conoces los protocolos de inclusión del INE? Contesta esta pregunta:",
+    text: "¡Ahora quiero comprobar lo que aprendiste! ¿Qué sucede si la apariencia de una persona trans no coincide con la fotografía de su credencial para votar?",
     target: "user",
     portraitOverride: {
       leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.png",
       dimRight: true,
     },
     trivia: {
-      question: "¿Se puede impedir votar a una persona trans si su expresión de género no coincide con la foto anterior?",
+      question:
+        "¡Ahora quiero comprobar lo que aprendiste! ¿Qué sucede si la apariencia de una persona trans no coincide con la fotografía de su credencial para votar?",
       options: [
         {
           id: "opt-a",
-          text: "A) Sí, se le niega el voto",
+          text: "A) No puede votar hasta actualizar su fotografía.",
           isCorrect: false,
           feedback:
-            "¡Absolutamente no! El Protocolo Trans prohíbe tajantemente cualquier discriminación por expresión o identidad de género.",
+            "¡Eso es un mito! Una diferencia entre su expresión de género y la fotografía no es, por sí sola, motivo para impedirle votar. Debe cumplir los requisitos electorales habituales.",
         },
         {
           id: "opt-b",
-          text: "B) No, el Protocolo Trans lo garantiza",
+          text: "B) Puede votar si cumple los requisitos electorales.",
           isCorrect: true,
           feedback:
-            "¡Correcto! En ninguna casilla se puede discriminar ni negar el sufragio a personas trans. Su derecho está plenamente protegido.",
+            "¡Exactamente! El INE cuenta con un protocolo para garantizar el voto de las personas trans sin discriminación. Una diferencia entre su expresión de género y los datos de la credencial no debe impedirles ejercer este derecho.",
         },
         {
           id: "opt-c",
-          text: "C) Sólo si presenta un testigo",
+          text: "C) Debe presentar un documento que compruebe su identidad de género.",
           isCorrect: false,
           feedback:
-            "¡Falso! La persona votante no requiere presentar testigos ni pruebas adicionales para ejercer su derecho.",
+            "¡No es correcto! No se pueden exigir documentos adicionales para demostrar la identidad de género. Lo necesario es contar con una credencial vigente y estar en la Lista Nominal correspondiente.",
         },
       ],
     },
   },
 
-  // PARTE 3
+  // PARTE 3: Despedida de Alex
   {
-    speaker: "Morgan",
+    speaker: "Alex",
     speakerColor: DIALOGUE_SPEAKER_COLORS.transgenero,
-    text: "¡Qué tranquilidad da saberlo! Muchísimas gracias por el trato digno.",
+    text: "¡Muchas gracias, Inecito! La verdad, venía bastante nerviosa y ahora me siento mucho más tranquila.",
+    target: "npc",
+  },
+  {
+    speaker: "Alex",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.transgenero,
+    text: "Qué bueno saber que existen medidas para que todas las personas podamos votar sin discriminación.",
     target: "npc",
   },
   {
     speaker: "Inecito",
     speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
-    text: "¡El respeto y la no discriminación son principios de nuestra democracia!",
+    text: "¡Con mucho gusto, Alex! Recuerda que tu identidad merece respeto y que tienes el mismo derecho a participar que cualquier otra persona.",
+    target: "npc",
+  },
+  {
+    speaker: "Alex",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.transgenero,
+    text: "¡Gracias! Ahora sí, voy a ejercer mi derecho al voto.",
+    target: "npc",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Que tengas un excelente día!",
     target: "npc",
   },
 ];
@@ -1479,7 +1614,7 @@ export const TRANS_CONVERSATION_MESSAGES_ES: DialogueLine[] = [
 export const TRANS_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
   // PARTE 1
   {
-    speaker: "Morgan",
+    speaker: "Alex",
     speakerColor: DIALOGUE_SPEAKER_COLORS.transgenero,
     text: "Kuali tonali. Oniknekia niktlatlanis tla no credencial yankuik kiseliah nikan.",
   },
@@ -1489,7 +1624,7 @@ export const TRANS_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
     text: "¡Kema, mochipa! INE kipia tlayekanalistli pampa amo onkas discriminación.",
   },
   {
-    speaker: "Morgan",
+    speaker: "Alex",
     speakerColor: DIALOGUE_SPEAKER_COLORS.transgenero,
     text: "Nechpaktia nikmatis, kemantika tikpixtokeh tlamoutilistli kuak timopachouah.",
   },
@@ -1539,7 +1674,7 @@ export const TRANS_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
 
   // PARTE 3
   {
-    speaker: "Morgan",
+    speaker: "Alex",
     speakerColor: DIALOGUE_SPEAKER_COLORS.transgenero,
     text: "¡Cenca tlazohkamati! Axan nioh nitlapejpena ika pakilistli.",
     target: "npc",
@@ -1547,7 +1682,7 @@ export const TRANS_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
   {
     speaker: "Inecito Cívica",
     speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
-    text: "¡Tlazohkamati Morgan! Kualtsin ximopanolti.",
+    text: "¡Tlazohkamati Alex! Kualtsin ximopanolti.",
     target: "npc",
   },
 ];
@@ -1797,12 +1932,19 @@ export const NARRATIVE_CHARACTERS_CONFIG: Record<
   },
   transgenero: {
     id: "transgenero",
-    nameEs: "Morgan",
-    nameNah: "Morgan",
+    nameEs: "Alex",
+    nameNah: "Alex",
     speakerColor: DIALOGUE_SPEAKER_COLORS.transgenero,
     portraitSrc: "/assets/juego/dialogos/retrato-trans.png",
-    altText: "Morgan",
-    speakerNames: ["Morgan", "Chica Trans", "Transgénero", "Transgenero"],
+    altText: "Alex",
+    speakerNames: [
+      "Alex",
+      "Morgan",
+      "Chica Trans",
+      "Transgénero",
+      "Transgenero",
+      "Mujer Trans",
+    ],
     arrivalMessagesEs: TRANS_ARRIVAL_MESSAGES_ES,
     arrivalMessagesNah: TRANS_ARRIVAL_MESSAGES_NAH,
     conversationMessagesEs: TRANS_CONVERSATION_MESSAGES_ES,
