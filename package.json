@@ -7,6 +7,7 @@
     "build": "pnpm --filter web build",
     "lint": "pnpm --filter web lint",
     "build-map": "tsx scripts/build-map.ts",
+    "build-flowers": "tsx scripts/build-flowers.ts",
     "compare-map": "tsx scripts/compare-map.ts"
   },
   "devDependencies": {
