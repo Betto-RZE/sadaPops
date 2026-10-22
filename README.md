@@ -65,6 +65,12 @@ pnpm dev
 # Regenerar los 4 activos del mapa (base PNG, ids BIN, sombra WebP, estados JSON)
 pnpm build-map
 
+# Regenerar los 3 sprites de dalias voxel (dahlia-1.png, dahlia-2.png, dahlia-3.png)
+pnpm build-flowers
+
+# Regenerar los 12 sprites de pétalos pixel art (petal-{1..3}-r{0..3}.png)
+pnpm build-petals
+
 # Generar comparativa visual lado a lado contra docs/referencias/mockup-mapa.jpeg
 pnpm compare-map
 ```

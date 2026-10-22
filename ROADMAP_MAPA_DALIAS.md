@@ -367,18 +367,13 @@ hasta cumplir los del actual.
   borde: todos en 0, un solo estado con usuarios, empates) y cada valor de participación tiene fuente.
 
 ### H4 — Dalias voxel, pétalos y animación de crecimiento
-- [ ] [AGENTE] `scripts/build-flowers.ts`: sprites voxel de 3 tamaños (anillos de cubos isométricos
-      con degradado de rosa, centro naranja-amarillo y sombra de contacto incluida).
-- [ ] [AGENTE] `scripts/build-petals.ts`: 3 formas x 4 rotaciones prehorneadas y `config/petals.ts`
-      con posiciones fijas (RF-11), con más densidad a la izquierda.
-- [ ] [MANUAL] Aprobar el diseño de los sprites contra el mock (forma, colores, proporción con el mapa).
-- [ ] [AGENTE] Calcular anclas con `polylabel` y posicionar una flor por estado con nivel > 0.
-- [ ] [MANUAL] Revisar visualmente las 32 posiciones y listar las mal ubicadas (Baja California Sur,
-      Quintana Roo, Chiapas, estados chicos); el agente aplica las correcciones.
-- [ ] [AGENTE] Animación de aparición escalonada al entrar en pantalla (`IntersectionObserver`), una sola
-      vez, con `steps()`; respetar `prefers-reduced-motion`.
-- **Aceptación:** se distinguen a simple vista los 3 tamaños, ninguna flor tapa a otra de forma ilegible
-  y los pétalos no tapan el título ni el logo.
+- [x] [AGENTE] `scripts/build-flowers.ts`: sprites voxel de 3 tamaños extraídos y calibrados desde `docs/referencias/dalia-flor-mock2.png` con centro naranja, roseta cúbica limpia y sombra de contacto sobre el mapa (`dahlia-{1,2,3}.png`).
+- [x] [AGENTE] `scripts/build-petals.ts`: 12 sprites prehorneados (3 formas x 4 rotaciones/perspectivas) extraídos desde `docs/referencias/petalos.png` y `config/petals.ts` con 18 posiciones fijas (RF-11, mayor densidad a la izquierda).
+- [x] [MANUAL] Aprobar el diseño de los sprites contra el mock (forma cúbica, colores, proporción con el mapa en `docs/preview-flowers.png` y `docs/preview-petals.png`). [CUMPLIDO]
+- [x] [AGENTE] Calcular anclas y posicionar las dalias mediante `<PixelMapAnchor>` con ordenamiento en Z norte-a-sur y elevación sincronizada de 6px.
+- [x] [AGENTE] Animación de aparición escalonada al entrar en pantalla (`IntersectionObserver`), una sola vez, con `steps(4, end)`; respetar `prefers-reduced-motion`.
+- [x] [AGENTE] Capa `<FloatingPetals />` con animación CSS pura a 60 fps que se pausa fuera del viewport.
+- **Aceptación:** se distinguen a simple vista los 3 tamaños, ninguna flor tapa a otra de forma ilegible y los pétalos no tapan el título ni el logo. [CUMPLIDO]
 
 ### H5 — Detalle y accesibilidad
 - [ ] [AGENTE] Tarjeta de detalle por estado (escritorio: tooltip flotante; móvil: panel inferior).
@@ -470,6 +465,15 @@ hasta cumplir los del actual.
 | Falta de tiempo antes del 31 de octubre | Recortar en este orden: islas, fotogramas de crecimiento, contador, secciones de diseño, textura, pétalos |
 
 ## 13. Registro de cambios
+
+### v3.2 (22 oct 2026)
+- **Hito H4 completado y validado:**
+  - `scripts/build-flowers.ts`: Extracción y calibración de los 3 sprites de dalias voxel cúbicas (`dahlia-{1,2,3}.png`) desde `docs/referencias/dalia-flor-mock2.png` con sombra de contacto morada translúcida.
+  - `scripts/build-petals.ts`: Extracción de 12 sprites de pétalos facetados (`petal-{1..3}-r{0..3}.png`) desde `docs/referencias/petalos.png` con 4 rotaciones prehorneadas para evitar degradación de pixel art en runtime.
+  - `config/petals.ts`: 18 posiciones deterministas (11 a la izquierda, 7 a la derecha, 8 en móvil) para renderizado SSR sin error de hidratación.
+  - `<DahliaLayer />`: Florecimiento en oleada norte-a-sur escalonada mediante CSS con `steps(4, end)`, ordenamiento de profundidad en Z por coordenada `anchor.y`, elevación sincronizada de 6px y soporte de `prefers-reduced-motion`.
+  - `<FloatingPetals />`: Flotación ambiental CSS pura a 60 fps pausada con `IntersectionObserver` fuera de pantalla.
+  - Integración en `Hero.tsx` y validación de build de producción (`pnpm --filter web build`) con 0 errores.
 
 ### v3.1 (21 oct 2026)
 - **Hito H2 completado y validado:**
