@@ -11,6 +11,7 @@
   },
   "devDependencies": {
     "@types/d3-geo": "^3.1.1",
+    "@types/node": "^22.20.5",
     "@types/polylabel": "^2.0.0",
     "@types/react": "^18.3.31",
     "d3-geo": "^3.1.1",

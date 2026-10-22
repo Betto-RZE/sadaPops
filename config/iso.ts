@@ -5,11 +5,14 @@
 
 export interface IslandVoxel {
   name: string;
-  /** Coordenadas relativas aproximadas sobre el lienzo final [0..1] */
-  relX: number;
-  relY: number;
-  /** Tamaño del prisma en vóxeles (ancho, alto de tapa, altura de extrusión) */
-  size: { w: number; h: number; extrusion: number };
+  /**
+   * Posición geográfica aproximada [lon, lat]. Se proyecta con la misma vista que el mapa,
+   * así las islas siguen al mapa aunque se recalibre la transformación.
+   * Si el cubo cae sobre tierra, el script lo desplaza al hueco libre más cercano.
+   */
+  lonLat: [number, number];
+  /** Tamaño del prisma en vóxeles (ancho y alto de la tapa) */
+  size: { w: number; h: number };
 }
 
 export interface IsoMapConfig {
@@ -43,7 +46,37 @@ export interface IsoMapConfig {
   extrusion: {
     /** Altura de las paredes en unidades de vóxeles */
     heightInVoxels: number;
+    /** Altura de las paredes de los cubos de islas */
+    islandHeightInVoxels: number;
   };
+
+  /** Limpieza geométrica en espacio de rejilla (unidades: vóxeles²) */
+  geometry: {
+    /** Polígonos secundarios (islas reales) con área menor se descartan */
+    minIslandAreaVoxels: number;
+    /** Huecos interiores (artefactos de simplificación) con área menor se descartan */
+    minHoleAreaVoxels: number;
+    /** Componentes de tierra conectados con menos celdas se eliminan (ruido) */
+    minComponentCells: number;
+    /** Celdas mínimas garantizadas por estado (CDMX, Tlaxcala, Morelos...) */
+    minStateCells: number;
+  };
+
+  /** Sombra suave prehorneada sobre el papel (map-shadow.webp) */
+  shadow: {
+    /** Desplazamiento en píxeles de salida (negativo = izquierda) */
+    offsetX: number;
+    offsetY: number;
+    /** Sigma del desenfoque gaussiano en píxeles de salida */
+    blurSigma: number;
+    /** Opacidad máxima [0..1] */
+    opacity: number;
+    /** Factor de resolución del archivo (0.5 = mitad; se escala suavizado en CSS) */
+    resolutionScale: number;
+  };
+
+  /** Grosor de las líneas de frontera y biseles, en píxeles de salida */
+  lineWidthPx: number;
 
   /**
    * Paleta exacta extraída de docs/referencias/mockup-mapa.jpeg
@@ -93,17 +126,36 @@ export const ISO_MAP_CONFIG: IsoMapConfig = {
   },
 
   transform: {
-    // Rotación para inclinar la diagonal México NW-SE
-    rotationDeg: -16.5,
-    // Compresión vertical isométrica de 30°
-    scaleY: 0.60,
-    shearX: 0.10,
+    // Valores iniciales: el mockup conserva casi la proporción real de México.
+    // Se afinan en la Fase 4 con scripts/compare-map.ts
+    rotationDeg: 0,
+    // Compresión vertical leve (vista inclinada)
+    scaleY: 0.88,
+    shearX: 0,
   },
 
   extrusion: {
     // 6 vóxeles de profundidad vertical (12 px a escala 2x)
     heightInVoxels: 6,
+    islandHeightInVoxels: 2,
   },
+
+  geometry: {
+    minIslandAreaVoxels: 6,
+    minHoleAreaVoxels: 6,
+    minComponentCells: 3,
+    minStateCells: 8,
+  },
+
+  shadow: {
+    offsetX: -4,
+    offsetY: 6,
+    blurSigma: 5,
+    opacity: 0.28,
+    resolutionScale: 0.5,
+  },
+
+  lineWidthPx: 1,
 
   palette: {
     // Tonos superiores índigo/violeta con variación sutil determinista
@@ -132,22 +184,22 @@ export const ISO_MAP_CONFIG: IsoMapConfig = {
     enabled: true,
     // Las 9 islas prismáticas visibles en mockup-mapa.jpeg
     definitions: [
-      // 3 cubos frente a Baja California Norte (Pacífico Norte)
-      { name: 'bc_isla_1', relX: 0.095, relY: 0.25, size: { w: 2, h: 2, extrusion: 4 } },
-      { name: 'bc_isla_2', relX: 0.110, relY: 0.29, size: { w: 2, h: 2, extrusion: 4 } },
-      { name: 'bc_isla_3', relX: 0.135, relY: 0.32, size: { w: 2, h: 2, extrusion: 4 } },
+      // 3 cubos frente a Baja California (Pacífico Norte: Guadalupe, San Martín, Cedros)
+      { name: 'bc_guadalupe', lonLat: [-118.3, 29.0], size: { w: 2, h: 2 } },
+      { name: 'bc_san_martin', lonLat: [-116.6, 30.4], size: { w: 2, h: 2 } },
+      { name: 'bc_cedros', lonLat: [-115.5, 28.2], size: { w: 2, h: 2 } },
 
-      // 2 cubos frente a Baja California Sur
-      { name: 'bcs_isla_1', relX: 0.200, relY: 0.48, size: { w: 2, h: 2, extrusion: 4 } },
-      { name: 'bcs_isla_2', relX: 0.215, relY: 0.51, size: { w: 2, h: 2, extrusion: 4 } },
+      // 2 cubos frente a Baja California Sur (Pacífico)
+      { name: 'bcs_isla_1', lonLat: [-112.8, 24.6], size: { w: 2, h: 2 } },
+      { name: 'bcs_isla_2', lonLat: [-112.3, 23.9], size: { w: 2, h: 2 } },
 
-      // 2 cubos frente a Nayarit / Colima
-      { name: 'nayarit_isla_1', relX: 0.365, relY: 0.60, size: { w: 2, h: 2, extrusion: 4 } },
-      { name: 'nayarit_isla_2', relX: 0.380, relY: 0.63, size: { w: 2, h: 2, extrusion: 4 } },
+      // 2 cubos frente a Nayarit (Islas Marías)
+      { name: 'nayarit_marias_1', lonLat: [-106.6, 21.7], size: { w: 2, h: 2 } },
+      { name: 'nayarit_marias_2', lonLat: [-106.2, 21.3], size: { w: 2, h: 2 } },
 
-      // 2 cubos en el Caribe (Cozumel / Isla Mujeres)
-      { name: 'caribe_isla_1', relX: 0.905, relY: 0.73, size: { w: 2, h: 2, extrusion: 4 } },
-      { name: 'caribe_isla_2', relX: 0.925, relY: 0.66, size: { w: 2, h: 2, extrusion: 4 } },
+      // 2 cubos en el Caribe (Isla Mujeres / Cozumel)
+      { name: 'caribe_mujeres', lonLat: [-86.5, 21.3], size: { w: 2, h: 2 } },
+      { name: 'caribe_cozumel', lonLat: [-86.6, 20.3], size: { w: 2, h: 2 } },
     ],
   },
 
