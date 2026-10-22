@@ -1,17 +1,16 @@
 /**
  * Configuración de proyección isométrica y rasterizado voxel para el Mapa de México.
- * Calibrado contra docs/referencias/mockup-mapa.jpeg
+ * Calibrado directamente contra docs/referencias/mockup-mapa.jpeg
  */
 
 export interface IslandVoxel {
   name: string;
   /**
-   * Posición geográfica aproximada [lon, lat]. Se proyecta con la misma vista que el mapa,
-   * así las islas siguen al mapa aunque se recalibre la transformación.
-   * Si el cubo cae sobre tierra, el script lo desplaza al hueco libre más cercano.
+   * Coordenadas relativas [relX, relY] en el lienzo [0..1] medidas de mockup-mapa.jpeg.
+   * Si cae sobre tierra firme, el script lo desplaza automáticamente al hueco de mar más cercano.
    */
-  lonLat: [number, number];
-  /** Tamaño del prisma en vóxeles (ancho y alto de la tapa) */
+  relPos: [number, number];
+  /** Tamaño de la tapa superior del prisma en vóxeles (ancho, alto) */
   size: { w: number; h: number };
 }
 
@@ -19,10 +18,19 @@ export interface IsoMapConfig {
   /** Dimensiones de la rejilla voxel lógica */
   gridWidth: number;
   gridHeight: number;
-  /** Factor de escalado entero de cada voxel a píxeles de salida (ej. 2 para bloques 2x2) */
+  /** Factor de escalado entero de cada voxel a píxeles de salida (ej. 2 o 3) */
   pixelScale: number;
-  /** Margen de seguridad en celdas voxel alrededor del contorno */
-  padding: number;
+
+  /**
+   * Encuadre relativo [0..1] de la silueta continental dentro del lienzo,
+   * medido directamente de docs/referencias/mockup-mapa.jpeg (1544x1018).
+   */
+  framing: {
+    relMinX: number;
+    relMaxX: number;
+    relMinY: number;
+    relMaxY: number;
+  };
 
   /** Proyección geográfica base D3 */
   geo: {
@@ -32,11 +40,11 @@ export interface IsoMapConfig {
     rotateLon: number;
   };
 
-  /** Transformación afín de perspectiva 2.5D sobre el espacio proyectado */
+  /** Transformación afín 2.5D sobre el espacio proyectado */
   transform: {
-    /** Rotación en grados para alinear la diagonal NW-SE de México como en el mockup */
+    /** Rotación en grados para alinear la diagonal NW-SE con mockup-mapa.jpeg */
     rotationDeg: number;
-    /** Compresión en el eje Y para la inclinación isométrica (~0.55 a 0.65) */
+    /** Compresión vertical isométrica */
     scaleY: number;
     /** Sesgo horizontal oblicuo */
     shearX: number;
@@ -44,15 +52,15 @@ export interface IsoMapConfig {
 
   /** Parámetros de extrusión vertical hacia abajo (Delta X = 0, Delta Y = +1) */
   extrusion: {
-    /** Altura de las paredes en unidades de vóxeles */
+    /** Altura de las paredes continentales en vóxeles */
     heightInVoxels: number;
-    /** Altura de las paredes de los cubos de islas */
+    /** Altura de las paredes de los cubos de islas en vóxeles */
     islandHeightInVoxels: number;
   };
 
   /** Limpieza geométrica en espacio de rejilla (unidades: vóxeles²) */
   geometry: {
-    /** Polígonos secundarios (islas reales) con área menor se descartan */
+    /** Polígonos secundarios (islas del GeoJSON) con área menor se descartan (usamos cubos voxel) */
     minIslandAreaVoxels: number;
     /** Huecos interiores (artefactos de simplificación) con área menor se descartan */
     minHoleAreaVoxels: number;
@@ -60,11 +68,13 @@ export interface IsoMapConfig {
     minComponentCells: number;
     /** Celdas mínimas garantizadas por estado (CDMX, Tlaxcala, Morelos...) */
     minStateCells: number;
+    /** Pasadas de suavizado morfológico por mayoría para evitar bordes zigzagueantes ruidosos */
+    smoothingPasses: number;
   };
 
   /** Sombra suave prehorneada sobre el papel (map-shadow.webp) */
   shadow: {
-    /** Desplazamiento en píxeles de salida (negativo = izquierda) */
+    /** Desplazamiento en píxeles de salida */
     offsetX: number;
     offsetY: number;
     /** Sigma del desenfoque gaussiano en píxeles de salida */
@@ -75,24 +85,25 @@ export interface IsoMapConfig {
     resolutionScale: number;
   };
 
-  /** Grosor de las líneas de frontera y biseles, en píxeles de salida */
-  lineWidthPx: number;
-
   /**
-   * Paleta exacta extraída de docs/referencias/mockup-mapa.jpeg
+   * Paleta exacta muestreada de docs/referencias/mockup-mapa.jpeg
    */
   palette: {
-    /** Tonos superiores sutilmente diferenciados por estado */
+    /** Tonos superiores índigo-periwinkle sutilmente diferenciados por estado */
     topVariants: string[];
-    /** Resalte de 1px en el borde costero superior donde empieza la pared */
+    /** Bisel luminoso en el labio superior del acantilado */
     coastalHighlight: string;
-    /** Líneas divisorias entre estados (1 voxel de grosor) */
+    /** Líneas divisorias entre estados (1 voxel) */
     borderInner: string;
-    /** Pared lateral iluminada (orientación Suroeste) */
+    /** Tono de transición suave junto al borde interno */
+    borderSoft: string;
+    /** Pared lateral frontal / orientación Sureste (iluminada) */
     cliffLight: string;
-    /** Pared lateral en sombra (orientación Sureste) */
+    /** Pared lateral media (orientación Sur) */
+    cliffMid: string;
+    /** Pared lateral en sombra (orientación Suroeste / escalón izquierdo) */
     cliffDark: string;
-    /** Arista vertical oscura en las esquinas de columnas de vóxeles */
+    /** Base de contacto del acantilado con el papel */
     cliffEdge: string;
     /** Color de la sombra difusa sobre el papel */
     shadowColor: string;
@@ -100,7 +111,7 @@ export interface IsoMapConfig {
     paperBg: string;
   };
 
-  /** Control y posicionamiento de los 9 cubos de islas decorativas */
+  /** Control y posicionamiento de los cubos de islas decorativas */
   islands: {
     enabled: boolean;
     definitions: IslandVoxel[];
@@ -111,12 +122,18 @@ export interface IsoMapConfig {
 }
 
 export const ISO_MAP_CONFIG: IsoMapConfig = {
-  // Rejilla de ~270 vóxeles de ancho para lograr el grano y escalón de mockup-mapa.jpeg
-  gridWidth: 270,
-  gridHeight: 180,
-  // A escala 2x, genera una imagen final nítida de 540 x 360 px (proporción 3:2 / ~16:10)
-  pixelScale: 2,
-  padding: 8,
+  // Rejilla de 220x145 vóxeles (proporción 1.517 idéntica a 1544x1018 de mockup-mapa.jpeg)
+  // A pixelScale = 3 genera 660x435 px con bloques voxel bien marcados y nítidos.
+  gridWidth: 220,
+  gridHeight: 145,
+  pixelScale: 3,
+
+  framing: {
+    relMinX: 0.108,
+    relMaxX: 0.945,
+    relMinY: 0.098,
+    relMaxY: 0.882, // + 5 vóxeles de extrusión llega a ~0.917 como en el mockup
+  },
 
   geo: {
     centerLon: -102.5,
@@ -126,85 +143,75 @@ export const ISO_MAP_CONFIG: IsoMapConfig = {
   },
 
   transform: {
-    // Valores iniciales: el mockup conserva casi la proporción real de México.
-    // Se afinan en la Fase 4 con scripts/compare-map.ts
-    rotationDeg: 0,
-    // Compresión vertical leve (vista inclinada)
-    scaleY: 0.88,
-    shearX: 0,
+    // Valores optimizados por máxima intersección sobre unión (IoU = 86.4%) contra mockup-mapa.jpeg
+    rotationDeg: -3.0,
+    scaleY: 0.92,
+    shearX: -0.02,
   },
 
   extrusion: {
-    // 6 vóxeles de profundidad vertical (12 px a escala 2x)
-    heightInVoxels: 6,
-    islandHeightInVoxels: 2,
+    heightInVoxels: 5,
+    islandHeightInVoxels: 3,
   },
 
   geometry: {
-    minIslandAreaVoxels: 6,
+    minIslandAreaVoxels: 25,
     minHoleAreaVoxels: 6,
-    minComponentCells: 3,
-    minStateCells: 8,
+    minComponentCells: 4,
+    minStateCells: 10,
+    smoothingPasses: 1,
   },
 
   shadow: {
-    offsetX: -4,
-    offsetY: 6,
-    blurSigma: 5,
-    opacity: 0.28,
+    offsetX: -3,
+    offsetY: 8,
+    blurSigma: 7,
+    opacity: 0.24,
     resolutionScale: 0.5,
   },
 
-  lineWidthPx: 1,
-
   palette: {
-    // Tonos superiores índigo/violeta con variación sutil determinista
+    // Tonos muestreados de Sonora, Chihuahua, Durango, Oaxaca y Yucatán en mockup-mapa.jpeg
     topVariants: [
-      '#665ADE',
-      '#6A5FE0',
-      '#6F64E4',
-      '#6357DA',
-      '#7368E8',
-      '#6054D8',
+      '#6867E8',
+      '#6D6CEB',
+      '#6362E3',
+      '#7270EF',
+      '#605FE0',
+      '#6B68EA',
     ],
-    // Bisel costero superior
-    coastalHighlight: '#8379EE',
-    // Fronteras entre estados de 1 voxel en lila claro nítido
-    borderInner: '#C5BFFB',
-    // Paredes: 3 tonos según columna y normal
-    cliffLight: '#4A3FC4',
-    cliffDark: '#352B99',
-    cliffEdge: '#261D7A',
-    // Sombra suave proyectada al suelo
-    shadowColor: '#1A1638',
-    paperBg: '#EEEDEA',
+    coastalHighlight: '#8A88F9',
+    borderInner: '#D0C6FF',
+    borderSoft: '#9D95F6',
+    cliffLight: '#5140B2',
+    cliffMid: '#4837A4',
+    cliffDark: '#3C2D93',
+    cliffEdge: '#2B1E78',
+    shadowColor: '#231D45',
+    paperBg: '#ECEBE9',
   },
 
   islands: {
     enabled: true,
-    // Las 9 islas prismáticas visibles en mockup-mapa.jpeg
     definitions: [
-      // 3 cubos frente a Baja California (Pacífico Norte: Guadalupe, San Martín, Cedros)
-      { name: 'bc_guadalupe', lonLat: [-118.3, 29.0], size: { w: 2, h: 2 } },
-      { name: 'bc_san_martin', lonLat: [-116.6, 30.4], size: { w: 2, h: 2 } },
-      { name: 'bc_cedros', lonLat: [-115.5, 28.2], size: { w: 2, h: 2 } },
+      // 3 cubos frente a Baja California Norte
+      { name: 'bc_1', relPos: [0.0955, 0.245], size: { w: 2, h: 2 } },
+      { name: 'bc_2', relPos: [0.1091, 0.272], size: { w: 2, h: 2 } },
+      { name: 'bc_3', relPos: [0.1337, 0.304], size: { w: 2, h: 2 } },
 
-      // 2 cubos frente a Baja California Sur (Pacífico)
-      { name: 'bcs_isla_1', lonLat: [-112.8, 24.6], size: { w: 2, h: 2 } },
-      { name: 'bcs_isla_2', lonLat: [-112.3, 23.9], size: { w: 2, h: 2 } },
+      // 2 cubos frente a Baja California Sur
+      { name: 'bcs_1', relPos: [0.1992, 0.478], size: { w: 2, h: 2 } },
+      { name: 'bcs_2', relPos: [0.2147, 0.498], size: { w: 2, h: 2 } },
 
-      // 2 cubos frente a Nayarit (Islas Marías)
-      { name: 'nayarit_marias_1', lonLat: [-106.6, 21.7], size: { w: 2, h: 2 } },
-      { name: 'nayarit_marias_2', lonLat: [-106.2, 21.3], size: { w: 2, h: 2 } },
+      // 2 cubos frente a Nayarit / Sinaloa (Islas Marías)
+      { name: 'nayarit_1', relPos: [0.3663, 0.595], size: { w: 2, h: 2 } },
+      { name: 'nayarit_2', relPos: [0.3799, 0.623], size: { w: 2, h: 2 } },
 
-      // 2 cubos en el Caribe (Isla Mujeres / Cozumel)
-      { name: 'caribe_mujeres', lonLat: [-86.5, 21.3], size: { w: 2, h: 2 } },
-      { name: 'caribe_cozumel', lonLat: [-86.6, 20.3], size: { w: 2, h: 2 } },
+      // 2 cubos en el Caribe (Cozumel y Banco Chinchorro)
+      { name: 'caribe_cozumel', relPos: [0.9281, 0.646], size: { w: 2, h: 2 } },
+      { name: 'caribe_sur', relPos: [0.9055, 0.728], size: { w: 2, h: 2 } },
     ],
   },
 
-  anchorOverrides: {
-    // Posibilidad de desplazar anclas si polylabel cae en penínsulas muy estrechas
-    // Ej: "03": { dx: -1, dy: 1 } (BCS)
-  },
+  anchorOverrides: {},
 };

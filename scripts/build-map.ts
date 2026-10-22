@@ -47,7 +47,6 @@ const OW = W * S;
 const OH = H * S;
 const EXT = CFG.extrusion.heightInVoxels;
 const ISLAND = 255; // marcador de celda de isla decorativa en topGrid
-const LW = Math.max(1, Math.min(S, CFG.lineWidthPx));
 
 // ───────────────────────────── Utilidades ─────────────────────────────
 
@@ -127,7 +126,7 @@ function projectStates(states: StateGeo[]) {
     st.polys = st.polys.map((poly) => poly.map((ring) => ring.map(view)));
   }
 
-  // Encaje: bbox de los polígonos PRINCIPALES de cada estado (las islas remotas no deforman el encuadre)
+  // Encaje al framing exacto medido de mockup-mapa.jpeg (sobre polígonos continentales principales)
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   for (const st of states) {
     const main = st.polys.reduce((a, b) => (ringArea(b[0]) > ringArea(a[0]) ? b : a));
@@ -138,27 +137,26 @@ function projectStates(states: StateGeo[]) {
       if (y > maxY) maxY = y;
     }
   }
-  const availW = W - 2 * CFG.padding;
-  const availH = H - 2 * CFG.padding - EXT;
-  const k = Math.min(availW / (maxX - minX), availH / (maxY - minY));
-  const ox = CFG.padding + (availW - (maxX - minX) * k) / 2;
-  const oy = CFG.padding + (availH - (maxY - minY) * k) / 2;
-  const toGrid = (p: Pt): Pt => [(p[0] - minX) * k + ox, (p[1] - minY) * k + oy];
+
+  const targetX0 = CFG.framing.relMinX * W;
+  const targetX1 = CFG.framing.relMaxX * W;
+  const targetY0 = CFG.framing.relMinY * H;
+  const targetY1 = CFG.framing.relMaxY * H;
+
+  const kx = (targetX1 - targetX0) / (maxX - minX);
+  const ky = (targetY1 - targetY0) / (maxY - minY);
+  const toGrid = (p: Pt): Pt => [(p[0] - minX) * kx + targetX0, (p[1] - minY) * ky + targetY0];
 
   for (const st of states) {
     let polys = st.polys.map((poly) => poly.map((ring) => ring.map(toGrid)));
     polys.sort((a, b) => ringArea(b[0]) - ringArea(a[0]));
     const [main, ...rest] = polys;
     polys = [main, ...rest.filter((p) => ringArea(p[0]) >= CFG.geometry.minIslandAreaVoxels)];
-    // Descarta huecos-artefacto de la simplificación
     polys = polys.map(([outer, ...holes]) => [outer, ...holes.filter((h) => ringArea(h) >= CFG.geometry.minHoleAreaVoxels)]);
     st.polys = polys;
     st.largest = polys[0];
     st.area = polys.reduce((sum, p) => sum + polyArea(p), 0);
   }
-
-  // Función para proyectar puntos sueltos (islas decorativas)
-  return (ll: Pt): Pt => toGrid(view(ll));
 }
 
 // ───────────────────────────── 3. Rasterizado de la cara superior ─────────────────────────────
@@ -218,6 +216,52 @@ function fillGaps(top: Uint8Array, passes = 2) {
   }
 }
 
+/**
+ * Elimina picos aislados de 1 voxel entre estados ("dientes" donde un voxel tiene >=3 vecinos
+ * cardinales de otro estado), sin tocar estados pequeños.
+ */
+function smoothStateBorders(top: Uint8Array, passes: number) {
+  const counts = new Array(33).fill(0);
+  for (let i = 0; i < W * H; i++) if (isState(top[i])) counts[top[i]]++;
+
+  for (let p = 0; p < passes; p++) {
+    const changes: [number, number][] = [];
+    for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
+      const i = idx(x, y);
+      const cur = top[i];
+      if (!isState(cur) || counts[cur] <= CFG.geometry.minStateCells + 8) continue;
+
+      const nCounts = new Map<number, number>();
+      for (const [dx, dy] of N4) {
+        const nv = top[idx(x + dx, y + dy)];
+        nCounts.set(nv, (nCounts.get(nv) ?? 0) + 1);
+      }
+      const sameCard = nCounts.get(cur) ?? 0;
+      if (sameCard <= 1) {
+        // Es una espuela de 1 celda de ancho; adoptar el vecino mayoritario
+        let bestId = cur, bestC = 0;
+        for (const [nid, c] of nCounts.entries()) {
+          if (nid !== cur && isState(nid) && c > bestC) {
+            bestC = c;
+            bestId = nid;
+          }
+        }
+        if (bestId !== cur && bestC >= 2) {
+          changes.push([i, bestId]);
+        }
+      }
+    }
+    for (const [i, nextId] of changes) {
+      const prev = top[i];
+      if (counts[prev] > CFG.geometry.minStateCells + 4) {
+        counts[prev]--;
+        counts[nextId]++;
+        top[i] = nextId;
+      }
+    }
+  }
+}
+
 /** Elimina componentes de tierra diminutos (ruido de píxeles aislados). */
 function removeTinyComponents(top: Uint8Array): number {
   const seen = new Uint8Array(W * H);
@@ -259,7 +303,10 @@ function guaranteeSmallStates(top: Uint8Array, states: StateGeo[]): string[] {
   const rescued: string[] = [];
 
   for (const st of [...states].sort((a, b) => a.area - b.area)) {
-    if (counts[st.numId] >= CFG.geometry.minStateCells) continue;
+    if (counts[st.numId] >= CFG.geometry.minStateCells) {
+      if (st.area < 40) protectedIds.add(st.numId);
+      continue;
+    }
     const [cx, cy] = polylabelCell(st.largest);
     const queue: Pt[] = [[cx, cy]];
     const visited = new Set<number>([idx(cx, cy)]);
@@ -289,18 +336,16 @@ function guaranteeSmallStates(top: Uint8Array, states: StateGeo[]): string[] {
 
 // ───────────────────────────── 4. Islas decorativas ─────────────────────────────
 
-function stampIslands(top: Uint8Array, project: (ll: Pt) => Pt): string[] {
+function stampIslands(top: Uint8Array): string[] {
   const log: string[] = [];
   if (!CFG.islands.enabled) return log;
 
   const free = (x0: number, y0: number, w: number, h: number) => {
-    // la tapa + su pared + 1 celda de margen deben estar libres
     for (let y = y0 - 1; y <= y0 + h + CFG.extrusion.islandHeightInVoxels; y++)
       for (let x = x0 - 1; x <= x0 + w; x++) {
         if (!inGrid(x, y)) return false;
         if (top[idx(x, y)] !== 0) return false;
       }
-    // y no tapar la pared de la tierra que esté justo arriba
     for (let x = x0 - 1; x <= x0 + w; x++)
       for (let d = 1; d <= EXT + 1; d++) {
         const y = y0 - 1 - d;
@@ -310,10 +355,10 @@ function stampIslands(top: Uint8Array, project: (ll: Pt) => Pt): string[] {
   };
 
   for (const isl of CFG.islands.definitions) {
-    const [gx, gy] = project(isl.lonLat);
-    const bx = Math.round(gx), by = Math.round(gy);
+    const bx = Math.round(isl.relPos[0] * W - isl.size.w / 2);
+    const by = Math.round(isl.relPos[1] * H - isl.size.h / 2);
     let placed: Pt | null = null;
-    for (let r = 0; r <= 6 && !placed; r++) {
+    for (let r = 0; r <= 8 && !placed; r++) {
       for (let dy = -r; dy <= r && !placed; dy++)
         for (let dx = -r; dx <= r && !placed; dx++) {
           if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
@@ -381,10 +426,10 @@ function edgeNear(top: Uint8Array, x: number, ey: number): number | null {
   return null;
 }
 
-/** Pendiente local de la costa (regresión lineal en ventana ±3 columnas). >0 = baja hacia la derecha. */
+/** Pendiente local de la costa (regresión lineal en ventana ±4 columnas). >0 = baja hacia la derecha. */
 function coastSlope(top: Uint8Array, x: number, ey: number): number {
   const pts: Pt[] = [];
-  for (let k = -3; k <= 3; k++) {
+  for (let k = -4; k <= 4; k++) {
     const r = edgeNear(top, x + k, ey);
     if (r !== null) pts.push([k, r]);
   }
@@ -419,7 +464,7 @@ function assignTopColors(top: Uint8Array): number[] {
   const color = new Array(33).fill(-1);
   for (let id = 1; id <= 32; id++) {
     const used = new Set([...adj[id]].map((b) => color[b]));
-    const start = (id * 7) % n; // arranque determinista para repartir tonos
+    const start = (id * 7) % n;
     let c = start;
     for (let t = 0; t < n; t++) {
       const cand = (start + t) % n;
@@ -443,9 +488,10 @@ function render(top: Uint8Array, side: Side, colorIdx: number[]) {
   const tops = P.topVariants.map(hex);
   const rim = hex(P.coastalHighlight);
   const border = hex(P.borderInner);
+  const borderSoft = hex(P.borderSoft);
   const light = hex(P.cliffLight);
+  const mid = hex(P.cliffMid);
   const dark = hex(P.cliffDark);
-  const mid = mix(light, dark, 0.5);
   const edge = hex(P.cliffEdge);
 
   const px = (ox: number, oy: number, c: RGB, id: number) => {
@@ -459,16 +505,23 @@ function render(top: Uint8Array, side: Side, colorIdx: number[]) {
   const block = (x: number, y: number, c: RGB, id: number) => {
     for (let dy = 0; dy < S; dy++) for (let dx = 0; dx < S; dx++) px(x * S + dx, y * S + dy, c, id);
   };
-  const rowLine = (x: number, y: number, bottom: boolean, c: RGB, id: number) => {
-    for (let t = 0; t < LW; t++) for (let dx = 0; dx < S; dx++) px(x * S + dx, y * S + (bottom ? S - 1 - t : t), c, id);
+  const rowLine = (x: number, y: number, bottom: boolean, thickness: number, c: RGB, id: number) => {
+    for (let t = 0; t < thickness; t++) for (let dx = 0; dx < S; dx++) px(x * S + dx, y * S + (bottom ? S - 1 - t : t), c, id);
   };
-  const colLine = (x: number, y: number, right: boolean, c: RGB, id: number) => {
-    for (let t = 0; t < LW; t++) for (let dy = 0; dy < S; dy++) px(x * S + (right ? S - 1 - t : t), y * S + dy, c, id);
+  const colLine = (x: number, y: number, right: boolean, thickness: number, c: RGB, id: number) => {
+    for (let t = 0; t < thickness; t++) for (let dy = 0; dy < S; dy++) px(x * S + (right ? S - 1 - t : t), y * S + dy, c, id);
   };
+
   const topAt = (x: number, y: number) => (inGrid(x, y) ? top[idx(x, y)] : 0);
   const emptyAt = (x: number, y: number) => topAt(x, y) === 0 && (!inGrid(x, y) || side.origin[idx(x, y)] === -1);
 
+  // Conteo de celdas por estado para saber cuáles son micro-estados
+  const stateCellCount = new Array(33).fill(0);
+  for (let i = 0; i < W * H; i++) if (isState(top[i])) stateCellCount[top[i]]++;
+
   const slopeCache = new Map<number, number>();
+  // Grosor de frontera proporcional al bloque voxel (2px cuando S=3, con bisel suave de 1px)
+  const borderThick = Math.max(1, S - 1);
 
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const i = idx(x, y);
@@ -477,33 +530,55 @@ function render(top: Uint8Array, side: Side, colorIdx: number[]) {
     if (v !== 0) {
       // ── Cara superior
       const id = v === ISLAND ? 0 : v;
-      const base = v === ISLAND ? tops[1] : tops[colorIdx[v]];
+      const base = v === ISLAND ? mix(tops[1], rim, 0.35) : tops[colorIdx[v]];
       block(x, y, base, id);
-      // Biseles costeros (luz desde arriba-izquierda y labio del acantilado)
-      if (emptyAt(x, y - 1)) rowLine(x, y, false, rim, id);
-      if (emptyAt(x - 1, y)) colLine(x, y, false, rim, id);
-      if (topAt(x, y + 1) === 0) rowLine(x, y, true, rim, id);
-      // Fronteras internas de 1px (regla de medio vecino: solo derecha y abajo)
+
+      // Bisel costero luminoso en bordes exteriores y labio del acantilado
+      if (emptyAt(x, y - 1)) rowLine(x, y, false, 1, rim, id);
+      if (emptyAt(x - 1, y)) colLine(x, y, false, 1, rim, id);
+      if (topAt(x, y + 1) === 0) rowLine(x, y, true, Math.min(2, S - 1), rim, id);
+
+      // Fronteras internas entre estados (escalón voxel nítido como en mockup-mapa.jpeg)
       if (isState(v)) {
         const r = topAt(x + 1, y);
         const d = topAt(x, y + 1);
-        if (isState(r) && r !== v) colLine(x, y, true, border, id);
-        if (isState(d) && d !== v) rowLine(x, y, true, border, id);
+        const dr = topAt(x + 1, y + 1);
+        const isTiny = stateCellCount[v] <= 18;
+        const bw = isTiny ? 1 : borderThick;
+
+        if (isState(r) && r !== v) {
+          if (!isTiny && S >= 3) colLine(x, y, true, S, borderSoft, id);
+          colLine(x, y, true, bw, border, id);
+        }
+        if (isState(d) && d !== v) {
+          if (!isTiny && S >= 3) rowLine(x, y, true, S, borderSoft, id);
+          rowLine(x, y, true, bw, border, id);
+        }
+        // Rellenar esquina diagonal interior para que las escaleras de frontera nunca se corten en diagonal
+        if (isState(dr) && dr !== v && r === v && d === v) {
+          for (let ty = S - bw; ty < S; ty++)
+            for (let tx = S - bw; tx < S; tx++) px(x * S + tx, y * S + ty, border, id);
+        }
       }
       continue;
     }
 
     if (side.origin[i] === -1) continue;
 
-    // ── Pared extruida
+    // ── Pared extruida (sombreado por bloques 3D, sin rayas negras de 1px tipo código de barras)
     const owner = side.owner[i];
     const ey = side.origin[i];
     const id = owner === ISLAND ? 0 : owner + 32;
+
+    const leftEy = x > 0 && side.owner[idx(x - 1, y)] === owner ? side.origin[idx(x - 1, y)] : -1;
+    const rightEy = x + 1 < W && side.owner[idx(x + 1, y)] === owner ? side.origin[idx(x + 1, y)] : -1;
+
     let c: RGB;
     if (owner === ISLAND) {
-      // cubo: mitad izquierda iluminada, mitad derecha en sombra
-      const leftIsSameCube = x > 0 && side.owner[idx(x - 1, y)] === ISLAND && side.origin[idx(x - 1, y)] === ey;
-      c = leftIsSameCube ? dark : light;
+      // Cubo de isla: columna izquierda sombra, centro medio, derecha iluminada
+      if (leftEy === -1) c = dark;
+      else if (rightEy === -1) c = light;
+      else c = mid;
     } else {
       const key = ey * W + x;
       let s = slopeCache.get(key);
@@ -511,17 +586,27 @@ function render(top: Uint8Array, side: Side, colorIdx: number[]) {
         s = coastSlope(top, x, ey);
         slopeCache.set(key, s);
       }
-      c = s > 0.2 ? light : s < -0.2 ? dark : mid;
-    }
-    block(x, y, c, id);
+      // Si la costa baja hacia la derecha (s > 0.18), la pared mira al Suroeste (más oscura);
+      // si sube hacia la derecha (s < -0.18), mira al Sureste (más iluminada).
+      if (s > 0.22) c = dark;
+      else if (s < -0.22) c = light;
+      else c = mid;
 
-    // Arista vertical solo en esquinas convexas: la columna sobresale respecto a su vecina izquierda
-    const li = x > 0 ? idx(x - 1, y) : -1;
-    const leftOrigin = li >= 0 && side.owner[li] === owner ? side.origin[li] : -1;
-    const leftIsTop = li >= 0 && top[li] !== 0;
-    if (!leftIsTop && (leftOrigin === -1 || leftOrigin < ey)) colLine(x, y, false, edge, id);
-    // Línea de contacto con el suelo
-    if (side.last[i]) rowLine(x, y, true, mix(c, edge, 0.6), id);
+      // Realzar sutilmente el escalón donde cambia la fila de origen de la pared (bloque 3D completo)
+      if (leftEy !== -1 && leftEy < ey) {
+        c = mix(c, dark, 0.55);
+      } else if (rightEy !== -1 && rightEy < ey) {
+        c = mix(c, light, 0.45);
+      }
+    }
+
+    // Gradiente vertical muy sutil hacia la base de la pared
+    const depthRatio = (side.depth[i] - 1) / Math.max(1, EXT - 1);
+    const shaded = mix(c, edge, depthRatio * 0.22);
+    block(x, y, shaded, id);
+
+    // Sombra de contacto en el último píxel inferior de la pared
+    if (side.last[i]) rowLine(x, y, true, 1, mix(shaded, edge, 0.55), id);
   }
 
   return { rgba, ids };
@@ -530,9 +615,10 @@ function render(top: Uint8Array, side: Side, colorIdx: number[]) {
 // ───────────────────────────── 8. Anclas de flor ─────────────────────────────
 
 function computeAnchors(top: Uint8Array, states: StateGeo[]) {
-  // Distancia (BFS 4-conexa) de cada celda a la celda más cercana que NO es del mismo estado
   const dist = new Int32Array(W * H).fill(-1);
   const q: number[] = [];
+  const topAt = (x: number, y: number) => (inGrid(x, y) ? top[idx(x, y)] : 0);
+
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const v = top[idx(x, y)];
     if (!isState(v)) continue;
@@ -541,9 +627,6 @@ function computeAnchors(top: Uint8Array, states: StateGeo[]) {
       dist[idx(x, y)] = 1;
       q.push(idx(x, y));
     }
-  }
-  function topAt(x: number, y: number) {
-    return inGrid(x, y) ? top[idx(x, y)] : 0;
   }
   for (let h = 0; h < q.length; h++) {
     const i = q[h];
@@ -568,7 +651,6 @@ function computeAnchors(top: Uint8Array, states: StateGeo[]) {
     let ax = px, ay = py, snapped = false;
     const ok = inGrid(px, py) && top[idx(px, py)] === st.numId && dist[idx(px, py)] >= want;
     if (!ok) {
-      // celda del estado con mejor profundidad, la más cercana al polylabel
       let best = -1, bestScore = Infinity;
       for (let i = 0; i < W * H; i++) {
         if (top[i] !== st.numId || dist[i] < want) continue;
@@ -588,7 +670,8 @@ function computeAnchors(top: Uint8Array, states: StateGeo[]) {
       ax += o.dx ?? 0;
       ay += o.dy ?? 0;
     }
-    result.set(st.numId, { x: Math.round((ax + 0.5) * S), y: Math.round((ay + 0.5) * S), snapped });
+    // Asegurar que en píxeles de salida no caiga sobre el borde inferior/derecho del voxel
+    result.set(st.numId, { x: ax * S + Math.floor((S - 1) / 2), y: ay * S + Math.floor((S - 1) / 2), snapped });
   }
   return result;
 }
@@ -611,7 +694,7 @@ async function buildShadow(rgba: Buffer): Promise<Buffer> {
   return sharp(out, { raw: { width: OW, height: OH, channels: 4 } })
     .blur(Math.max(0.3, blurSigma))
     .resize(Math.round(OW * resolutionScale), Math.round(OH * resolutionScale))
-    .webp({ quality: 70, alphaQuality: 70, effort: 6 })
+    .webp({ quality: 75, alphaQuality: 80, effort: 6 })
     .toBuffer();
 }
 
@@ -620,7 +703,7 @@ async function buildShadow(rgba: Buffer): Promise<Buffer> {
 async function main() {
   const t0 = Date.now();
   const states = loadStates();
-  const project = projectStates(states);
+  projectStates(states);
 
   const top = new Uint8Array(W * H);
   for (const st of [...states].sort((a, b) => b.area - a.area)) {
@@ -629,7 +712,8 @@ async function main() {
   fillGaps(top);
   const removed = removeTinyComponents(top);
   const rescued = guaranteeSmallStates(top, states);
-  const islandLog = stampIslands(top, project);
+  smoothStateBorders(top, CFG.geometry.smoothingPasses);
+  const islandLog = stampIslands(top);
   const side = extrude(top);
   const colorIdx = assignTopColors(top);
   const { rgba, ids } = render(top, side, colorIdx);
@@ -692,7 +776,6 @@ async function main() {
   for (const [name, buf] of files) {
     const gz = zlib.gzipSync(buf, { level: 9 }).length;
     const br = zlib.brotliCompressSync(buf).length;
-    // PNG/WebP ya van comprimidos: se transfieren tal cual
     const transfer = name.endsWith('.png') || name.endsWith('.webp') ? buf.length : br;
     totalBr += transfer;
     console.log(`${name.padEnd(16)} ${kb(buf.length)} ${kb(gz)} ${kb(br)}`);
