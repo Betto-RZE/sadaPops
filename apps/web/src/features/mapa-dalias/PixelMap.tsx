@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { useMapData } from './useMapData';
 import type { PixelMapProps } from './types';
 import { cn } from '../../shared/utils';
@@ -13,6 +13,15 @@ const SMALL_STATE_NUM_IDS = new Set<number>([
   17, // Morelos
   29, // Tlaxcala
 ]);
+
+// Colores little-endian Uint32 para renderizado de alto rendimiento en Canvas ImageData
+// Selected: Tono magenta / dalia brillante (top) y 50% atenuado (lateral)
+const SELECT_TOP_COLOR = (((190 << 24) | (134 << 16) | (63 << 8) | 244) >>> 0); // #F43F86 ~75% alfa
+const SELECT_SIDE_COLOR = (((95 << 24) | (134 << 16) | (63 << 8) | 244) >>> 0); // #F43F86 ~37% alfa
+
+// Hover: Tono lavanda / lila luminoso (top) y 50% atenuado (lateral)
+const HOVER_TOP_COLOR = (((180 << 24) | (249 << 16) | (190 << 8) | 196) >>> 0); // #C4BEF9 ~70% alfa
+const HOVER_SIDE_COLOR = (((90 << 24) | (249 << 16) | (190 << 8) | 196) >>> 0); // #C4BEF9 ~35% alfa
 
 /**
  * Resuelve qué estado federativo corresponde a las coordenadas lógicas (lx, ly)
@@ -101,6 +110,13 @@ export function PixelMap({
   const { data, loading, error } = useMapData();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
+  // Buffer persistente para renderizado de alta velocidad sin recolección de basura
+  const bufferRef = useRef<{
+    imgData: ImageData;
+    u32: Uint32Array;
+    prevDrawnIndices: number[];
+  } | null>(null);
+
   // Estado local para hover cuando el componente no está completamente controlado
   const [internalHoveredId, setInternalHoveredId] = useState<string | null>(null);
   const currentHoveredId = controlledHoveredId !== undefined ? controlledHoveredId : internalHoveredId;
@@ -108,6 +124,97 @@ export function PixelMap({
   const width = data?.width ?? 660;
   const height = data?.height ?? 435;
   const aspectRatio = `${width} / ${height}`;
+
+  // Renderizado volumétrico reactivo en el Canvas
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !data) return;
+
+    const ctx = canvas.getContext('2d', { willReadFrequently: false });
+    if (!ctx) return;
+
+    // Inicializar o redimensionar buffer persistente si es necesario
+    if (
+      !bufferRef.current ||
+      bufferRef.current.imgData.width !== width ||
+      bufferRef.current.imgData.height !== height
+    ) {
+      const imgData = ctx.createImageData(width, height);
+      bufferRef.current = {
+        imgData,
+        u32: new Uint32Array(imgData.data.buffer),
+        prevDrawnIndices: [],
+      };
+    }
+
+    const { imgData, u32, prevDrawnIndices } = bufferRef.current;
+
+    // Variables para delimitar la región sucia (dirty rectangle)
+    let minDirtyX = width;
+    let minDirtyY = height;
+    let maxDirtyX = -1;
+    let maxDirtyY = -1;
+
+    // 1. Limpiar píxeles previamente dibujados
+    for (let i = 0; i < prevDrawnIndices.length; i++) {
+      const idx = prevDrawnIndices[i];
+      u32[idx] = 0;
+      const x = idx % width;
+      const y = Math.floor(idx / width);
+      if (x < minDirtyX) minDirtyX = x;
+      if (x > maxDirtyX) maxDirtyX = x;
+      if (y < minDirtyY) minDirtyY = y;
+      if (y > maxDirtyY) maxDirtyY = y;
+    }
+    prevDrawnIndices.length = 0;
+
+    // 2. Función interna para pintar un estado
+    const paintState = (stateId: string, topColor: number, sideColor: number) => {
+      const state = data.stateById.get(stateId);
+      if (!state) return;
+      const pixelIndex = data.pixelsByNumId.get(state.numId);
+      if (!pixelIndex) return;
+
+      const [bboxMinX, bboxMinY, bboxMaxX, bboxMaxY] = state.bbox;
+      if (bboxMinX < minDirtyX) minDirtyX = bboxMinX;
+      if (bboxMaxX > maxDirtyX) maxDirtyX = bboxMaxX;
+      if (bboxMinY < minDirtyY) minDirtyY = bboxMinY;
+      if (bboxMaxY > maxDirtyY) maxDirtyY = bboxMaxY;
+
+      const top = pixelIndex.topPixels;
+      for (let i = 0; i < top.length; i++) {
+        const idx = top[i];
+        u32[idx] = topColor;
+        prevDrawnIndices.push(idx);
+      }
+
+      const side = pixelIndex.sidePixels;
+      for (let i = 0; i < side.length; i++) {
+        const idx = side[i];
+        u32[idx] = sideColor;
+        prevDrawnIndices.push(idx);
+      }
+    };
+
+    // Pintar estado seleccionado
+    if (selectedStateId) {
+      paintState(selectedStateId, SELECT_TOP_COLOR, SELECT_SIDE_COLOR);
+    }
+
+    // Pintar estado en hover (si no es el mismo que está seleccionado)
+    if (currentHoveredId && currentHoveredId !== selectedStateId) {
+      paintState(currentHoveredId, HOVER_TOP_COLOR, HOVER_SIDE_COLOR);
+    }
+
+    // 3. Volcar al canvas únicamente la región modificada para máximo rendimiento
+    if (minDirtyX <= maxDirtyX && minDirtyY <= maxDirtyY) {
+      const dirtyW = maxDirtyX - minDirtyX + 1;
+      const dirtyH = maxDirtyY - minDirtyY + 1;
+      ctx.putImageData(imgData, 0, 0, minDirtyX, minDirtyY, dirtyW, dirtyH);
+    } else if (prevDrawnIndices.length === 0) {
+      ctx.clearRect(0, 0, width, height);
+    }
+  }, [data, selectedStateId, currentHoveredId, width, height]);
 
   // Conversión precisa de coordenadas de pantalla a la rejilla lógica de vóxeles
   const getLogicalCoords = useCallback(
