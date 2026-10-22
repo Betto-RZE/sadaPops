@@ -70,12 +70,12 @@ export function Hero() {
             Tu participación hace florecer a México.
           </h1>
 
-          {/* ========================================================= */}
-          {/* CAPA 2 & 3: MAPA ISOMÉTRICO AMPLIADO (PROTAGONISTA)       */}
-          {/* ========================================================= */}
+          {/* ========================================================================= */}
+          {/* CAPA 2 & 3: MAPA ISOMÉTRICO (OCULTO AL INICIO -> ENTRA EN FASE 3 A LOS 2.2s) */}
+          {/* ========================================================================= */}
           <div 
             id="mapa-interactivo" 
-            className="relative z-10 w-full max-w-[780px] sm:max-w-[920px] md:max-w-[1040px] lg:max-w-[1140px] xl:max-w-[1220px] map-isometric-shadow pointer-events-auto -mt-3 sm:-mt-5"
+            className="hero-map-delayed-enter relative z-10 w-full max-w-[780px] sm:max-w-[920px] md:max-w-[1040px] lg:max-w-[1140px] xl:max-w-[1220px] map-isometric-shadow -mt-3 sm:-mt-5"
           >
             <PixelMap
               selectedStateId={selectedStateId}
