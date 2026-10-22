@@ -1,7 +1,18 @@
+'use client';
+
+import React, { useState } from 'react';
 import { ArrowRight, Flower2, TrendingUp } from 'lucide-react';
 import { cn } from '@/shared/utils';
+import { PixelMap, PixelMapAnchor, useMapData } from '@/features/mapa-dalias';
 
 export function Hero() {
+  const [selectedStateId, setSelectedStateId] = useState<string | null>('21'); // 21 = Puebla por defecto
+  const [hoveredStateId, setHoveredStateId] = useState<string | null>(null);
+  const { data } = useMapData();
+
+  const activeId = hoveredStateId || selectedStateId || '21';
+  const activeState = data?.stateById.get(activeId);
+
   return (
     <section className="relative w-full bg-white overflow-hidden py-16 md:py-20 border-b border-gray-100">
       
@@ -21,15 +32,15 @@ export function Hero() {
       </div>
 
       <div className="mx-auto max-w-[1440px] px-6 lg:px-12 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           
           {/* Left Column: Copy */}
-          <div className="flex flex-col items-start pt-10">
+          <div className="flex flex-col items-start pt-6">
             <span className="text-xs font-bold tracking-[0.2em] text-gray-400 mb-6 uppercase">
               Participación Ciudadana
             </span>
             
-            <h1 className="text-5xl md:text-6xl lg:text-[72px] font-black tracking-tighter text-brand-navy leading-[1.05] mb-6">
+            <h1 className="text-5xl md:text-6xl lg:text-[70px] font-black tracking-tighter text-brand-navy leading-[1.05] mb-6">
               Tu participación <br />
               <span className="text-dalia-600">
                 hace florecer
@@ -49,7 +60,7 @@ export function Hero() {
               <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
             </button>
             
-            <div className="mt-20 flex items-center gap-4">
+            <div className="mt-16 flex items-center gap-4">
               <div className="h-12 w-1 bg-gray-200 rounded-full" />
               <p className="text-[10px] font-bold tracking-[0.2em] text-gray-400 leading-tight">
                 MÉXICO <br />
@@ -58,87 +69,100 @@ export function Hero() {
               </p>
             </div>
           </div>
-          
-          {/* Right Column: Visual Placeholder */}
-          <div className="relative h-[600px] w-full flex items-center justify-center">
+
+          {/* Right Column: Interactive Pixel Art Map */}
+          <div className="relative w-full flex flex-col items-center justify-center">
             
-            {/* The Map mock - We'll use a CSS shape + dalia icons for now to simulate the dark map */}
-            <div className="absolute inset-0 flex items-center justify-center w-[120%] -ml-[10%]">
-               {/* Simulating the map shape with an SVG placeholder */}
-               <svg viewBox="0 0 800 600" className="w-full h-full opacity-90 drop-shadow-2xl">
-                 <path d="M150 100 Q 300 150, 400 300 T 700 500 Q 600 600, 450 450 T 200 400 Z" fill="#1C2541" />
-                 {/* Dalias scattered on map */}
-                 <circle cx="200" cy="200" r="10" fill="#E3007E" />
-                 <circle cx="350" cy="250" r="25" fill="#E3007E" />
-                 <circle cx="500" cy="400" r="15" fill="#E3007E" />
-                 <circle cx="450" cy="300" r="30" fill="#E3007E" />
-                 <circle cx="250" cy="350" r="12" fill="#E3007E" />
-                 <circle cx="600" cy="480" r="18" fill="#E3007E" />
-               </svg>
+            {/* Mapa Isométrico Voxel / Pixel Art Interactivo */}
+            <div className="w-full relative">
+              <PixelMap
+                selectedStateId={selectedStateId}
+                hoveredStateId={hoveredStateId}
+                onSelectState={setSelectedStateId}
+                onHoverState={setHoveredStateId}
+                className="w-full shadow-2xl rounded-2xl border-stone-200/80"
+              >
+                {/* Dalia interactiva sobre el estado seleccionado mediante PixelMapAnchor */}
+                {selectedStateId && (
+                  <PixelMapAnchor stateId={selectedStateId}>
+                    <div className="flex items-center justify-center -mt-3 pointer-events-auto cursor-pointer animate-bounce">
+                      <div className="relative">
+                        <span className="absolute -inset-1 rounded-full bg-pink-500/40 blur-sm animate-pulse" />
+                        <div className="relative flex items-center justify-center h-7 w-7 rounded-full bg-gradient-to-tr from-pink-600 to-rose-400 text-white shadow-lg border-2 border-white">
+                          <Flower2 className="h-4 w-4" />
+                        </div>
+                      </div>
+                    </div>
+                  </PixelMapAnchor>
+                )}
+              </PixelMap>
             </div>
 
-            {/* Top Right Floating Card */}
-            <div className="absolute top-10 right-0 bg-white/95 backdrop-blur-md p-5 rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] border border-white/50 animate-in fade-in slide-in-from-top-4 duration-1000 z-20 min-w-[280px]">
+            {/* Top Right Floating Metric Card */}
+            <div className="hidden sm:block absolute -top-6 right-0 bg-white/95 backdrop-blur-md p-5 rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] border border-white/50 z-20 min-w-[260px]">
               <div className="flex justify-between items-start mb-2">
                 <div className="flex items-center gap-2">
-                  <Flower2 className="text-dalia-600 w-6 h-6" />
-                  <h3 className="text-sm font-semibold text-brand-navy">México está floreciendo</h3>
+                  <Flower2 className="text-dalia-600 w-5 h-5" />
+                  <h3 className="text-xs font-semibold text-brand-navy">México floreciendo</h3>
                 </div>
               </div>
-              <p className="text-4xl font-black text-brand-navy mt-3">24,582</p>
+              <p className="text-3xl font-black text-brand-navy mt-1">24,582</p>
               <div className="flex justify-between items-end mt-1">
-                <p className="text-xs text-gray-500 font-medium">Dalias plantadas</p>
+                <p className="text-[11px] text-gray-500 font-medium">Dalias plantadas</p>
                 <div className="flex gap-1 items-end">
-                   <div className="w-2 h-4 bg-gray-200 rounded-sm"></div>
-                   <div className="w-2 h-6 bg-gray-300 rounded-sm"></div>
-                   <div className="w-2 h-8 bg-gray-400 rounded-sm"></div>
+                   <div className="w-1.5 h-3 bg-gray-200 rounded-sm" />
+                   <div className="w-1.5 h-5 bg-gray-300 rounded-sm" />
+                   <div className="w-1.5 h-7 bg-dalia-500 rounded-sm" />
                 </div>
               </div>
               
-              <div className="flex items-center gap-1 text-[10px] text-brand-success mt-4 bg-brand-success/10 px-2 py-1 rounded w-fit">
+              <div className="flex items-center gap-1 text-[10px] text-brand-success mt-3 bg-brand-success/10 px-2 py-0.5 rounded w-fit">
                 <TrendingUp className="h-3 w-3" />
-                <span className="font-bold">+8.4% respecto al mes anterior</span>
+                <span className="font-bold">+8.4% este mes</span>
               </div>
             </div>
 
-            {/* Middle Right Decorative Text */}
-            <div className="absolute top-1/2 right-0 flex gap-4 text-[9px] font-bold tracking-[0.3em] text-gray-300">
-              <div className="flex flex-col gap-8">
-                <span>GOLFO</span>
-                <span>DE MÉXICO</span>
+            {/* Floating Card dinámico vinculado al estado seleccionado o en hover */}
+            <div className="mt-4 sm:mt-0 sm:absolute sm:-bottom-8 sm:left-4 bg-white/95 backdrop-blur-md p-5 rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)] border border-gray-100 z-20 w-full sm:w-auto sm:min-w-[250px] transition-all duration-200">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-base font-bold text-brand-navy">
+                  {activeState?.nombre ?? 'Selecciona un estado'}
+                </h3>
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-stone-100 text-stone-600">
+                  {activeState ? `Estado ${activeState.id}` : '--'}
+                </span>
               </div>
-              <div className="w-px h-20 bg-gray-200"></div>
-              <div className="flex flex-col justify-between py-2 text-brand-navy">
-                 <span>CADA</span>
-                 <span className="flex items-center gap-1 before:content-[''] before:w-1.5 before:h-1.5 before:bg-brand-navy before:rounded-full">DALIA</span>
-                 <span className="text-dalia-600 border-l-2 border-dalia-600 pl-2">CUENTA</span>
-              </div>
-            </div>
-
-            {/* Floating Card for State Example (Puebla) */}
-            <div className="absolute bottom-1/4 left-1/4 bg-white p-5 rounded-[20px] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)] border border-gray-100 z-20 min-w-[240px] animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-300">
-              <h3 className="text-sm font-bold text-brand-navy mb-4">Puebla</h3>
               
-              <div className="flex items-center gap-3 mb-4">
-                <Flower2 className="w-8 h-8 text-dalia-600" />
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 rounded-xl bg-pink-50 text-dalia-600">
+                  <Flower2 className="w-6 h-6" />
+                </div>
                 <div>
-                  <p className="text-lg font-black text-brand-navy leading-none">2,458 <span className="text-sm font-semibold">Dalias</span></p>
+                  <p className="text-base font-black text-brand-navy leading-none">
+                    {activeState ? (activeState.topPixels * 2.3).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '0'}{' '}
+                    <span className="text-xs font-semibold text-stone-500">Dalias</span>
+                  </p>
+                  <p className="text-[10px] text-stone-400 mt-0.5">Personas informadas</p>
                 </div>
               </div>
               
-              <div className="border-t border-gray-100 pt-3 mb-4">
-                <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold mb-1">Participación ciudadana</p>
+              <div className="border-t border-gray-100 pt-2.5 mb-3">
+                <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold mb-1">
+                  Participación estimada
+                </p>
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-bold text-brand-navy">68.2%</p>
+                  <p className="text-sm font-bold text-brand-navy">
+                    {activeState ? (60 + (activeState.numId * 17) % 25).toFixed(1) : '65.0'}%
+                  </p>
                   <span className="flex items-center text-[10px] font-bold text-brand-success">
-                    <TrendingUp className="w-3 h-3 mr-0.5" /> +5.1%
+                    <TrendingUp className="w-3 h-3 mr-0.5" /> +{(2 + (activeState?.numId ?? 1) % 6).toFixed(1)}%
                   </span>
                 </div>
               </div>
 
-              <button className="flex items-center gap-1 text-[11px] font-bold text-brand-navy hover:text-dalia-600 transition-colors">
-                <ArrowRight className="w-3 h-3" /> Explorar estado
-              </button>
+              <div className="text-[11px] font-bold text-brand-navy flex items-center gap-1 text-dalia-600">
+                <ArrowRight className="w-3.5 h-3.5" /> Haz clic para explorar
+              </div>
             </div>
 
           </div>

@@ -1,9 +1,63 @@
 'use client';
 
-import React, { useRef, useState, useCallback, useEffect } from 'react';
+import React, {
+  useRef,
+  useState,
+  useCallback,
+  useEffect,
+  createContext,
+  useContext,
+} from 'react';
 import { useMapData } from './useMapData';
-import type { PixelMapProps } from './types';
+import type {
+  PixelMapProps,
+  PixelMapAnchorProps,
+  PixelMapContextValue,
+} from './types';
 import { cn } from '../../shared/utils';
+
+// Contexto para compartir metadatos y estado activo con componentes hijos (como PixelMapAnchor)
+const PixelMapContext = createContext<PixelMapContextValue | null>(null);
+
+export function usePixelMapContext(): PixelMapContextValue {
+  const ctx = useContext(PixelMapContext);
+  if (!ctx) {
+    throw new Error('usePixelMapContext debe usarse dentro de un <PixelMap>');
+  }
+  return ctx;
+}
+
+/**
+ * PixelMapAnchor: Posiciona automáticamente cualquier elemento (dalia, medalla, tooltip)
+ * sobre las coordenadas ancla exactas del estado federativo indicado.
+ */
+export function PixelMapAnchor({
+  stateId,
+  className,
+  children,
+}: PixelMapAnchorProps) {
+  const { data } = usePixelMapContext();
+  if (!data) return null;
+
+  const state = data.stateById.get(stateId);
+  if (!state) return null;
+
+  const leftPercent = (state.anchor.x / data.width) * 100;
+  const topPercent = (state.anchor.y / data.height) * 100;
+
+  return (
+    <div
+      data-state-id={stateId}
+      className={cn(
+        'absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto z-20 transition-transform duration-200',
+        className
+      )}
+      style={{ left: `${leftPercent}%`, top: `${topPercent}%` }}
+    >
+      {children}
+    </div>
+  );
+}
 
 // Conjunto de numIds de estados con superficie reducida para asistencia táctil
 const SMALL_STATE_NUM_IDS = new Set<number>([
@@ -26,8 +80,6 @@ const HOVER_SIDE_COLOR = (((90 << 24) | (249 << 16) | (190 << 8) | 196) >>> 0); 
 /**
  * Resuelve qué estado federativo corresponde a las coordenadas lógicas (lx, ly)
  * en O(1) consultando directamente el buffer binario mapIds.
- *
- * Incluye tolerancia en radio de 2 vóxeles para eventos táctiles en pantallas móviles.
  */
 function resolveStateAt(
   lx: number,
@@ -104,6 +156,7 @@ export function PixelMap({
   hoveredStateId: controlledHoveredId,
   onSelectState,
   onHoverState,
+  showTooltip = true,
   className,
   children,
 }: PixelMapProps) {
@@ -124,6 +177,10 @@ export function PixelMap({
   const width = data?.width ?? 660;
   const height = data?.height ?? 435;
   const aspectRatio = `${width} / ${height}`;
+
+  // Estado activo prioritario (hover tiene prioridad inmediata visual; si no hay hover, muestra el seleccionado)
+  const activeStateId = currentHoveredId || selectedStateId;
+  const activeState = (data && activeStateId) ? data.stateById.get(activeStateId) : null;
 
   // Renderizado volumétrico reactivo en el Canvas
   useEffect(() => {
@@ -277,73 +334,111 @@ export function PixelMap({
     }
   }, [currentHoveredId, onHoverState]);
 
+  const selectState = useCallback(
+    (stateId: string | null) => {
+      onSelectState?.(stateId);
+    },
+    [onSelectState]
+  );
+
+  const contextValue: PixelMapContextValue = {
+    data,
+    selectedStateId,
+    hoveredStateId: currentHoveredId,
+    selectState,
+  };
+
   return (
-    <div
-      role="region"
-      aria-label="Mapa isométrico interactivo de México"
-      className={cn(
-        'relative w-full max-w-5xl mx-auto select-none overflow-hidden rounded-xl bg-[#EEEDEA]/50 border border-stone-200/60 shadow-inner',
-        className
-      )}
-      style={{ aspectRatio }}
-    >
-      {/* Capa 1: Sombra de contacto suave sobre el fondo */}
-      <img
-        src="/data/map-shadow.webp"
-        alt=""
-        aria-hidden="true"
-        className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none"
-        loading="eager"
-      />
+    <PixelMapContext.Provider value={contextValue}>
+      <div
+        role="region"
+        aria-label="Mapa isométrico interactivo de México"
+        className={cn(
+          'relative w-full max-w-5xl mx-auto select-none overflow-hidden rounded-xl bg-[#EEEDEA]/50 border border-stone-200/60 shadow-inner group',
+          className
+        )}
+        style={{ aspectRatio }}
+      >
+        {/* Capa 1: Sombra de contacto suave sobre el fondo */}
+        <img
+          src="/data/map-shadow.webp"
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none"
+          loading="eager"
+        />
 
-      {/* Capa 2: Mapa Base Pixel Art con bordes nítidos */}
-      <img
-        src="/data/map-base.png"
-        alt="Silueta y estados de la República Mexicana en estilo pixel art isométrico"
-        className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none [image-rendering:pixelated]"
-        loading="eager"
-      />
+        {/* Capa 2: Mapa Base Pixel Art con bordes nítidos */}
+        <img
+          src="/data/map-base.png"
+          alt="Silueta y estados de la República Mexicana en estilo pixel art isométrico"
+          className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none [image-rendering:pixelated]"
+          loading="eager"
+        />
 
-      {/* Capa 3: Canvas para interacción y resaltado volumétrico */}
-      <canvas
-        ref={canvasRef}
-        width={width}
-        height={height}
-        aria-label="Lienzo interactivo de estados"
-        onPointerMove={handlePointerMove}
-        onPointerDown={handlePointerDown}
-        onPointerLeave={handlePointerLeave}
-        className="absolute inset-0 w-full h-full object-contain [image-rendering:pixelated] cursor-pointer touch-manipulation z-10"
-      />
+        {/* Capa 3: Canvas para interacción y resaltado volumétrico */}
+        <canvas
+          ref={canvasRef}
+          width={width}
+          height={height}
+          aria-label="Lienzo interactivo de estados"
+          onPointerMove={handlePointerMove}
+          onPointerDown={handlePointerDown}
+          onPointerLeave={handlePointerLeave}
+          className="absolute inset-0 w-full h-full object-contain [image-rendering:pixelated] cursor-pointer touch-manipulation z-10"
+        />
 
-      {/* Capa 4: Ranura para overlays y dalias (Hito H4) */}
-      {children && (
-        <div className="absolute inset-0 w-full h-full pointer-events-none z-20">
-          {children}
-        </div>
-      )}
+        {/* Capa 4: Ranura para overlays y dalias (Hito H4) */}
+        {children && (
+          <div className="absolute inset-0 w-full h-full pointer-events-none z-20">
+            {children}
+          </div>
+        )}
 
-      {/* Indicador sutil de carga si aún no se han indexado los datos */}
-      {loading && (
-        <div
-          aria-live="polite"
-          className="absolute bottom-3 right-3 z-30 flex items-center gap-2 rounded-md bg-white/80 px-2.5 py-1 text-xs text-stone-600 backdrop-blur-sm border border-stone-200 shadow-sm"
-        >
-          <span className="inline-block h-2 w-2 rounded-full bg-violet-600 animate-pulse" />
-          <span>Cargando mapa...</span>
-        </div>
-      )}
+        {/* Tooltip informativo discreto del estado activo */}
+        {showTooltip && activeState && (
+          <div className="absolute top-3 left-3 z-30 pointer-events-none flex items-center gap-2 rounded-lg bg-white/90 px-3 py-1.5 shadow-md backdrop-blur-md border border-stone-200/80 animate-in fade-in zoom-in-95 duration-150">
+            <span
+              className={cn(
+                'inline-block h-2.5 w-2.5 rounded-full',
+                activeState.id === selectedStateId
+                  ? 'bg-pink-600 ring-2 ring-pink-300'
+                  : 'bg-violet-600 ring-2 ring-violet-300'
+              )}
+            />
+            <div className="flex flex-col">
+              <span className="text-xs font-bold text-stone-800 leading-tight">
+                {activeState.nombre}
+              </span>
+              <span className="text-[10px] text-stone-500 font-mono">
+                Estado {activeState.id}
+              </span>
+            </div>
+          </div>
+        )}
 
-      {/* Manejo de error si los activos no están disponibles */}
-      {error && (
-        <div
-          role="alert"
-          className="absolute inset-0 z-40 flex items-center justify-center bg-white/90 p-4 text-center text-sm text-red-600 backdrop-blur-sm"
-        >
-          <p>No se pudo cargar el mapa isométrico: {error.message}</p>
-        </div>
-      )}
-    </div>
+        {/* Indicador sutil de carga si aún no se han indexado los datos */}
+        {loading && (
+          <div
+            aria-live="polite"
+            className="absolute bottom-3 right-3 z-30 flex items-center gap-2 rounded-md bg-white/80 px-2.5 py-1 text-xs text-stone-600 backdrop-blur-sm border border-stone-200 shadow-sm"
+          >
+            <span className="inline-block h-2 w-2 rounded-full bg-violet-600 animate-pulse" />
+            <span>Cargando mapa...</span>
+          </div>
+        )}
+
+        {/* Manejo de error si los activos no están disponibles */}
+        {error && (
+          <div
+            role="alert"
+            className="absolute inset-0 z-40 flex items-center justify-center bg-white/90 p-4 text-center text-sm text-red-600 backdrop-blur-sm"
+          >
+            <p>No se pudo cargar el mapa isométrico: {error.message}</p>
+          </div>
+        )}
+      </div>
+    </PixelMapContext.Provider>
   );
 }
 

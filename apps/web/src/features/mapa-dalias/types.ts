@@ -46,6 +46,22 @@ export interface MapIndexData {
   pixelsByNumId: Map<number, StatePixelIndex>;
 }
 
+export interface PixelMapContextValue {
+  data: MapIndexData | null;
+  selectedStateId: string | null;
+  hoveredStateId: string | null;
+  selectState: (stateId: string | null) => void;
+}
+
+export interface PixelMapAnchorProps {
+  /** Clave de dos dígitos del estado ("01".."32") donde anclar el elemento */
+  stateId: string;
+  /** Clases CSS adicionales */
+  className?: string;
+  /** Contenido visual a anclar (ej. Dalia SVG, pin, badge o indicador) */
+  children: React.ReactNode;
+}
+
 export interface PixelMapProps {
   /** Clave de dos dígitos del estado seleccionado ("01".."32") o null */
   selectedStateId?: string | null;
@@ -55,8 +71,10 @@ export interface PixelMapProps {
   onSelectState?: (stateId: string | null) => void;
   /** Callback al pasar o retirar el puntero de un estado */
   onHoverState?: (stateId: string | null) => void;
+  /** Muestra un tooltip flotante automático con el nombre del estado activo */
+  showTooltip?: boolean;
   /** Clases CSS adicionales para el contenedor exterior */
   className?: string;
-  /** Ranura para montar capas secundarias (ej. Dalias en Hito H4) */
+  /** Ranura para montar capas secundarias y anclas (ej. Dalias en Hito H4) */
   children?: React.ReactNode;
 }
