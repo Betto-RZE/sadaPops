@@ -606,7 +606,7 @@ export function PixelMap({
         role="region"
         aria-label="Mapa isométrico interactivo de México"
         className={cn(
-          'relative w-full max-w-5xl mx-auto select-none overflow-hidden rounded-xl bg-[#EEEDEA]/50 border border-stone-200/60 shadow-inner group',
+          'relative w-full max-w-5xl mx-auto select-none overflow-visible bg-transparent group',
           className
         )}
         style={{ aspectRatio }}
