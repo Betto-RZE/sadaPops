@@ -315,6 +315,7 @@ export const DIALOGUE_SPEAKER_COLORS = {
   alex: "#9333ea",
   morgan: "#9333ea",
   discapacitado: "#0284c7",
+  roberto: "#0284c7",
 };
 
 
@@ -1691,90 +1692,228 @@ export const TRANS_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
  * Diálogos de llegada para Persona con Discapacidad (Español y Náhuatl).
  */
 export const DISCAPACITADO_ARRIVAL_MESSAGES_ES: string[] = [
-  "¡Un ciudadano en silla de ruedas se aproxima a la mesa!",
-  "¡Verifiquemos que las instalaciones y la atención sean totalmente accesibles!",
+  "¡Viene llegando Don Roberto a la casilla!",
+  "¡Asegurémonos de orientarlo garantizando las medidas de accesibilidad e inclusión!",
 ];
 
 export const DISCAPACITADO_ARRIVAL_MESSAGES_NAH: string[] = [
-  "¡Se tlacatl ika silla de ruedas oajsik!",
+  "¡Se tlacatl Don Roberto ika silla de ruedas oajsik!",
   "¡Tikitah ma kipia nochi tlamantli kualtsin pampa tlapejpenis!",
 ];
 
 /**
- * Conversación para Persona con Discapacidad (Español y Náhuatl).
+ * Conversación para Don Roberto (Persona con Discapacidad) (Español y Náhuatl).
+ * Estructura en 3 partes:
+ * 1. Plática con mito y respuesta con datos del Censo INEGI 2020 (líneas 1 a 27)
+ * 2. Inecito se dirige a ti y te hace una pregunta con 3 opciones (línea 28)
+ * 3. Despedida entre personajes (líneas 29 a 33)
  */
 export const DISCAPACITADO_CONVERSATION_MESSAGES_ES: DialogueLine[] = [
-  // PARTE 1
+  // PARTE 1: Plática con mito y respuesta con datos
   {
     speaker: "Don Roberto",
     speakerColor: DIALOGUE_SPEAKER_COLORS.discapacitado,
-    text: "Buenos días. Agradezco que la casilla cuente con rampas y espacios adecuados para mi silla de ruedas.",
+    text: "¡Muy buenos días, joven! Veo que tienen todo bastante bien organizado por aquí.",
   },
   {
     speaker: "Inecito",
     speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
-    text: "¡Buenos días, Don Roberto! Garantizar la accesibilidad e inclusión es una prioridad absoluta del INE.",
+    text: "¡Buenos días! Muchas gracias. Hemos estado trabajando para que todo esté listo. ¿En qué puedo ayudarlo?",
   },
   {
     speaker: "Don Roberto",
     speakerColor: DIALOGUE_SPEAKER_COLORS.discapacitado,
-    text: "También me comentaron que cuentan con plantillas Braille y mamparas móviles accesibles.",
+    text: "Pues mire, vengo a votar, pero antes quisiera aclarar una duda.",
+  },
+  {
+    speaker: "Don Roberto",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.discapacitado,
+    text: "Un conocido me comentó que, como utilizo silla de ruedas, necesito que alguien me acompañe para votar.",
+  },
+  {
+    speaker: "Don Roberto",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.discapacitado,
+    text: "Y que incluso esa persona podría marcar la boleta por mí.",
   },
   {
     speaker: "Inecito",
     speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
-    text: "¡Exactamente! Toda la ciudadanía tiene derecho a emitir su sufragio de forma autónoma y digna.",
+    text: "¡Ahhh! Ya entiendo su preocupación. ¿Y qué piensa usted de eso?",
+  },
+  {
+    speaker: "Don Roberto",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.discapacitado,
+    text: "¡Pues que no me parece! Una cosa es necesitar una rampa y otra muy distinta que alguien tenga que decidir por mí, ¡ja, ja!",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Ja, ja! Tiene mucha razón, Don Roberto. Y me alegra que haya venido a preguntar.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Lo primero que debe saber es que tener una discapacidad no significa que alguien más tenga que votar por usted.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Todas las personas tienen derecho a tomar sus propias decisiones y ejercer su voto de manera libre y secreta.",
+  },
+  {
+    speaker: "Don Roberto",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.discapacitado,
+    text: "¡Exactamente! Yo sé perfectamente por quién quiero votar. Lo único que necesito es poder hacerlo cómodamente.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Y para eso existen medidas de accesibilidad!",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Por ejemplo, el INE contempla mamparas especiales que permiten a las personas que utilizan silla de ruedas marcar su boleta de una manera más accesible.",
+  },
+  {
+    speaker: "Don Roberto",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.discapacitado,
+    text: "¡Ah, qué buena noticia! Porque en otros lugares me ha tocado encontrar mesas demasiado altas o espacios muy reducidos.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Así es. La accesibilidad busca eliminar esas barreras para que todas las personas puedan ejercer sus derechos.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Y si alguien necesita apoyo para votar, puede solicitarlo conforme a los procedimientos establecidos.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Pero eso no significa que la ayuda deba imponerse ni que otra persona pueda decidir por usted.",
+  },
+  {
+    speaker: "Don Roberto",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.discapacitado,
+    text: "¡Eso es lo que quería escuchar! Porque luego hay personas que quieren ayudar tanto que terminan haciendo las cosas por uno.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Ja, ja! La intención puede ser buena, pero siempre debemos respetar la autonomía de cada persona.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Y le voy a compartir un dato interesante.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Según el Censo de Población y Vivienda 2020 del INEGI, en México había aproximadamente 6.2 millones de personas con discapacidad.",
+  },
+  {
+    speaker: "Don Roberto",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.discapacitado,
+    text: "¡Vaya! Somos muchísimas personas.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Así es! Y por eso es tan importante que los espacios y procedimientos sean accesibles.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Una elección incluyente debe permitir que todas las personas participen en condiciones de igualdad.",
+  },
+  {
+    speaker: "Don Roberto",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.discapacitado,
+    text: "Me alegra escuchar eso. Porque la discapacidad no significa que no podamos tomar nuestras propias decisiones.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Exactamente! La accesibilidad no consiste en decidir por las personas, sino en ofrecer las condiciones necesarias para que puedan ejercer sus derechos.",
+  },
+  {
+    speaker: "Don Roberto",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.discapacitado,
+    text: "¡Muy bien dicho, joven! Ahora sí me quedo mucho más tranquilo.",
   },
 
-  // PARTE 2
+  // PARTE 2: Pregunta interactiva
   {
     speaker: "Inecito",
     speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
-    text: "¿Sabías qué herramientas existen para la accesibilidad del voto?",
+    text: "¡Ahora quiero comprobar lo que aprendiste! Si una persona utiliza silla de ruedas, ¿qué debemos hacer para que pueda votar?",
     target: "user",
     portraitOverride: {
       leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.png",
       dimRight: true,
     },
     trivia: {
-      question: "¿Qué apoyos de accesibilidad implementa el INE en las casillas electorales?",
+      question:
+        "¡Ahora quiero comprobar lo que aprendiste! Si una persona utiliza silla de ruedas, ¿qué debemos hacer para que pueda votar?",
       options: [
         {
           id: "opt-a",
-          text: "A) Ninguno, sólo apoyo familiar",
+          text: "A) Marcar su boleta por ella para facilitarle el proceso.",
           isCorrect: false,
           feedback:
-            "¡Falso! El INE dota a todas las casillas con herramientas institucionales para garantizar el voto autónomo.",
+            "¡Cuidado! Utilizar silla de ruedas no significa que otra persona deba decidir o votar por ella. La ayuda debe responder a sus necesidades y respetar su decisión.",
         },
         {
           id: "opt-b",
-          text: "B) Mamparas móviles y plantillas Braille",
-          isCorrect: true,
+          text: "B) Pedirle que venga acompañada de un familiar.",
+          isCorrect: false,
           feedback:
-            "¡Correcto! Las casillas disponen de mamparas especiales más bajas para sillas de ruedas, plantillas Braille y acceso preferente.",
+            "¡Eso no es necesario! Las personas con discapacidad no están obligadas a acudir con un familiar. Si requieren apoyo, pueden solicitarlo conforme a los procedimientos electorales.",
         },
         {
           id: "opt-c",
-          text: "C) Sólo voto por correo previo",
-          isCorrect: false,
+          text: "C) Ofrecerle una mampara accesible y apoyo si lo necesita.",
+          isCorrect: true,
           feedback:
-            "¡Incorrecto! La accesibilidad presencial está garantizada el día de la jornada electoral en cada casilla.",
+            "¡Exactamente! El INE dispone de mamparas especiales y medidas de accesibilidad. Lo importante es facilitar que cada persona pueda votar con autonomía y privacidad.",
         },
       ],
     },
   },
 
-  // PARTE 3
+  // PARTE 3: Despedida de Don Roberto
   {
     speaker: "Don Roberto",
     speakerColor: DIALOGUE_SPEAKER_COLORS.discapacitado,
-    text: "¡Excelente labor! Con estas herramientas votar es accesible para todos. ¡Procedo a la mampara!",
+    text: "¡Muchas gracias, Inecito! Me alegra saber que puedo votar por mi cuenta y que existen materiales para hacerlo más fácilmente.",
+    target: "npc",
+  },
+  {
+    speaker: "Don Roberto",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.discapacitado,
+    text: "¡Ahora sí, voy a ejercer mi derecho al voto!",
     target: "npc",
   },
   {
     speaker: "Inecito",
     speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
-    text: "¡Muchas gracias Don Roberto! Que tenga una magnífica experiencia de votación.",
+    text: "¡Con mucho gusto, Don Roberto! Y recuerde que, si necesita algún apoyo, puede solicitarlo.",
+    target: "npc",
+  },
+  {
+    speaker: "Don Roberto",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.discapacitado,
+    text: "¡Perfecto! Aunque por ahora creo que puedo arreglármelas bastante bien, ¡ja, ja!",
+    target: "npc",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Ja, ja! ¡Que tenga un excelente día!",
     target: "npc",
   },
 ];

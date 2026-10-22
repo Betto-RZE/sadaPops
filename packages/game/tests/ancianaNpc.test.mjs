@@ -1095,6 +1095,57 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
       assert.equal(isPortraitActive("Alex", portraits.right.speakerNames), true);
       assert.equal(isPortraitActive("Inecito", portraits.left.speakerNames), true);
     });
+
+    test("Don Roberto (persona con discapacidad) tiene la estructura en 3 partes, trivia de accesibilidad y alineación correcta", () => {
+      const messages = DISCAPACITADO_CONVERSATION_MESSAGES_ES;
+      assert.equal(messages.length, 33, "Debe tener 33 líneas de diálogo");
+
+      // Parte 1: Primera línea de Don Roberto
+      assert.equal(messages[0].speaker, "Don Roberto");
+      assert.ok(messages[0].text.includes("¡Muy buenos días, joven! Veo que tienen todo bastante bien organizado"));
+
+      // Verificación de datos del Censo INEGI 2020 y mamparas accesibles
+      const inegiLine = messages.find((m) => m.text.includes("Censo de Población y Vivienda 2020"));
+      assert.ok(inegiLine, "Debe incluir la referencia al Censo INEGI 2020");
+      assert.ok(inegiLine.text.includes("6.2 millones de personas con discapacidad"));
+
+      const mamparaLine = messages.find((m) => m.text.includes("mamparas especiales"));
+      assert.ok(mamparaLine, "Debe mencionar las mamparas especiales del INE");
+
+      // Parte 2: Pregunta interactiva (línea 27)
+      const triviaLine = messages[27];
+      assert.equal(triviaLine.speaker, "Inecito");
+      assert.ok(triviaLine.trivia);
+      assert.ok(
+        triviaLine.trivia.question.includes(
+          "Si una persona utiliza silla de ruedas, ¿qué debemos hacer para que pueda votar?"
+        )
+      );
+      assert.equal(triviaLine.trivia.options.length, 3);
+      assert.equal(triviaLine.trivia.options[2].isCorrect, true, "La opción C debe ser la correcta");
+      assert.ok(
+        triviaLine.trivia.options[2].feedback.includes(
+          "El INE dispone de mamparas especiales y medidas de accesibilidad"
+        )
+      );
+
+      // Parte 3: Despedida de Don Roberto
+      assert.equal(messages[28].speaker, "Don Roberto");
+      assert.ok(
+        messages[28].text.includes(
+          "¡Muchas gracias, Inecito! Me alegra saber que puedo votar por mi cuenta"
+        )
+      );
+      assert.equal(messages[32].speaker, "Inecito");
+      assert.ok(messages[32].text.includes("¡Que tenga un excelente día!"));
+
+      // Verificación de retratos y alineación de orador
+      const portraits = getNarrativeCharacterPortraits("discapacitado");
+      assert.equal(getSpeakerNameAlignment("Don Roberto", portraits), "right");
+      assert.equal(getSpeakerNameAlignment("Inecito", portraits), "left");
+      assert.equal(isPortraitActive("Don Roberto", portraits.right.speakerNames), true);
+      assert.equal(isPortraitActive("Inecito", portraits.left.speakerNames), true);
+    });
   });
 });
 
