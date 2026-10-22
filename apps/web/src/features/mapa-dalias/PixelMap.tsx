@@ -123,6 +123,10 @@ const ELEVATION_VOXELS = 2;
 /**
  * Resuelve qué estado federativo corresponde a las coordenadas lógicas (lx, ly)
  * en O(1) consultando directamente el buffer binario mapIds.
+ *
+ * Incluye:
+ * 1. Histeresis de altura anti-flicker: tolera la elevación 3D del estado activo.
+ * 2. Asistencia táctil: radio de 2 vóxeles para pantallas móviles en estados pequeños.
  */
 function resolveStateAt(
   lx: number,
@@ -130,10 +134,27 @@ function resolveStateAt(
   mapIds: Uint8Array,
   width: number,
   height: number,
-  isTouch: boolean
+  isTouch: boolean,
+  activeNumId?: number | null,
+  liftPx = 0
 ): string | null {
   if (lx < 0 || lx >= width || ly < 0 || ly >= height) return null;
+
+  // Histeresis de altura: si el estado activo está elevado en 3D, verificar si el cursor
+  // apunta a su cara superior elevada (lx, ly + liftPx)
+  if (activeNumId && liftPx > 0 && ly + liftPx < height) {
+    const shiftedCode = mapIds[(ly + liftPx) * width + lx];
+    if (shiftedCode === activeNumId) {
+      return String(activeNumId).padStart(2, '0');
+    }
+  }
+
   let code = mapIds[ly * width + lx];
+
+  // Si toca directamente la base o la pared extruida del estado activo elevado
+  if (activeNumId && (code === activeNumId || code === activeNumId + 32)) {
+    return String(activeNumId).padStart(2, '0');
+  }
 
   // Asistencia táctil: si se pulsó agua o isla decorativa, buscar en radio de 2 vóxeles
   if (code === 0 && isTouch) {
@@ -460,8 +481,10 @@ export function PixelMap({
       if (!data) return;
       const coords = getLogicalCoords(e);
       const isTouch = e.pointerType === 'touch';
+      const activeNumId = activeState ? activeState.numId : null;
+      const liftPx = ELEVATION_VOXELS * data.pixelScale;
       const resolved = coords
-        ? resolveStateAt(coords.lx, coords.ly, data.mapIds, width, height, isTouch)
+        ? resolveStateAt(coords.lx, coords.ly, data.mapIds, width, height, isTouch, activeNumId, liftPx)
         : null;
 
       if (resolved !== currentHoveredId) {
@@ -469,7 +492,7 @@ export function PixelMap({
         onHoverState?.(resolved);
       }
     },
-    [data, width, height, currentHoveredId, getLogicalCoords, onHoverState]
+    [data, width, height, currentHoveredId, activeState, getLogicalCoords, onHoverState]
   );
 
   const handlePointerDown = useCallback(
@@ -477,8 +500,10 @@ export function PixelMap({
       if (!data) return;
       const coords = getLogicalCoords(e);
       const isTouch = e.pointerType === 'touch';
+      const activeNumId = activeState ? activeState.numId : null;
+      const liftPx = ELEVATION_VOXELS * data.pixelScale;
       const resolved = coords
-        ? resolveStateAt(coords.lx, coords.ly, data.mapIds, width, height, isTouch)
+        ? resolveStateAt(coords.lx, coords.ly, data.mapIds, width, height, isTouch, activeNumId, liftPx)
         : null;
 
       if (resolved) {
@@ -486,7 +511,7 @@ export function PixelMap({
         onSelectState?.(nextSelected);
       }
     },
-    [data, width, height, selectedStateId, getLogicalCoords, onSelectState]
+    [data, width, height, selectedStateId, activeState, getLogicalCoords, onSelectState]
   );
 
   const handlePointerLeave = useCallback(() => {
