@@ -30,13 +30,15 @@ export function usePixelMapContext(): PixelMapContextValue {
 /**
  * PixelMapAnchor: Posiciona automáticamente cualquier elemento (dalia, medalla, tooltip)
  * sobre las coordenadas ancla exactas del estado federativo indicado.
+ *
+ * Se eleva automáticamente en sincronía con el estado (mini-pop 3D de 6px).
  */
 export function PixelMapAnchor({
   stateId,
   className,
   children,
 }: PixelMapAnchorProps) {
-  const { data } = usePixelMapContext();
+  const { data, selectedStateId, hoveredStateId } = usePixelMapContext();
   if (!data) return null;
 
   const state = data.stateById.get(stateId);
@@ -45,14 +47,24 @@ export function PixelMapAnchor({
   const leftPercent = (state.anchor.x / data.width) * 100;
   const topPercent = (state.anchor.y / data.height) * 100;
 
+  // Elevación sincronizada: sube 6px cuando el estado está activo (hover o seleccionado)
+  const isElevated = hoveredStateId === stateId || (!hoveredStateId && selectedStateId === stateId);
+  const liftPx = ELEVATION_VOXELS * data.pixelScale;
+
   return (
     <div
       data-state-id={stateId}
       className={cn(
-        'absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto z-20 transition-transform duration-200',
+        'absolute pointer-events-auto z-20 transition-transform duration-150 ease-out',
         className
       )}
-      style={{ left: `${leftPercent}%`, top: `${topPercent}%` }}
+      style={{
+        left: `${leftPercent}%`,
+        top: `${topPercent}%`,
+        transform: isElevated
+          ? `translate(-50%, calc(-50% - ${liftPx}px))`
+          : 'translate(-50%, -50%)',
+      }}
     >
       {children}
     </div>
@@ -116,6 +128,10 @@ const SELECT_CLIFF = {
   rimLip: hexToU32('#FF75AE'),
   rimHighlight: hexToU32('#FFC2DC'),
 };
+
+// Micro-sombra de oclusión y contacto bajo el bloque elevado
+const BASE_SHADOW_1 = hexToU32('#1A1638', 85); // 1er pixel debajo (~33% alfa)
+const BASE_SHADOW_2 = hexToU32('#1A1638', 40); // 2do pixel debajo (~15% alfa)
 
 /** Elevación vertical en vóxeles al hacer hover o seleccionar (2 vóxeles = 6px a escala 3x) */
 const ELEVATION_VOXELS = 2;
@@ -310,7 +326,7 @@ export function PixelMap({
       const expandedMinX = Math.max(0, bboxMinX - pixelScale);
       const expandedMaxX = Math.min(width - 1, bboxMaxX + pixelScale);
       const expandedMinY = Math.max(0, bboxMinY - liftPx - 1);
-      const expandedMaxY = Math.min(height - 1, bboxMaxY + 2);
+      const expandedMaxY = Math.min(height - 1, bboxMaxY + 3);
 
       if (expandedMinX < minDirtyX) minDirtyX = expandedMinX;
       if (expandedMaxX > maxDirtyX) maxDirtyX = expandedMaxX;
@@ -378,6 +394,14 @@ export function PixelMap({
             const wy = y - liftPx + d;
             if (wy >= 0 && wy < height) {
               setPixel(wy * width + x, wallColor);
+            }
+          }
+
+          // Micro-sombra de contacto bajo la base del estado elevado (despegue 3D)
+          if (y + 1 < height && mapIds[(y + 1) * width + x] !== numId && mapIds[(y + 1) * width + x] !== numId + 32) {
+            setPixel((y + 1) * width + x, BASE_SHADOW_1);
+            if (y + 2 < height && mapIds[(y + 2) * width + x] !== numId && mapIds[(y + 2) * width + x] !== numId + 32) {
+              setPixel((y + 2) * width + x, BASE_SHADOW_2);
             }
           }
         }
