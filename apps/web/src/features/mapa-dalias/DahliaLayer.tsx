@@ -1,7 +1,13 @@
 'use client';
 
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { PixelMapAnchor, usePixelMapContext } from './PixelMap';
+import {
+  PixelMapAnchor,
+  usePixelMapContext,
+  MAP_INTRO_DELAY_MS,
+  MAP_INTRO_STAGGER_MS,
+  MAP_STATE_ANIM_MS,
+} from './PixelMap';
 import { computeLevels, DAHLIA_SPRITE_META, type DahliaLevel, type StateCountItem } from './computeLevels';
 import { cn } from '../../shared/utils';
 
@@ -39,12 +45,11 @@ const DEFAULT_DEMO_COUNTS: StateCountItem[] = [
 /**
  * DahliaLayer — Capa interactiva que proyecta las dalias voxel sobre los estados del mapa.
  *
- * Características:
- *   - Florecimiento escalonado (oleada de norte a sur) con `steps(4, end)` para conservar el estilo pixel art.
- *   - Escala proporcional al contenedor del mapa sin distorsión de píxeles (`image-rendering: pixelated`).
- *   - Disparo único mediante `IntersectionObserver` al entrar en pantalla.
- *   - Soporte estricto de `prefers-reduced-motion` (muestra las dalias en escala 1 inmediata).
- *   - `pointer-events: none` para no interferir con el hover o clic volumétrico del `<PixelMap>`.
+ * Características Hito H6:
+ *   - Fase 4: Florecimiento sincronizado con el micro-rebote de cada estado.
+ *   - Cada dalia brota justo en el instante en que su estado correspondiente aterriza y se asienta.
+ *   - Estilo pixel art con `steps(4, end)` y `image-rendering: pixelated`.
+ *   - Soporte estricto de `prefers-reduced-motion`.
  */
 export function DahliaLayer({
   userCounts = DEFAULT_DEMO_COUNTS,
@@ -58,64 +63,65 @@ export function DahliaLayer({
   // 1. Calcular mapa de niveles (0..3)
   const levelsMap = useMemo(() => computeLevels(userCounts), [userCounts]);
 
-  // 2. Disparar florecimiento en oleada al entrar en pantalla
+  // 2. Disparar florecimiento en sincronía con la secuencia de entrada del mapa
   useEffect(() => {
-    // Si el usuario prefiere movimiento reducido, mostrar inmediatamente
+    // Si el usuario prefiere movimiento reducido, florecer de inmediato
     if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       setHasBloomed(true);
       onBloomComplete?.();
       return;
     }
 
-    // Disparar inmediatamente al montar si ya está en pantalla o con fallback
-    const triggerBloom = () => {
+    const timer = window.setTimeout(() => {
       setHasBloomed(true);
-      const timer = setTimeout(() => {
+      const finishTimer = window.setTimeout(() => {
         onBloomComplete?.();
-      }, 1400);
-      return () => clearTimeout(timer);
-    };
+      }, MAP_INTRO_STAGGER_MS + MAP_STATE_ANIM_MS + 600);
 
-    if (typeof window === 'undefined' || !('IntersectionObserver' in window)) {
-      triggerBloom();
-      return;
+      return () => window.clearTimeout(finishTimer);
+    }, 100);
+
+    return () => window.clearTimeout(timer);
+  }, [onBloomComplete]);
+
+  // 3. Precalcular el tiempo exacto de brote para cada estado
+  const flowerStatesWithDelay = useMemo(() => {
+    if (!data) return [];
+
+    const flowerStates = data.states
+      .filter((st) => (levelsMap.get(st.id) ?? 0) > 0)
+      .sort((a, b) => a.anchor.y - b.anchor.y);
+
+    let minGeo = Infinity;
+    let maxGeo = -Infinity;
+    for (const st of data.states) {
+      const g = st.anchor.x * 0.65 + st.anchor.y;
+      if (g < minGeo) minGeo = g;
+      if (g > maxGeo) maxGeo = g;
     }
+    const geoSpan = Math.max(1, maxGeo - minGeo);
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const [entry] = entries;
-        if (entry.isIntersecting && !hasBloomed) {
-          triggerBloom();
-        }
-      },
-      { threshold: 0.05 }
-    );
+    return flowerStates.map((st) => {
+      const g = (st.anchor.x * 0.65 + st.anchor.y - minGeo) / geoSpan;
+      const jitterMs = ((st.numId * 37) % 90) - 45;
+      const stateStartMs = Math.max(0, g * MAP_INTRO_STAGGER_MS + jitterMs);
 
-    if (layerRef.current) {
-      observer.observe(layerRef.current);
-    }
+      // El estado desciende y rebota entre el 72% y el 88% de MAP_STATE_ANIM_MS.
+      // La dalia brota justo al primer contacto firme (~74% de la animación del estado).
+      const settleContactMs = stateStartMs + MAP_STATE_ANIM_MS * 0.74;
 
-    // Fallback de seguridad: si IntersectionObserver no dispara en 300ms, activar de todos modos
-    const fallbackTimer = setTimeout(() => {
-      setHasBloomed(true);
-    }, 300);
+      // Retardo total absoluto desde la carga inicial de la página
+      const totalBloomDelaySec = (MAP_INTRO_DELAY_MS + settleContactMs) / 1000;
 
-    return () => {
-      observer.disconnect();
-      clearTimeout(fallbackTimer);
-    };
-  }, [hasBloomed, onBloomComplete]);
+      return {
+        state: st,
+        level: (levelsMap.get(st.id) ?? 1) as 1 | 2 | 3,
+        delaySec: Number(totalBloomDelaySec.toFixed(3)),
+      };
+    });
+  }, [data, levelsMap]);
 
   if (!data) return null;
-
-  // Filtrar estados que tengan flor (nivel > 0)
-  const flowerStates = data.states
-    .filter((st) => {
-      const level = levelsMap.get(st.id) ?? 0;
-      return level > 0;
-    })
-    // Ordenar de norte a sur (coordenada Y de ancla) para escalonar la oleada visualmente
-    .sort((a, b) => a.anchor.y - b.anchor.y);
 
   return (
     <div
@@ -162,16 +168,8 @@ export function DahliaLayer({
         }
       `}</style>
 
-      {flowerStates.map((st, index) => {
-        const level = (levelsMap.get(st.id) ?? 1) as 1 | 2 | 3;
+      {flowerStatesWithDelay.map(({ state: st, level, delaySec }) => {
         const meta = DAHLIA_SPRITE_META[level];
-
-        // Ancho porcentual respecto al contenedor del mapa (660 px)
-        // Ejemplo: meta.logicalWidth de 18 px en un mapa de 660 px = 2.72% del mapa
-        const widthPercent = (meta.logicalWidth / data.width) * 100;
-
-        // Retardo escalonado de la oleada: entre 0.15s y 0.95s según la latitud norte->sur
-        const waveDelay = (0.15 + (index / Math.max(1, flowerStates.length)) * 0.75).toFixed(2);
 
         return (
           <PixelMapAnchor key={st.id} stateId={st.id}>
@@ -183,7 +181,7 @@ export function DahliaLayer({
               style={{
                 width: `${meta.width}px`,
                 maxWidth: `${meta.width}px`,
-                animationDelay: hasBloomed ? `${waveDelay}s` : '0s',
+                animationDelay: hasBloomed ? `${delaySec}s` : '0s',
                 transformOrigin: '50% 58%',
               }}
             >
