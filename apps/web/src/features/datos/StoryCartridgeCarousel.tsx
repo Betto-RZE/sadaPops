@@ -1,21 +1,21 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 
-type Story = { title: string; description: string; summary: string; href?: string; art?: 'evolution' | 'gender' | 'ages' };
+export type Story = { title: string; description: string; summary: string; href?: string; art?: 'evolution' | 'gender' | 'ages' | 'states' | 'territory' | 'book' };
 type Phase = 'ready' | 'eject' | 'load' | 'launch';
 
-const stories: Story[] = [
+export const stories: Story[] = [
   { title: '¿Cómo ha cambiado la participación?', description: 'La participación a través del tiempo.', summary: 'Recorre seis elecciones federales y observa cómo ha cambiado la participación ciudadana.', href: '/datos/evolucion', art: 'evolution' },
   { title: '¿Quiénes participan más?', description: 'La participación entre mujeres y hombres.', summary: 'Compara la participación de mujeres y hombres en cada elección y descubre cómo cambia la diferencia.', href: '/datos/genero', art: 'gender' },
   { title: '¿Qué edades participan más?', description: 'La participación entre grupos de edad.', summary: 'Explora cómo participa cada grupo de edad y escucha lo que nos cuentan sus datos.', href: '/datos/edades', art: 'ages' },
-  { title: '', description: '', summary: '' },
-  { title: '', description: '', summary: '' },
-  { title: '', description: '', summary: '' },
+  { title: '¿Cómo participa cada estado?', description: 'Un duelo amistoso entre entidades.', summary: 'Explora un estado y compara sus niveles de participación con otra entidad.', href: '/datos/estados', art: 'states' },
+  { title: '¿Participamos igual en zonas urbanas y rurales?', description: 'Secciones urbanas, mixtas y rurales.', summary: 'Recorre la ciudad, las zonas mixtas y el campo, y compara su participación en seis elecciones.', href: '/datos/urbano-rural', art: 'territory' },
+  { title: '¿Qué historias cuentan los datos?', description: 'Un libro de hallazgos.', summary: 'Abre un libro que florece con patrones que aparecen al mirar juntos los datos de seis elecciones.', href: '/datos/hallazgos', art: 'book' },
 ];
 
 const relativeIndex = (index: number, selected: number) => {
@@ -23,7 +23,9 @@ const relativeIndex = (index: number, selected: number) => {
   return ((index - selected + count + count / 2) % count) - count / 2;
 };
 
-export function StoryCartridgeCarousel() {
+export type CarouselHandle = { goTo: (index: number) => void };
+
+export const StoryCartridgeCarousel = forwardRef<CarouselHandle, { onChange?: (index: number) => void }>(function StoryCartridgeCarousel({ onChange }, ref) {
   const [selected, setSelected] = useState(0);
   const [phase, setPhase] = useState<Phase>('ready');
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -49,6 +51,15 @@ export function StoryCartridgeCarousel() {
 
   const move = (direction: number) => choose((selected + direction + stories.length) % stories.length);
 
+  useImperativeHandle(ref, () => ({ goTo: choose }));
+  useEffect(() => { onChange?.(selected); }, [selected, onChange]);
+  useEffect(() => clearTimer, []);
+
+  const onKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'ArrowLeft') { event.preventDefault(); move(-1); }
+    if (event.key === 'ArrowRight') { event.preventDefault(); move(1); }
+  };
+
   const explore = () => {
     if (!story.href || phase !== 'ready') return;
     setPhase('launch');
@@ -56,7 +67,7 @@ export function StoryCartridgeCarousel() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl select-none">
+    <div className="mx-auto max-w-5xl select-none" onKeyDown={onKeyDown} role="region" aria-roledescription="carrusel" aria-label="Historias de participación. Usa las flechas del teclado para cambiar de cartucho.">
       <div className="relative z-10 h-[350px] overflow-hidden [perspective:1100px] sm:h-[370px]">
         {stories.map((item, index) => {
           const offset = relativeIndex(index, selected);
@@ -103,7 +114,12 @@ export function StoryCartridgeCarousel() {
                 disabled={phase !== 'ready'}
                 className="w-[min(82vw,310px)] cursor-pointer rounded-xl outline-none focus-visible:ring-4 focus-visible:ring-pink-300/80 disabled:cursor-default sm:w-[310px]"
               >
-                <Cartridge story={item} selected={active} />
+                <motion.div
+                  animate={active && phase === 'ready' && !reduceMotion ? { y: [0, -5, 0] } : { y: 0 }}
+                  transition={active && phase === 'ready' && !reduceMotion ? { duration: 3.2, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.2 }}
+                >
+                  <Cartridge story={item} selected={active} />
+                </motion.div>
               </button>
             </motion.div>
           );
@@ -163,7 +179,7 @@ export function StoryCartridgeCarousel() {
       </div>
     </div>
   );
-}
+});
 
 function Cartridge({ story, selected }: { story: Story; selected: boolean }) {
   const empty = !story.art;
@@ -176,7 +192,7 @@ function Cartridge({ story, selected }: { story: Story; selected: boolean }) {
         <div className="absolute right-2 top-1 flex h-7 items-center gap-[3px]" aria-hidden="true">{Array.from({ length: 6 }, (_, i) => <span key={i} className="h-5 w-[3px] rounded-full bg-[#989CA2]/80" />)}</div>
       </div>
 
-      <div className={`relative mx-auto mt-1 h-[190px] max-w-[258px] overflow-hidden border-[4px] border-[#858A92] bg-[#AEB1B6] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.3)]`}>
+      <div className="relative mx-auto mt-1 h-[190px] max-w-[258px] overflow-hidden border-[4px] border-[#858A92] bg-[#AEB1B6] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.3)]">
         {!empty && <CartridgeArtwork art={story.art!} />}
       </div>
 
@@ -191,13 +207,13 @@ function Cartridge({ story, selected }: { story: Story; selected: boolean }) {
 }
 
 function CartridgeArtwork({ art }: { art: NonNullable<Story['art']> }) {
-  if (art === 'evolution') {
-    return <Image src="/edades/cartucho-evolucion-pixel.png" alt="" fill sizes="260px" className="object-cover object-center [image-rendering:pixelated]" />;
-  }
-
-  if (art === 'gender') {
-    return <Image src="/edades/cartucho-genero-pixel.png" alt="" fill sizes="260px" className="object-cover object-center [image-rendering:pixelated]" />;
-  }
-
-  return <Image src="/edades/cartucho-edades-pixel.png" alt="" fill sizes="260px" className="object-cover object-center [image-rendering:pixelated]" />;
+  return (
+    <Image
+      src={`/story-cartridges/${art}-color.webp`}
+      alt=""
+      fill
+      sizes="260px"
+      className="bg-[#F7F1E7] object-contain object-center [image-rendering:pixelated]"
+    />
+  );
 }
