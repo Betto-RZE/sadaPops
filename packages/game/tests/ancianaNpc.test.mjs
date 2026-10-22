@@ -999,6 +999,54 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
       assert.equal(isPortraitActive("Mateo", portraits.right.speakerNames), true);
       assert.equal(isPortraitActive("Inecito", portraits.left.speakerNames), true);
     });
+
+    test("María (la mujer indígena) tiene la estructura en 3 partes, trivia CCPC de comunidades indígenas y alineación correcta", () => {
+      const messages = INDIGENA_CONVERSATION_MESSAGES_ES;
+      assert.equal(messages.length, 34, "Debe tener 34 líneas de diálogo");
+
+      // Parte 1: Primera línea de María
+      assert.equal(messages[0].speaker, "María");
+      assert.ok(messages[0].text.includes("¡Muy buenos días! Disculpe, ¿aquí es donde puedo votar?"));
+
+      // Verificación de datos del Censo INEGI 2020 en la charla
+      const inegiLine = messages.find((m) => m.text.includes("Censo de Población y Vivienda 2020"));
+      assert.ok(inegiLine, "Debe incluir la referencia al Censo INEGI 2020");
+      assert.ok(inegiLine.text.includes("más de 7 millones de personas"));
+
+      // Parte 2: Pregunta interactiva (línea 28)
+      const triviaLine = messages[28];
+      assert.equal(triviaLine.speaker, "Inecito");
+      assert.ok(triviaLine.trivia);
+      assert.ok(
+        triviaLine.trivia.question.includes(
+          "¿Los votos de las comunidades indígenas tienen menos valor que los de las grandes ciudades?"
+        )
+      );
+      assert.equal(triviaLine.trivia.options.length, 3);
+      assert.equal(triviaLine.trivia.options[2].isCorrect, true, "La opción C debe ser la correcta");
+      assert.ok(
+        triviaLine.trivia.options[2].feedback.includes(
+          "No importa si una persona vive en una gran ciudad o en una comunidad indígena"
+        )
+      );
+
+      // Parte 3: Despedida de María
+      assert.equal(messages[29].speaker, "María");
+      assert.ok(
+        messages[29].text.includes(
+          "Muchas gracias, Inecito. Me alegra saber que nuestra voz tiene el mismo valor"
+        )
+      );
+      assert.equal(messages[33].speaker, "Inecito");
+      assert.ok(messages[33].text.includes("¡Que tenga un excelente día, María!"));
+
+      // Verificación de retratos y alineación de orador
+      const portraits = getNarrativeCharacterPortraits("indigena");
+      assert.equal(getSpeakerNameAlignment("María", portraits), "right");
+      assert.equal(getSpeakerNameAlignment("Inecito", portraits), "left");
+      assert.equal(isPortraitActive("María", portraits.right.speakerNames), true);
+      assert.equal(isPortraitActive("Inecito", portraits.left.speakerNames), true);
+    });
   });
 });
 

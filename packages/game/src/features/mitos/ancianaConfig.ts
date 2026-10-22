@@ -310,6 +310,7 @@ export const DIALOGUE_SPEAKER_COLORS = {
   joven: "#1d4ed8",
   mateo: "#1d4ed8",
   indigena: "#047857",
+  maria: "#047857",
   transgenero: "#9333ea",
   discapacitado: "#0284c7",
 };
@@ -1073,93 +1074,236 @@ export const JOVEN_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
 ];
 
 /**
- * Diálogos de llegada para La Mujer Indígena (Español y Náhuatl).
+ * Diálogos de llegada para María (La Mujer Indígena) (Español y Náhuatl).
  */
 export const INDIGENA_ARRIVAL_MESSAGES_ES: string[] = [
-  "¡Una ciudadana de comunidad originaria se acerca a la mesa!",
-  "¡Asegurémonos de orientarla respetando sus derechos lingüísticos y culturales!",
+  "¡Viene llegando María a la casilla!",
+  "¡Asegurémonos de orientarla respetando sus derechos y resolviendo sus dudas!",
 ];
 
 export const INDIGENA_ARRIVAL_MESSAGES_NAH: string[] = [
-  "¡Se maseualsiuatl omopacho itech tocasilla!",
+  "¡Se maseualsiuatl María oajsik itech tocasilla!",
   "¡Tikitatij tlen itekiyo wan ma timotlapouikah kualtsin!",
 ];
 
 /**
- * Conversación para La Mujer Indígena (Español y Náhuatl).
+ * Conversación para María (La Mujer Indígena) (Español y Náhuatl).
+ * Estructura en 3 partes:
+ * 1. Plática con mito y respuesta con datos CCPC e INEGI (líneas 1 a 28)
+ * 2. Inecito se dirige a ti y te hace una pregunta con 3 opciones (línea 29)
+ * 3. Despedida entre personajes (líneas 30 a 34)
  */
 export const INDIGENA_CONVERSATION_MESSAGES_ES: DialogueLine[] = [
-  // PARTE 1
+  // PARTE 1: Plática con mito y respuesta con datos
   {
-    speaker: "Citlali",
+    speaker: "María",
     speakerColor: DIALOGUE_SPEAKER_COLORS.indigena,
-    text: "Buenos días. Vengo desde mi comunidad y quería saber sobre los apoyos y materiales en nuestra lengua.",
+    text: "¡Muy buenos días! Disculpe, ¿aquí es donde puedo votar?",
   },
   {
     speaker: "Inecito",
     speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
-    text: "¡Bienvenida, Citlali! El INE cuenta con materiales informativos y traductores en lenguas originarias.",
+    text: "¡Buenos días! Así es, bienvenida. ¿En qué puedo ayudarla?",
   },
   {
-    speaker: "Citlali",
+    speaker: "María",
     speakerColor: DIALOGUE_SPEAKER_COLORS.indigena,
-    text: "Es un orgullo que nuestra voz y nuestras tradiciones se reconozcan en cada proceso electoral.",
+    text: "Muchas gracias. Vengo de una comunidad de la sierra y salí bastante temprano para llegar.",
+  },
+  {
+    speaker: "María",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.indigena,
+    text: "Pero antes de votar quisiera preguntarle algo que me ha estado dando vueltas en la cabeza.",
   },
   {
     speaker: "Inecito",
     speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
-    text: "Así es, la diversidad cultural enriquece nuestra nación. ¡Tu participación es invaluable!",
+    text: "¡Por supuesto! Cuénteme, ¿qué sucede?",
+  },
+  {
+    speaker: "María",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.indigena,
+    text: "En mi comunidad hemos escuchado que los votos de las ciudades son los que realmente importan.",
+  },
+  {
+    speaker: "María",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.indigena,
+    text: "Algunas personas dicen que, como vivimos en comunidades pequeñas y alejadas, nuestros votos casi no cuentan.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Ahhh! Ya entiendo su preocupación.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Entonces, ¿le dijeron que un voto de una comunidad indígena vale menos que uno de la ciudad?",
+  },
+  {
+    speaker: "María",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.indigena,
+    text: "Así es. Y me parece injusto, porque nosotros también tenemos necesidades, opiniones y cosas que queremos mejorar.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Y tiene toda la razón en preocuparse! Pero quiero aclararle algo muy importante: eso que escuchó es un mito.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "En México, cada voto válido tiene el mismo valor, sin importar si la persona vive en una ciudad, un pueblo o una comunidad indígena.",
+  },
+  {
+    speaker: "María",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.indigena,
+    text: "¿Entonces mi voto cuenta igual que el de alguien que vive en la capital?",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Exactamente! El lugar donde vive una persona no hace que su voto valga más o menos.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Eso sí, las personas pueden votar por distintas autoridades dependiendo de dónde viven, pero dentro de cada elección todos los votos válidos cuentan por igual.",
+  },
+  {
+    speaker: "María",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.indigena,
+    text: "¡Qué bueno saberlo! Porque a veces parece que solamente se escucha lo que sucede en las ciudades.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Entiendo lo que dice. Y justamente por eso es importante distinguir entre el valor de un voto y la atención que reciben las necesidades de una comunidad.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Que una comunidad sea pequeña no significa que sus habitantes tengan menos derechos.",
+  },
+  {
+    speaker: "María",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.indigena,
+    text: "Así debería ser. En mi comunidad tenemos nuestras propias costumbres y formas de organizarnos, pero también queremos participar en las decisiones del país.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Por supuesto! México tiene una enorme diversidad cultural y lingüística.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Por ejemplo, según el Censo de Población y Vivienda 2020 del INEGI, más de 7 millones de personas de tres años o más hablaban alguna lengua indígena.",
+  },
+  {
+    speaker: "María",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.indigena,
+    text: "¡Son muchísimas personas! Y eso sin contar a quienes pertenecen a comunidades indígenas, pero ya no hablan una lengua originaria.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Exactamente! Hablar una lengua indígena no es la única forma de identificarse como parte de un pueblo indígena.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "Y todas esas personas tienen los mismos derechos políticos que cualquier otra.",
+  },
+  {
+    speaker: "María",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.indigena,
+    text: "Me alegra escuchar eso. Porque nuestras comunidades también tienen mucho que aportar.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Sin duda! Y recuerde algo: nadie puede decirle que su voto vale menos por su origen, su lengua o el lugar donde vive.",
+  },
+  {
+    speaker: "María",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.indigena,
+    text: "Entonces hice bien en venir a preguntar. Ahora podré explicarles a otras personas de mi comunidad que lo que escuchamos no era cierto.",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Eso es lo importante! Cuando compartimos información confiable, ayudamos a que más personas conozcan sus derechos.",
   },
 
-  // PARTE 2
+  // PARTE 2: Pregunta interactiva
   {
     speaker: "Inecito",
     speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
-    text: "¡Pon a prueba tus conocimientos sobre diversidad cívica!",
+    text: "¡Ahora te toca a ti! ¿Los votos de las comunidades indígenas tienen menos valor que los de las grandes ciudades?",
     target: "user",
     portraitOverride: {
       leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.png",
       dimRight: true,
     },
     trivia: {
-      question: "¿El INE produce materiales y guías electorales traducidos a lenguas originarias?",
+      question:
+        "¡Ahora te toca a ti! ¿Los votos de las comunidades indígenas tienen menos valor que los de las grandes ciudades?",
       options: [
         {
           id: "opt-a",
-          text: "A) No, sólo en español",
+          text: "A) Sí, porque en las ciudades vive más gente.",
           isCorrect: false,
           feedback:
-            "¡Falso! El INE traduce contenidos a decenas de lenguas y variantes indígenas en todo México.",
+            "¡Eso es un mito! Aunque las ciudades tengan más habitantes, cada voto válido cuenta por igual dentro de la elección correspondiente.",
         },
         {
           id: "opt-b",
-          text: "B) Sí, en diversas lenguas",
-          isCorrect: true,
+          text: "B) Depende de qué tan grande sea la comunidad.",
+          isCorrect: false,
           feedback:
-            "¡Correcto! El INE garantiza información accesible en múltiples lenguas originarias para proteger los derechos de los pueblos indígenas.",
+            "¡No exactamente! El tamaño de una comunidad no determina cuánto vale un voto. Los derechos electorales son iguales para toda la ciudadanía.",
         },
         {
           id: "opt-c",
-          text: "C) Sólo si se solicita un año antes",
-          isCorrect: false,
+          text: "C) No, todos los votos válidos tienen el mismo valor.",
+          isCorrect: true,
           feedback:
-            "¡Incorrecto! La inclusión lingüística es permanente y no requiere trámites especiales previos.",
+            "¡Exactamente! No importa si una persona vive en una gran ciudad o en una comunidad indígena. Su origen y lugar de residencia no hacen que su voto valga menos.",
         },
       ],
     },
   },
 
-  // PARTE 3
+  // PARTE 3: Despedida de María
   {
-    speaker: "Citlali",
+    speaker: "María",
     speakerColor: DIALOGUE_SPEAKER_COLORS.indigena,
-    text: "Tlazohkamati por su calidez y respeto. ¡Voy a ejercer mi voto!",
+    text: "Muchas gracias, Inecito. Me alegra saber que nuestra voz tiene el mismo valor que la de cualquier otra persona.",
+    target: "npc",
+  },
+  {
+    speaker: "María",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.indigena,
+    text: "Cuando regrese a mi comunidad, voy a compartir lo que aprendí.",
     target: "npc",
   },
   {
     speaker: "Inecito",
     speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
-    text: "¡A ti, Citlali! Que tu voz resuene con fuerza en la democracia.",
+    text: "¡Me parece excelente! Recuerde que informarnos y conocer nuestros derechos nos ayuda a participar con mayor confianza.",
+    target: "npc",
+  },
+  {
+    speaker: "María",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.indigena,
+    text: "¡Así lo haré! Y ahora sí, voy a ejercer mi derecho al voto.",
+    target: "npc",
+  },
+  {
+    speaker: "Inecito",
+    speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
+    text: "¡Que tenga un excelente día, María!",
     target: "npc",
   },
 ];
@@ -1167,17 +1311,17 @@ export const INDIGENA_CONVERSATION_MESSAGES_ES: DialogueLine[] = [
 export const INDIGENA_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
   // PARTE 1
   {
-    speaker: "Maseualsiuatl Citlali",
+    speaker: "Maseualsiuatl María",
     speakerColor: DIALOGUE_SPEAKER_COLORS.indigena,
-    text: "Kuali tonali. Niualauh de no altepe wan nikneki nimatis tla onkak amatl ika totlahtol.",
+    text: "Kuali tonali. Niualauh de no altepe wan nikneki nimatis tla novoto kipia valor.",
   },
   {
     speaker: "Inecito Cívica",
     speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
-    text: "¡Kuali xiohualakan Citlali! INE kipia tlahtolcuepalistli wan amameh ika maseualtlahtoli.",
+    text: "¡Kuali xiohualakan María! Nochtin votos Mexihko kipiah san se valor.",
   },
   {
-    speaker: "Maseualsiuatl Citlali",
+    speaker: "Maseualsiuatl María",
     speakerColor: DIALOGUE_SPEAKER_COLORS.indigena,
     text: "Cenca kualtsin ma kitlakitah totlahtol wan toyehyelis itech tlapejpenalistli.",
   },
@@ -1191,35 +1335,35 @@ export const INDIGENA_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
   {
     speaker: "Inecito Cívica",
     speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
-    text: "¿Melauak INE kipia amameh ika maseualtlahtoli?",
+    text: "¿In votos de maseualaltepemeh kachi tepiton valor kipiah que de uey altepemeh?",
     target: "user",
     portraitOverride: {
       leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.png",
       dimRight: true,
     },
     trivia: {
-      question: "¿INE kipia amameh ika maseualtlahtoli?",
+      question: "¿In votos de maseualaltepemeh kachi tepiton valor kipiah que de uey altepemeh?",
       options: [
         {
           id: "opt-a",
-          text: "A) Amo, san español",
+          text: "A) Kema, pampa uey altepemeh kachi miak maseualmeh",
           isCorrect: false,
           feedback:
-            "¡Amo! INE kipia miak amameh ika maseualtlahtolmeh.",
+            "¡Amo! San se mito. Nochtin votos san se valor kipiah.",
         },
         {
           id: "opt-b",
-          text: "B) Kema, miak tlahtoli",
-          isCorrect: true,
+          text: "B) Kisa itech kech tepiton altepetl",
+          isCorrect: false,
           feedback:
-            "¡Melauak! INE kipia materiales ika miak maseualtlahtolmeh pampa kitlakitah toyehyelis.",
+            "¡Amo melauak! Altepetl amo kipatla in derechos.",
         },
         {
           id: "opt-c",
-          text: "C) San ika se permiso",
-          isCorrect: false,
+          text: "C) Amo, nochtin votos válidos kipiah san se valor",
+          isCorrect: true,
           feedback:
-            "¡Amo moneki permiso! In inclusión mochipa onkak.",
+            "¡Melauak! Kanin ti-chanti amo kipatla mo derecho politiko.",
         },
       ],
     },
@@ -1227,7 +1371,7 @@ export const INDIGENA_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
 
   // PARTE 3
   {
-    speaker: "Maseualsiuatl Citlali",
+    speaker: "Maseualsiuatl María",
     speakerColor: DIALOGUE_SPEAKER_COLORS.indigena,
     text: "Cenca tlazohkamati. Axan nioh nitlapejpena.",
     target: "npc",
@@ -1235,7 +1379,7 @@ export const INDIGENA_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
   {
     speaker: "Inecito Cívica",
     speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
-    text: "¡Tlazohkamati Citlali! Ma kualtsin mopano inin tonali.",
+    text: "¡Tlazohkamati María! Ma kualtsin mopano inin tonali.",
     target: "npc",
   },
 ];
@@ -1631,14 +1775,17 @@ export const NARRATIVE_CHARACTERS_CONFIG: Record<
   },
   indigena: {
     id: "indigena",
-    nameEs: "Citlali",
-    nameNah: "Maseualsiuatl Citlali",
+    nameEs: "María",
+    nameNah: "Maseualsiuatl María",
     speakerColor: DIALOGUE_SPEAKER_COLORS.indigena,
     portraitSrc: "/assets/juego/dialogos/retrato-indigena.png",
-    altText: "Citlali",
+    altText: "María",
     speakerNames: [
+      "María",
+      "Maria",
       "Citlali",
       "La Mujer Indígena",
+      "Maseualsiuatl María",
       "Maseualsiuatl Citlali",
       "Indígena",
       "Indigena",
