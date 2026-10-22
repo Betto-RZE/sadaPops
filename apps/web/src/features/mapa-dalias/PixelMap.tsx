@@ -68,14 +68,57 @@ const SMALL_STATE_NUM_IDS = new Set<number>([
   29, // Tlaxcala
 ]);
 
-// Colores little-endian Uint32 para renderizado de alto rendimiento en Canvas ImageData
-// Selected: Tono magenta / dalia brillante (top) y 50% atenuado (lateral)
-const SELECT_TOP_COLOR = (((190 << 24) | (134 << 16) | (63 << 8) | 244) >>> 0); // #F43F86 ~75% alfa
-const SELECT_SIDE_COLOR = (((95 << 24) | (134 << 16) | (63 << 8) | 244) >>> 0); // #F43F86 ~37% alfa
+/** Convierte un color hexadecimal #RRGGBB a entero Uint32 little-endian (AABBGGRR) */
+function hexToU32(hex: string, alpha = 255): number {
+  const clean = hex.replace('#', '');
+  const r = parseInt(clean.slice(0, 2), 16);
+  const g = parseInt(clean.slice(2, 4), 16);
+  const b = parseInt(clean.slice(4, 6), 16);
+  return (((alpha << 24) | (b << 16) | (g << 8) | r) >>> 0);
+}
 
-// Hover: Tono lavanda / lila luminoso (top) y 50% atenuado (lateral)
-const HOVER_TOP_COLOR = (((180 << 24) | (249 << 16) | (190 << 8) | 196) >>> 0); // #C4BEF9 ~70% alfa
-const HOVER_SIDE_COLOR = (((90 << 24) | (249 << 16) | (190 << 8) | 196) >>> 0); // #C4BEF9 ~35% alfa
+/** Incrementa el brillo de un pixel Uint32 (AABBGGRR) manteniendo 100% de opacidad */
+function brightenU32(u32: number, delta: number): number {
+  const r = Math.min(255, Math.max(0, (u32 & 0xff) + delta));
+  const g = Math.min(255, Math.max(0, ((u32 >> 8) & 0xff) + delta));
+  const b = Math.min(255, Math.max(0, ((u32 >> 16) & 0xff) + delta));
+  return (((255 << 24) | (b << 16) | (g << 8) | r) >>> 0);
+}
+
+/** Entinta un pixel Uint32 hacia la paleta rosa/magenta de selección preservando sus biseles */
+function tintSelectU32(u32: number): number {
+  const r0 = u32 & 0xff;
+  const g0 = (u32 >> 8) & 0xff;
+  const b0 = (u32 >> 16) & 0xff;
+  // Luminancia relativa respecto al tono base índigo (~105, 103, 234)
+  const lumDelta = Math.round((r0 - 105) * 0.45 + (g0 - 103) * 0.45 + (b0 - 234) * 0.2);
+  const r = Math.min(255, Math.max(0, 232 + lumDelta));
+  const g = Math.min(255, Math.max(0, 56 + Math.round(lumDelta * 0.85)));
+  const b = Math.min(255, Math.max(0, 130 + Math.round(lumDelta * 0.9)));
+  return (((255 << 24) | (b << 16) | (g << 8) | r) >>> 0);
+}
+
+// Paletas de acantilados 3D para estados elevados (Mini Pop)
+const HOVER_CLIFF = {
+  light: hexToU32('#6654D8'),
+  mid: hexToU32('#5542C4'),
+  dark: hexToU32('#3C2C9E'),
+  deep: hexToU32('#27197A'),
+  rimLip: hexToU32('#A8A7FF'),
+  rimHighlight: hexToU32('#EBE6FF'),
+};
+
+const SELECT_CLIFF = {
+  light: hexToU32('#BD1E62'),
+  mid: hexToU32('#9E1650'),
+  dark: hexToU32('#780E3B'),
+  deep: hexToU32('#520726'),
+  rimLip: hexToU32('#FF75AE'),
+  rimHighlight: hexToU32('#FFC2DC'),
+};
+
+/** Elevación vertical en vóxeles al hacer hover o seleccionar (2 vóxeles = 6px a escala 3x) */
+const ELEVATION_VOXELS = 2;
 
 /**
  * Resuelve qué estado federativo corresponde a las coordenadas lógicas (lx, ly)
@@ -182,7 +225,7 @@ export function PixelMap({
   const activeStateId = currentHoveredId || selectedStateId;
   const activeState = (data && activeStateId) ? data.stateById.get(activeStateId) : null;
 
-  // Renderizado volumétrico reactivo en el Canvas
+  // Renderizado volumétrico 3D ("Mini Pop") en el Canvas
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !data) return;
@@ -205,6 +248,8 @@ export function PixelMap({
     }
 
     const { imgData, u32, prevDrawnIndices } = bufferRef.current;
+    const { mapIds, basePixels, pixelScale } = data;
+    const liftPx = ELEVATION_VOXELS * pixelScale; // 6px
 
     // Variables para delimitar la región sucia (dirty rectangle)
     let minDirtyX = width;
@@ -225,42 +270,159 @@ export function PixelMap({
     }
     prevDrawnIndices.length = 0;
 
-    // 2. Función interna para pintar un estado
-    const paintState = (stateId: string, topColor: number, sideColor: number) => {
+    const setPixel = (idx: number, color: number) => {
+      u32[idx] = color;
+      prevDrawnIndices.push(idx);
+    };
+
+    // 2. Función para renderizar un estado elevado 2 vóxeles con paredes prismáticas 3D
+    const paintElevatedState = (stateId: string, mode: 'hover' | 'select') => {
       const state = data.stateById.get(stateId);
       if (!state) return;
       const pixelIndex = data.pixelsByNumId.get(state.numId);
       if (!pixelIndex) return;
 
+      const numId = state.numId;
+      const cliffPalette = mode === 'select' ? SELECT_CLIFF : HOVER_CLIFF;
       const [bboxMinX, bboxMinY, bboxMaxX, bboxMaxY] = state.bbox;
-      if (bboxMinX < minDirtyX) minDirtyX = bboxMinX;
-      if (bboxMaxX > maxDirtyX) maxDirtyX = bboxMaxX;
-      if (bboxMinY < minDirtyY) minDirtyY = bboxMinY;
-      if (bboxMaxY > maxDirtyY) maxDirtyY = bboxMaxY;
+
+      const expandedMinX = Math.max(0, bboxMinX - pixelScale);
+      const expandedMaxX = Math.min(width - 1, bboxMaxX + pixelScale);
+      const expandedMinY = Math.max(0, bboxMinY - liftPx - 1);
+      const expandedMaxY = Math.min(height - 1, bboxMaxY + 2);
+
+      if (expandedMinX < minDirtyX) minDirtyX = expandedMinX;
+      if (expandedMaxX > maxDirtyX) maxDirtyX = expandedMaxX;
+      if (expandedMinY < minDirtyY) minDirtyY = expandedMinY;
+      if (expandedMaxY > maxDirtyY) maxDirtyY = expandedMaxY;
 
       const top = pixelIndex.topPixels;
-      for (let i = 0; i < top.length; i++) {
-        const idx = top[i];
-        u32[idx] = topColor;
-        prevDrawnIndices.push(idx);
-      }
-
       const side = pixelIndex.sidePixels;
+
+      // Paso 2.1: Conservar y conectar las paredes costeras existentes (sidePixels)
       for (let i = 0; i < side.length; i++) {
         const idx = side[i];
-        u32[idx] = sideColor;
-        prevDrawnIndices.push(idx);
+        const x = idx % width;
+        const y = Math.floor(idx / width);
+        const orig = basePixels[idx];
+        const wallCol =
+          mode === 'select'
+            ? cliffPalette.dark
+            : orig !== 0
+            ? brightenU32(orig, 14)
+            : cliffPalette.mid;
+
+        // Mantener anclada la base del acantilado y desplazar copia hacia arriba para unión continua
+        setPixel(idx, wallCol);
+        if (y >= liftPx) {
+          setPixel((y - liftPx) * width + x, wallCol);
+        }
+      }
+
+      // Paso 2.2: Extruir nueva pared prismática de 6px (2 vóxeles) bajo todo el perímetro inferior/derecho
+      for (let i = 0; i < top.length; i++) {
+        const idx = top[i];
+        const x = idx % width;
+        const y = Math.floor(idx / width);
+
+        const isBottomEdge = y + 1 >= height || mapIds[(y + 1) * width + x] !== numId;
+        const isRightEdge = x + 1 >= width || mapIds[y * width + (x + 1)] !== numId;
+
+        if (isBottomEdge) {
+          // Detectar si es pliegue de escalón de 1px
+          const leftSame = x > 0 && mapIds[y * width + (x - 1)] === numId;
+          const rightSame = x + 1 < width && mapIds[y * width + (x + 1)] === numId;
+          const isStepCrease = !leftSame || !rightSame;
+
+          // Estimar orientación de la pared (Suroeste iluminada vs Sureste en sombra)
+          const leftExtendsDown =
+            x >= pixelScale &&
+            y + pixelScale < height &&
+            mapIds[(y + pixelScale) * width + (x - pixelScale)] === numId;
+          const rightExtendsDown =
+            x + pixelScale < width &&
+            y + pixelScale < height &&
+            mapIds[(y + pixelScale) * width + (x + pixelScale)] === numId;
+
+          let wallColor = cliffPalette.mid;
+          if (isStepCrease) {
+            wallColor = cliffPalette.deep;
+          } else if (rightExtendsDown && !leftExtendsDown) {
+            wallColor = cliffPalette.light;
+          } else if (leftExtendsDown && !rightExtendsDown) {
+            wallColor = cliffPalette.dark;
+          }
+
+          for (let d = 1; d <= liftPx; d++) {
+            const wy = y - liftPx + d;
+            if (wy >= 0 && wy < height) {
+              setPixel(wy * width + x, wallColor);
+            }
+          }
+        }
+
+        // Pared lateral derecha (espesor este) cuando el bloque se eleva sobre su vecino oriental
+        if (isRightEdge && x + 1 < width) {
+          for (let d = 1; d <= liftPx; d++) {
+            const wy = y - liftPx + d;
+            if (wy >= 0 && wy < height) {
+              setPixel(wy * width + x, cliffPalette.deep);
+            }
+          }
+        }
+      }
+
+      // Paso 2.3: Pintar la cara superior desplazada en (x, y - liftPx) con colores sólidos vibrantes
+      for (let i = 0; i < top.length; i++) {
+        const idx = top[i];
+        const x = idx % width;
+        const y = Math.floor(idx / width);
+        const ly = y - liftPx;
+        if (ly < 0) continue;
+
+        const orig = basePixels[idx];
+        const isNorthOrWestEdge =
+          y === 0 ||
+          mapIds[(y - 1) * width + x] !== numId ||
+          x === 0 ||
+          mapIds[y * width + (x - 1)] !== numId;
+        const isSouthOrEastEdge =
+          y + 1 >= height ||
+          mapIds[(y + 1) * width + x] !== numId ||
+          x + 1 >= width ||
+          mapIds[y * width + (x + 1)] !== numId;
+
+        let topColor: number;
+        if (mode === 'select') {
+          if (isNorthOrWestEdge) {
+            topColor = cliffPalette.rimHighlight;
+          } else if (isSouthOrEastEdge) {
+            topColor = cliffPalette.rimLip;
+          } else {
+            topColor = orig !== 0 ? tintSelectU32(orig) : hexToU32('#E83882');
+          }
+        } else {
+          // Modo Hover: preserva biseles originales con realce luminoso sólido (cero gris)
+          if (isNorthOrWestEdge) {
+            topColor = cliffPalette.rimHighlight;
+          } else if (isSouthOrEastEdge) {
+            topColor = cliffPalette.rimLip;
+          } else {
+            topColor = orig !== 0 ? brightenU32(orig, 26) : hexToU32('#807FF9');
+          }
+        }
+
+        setPixel(ly * width + x, topColor);
       }
     };
 
-    // Pintar estado seleccionado
+    // Pintar primero el seleccionado y después el hovered para respetar jerarquía visual
     if (selectedStateId) {
-      paintState(selectedStateId, SELECT_TOP_COLOR, SELECT_SIDE_COLOR);
+      paintElevatedState(selectedStateId, 'select');
     }
 
-    // Pintar estado en hover (si no es el mismo que está seleccionado)
     if (currentHoveredId && currentHoveredId !== selectedStateId) {
-      paintState(currentHoveredId, HOVER_TOP_COLOR, HOVER_SIDE_COLOR);
+      paintElevatedState(currentHoveredId, 'hover');
     }
 
     // 3. Volcar al canvas únicamente la región modificada para máximo rendimiento

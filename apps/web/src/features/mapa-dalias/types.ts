@@ -42,6 +42,8 @@ export interface MapIndexData {
   stateByNumId: Map<number, StateMetadata>;
   /** Buffer crudo de códigos (0 = vacío/isla, 1..32 = superior, 33..64 = lateral) */
   mapIds: Uint8Array;
+  /** Píxeles RGBA (Uint32 little-endian) extraídos de map-base.png para preservar biseles y texturas al elevar */
+  basePixels: Uint32Array;
   /** Índices de píxeles precalculados agrupados por numId (1..32) */
   pixelsByNumId: Map<number, StatePixelIndex>;
 }

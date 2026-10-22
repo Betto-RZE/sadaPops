@@ -13,12 +13,45 @@ let cachedDataPromise: Promise<MapIndexData> | null = null;
 let cachedData: MapIndexData | null = null;
 
 /**
+ * Decodifica /data/map-base.png en un buffer Uint32Array (RGBA little-endian)
+ * para reutilizar los biseles, bordes y sombreado originales al elevar un estado.
+ */
+async function extractBasePixels(width: number, height: number): Promise<Uint32Array> {
+  return new Promise((resolve) => {
+    if (typeof document === 'undefined') {
+      resolve(new Uint32Array(width * height));
+      return;
+    }
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve(new Uint32Array(width * height));
+        return;
+      }
+      ctx.drawImage(img, 0, 0, width, height);
+      const imgData = ctx.getImageData(0, 0, width, height);
+      resolve(new Uint32Array(imgData.data.buffer));
+    };
+    img.onerror = () => {
+      resolve(new Uint32Array(width * height));
+    };
+    img.src = '/data/map-base.png';
+  });
+}
+
+/**
  * Procesa los datos binarios y el JSON de metadatos construyendo
  * los índices Uint32Array por estado en un único recorrido O(N).
  */
 function buildMapIndex(
   metadata: StatesMetadataFile,
-  mapIdsBuffer: ArrayBuffer
+  mapIdsBuffer: ArrayBuffer,
+  basePixels: Uint32Array
 ): MapIndexData {
   const mapIds = new Uint8Array(mapIdsBuffer);
   const stateById = new Map<string, StateMetadata>();
@@ -85,12 +118,14 @@ function buildMapIndex(
     stateById,
     stateByNumId,
     mapIds,
+    basePixels,
     pixelsByNumId,
   };
 }
 
 /**
- * Carga de forma concurrente states.json y map-ids.bin y genera la estructura pre-indexada.
+ * Carga de forma concurrente states.json, map-ids.bin y map-base.png
+ * generando la estructura pre-indexada.
  */
 async function loadMapData(): Promise<MapIndexData> {
   if (cachedData) {
@@ -111,9 +146,12 @@ async function loadMapData(): Promise<MapIndexData> {
       }
 
       const metadata: StatesMetadataFile = await metaRes.json();
-      const binBuffer = await binRes.arrayBuffer();
+      const [binBuffer, basePixels] = await Promise.all([
+        binRes.arrayBuffer(),
+        extractBasePixels(metadata.width, metadata.height),
+      ]);
 
-      cachedData = buildMapIndex(metadata, binBuffer);
+      cachedData = buildMapIndex(metadata, binBuffer, basePixels);
       return cachedData;
     })();
   }
