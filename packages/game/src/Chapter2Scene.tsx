@@ -34,6 +34,7 @@ import {
   useCinematicNpcCamera,
   GenericNpcSprite,
   GENERIC_NPC_DEFAULTS,
+  GENERIC_NPC_TINT_VARIANTS,
   getNpcLateralPushVector,
   isPositionBlockedByIdleNpc,
   isPositionBlockedByNpc,
@@ -54,6 +55,7 @@ import {
   releaseAncianaImages,
   MESA_INTERACTION_LEFT_POS,
   MESA_INTERACTION_DISTANCE_THRESHOLD,
+  getDistanceToInteractionIcon,
   calculatePlayerAlignedPositionWithNpc,
   stepPlayerAlignmentWalk,
   PLAYER_ALIGNMENT_WALK_SPEED,
@@ -254,11 +256,9 @@ export default function Chapter2Scene({
     showMesaExclamationRef.current = showMesaExclamation;
   }, [showMesaExclamation]);
 
-  // Detección de proximidad al lado izquierdo de la mesa
-  const distToMesaLeft = Math.hypot(
-    playerPos.x - MESA_INTERACTION_LEFT_POS.x,
-    playerPos.y - MESA_INTERACTION_LEFT_POS.y,
-  );
+  // Detección de proximidad al lado izquierdo de la mesa tomando como referencia
+  // la distancia entre la cabeza del protagonista y el icono flotante de interacción (!)
+  const distToMesaLeft = getDistanceToInteractionIcon(playerPos);
   const isNearMesaLeft =
     showMesaExclamation &&
     distToMesaLeft <= MESA_INTERACTION_DISTANCE_THRESHOLD;
@@ -941,6 +941,11 @@ export default function Chapter2Scene({
             <GenericNpcSprite
               animation={npc.currentAnimation}
               isPaused={isPaused}
+              filter={
+                npc.assignedMamparaId % 2 === 0
+                  ? GENERIC_NPC_TINT_VARIANTS.moradito
+                  : GENERIC_NPC_TINT_VARIANTS.rosita
+              }
             />
           </div>
         ))}
@@ -1039,7 +1044,7 @@ export default function Chapter2Scene({
               top: `${MESA_INTERACTION_LEFT_POS.y}%`,
               width: EXCLAMATION_ICON_WIDTH,
               transform: "translate(-50%, -50%)",
-              zIndex: NPC_DEPTH_LAYERS.mamparaLayer + 5,
+              zIndex: NPC_DEPTH_LAYERS.interactionIconLayer,
               cursor: isNearMesaLeft ? "pointer" : "default",
             }}
             className="absolute flex items-center justify-center select-none"

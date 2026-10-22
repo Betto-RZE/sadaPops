@@ -182,6 +182,58 @@ export const ANCIANA_ARRIVAL_MESSAGES_NAH: string[] = [
 export const MESA_INTERACTION_LEFT_POS = { x: 14.0, y: 60.0 };
 
 /**
+ * Desplazamiento vertical porcentual (%) desde los pies/anclaje de colisión
+ * hasta la cabeza del avatar del jugador.
+ * En la relación de aspecto 16:9 y escala del sprite (6.5% ancho, 20.5% alto visual con anclaje en 90%),
+ * la cabeza se ubica ~10.0% por encima de los pies.
+ */
+export const PLAYER_HEAD_OFFSET_Y = 10.0;
+
+/**
+ * Calcula la posición estimada de la cabeza del jugador a partir de su coordenada de pies/colisión.
+ */
+export function getPlayerHeadPosition(
+  playerPos: { x: number; y: number },
+  offsetY: number = PLAYER_HEAD_OFFSET_Y,
+): { x: number; y: number } {
+  return {
+    x: playerPos.x,
+    y: playerPos.y - offsetY,
+  };
+}
+
+/**
+ * Calcula la distancia euclidiana (%) entre la cabeza del jugador y el icono flotante de interacción (!).
+ */
+export function getDistanceToInteractionIcon(
+  playerPos: { x: number; y: number },
+  iconPos: { x: number; y: number } = MESA_INTERACTION_LEFT_POS,
+  headOffsetY: number = PLAYER_HEAD_OFFSET_Y,
+): number {
+  const head = getPlayerHeadPosition(playerPos, headOffsetY);
+  return Math.hypot(head.x - iconPos.x, head.y - iconPos.y);
+}
+
+/**
+ * Determina si el jugador se encuentra dentro del rango de proximidad para interactuar,
+ * utilizando como referencia la distancia entre la cabeza del protagonista y el icono flotante.
+ */
+export function isPlayerNearInteractionIcon({
+  playerPos,
+  iconPos = MESA_INTERACTION_LEFT_POS,
+  threshold = MESA_INTERACTION_DISTANCE_THRESHOLD,
+  headOffsetY = PLAYER_HEAD_OFFSET_Y,
+}: {
+  playerPos: { x: number; y: number };
+  iconPos?: { x: number; y: number };
+  threshold?: number;
+  headOffsetY?: number;
+}): boolean {
+  const dist = getDistanceToInteractionIcon(playerPos, iconPos, headOffsetY);
+  return dist <= threshold;
+}
+
+/**
  * Radio de proximidad (%) para mostrar el texto pixel art 'presiona E' y permitir iniciar la conversación.
  */
 export const MESA_INTERACTION_DISTANCE_THRESHOLD = 14.0;
@@ -1101,7 +1153,7 @@ export const JOVEN_CONVERSATION_MESSAGES_ES: DialogueLine[] = [
     },
     trivia: {
       question:
-        "¡Ahora quiero saber qué aprendiste! Si somos millones de personas, ¿por qué importa participar en las elecciones?",
+        "¡Una pregunta para ti! Si somos millones de personas, ¿por qué importa participar en las elecciones?",
       options: [
         {
           id: "opt-a",
@@ -1132,7 +1184,7 @@ export const JOVEN_CONVERSATION_MESSAGES_ES: DialogueLine[] = [
   {
     speaker: "Mateo",
     speakerColor: DIALOGUE_SPEAKER_COLORS.joven,
-    text: "Bueno, bro, creo que ya entendí mejor cómo está la cosa.",
+    text: "Bueno, creo que ya entendí mejor cómo está la cosa.",
     target: "npc",
   },
   {

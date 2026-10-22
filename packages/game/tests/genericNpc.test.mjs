@@ -1977,6 +1977,15 @@ describe("Sistema de NPCs Genéricos - Pruebas de Integración y Ciclo de Vida",
         35,
         "El cartel 3 tiene zIndex 35 (> 30)",
       );
+      assert.equal(
+        NPC_DEPTH_LAYERS.interactionIconLayer,
+        38,
+        "Los iconos de interacción tienen zIndex 38 (> 27 de personajes y > 35 de cartel 3)",
+      );
+      assert.ok(
+        NPC_DEPTH_LAYERS.interactionIconLayer > NPC_DEPTH_LAYERS.frontMax,
+        "Los iconos de interacción deben estar estrictamente por delante de los personajes en el eje Z",
+      );
 
       // Verificación con cálculo real de personajes
       const behindNpc = { id: "npc-behind", y: 35.0 }; // Y < 36.0 (detrás de mampara)

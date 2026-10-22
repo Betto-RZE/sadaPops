@@ -4,6 +4,7 @@ import {
   GENERIC_NPC_FRAME_COUNTS,
   getGenericNpcFrameSrc,
   preloadGenericNpcImages,
+  GENERIC_NPC_TINT_FILTER,
 } from "./genericNpcConfig";
 
 export interface GenericNpcSpriteProps {
@@ -17,6 +18,8 @@ export interface GenericNpcSpriteProps {
   altText?: string;
   /** Pausa la animación si el juego o la escena están en pausa */
   isPaused?: boolean;
+  /** Filtro CSS personalizado para teñir el sprite (por defecto: rosita / moradito) */
+  filter?: string;
 }
 
 /**
@@ -24,6 +27,7 @@ export interface GenericNpcSpriteProps {
  *
  * Reproduce las secuencias PNG a 24 FPS (~41.67ms por frame), idéntico al motor del jugador.
  * En estado 'idle', muestra el frame estático sin costo de temporizadores.
+ * Aplica por defecto un filtro de tinte rosita / moradito sobre la silueta base monocromática.
  */
 export const GenericNpcSprite = React.memo(function GenericNpcSprite({
   animation,
@@ -31,6 +35,7 @@ export const GenericNpcSprite = React.memo(function GenericNpcSprite({
   style,
   altText = "Ciudadano Votante",
   isPaused = false,
+  filter = GENERIC_NPC_TINT_FILTER,
 }: GenericNpcSpriteProps) {
   const [frameIndex, setFrameIndex] = useState(0);
   const totalFrames = GENERIC_NPC_FRAME_COUNTS[animation] || 1;
@@ -62,6 +67,10 @@ export const GenericNpcSprite = React.memo(function GenericNpcSprite({
 
   const imageSrc = getGenericNpcFrameSrc(animation, frameIndex);
 
+  const combinedFilter = filter
+    ? `${filter} drop-shadow(0 4px 6px rgba(0, 0, 0, 0.25))`
+    : undefined;
+
   return (
     <div
       className={`relative flex flex-col items-center justify-center w-full shrink-0 ${className}`}
@@ -70,8 +79,11 @@ export const GenericNpcSprite = React.memo(function GenericNpcSprite({
       <img
         src={imageSrc}
         alt={altText}
-        className="w-full h-auto object-contain select-none pointer-events-none drop-shadow-md shrink-0"
-        style={{ imageRendering: "pixelated" }}
+        className="w-full h-auto object-contain select-none pointer-events-none shrink-0"
+        style={{
+          imageRendering: "pixelated",
+          filter: combinedFilter,
+        }}
       />
     </div>
   );

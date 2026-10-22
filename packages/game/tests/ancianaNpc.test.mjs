@@ -11,6 +11,10 @@ import {
   ANCIANA_ARRIVAL_MESSAGES_NAH,
   MESA_INTERACTION_LEFT_POS,
   MESA_INTERACTION_DISTANCE_THRESHOLD,
+  PLAYER_HEAD_OFFSET_Y,
+  getPlayerHeadPosition,
+  getDistanceToInteractionIcon,
+  isPlayerNearInteractionIcon,
   calculatePlayerAlignedPositionWithNpc,
   stepPlayerAlignmentWalk,
   PLAYER_ALIGNMENT_WALK_SPEED,
@@ -435,23 +439,27 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
       assert.equal(computeShowExclamation("dismissed", "dismissed"), false);
     });
 
-    test("la proximidad (isNearMesaLeft) detecta al jugador cerca del lado izquierdo de la mesa", () => {
-      const checkNear = (playerPos) => {
-        const d = Math.hypot(
-          playerPos.x - MESA_INTERACTION_LEFT_POS.x,
-          playerPos.y - MESA_INTERACTION_LEFT_POS.y,
-        );
-        return d <= MESA_INTERACTION_DISTANCE_THRESHOLD;
-      };
+    test("la proximidad (isNearMesaLeft) detecta al jugador cerca del lado izquierdo de la mesa utilizando la cabeza como referencia", () => {
+      assert.equal(PLAYER_HEAD_OFFSET_Y, 10.0);
 
-      // Jugador junto al lado izquierdo de la mesa
-      assert.equal(checkNear({ x: 14.0, y: 60.0 }), true);
-      assert.equal(checkNear({ x: 12.0, y: 62.0 }), true);
-      assert.equal(checkNear({ x: 18.0, y: 55.0 }), true);
+      // Distancia de la cabeza al icono
+      const head = getPlayerHeadPosition({ x: 13.5, y: 66.0 });
+      assert.equal(head.x, 13.5);
+      assert.equal(head.y, 56.0);
 
-      // Jugador lejos (ej. al otro lado del mapa o entrada derecha)
-      assert.equal(checkNear({ x: 80.0, y: 60.0 }), false);
-      assert.equal(checkNear({ x: 100.0, y: 66.0 }), false);
+      const d = getDistanceToInteractionIcon({ x: 13.5, y: 66.0 });
+      // Math.hypot(13.5 - 14.0, 56.0 - 60.0) = Math.hypot(-0.5, -4.0) ≈ 4.03
+      assert.ok(d < 5.0, "La cabeza del jugador debe quedar muy cerca del icono flotante");
+
+      // Jugador en posición de interacción junto a la mesa (lado izquierdo)
+      assert.equal(isPlayerNearInteractionIcon({ playerPos: { x: 13.5, y: 66.0 } }), true);
+      assert.equal(isPlayerNearInteractionIcon({ playerPos: { x: 14.0, y: 66.0 } }), true);
+      assert.equal(isPlayerNearInteractionIcon({ playerPos: { x: 12.0, y: 62.0 } }), true);
+      assert.equal(isPlayerNearInteractionIcon({ playerPos: { x: 14.0, y: 60.0 } }), true);
+
+      // Jugador lejos (ej. al otro lado del mapa, entrada derecha o fuera de rango)
+      assert.equal(isPlayerNearInteractionIcon({ playerPos: { x: 80.0, y: 60.0 } }), false);
+      assert.equal(isPlayerNearInteractionIcon({ playerPos: { x: 100.0, y: 66.0 } }), false);
     });
 
     test("los mensajes de la conversación con Doña Carmen están configurados para español y náhuatl con estructura de 3 partes", () => {
@@ -992,7 +1000,7 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
 
       // Parte 3: Despedida de Mateo
       assert.equal(messages[31].speaker, "Mateo");
-      assert.ok(messages[31].text.includes("Bueno, bro, creo que ya entendí"));
+      assert.ok(messages[31].text.includes("Bueno, creo que ya entendí"));
       assert.equal(messages[35].speaker, "Inecito");
       assert.ok(messages[35].text.includes("¡Que tengas una excelente primera experiencia!"));
 

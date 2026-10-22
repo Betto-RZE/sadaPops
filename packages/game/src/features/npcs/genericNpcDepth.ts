@@ -45,6 +45,8 @@ export const NPC_DEPTH_LAYERS = {
   arbustosForeground: 30,
   /** Capa fija del cartel 3 / letrero VOTA */
   cartel3Foreground: 35,
+  /** Capa fija de iconos de interacción flotantes (siempre por delante del protagonista y de los NPCs) */
+  interactionIconLayer: 38,
   /** Coordenada Y de la base de las mamparas electorales (% del escenario) */
   mamparaBaseY: 36.0,
 } as const;

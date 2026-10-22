@@ -100,6 +100,27 @@ export const GENERIC_NPC_DEFAULTS = {
 };
 
 /**
+ * Filtro CSS base para teñir a los personajes genéricos monocromáticos en tonos rosita o moradito.
+ * Convierte la silueta gris en tonos estilizados que contrastan y armonizan con la casilla.
+ */
+export const GENERIC_NPC_TINT_FILTER =
+  "sepia(0.88) hue-rotate(270deg) saturate(2.3) brightness(1.22)";
+
+/**
+ * Variantes de tinte para dar diversidad visual entre los distintos votantes genéricos de la casilla.
+ */
+export const GENERIC_NPC_TINT_VARIANTS = {
+  /** Moradito suave cívico (~255deg) */
+  moradito: "sepia(0.9) hue-rotate(255deg) saturate(2.4) brightness(1.15)",
+  /** Fusión moradito-rosita (~270deg, balance por defecto) */
+  moraditoRosita: "sepia(0.88) hue-rotate(270deg) saturate(2.3) brightness(1.22)",
+  /** Rosa pastel suave, dulce y luminoso (~285deg, estética pastel) */
+  rosita: "sepia(0.85) hue-rotate(285deg) saturate(2.1) brightness(1.32) contrast(0.92)",
+} as const;
+
+export type GenericNpcTintVariant = keyof typeof GENERIC_NPC_TINT_VARIANTS;
+
+/**
  * Genera un tiempo de votación aleatorio continuo en el intervalo [minMs, maxMs] milisegundos.
  * Por defecto en [4000, 8000] ms con decimales según los requisitos de la Fase 3.
  */
