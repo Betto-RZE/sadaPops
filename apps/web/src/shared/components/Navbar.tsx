@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Lock, Menu, X } from 'lucide-react';
@@ -10,7 +11,7 @@ export function Navbar() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Menú según especificación v3: INICIO, DATOS, JUEGO
+  // Opciones verticales según mockheroine4: INICIO, DATOS, JUEGO
   const navLinks = [
     { name: 'INICIO', href: '/' },
     { name: 'DATOS', href: '/datos' },
@@ -21,67 +22,64 @@ export function Navbar() {
     <header className="relative z-50 w-full bg-transparent pt-6 md:pt-8 px-6 lg:px-12 pointer-events-none">
       <div className="mx-auto flex max-w-[1440px] items-start justify-between">
         
-        {/* Superior Izquierdo: Logo INE directamente sobre el fondo (sin card ni background) */}
+        {/* Superior Izquierdo: Logo Oficial del INE limpio y transparente sobre el fondo de papel */}
         <Link 
           href="/" 
-          className="pointer-events-auto flex items-center gap-3 group focus:outline-none focus-visible:ring-2 focus-visible:ring-dalia-600 rounded-lg p-1"
+          className="pointer-events-auto block transition-transform hover:scale-[1.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-dalia-600 rounded-sm"
+          title="Instituto Nacional Electoral"
         >
-          <div className="flex items-center">
-            <span className="text-3xl md:text-4xl font-black text-brand-navy tracking-tighter select-none">
-              INE
-            </span>
-            <div className="w-3 md:w-3.5 h-3 md:h-3.5 bg-dalia-600 transform rotate-45 ml-1 transition-transform group-hover:scale-125" />
-          </div>
-          <div className="h-8 w-px bg-brand-navy/15 hidden sm:block" />
-          <div className="hidden sm:flex flex-col text-left">
-            <span className="text-[12px] font-bold text-brand-navy tracking-tight leading-none">
-              Mapa de Dalias
-            </span>
-            <span className="text-[10px] font-medium text-brand-navy/60 leading-tight mt-0.5">
-              Participación Ciudadana
-            </span>
+          <div className="relative w-36 sm:w-44 md:w-52 h-16 sm:h-20">
+            <Image
+              src="/logo-ine-oficial.png"
+              alt="Instituto Nacional Electoral - INE"
+              fill
+              className="object-contain object-left"
+              priority
+            />
           </div>
         </Link>
 
-        {/* Superior Derecho: Mini Sidebar / Menú flotante compacto transparente */}
-        <div className="pointer-events-auto flex items-start gap-3">
+        {/* Superior Derecho: Mini Sidebar vertical (una opción debajo de la otra) transparente */}
+        <div className="pointer-events-auto flex items-start gap-4">
           
-          {/* Navegación Desktop: Compacta, transparente y vertical/flotante */}
-          <nav className="hidden md:flex flex-col items-end gap-1.5 text-right">
-            <div className="flex items-center gap-6 pb-1">
-              {navLinks.map((link) => {
-                const isActive =
-                  link.href === '/'
-                    ? pathname === '/'
-                    : pathname.startsWith(link.href);
-                return (
-                  <Link
-                    key={link.name}
-                    href={link.href}
-                    className={cn(
-                      'relative py-1 text-xs font-extrabold tracking-widest uppercase transition-colors',
-                      isActive
-                        ? 'text-brand-navy font-black'
-                        : 'text-brand-navy/60 hover:text-brand-navy'
-                    )}
-                  >
-                    {link.name}
+          {/* Navegación Desktop: Sidebar vertical */}
+          <nav className="hidden md:flex flex-col items-end gap-2 text-right">
+            {navLinks.map((link) => {
+              const isActive =
+                link.href === '/'
+                  ? pathname === '/'
+                  : pathname.startsWith(link.href);
+              return (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  className={cn(
+                    'group relative py-0.5 text-xs lg:text-sm font-extrabold tracking-widest uppercase transition-colors',
+                    isActive
+                      ? 'text-brand-navy font-black'
+                      : 'text-brand-navy/60 hover:text-brand-navy'
+                  )}
+                >
+                  <span className="flex items-center gap-2">
                     {isActive && (
-                      <span className="absolute -bottom-0.5 left-0 right-0 h-0.5 bg-dalia-600 rounded-full" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-dalia-600 animate-pulse" />
                     )}
-                  </Link>
-                );
-              })}
-            </div>
+                    {link.name}
+                  </span>
+                  {isActive && (
+                    <span className="absolute -bottom-0.5 right-0 w-full h-[2px] bg-dalia-600 rounded-full" />
+                  )}
+                </Link>
+              );
+            })}
 
-            {/* Agrega tu Dalia (compacto, sin caja blanca invasiva) */}
+            {/* Agrega tu Dalia (debajo en la sidebar vertical) */}
             <div 
-              className="flex items-center gap-2 text-brand-navy/60 hover:text-brand-navy text-[11px] font-bold tracking-tight cursor-default select-none pt-0.5"
+              className="flex items-center gap-1.5 text-brand-navy/60 hover:text-brand-navy text-[11px] lg:text-xs font-bold tracking-tight cursor-default select-none pt-1"
               title="Completa un módulo para desbloquear"
             >
               <Lock className="w-3 h-3 text-dalia-600" />
               <span>Agrega tu Dalia</span>
-              <span className="text-[9px] font-medium text-brand-navy/40">(Bloqueado)</span>
             </div>
           </nav>
 
@@ -96,7 +94,7 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Drawer Móvil Desplegable */}
+      {/* Menú Móvil */}
       {isMobileMenuOpen && (
         <div className="md:hidden mt-3 rounded-2xl bg-[#EEEDEA]/95 backdrop-blur-md border border-black/5 p-4 shadow-xl pointer-events-auto animate-in slide-in-from-top-2 duration-150">
           <div className="flex flex-col space-y-2">
