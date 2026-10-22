@@ -16,6 +16,11 @@ import type {
 } from './types';
 import { cn } from '../../shared/utils';
 
+// Constantes globales de sincronización de la secuencia de entrada (Hito H6)
+export const MAP_INTRO_DELAY_MS = 2000;     // Instante en que inicia la Fase 2 tras la lectura del texto
+export const MAP_INTRO_STAGGER_MS = 650;    // Ventana de escalonamiento geográfico (Noroeste -> Sureste)
+export const MAP_STATE_ANIM_MS = 950;       // Duración física de cada pieza (Separación -> Caída -> Microrebote)
+
 // Contexto para compartir metadatos y estado activo con componentes hijos (como PixelMapAnchor)
 const PixelMapContext = createContext<PixelMapContextValue | null>(null);
 
@@ -52,7 +57,6 @@ export function PixelMapAnchor({
   const liftPx = ELEVATION_VOXELS * data.pixelScale;
 
   // Ordenamiento en eje Z por coordenada Y (las flores más al sur se renderizan al frente)
-  // Base 20 + posición vertical entera (0..435)
   const zDepth = 20 + Math.round(state.anchor.y);
 
   return (
@@ -107,7 +111,6 @@ function tintSelectU32(u32: number): number {
   const r0 = u32 & 0xff;
   const g0 = (u32 >> 8) & 0xff;
   const b0 = (u32 >> 16) & 0xff;
-  // Luminancia relativa respecto al tono base índigo (~105, 103, 234)
   const lumDelta = Math.round((r0 - 105) * 0.45 + (g0 - 103) * 0.45 + (b0 - 234) * 0.2);
   const r = Math.min(255, Math.max(0, 232 + lumDelta));
   const g = Math.min(255, Math.max(0, 56 + Math.round(lumDelta * 0.85)));
@@ -115,7 +118,16 @@ function tintSelectU32(u32: number): number {
   return (((255 << 24) | (b << 16) | (g << 8) | r) >>> 0);
 }
 
-// Paletas de acantilados 3D para estados elevados (Mini Pop)
+// Paletas de acantilados 3D para estados elevados
+const INTRO_CLIFF = {
+  light: hexToU32('#5E4EC8'),
+  mid: hexToU32('#4738A6'),
+  dark: hexToU32('#342687'),
+  deep: hexToU32('#231768'),
+  rimLip: hexToU32('#8A82E8'),
+  rimHighlight: hexToU32('#CEC9FA'),
+};
+
 const HOVER_CLIFF = {
   light: hexToU32('#6654D8'),
   mid: hexToU32('#5542C4'),
@@ -138,21 +150,45 @@ const SELECT_CLIFF = {
 const BASE_SHADOW_1 = hexToU32('#1A1638', 85); // 1er pixel debajo (~33% alfa)
 const BASE_SHADOW_2 = hexToU32('#1A1638', 40); // 2do pixel debajo (~15% alfa)
 
-// Fondo de papel con sombra para cubrir la huella del acantilado viejo al flotar (Opción A)
+// Fondo de papel con sombra para cubrir la huella del acantilado viejo al flotar
 const PAPER_SHADOW = hexToU32('#C3C1C8', 255);
-const SOCKET_GROOVE = hexToU32('#27197A', 255);
 
 /** Elevación vertical en vóxeles al hacer hover o seleccionar (2 vóxeles = 6px a escala 3x) */
 const ELEVATION_VOXELS = 2;
 
 /**
- * Resuelve qué estado federativo corresponde a las coordenadas lógicas (lx, ly)
- * en O(1) consultando directamente el buffer binario mapIds.
- *
- * Incluye:
- * 1. Histeresis de altura anti-flicker: tolera la elevación 3D del estado activo.
- * 2. Asistencia táctil: radio de 2 vóxeles para pantallas móviles en estados pequeños.
+ * Curva física de 3 etapas para la entrada de cada estado (Fase 2: Separación -> Fase 3: Caída y Micro-rebote):
+ *  - p in [0.00, 0.34]: Se separa suavemente del plano hasta `maxVoxels` (smoothstep).
+ *  - p in [0.34, 0.72]: Desciende y encaja por primera vez en 0 (aceleración controlada).
+ *  - p in [0.72, 0.88]: Micro-rebote amortiguado (~26% de la altura original).
+ *  - p in [0.88, 1.00]: Se asienta definitivamente en 0.
  */
+function computeIntroLiftPx(p: number, maxVoxels: number, pixelScale: number): number {
+  if (p <= 0 || p >= 1) return 0;
+
+  let voxels = 0;
+  if (p < 0.34) {
+    const u = p / 0.34;
+    const ease = u * u * (3 - 2 * u);
+    voxels = maxVoxels * ease;
+  } else if (p < 0.72) {
+    const u = (p - 0.34) / 0.38;
+    // Descenso con peso físico suave
+    const ease = u * u;
+    voxels = maxVoxels * (1 - ease);
+  } else if (p < 0.88) {
+    const u = (p - 0.72) / 0.16;
+    const bounceAmp = Math.max(1.1, maxVoxels * 0.26);
+    voxels = bounceAmp * Math.sin(u * Math.PI);
+  } else {
+    const u = (p - 0.88) / 0.12;
+    const microAmp = 0.35;
+    voxels = microAmp * Math.sin(u * Math.PI);
+  }
+
+  return Math.max(0, Math.round(voxels * pixelScale));
+}
+
 function resolveStateAt(
   lx: number,
   ly: number,
@@ -165,8 +201,6 @@ function resolveStateAt(
 ): string | null {
   if (lx < 0 || lx >= width || ly < 0 || ly >= height) return null;
 
-  // Histeresis de altura: si el estado activo está elevado en 3D, verificar si el cursor
-  // apunta a su cara superior elevada (lx, ly + liftPx)
   if (activeNumId && liftPx > 0 && ly + liftPx < height) {
     const shiftedCode = mapIds[(ly + liftPx) * width + lx];
     if (shiftedCode === activeNumId) {
@@ -176,12 +210,10 @@ function resolveStateAt(
 
   let code = mapIds[ly * width + lx];
 
-  // Si toca directamente la base o la pared extruida del estado activo elevado
   if (activeNumId && (code === activeNumId || code === activeNumId + 32)) {
     return String(activeNumId).padStart(2, '0');
   }
 
-  // Asistencia táctil: si se pulsó agua o isla decorativa, buscar en radio de 2 vóxeles
   if (code === 0 && isTouch) {
     let closestCode = 0;
     let closestDistSq = Infinity;
@@ -206,7 +238,6 @@ function resolveStateAt(
     }
     code = closestCode;
   } else if (code !== 0 && isTouch) {
-    // Si se pulsó en un estado limítrofe a 1px de un estado pequeño, priorizar el pequeño
     const currentNum = code > 32 ? code - 32 : code;
     if (!SMALL_STATE_NUM_IDS.has(currentNum)) {
       for (let dy = -1; dy <= 1; dy++) {
@@ -229,7 +260,6 @@ function resolveStateAt(
 
   if (code === 0) return null;
 
-  // Códigos 1..32: cara superior; Códigos 33..64: pared extruida (code - 32)
   const numId = code > 32 ? code - 32 : code;
   if (numId >= 1 && numId <= 32) {
     return String(numId).padStart(2, '0');
@@ -238,7 +268,7 @@ function resolveStateAt(
 }
 
 /**
- * PixelMap: Componente interactivo multicapa para el mapa isométrico pixel art de México (Hito H2).
+ * PixelMap: Componente interactivo multicapa para el mapa isométrico pixel art de México (Hito H2 + H6).
  */
 export function PixelMap({
   selectedStateId = null,
@@ -260,6 +290,9 @@ export function PixelMap({
     liftedMask: Uint8Array;
   } | null>(null);
 
+  // Estado para controlar la fase de animación de entrada por estados
+  const [introDone, setIntroDone] = useState(false);
+
   // Estado local para hover cuando el componente no está completamente controlado
   const [internalHoveredId, setInternalHoveredId] = useState<string | null>(null);
   const currentHoveredId = controlledHoveredId !== undefined ? controlledHoveredId : internalHoveredId;
@@ -272,270 +305,406 @@ export function PixelMap({
   const activeStateId = currentHoveredId || selectedStateId;
   const activeState = (data && activeStateId) ? data.stateById.get(activeStateId) : null;
 
-  // Renderizado volumétrico 3D ("Mini Pop") en el Canvas
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !data) return;
+  // Función central reutilizable que pinta un conjunto de estados elevados en el canvas
+  const renderElevatedStates = useCallback(
+    (
+      statesToDraw: Array<{
+        stateId: string;
+        liftPx: number;
+        mode: 'intro' | 'hover' | 'select';
+      }>
+    ) => {
+      const canvas = canvasRef.current;
+      if (!canvas || !data) return;
 
-    const ctx = canvas.getContext('2d', { willReadFrequently: false });
-    if (!ctx) return;
+      const ctx = canvas.getContext('2d', { willReadFrequently: false });
+      if (!ctx) return;
 
-    // Inicializar o redimensionar buffer persistente si es necesario
-    if (
-      !bufferRef.current ||
-      bufferRef.current.imgData.width !== width ||
-      bufferRef.current.imgData.height !== height
-    ) {
-      const imgData = ctx.createImageData(width, height);
-      bufferRef.current = {
-        imgData,
-        u32: new Uint32Array(imgData.data.buffer),
-        prevDrawnIndices: [],
-        liftedMask: new Uint8Array(width * height),
+      if (
+        !bufferRef.current ||
+        bufferRef.current.imgData.width !== width ||
+        bufferRef.current.imgData.height !== height
+      ) {
+        const imgData = ctx.createImageData(width, height);
+        bufferRef.current = {
+          imgData,
+          u32: new Uint32Array(imgData.data.buffer),
+          prevDrawnIndices: [],
+          liftedMask: new Uint8Array(width * height),
+        };
+      }
+
+      const { imgData, u32, prevDrawnIndices, liftedMask } = bufferRef.current;
+      const { mapIds, basePixels, pixelScale } = data;
+
+      let minDirtyX = width;
+      let minDirtyY = height;
+      let maxDirtyX = -1;
+      let maxDirtyY = -1;
+
+      // 1. Limpiar píxeles previamente dibujados
+      for (let i = 0; i < prevDrawnIndices.length; i++) {
+        const idx = prevDrawnIndices[i];
+        u32[idx] = 0;
+        const x = idx % width;
+        const y = Math.floor(idx / width);
+        if (x < minDirtyX) minDirtyX = x;
+        if (x > maxDirtyX) maxDirtyX = x;
+        if (y < minDirtyY) minDirtyY = y;
+        if (y > maxDirtyY) maxDirtyY = y;
+      }
+      prevDrawnIndices.length = 0;
+
+      const setPixel = (idx: number, color: number) => {
+        u32[idx] = color;
+        prevDrawnIndices.push(idx);
       };
-    }
 
-    const { imgData, u32, prevDrawnIndices, liftedMask } = bufferRef.current;
-    const { mapIds, basePixels, pixelScale } = data;
-    const liftPx = ELEVATION_VOXELS * pixelScale; // 6px
+      // 2. Pintar cada estado solicitado con su respectiva altura `customLiftPx`
+      for (let s = 0; s < statesToDraw.length; s++) {
+        const { stateId, liftPx: customLiftPx, mode } = statesToDraw[s];
+        if (customLiftPx <= 0) continue;
 
-    // Variables para delimitar la región sucia (dirty rectangle)
-    let minDirtyX = width;
-    let minDirtyY = height;
-    let maxDirtyX = -1;
-    let maxDirtyY = -1;
+        const state = data.stateById.get(stateId);
+        if (!state) continue;
+        const pixelIndex = data.pixelsByNumId.get(state.numId);
+        if (!pixelIndex) continue;
 
-    // 1. Limpiar píxeles previamente dibujados
-    for (let i = 0; i < prevDrawnIndices.length; i++) {
-      const idx = prevDrawnIndices[i];
-      u32[idx] = 0;
-      const x = idx % width;
-      const y = Math.floor(idx / width);
-      if (x < minDirtyX) minDirtyX = x;
-      if (x > maxDirtyX) maxDirtyX = x;
-      if (y < minDirtyY) minDirtyY = y;
-      if (y > maxDirtyY) maxDirtyY = y;
-    }
-    prevDrawnIndices.length = 0;
-
-    const setPixel = (idx: number, color: number) => {
-      u32[idx] = color;
-      prevDrawnIndices.push(idx);
-    };
-
-    // 2. Función para renderizar un estado elevado 2 vóxeles con paredes prismáticas 3D
-    const paintElevatedState = (stateId: string, mode: 'hover' | 'select') => {
-      const state = data.stateById.get(stateId);
-      if (!state) return;
-      const pixelIndex = data.pixelsByNumId.get(state.numId);
-      if (!pixelIndex) return;
-
-      const numId = state.numId;
-      const cliffPalette = mode === 'select' ? SELECT_CLIFF : HOVER_CLIFF;
-      const [bboxMinX, bboxMinY, bboxMaxX, bboxMaxY] = state.bbox;
-
-      const expandedMinX = Math.max(0, bboxMinX - pixelScale);
-      const expandedMaxX = Math.min(width - 1, bboxMaxX + pixelScale);
-      const expandedMinY = Math.max(0, bboxMinY - liftPx - 1);
-      const expandedMaxY = Math.min(height - 1, bboxMaxY + 3);
-
-      if (expandedMinX < minDirtyX) minDirtyX = expandedMinX;
-      if (expandedMaxX > maxDirtyX) maxDirtyX = expandedMaxX;
-      if (expandedMinY < minDirtyY) minDirtyY = expandedMinY;
-      if (expandedMaxY > maxDirtyY) maxDirtyY = expandedMaxY;
-
-      const top = pixelIndex.topPixels;
-      const side = pixelIndex.sidePixels;
-
-      // Opción A: Levantar el bloque completo (cara superior + acantilado frontal) como una pieza sólida 3D.
-      // Paso A1: Registrar en `liftedMask` las posiciones donde aterrizará el bloque elevado (y - liftPx)
-      const touchedMaskIndices: number[] = [];
-      for (let i = 0; i < top.length; i++) {
-        const idx = top[i];
-        const y = Math.floor(idx / width);
-        if (y >= liftPx) {
-          const targetIdx = idx - liftPx * width;
-          liftedMask[targetIdx] = 1;
-          touchedMaskIndices.push(targetIdx);
-        }
-      }
-      for (let i = 0; i < side.length; i++) {
-        const idx = side[i];
-        const y = Math.floor(idx / width);
-        if (y >= liftPx) {
-          const targetIdx = idx - liftPx * width;
-          liftedMask[targetIdx] = 1;
-          touchedMaskIndices.push(targetIdx);
-        }
-      }
-
-      // Paso A2: Enmascarar la huella inferior del acantilado en map-base.png para que no se duplique abajo
-      for (let i = 0; i < side.length; i++) {
-        const idx = side[i];
-        if (!liftedMask[idx]) {
-          // Cubrir la base vieja expuesta con textura de papel sombreado
-          setPixel(idx, PAPER_SHADOW);
-        }
-      }
-
-      // Paso A3: Dibujar el acantilado costero/frontal suspendido en (x, y - liftPx)
-      for (let i = 0; i < side.length; i++) {
-        const idx = side[i];
-        const x = idx % width;
-        const y = Math.floor(idx / width);
-        if (y < liftPx) continue;
-
-        const orig = basePixels[idx];
-        const wallCol =
+        const numId = state.numId;
+        const cliffPalette =
           mode === 'select'
-            ? cliffPalette.dark
-            : orig !== 0
-            ? brightenU32(orig, 16)
-            : cliffPalette.mid;
+            ? SELECT_CLIFF
+            : mode === 'hover'
+            ? HOVER_CLIFF
+            : INTRO_CLIFF;
+        const [bboxMinX, bboxMinY, bboxMaxX, bboxMaxY] = state.bbox;
 
-        const liftedIdx = (y - liftPx) * width + x;
-        setPixel(liftedIdx, wallCol);
+        const expandedMinX = Math.max(0, bboxMinX - pixelScale);
+        const expandedMaxX = Math.min(width - 1, bboxMaxX + pixelScale);
+        const expandedMinY = Math.max(0, bboxMinY - customLiftPx - 1);
+        const expandedMaxY = Math.min(height - 1, bboxMaxY + 3);
 
-        // Sombra de contacto suave debajo de la base del acantilado elevado
-        const belowId = (y + 1 < height) ? mapIds[(y + 1) * width + x] : 0;
-        if (belowId !== numId && belowId !== numId + 32) {
-          const shadowY1 = y - liftPx + 1;
-          if (shadowY1 < height) {
-            setPixel(shadowY1 * width + x, BASE_SHADOW_1);
+        if (expandedMinX < minDirtyX) minDirtyX = expandedMinX;
+        if (expandedMaxX > maxDirtyX) maxDirtyX = expandedMaxX;
+        if (expandedMinY < minDirtyY) minDirtyY = expandedMinY;
+        if (expandedMaxY > maxDirtyY) maxDirtyY = expandedMaxY;
+
+        const top = pixelIndex.topPixels;
+        const side = pixelIndex.sidePixels;
+
+        const touchedMaskIndices: number[] = [];
+        for (let i = 0; i < top.length; i++) {
+          const idx = top[i];
+          const y = Math.floor(idx / width);
+          if (y >= customLiftPx) {
+            const targetIdx = idx - customLiftPx * width;
+            liftedMask[targetIdx] = 1;
+            touchedMaskIndices.push(targetIdx);
           }
         }
-      }
-
-      // Paso A4: Extruir nueva pared vertical (6px) en bordes continentales limítrofes con otros estados
-      for (let i = 0; i < top.length; i++) {
-        const idx = top[i];
-        const x = idx % width;
-        const y = Math.floor(idx / width);
-
-        const isBottomEdge = y + 1 >= height || (mapIds[(y + 1) * width + x] !== numId && mapIds[(y + 1) * width + x] !== numId + 32);
-        const isRightEdge = x + 1 >= width || (mapIds[y * width + (x + 1)] !== numId && mapIds[y * width + (x + 1)] !== numId + 32);
-
-        if (isBottomEdge) {
-          // Orientación de la pared continental
-          const leftSame = x > 0 && mapIds[y * width + (x - 1)] === numId;
-          const rightSame = x + 1 < width && mapIds[y * width + (x + 1)] === numId;
-          const isStepCrease = !leftSame || !rightSame;
-
-          let wallColor = cliffPalette.mid;
-          if (isStepCrease) {
-            wallColor = cliffPalette.deep;
-          }
-
-          for (let d = 1; d <= liftPx; d++) {
-            const wy = y - liftPx + d;
-            if (wy >= 0 && wy < height) {
-              setPixel(wy * width + x, wallColor);
-            }
-          }
-
-          // Micro-sombra de contacto bajo el estado elevado
-          if (y + 1 < height && mapIds[(y + 1) * width + x] !== numId && mapIds[(y + 1) * width + x] !== numId + 32) {
-            setPixel((y + 1) * width + x, BASE_SHADOW_1);
-            if (y + 2 < height && mapIds[(y + 2) * width + x] !== numId && mapIds[(y + 2) * width + x] !== numId + 32) {
-              setPixel((y + 2) * width + x, BASE_SHADOW_2);
-            }
+        for (let i = 0; i < side.length; i++) {
+          const idx = side[i];
+          const y = Math.floor(idx / width);
+          if (y >= customLiftPx) {
+            const targetIdx = idx - customLiftPx * width;
+            liftedMask[targetIdx] = 1;
+            touchedMaskIndices.push(targetIdx);
           }
         }
 
-        // Pared este (sombra profunda)
-        if (isRightEdge && x + 1 < width) {
-          for (let d = 1; d <= liftPx; d++) {
-            const wy = y - liftPx + d;
-            if (wy >= 0 && wy < height) {
-              setPixel(wy * width + x, cliffPalette.deep);
+        // Enmascarar huella inferior expuesta
+        for (let i = 0; i < side.length; i++) {
+          const idx = side[i];
+          if (!liftedMask[idx]) {
+            setPixel(idx, PAPER_SHADOW);
+          }
+        }
+
+        // Dibujar acantilado costero/frontal desplazado en (x, y - customLiftPx)
+        for (let i = 0; i < side.length; i++) {
+          const idx = side[i];
+          const x = idx % width;
+          const y = Math.floor(idx / width);
+          if (y < customLiftPx) continue;
+
+          const orig = basePixels[idx];
+          const wallCol =
+            mode === 'select'
+              ? cliffPalette.dark
+              : mode === 'hover'
+              ? orig !== 0
+                ? brightenU32(orig, 16)
+                : cliffPalette.mid
+              : orig !== 0
+              ? orig
+              : cliffPalette.mid;
+
+          const liftedIdx = (y - customLiftPx) * width + x;
+          setPixel(liftedIdx, wallCol);
+
+          const belowId = y + 1 < height ? mapIds[(y + 1) * width + x] : 0;
+          if (belowId !== numId && belowId !== numId + 32) {
+            const shadowY1 = y - customLiftPx + 1;
+            if (shadowY1 < height) {
+              setPixel(shadowY1 * width + x, BASE_SHADOW_1);
             }
           }
         }
-      }
 
-      // Paso A5: Pintar la cara superior desplazada en (x, y - liftPx) con biseles y colores vibrantes
-      for (let i = 0; i < top.length; i++) {
-        const idx = top[i];
-        const x = idx % width;
-        const y = Math.floor(idx / width);
-        const ly = y - liftPx;
-        if (ly < 0) continue;
+        // Extruir pared vertical de relieve (altura = customLiftPx) en fronteras
+        for (let i = 0; i < top.length; i++) {
+          const idx = top[i];
+          const x = idx % width;
+          const y = Math.floor(idx / width);
 
-        const orig = basePixels[idx];
-        const isNorthOrWestEdge =
-          y === 0 ||
-          mapIds[(y - 1) * width + x] !== numId ||
-          x === 0 ||
-          mapIds[y * width + (x - 1)] !== numId;
-        const isSouthOrEastEdge =
-          y + 1 >= height ||
-          mapIds[(y + 1) * width + x] !== numId ||
-          x + 1 >= width ||
-          mapIds[y * width + (x + 1)] !== numId;
+          const isBottomEdge =
+            y + 1 >= height ||
+            (mapIds[(y + 1) * width + x] !== numId &&
+              mapIds[(y + 1) * width + x] !== numId + 32);
+          const isRightEdge =
+            x + 1 >= width ||
+            (mapIds[y * width + (x + 1)] !== numId &&
+              mapIds[y * width + (x + 1)] !== numId + 32);
 
-        let topColor: number;
-        if (mode === 'select') {
-          if (isNorthOrWestEdge) {
-            topColor = cliffPalette.rimHighlight;
-          } else if (isSouthOrEastEdge) {
-            topColor = cliffPalette.rimLip;
+          if (isBottomEdge) {
+            const leftSame = x > 0 && mapIds[y * width + (x - 1)] === numId;
+            const rightSame = x + 1 < width && mapIds[y * width + (x + 1)] === numId;
+            const isStepCrease = !leftSame || !rightSame;
+
+            const wallColor = isStepCrease ? cliffPalette.deep : cliffPalette.mid;
+
+            for (let d = 1; d <= customLiftPx; d++) {
+              const wy = y - customLiftPx + d;
+              if (wy >= 0 && wy < height) {
+                setPixel(wy * width + x, wallColor);
+              }
+            }
+
+            if (
+              y + 1 < height &&
+              mapIds[(y + 1) * width + x] !== numId &&
+              mapIds[(y + 1) * width + x] !== numId + 32
+            ) {
+              setPixel((y + 1) * width + x, BASE_SHADOW_1);
+              if (
+                y + 2 < height &&
+                mapIds[(y + 2) * width + x] !== numId &&
+                mapIds[(y + 2) * width + x] !== numId + 32
+              ) {
+                setPixel((y + 2) * width + x, BASE_SHADOW_2);
+              }
+            }
+          }
+
+          if (isRightEdge && x + 1 < width) {
+            for (let d = 1; d <= customLiftPx; d++) {
+              const wy = y - customLiftPx + d;
+              if (wy >= 0 && wy < height) {
+                setPixel(wy * width + x, cliffPalette.deep);
+              }
+            }
+          }
+        }
+
+        // Pintar cara superior desplazada en (x, y - customLiftPx)
+        for (let i = 0; i < top.length; i++) {
+          const idx = top[i];
+          const x = idx % width;
+          const y = Math.floor(idx / width);
+          const ly = y - customLiftPx;
+          if (ly < 0) continue;
+
+          const orig = basePixels[idx];
+          const isNorthOrWestEdge =
+            y === 0 ||
+            mapIds[(y - 1) * width + x] !== numId ||
+            x === 0 ||
+            mapIds[y * width + (x - 1)] !== numId;
+          const isSouthOrEastEdge =
+            y + 1 >= height ||
+            mapIds[(y + 1) * width + x] !== numId ||
+            x + 1 >= width ||
+            mapIds[y * width + (x + 1)] !== numId;
+
+          let topColor: number;
+          if (mode === 'select') {
+            if (isNorthOrWestEdge) {
+              topColor = cliffPalette.rimHighlight;
+            } else if (isSouthOrEastEdge) {
+              topColor = cliffPalette.rimLip;
+            } else {
+              topColor = orig !== 0 ? tintSelectU32(orig) : hexToU32('#E83882');
+            }
+          } else if (mode === 'hover') {
+            if (isNorthOrWestEdge) {
+              topColor = cliffPalette.rimHighlight;
+            } else if (isSouthOrEastEdge) {
+              topColor = cliffPalette.rimLip;
+            } else {
+              topColor = orig !== 0 ? brightenU32(orig, 26) : hexToU32('#807FF9');
+            }
           } else {
-            topColor = orig !== 0 ? tintSelectU32(orig) : hexToU32('#E83882');
+            // Modo 'intro': Las caras superiores conservan el violeta original del mapa
+            if (isNorthOrWestEdge) {
+              topColor = orig !== 0 ? brightenU32(orig, 18) : cliffPalette.rimHighlight;
+            } else {
+              topColor = orig !== 0 ? orig : hexToU32('#6A5FE0');
+            }
           }
+
+          setPixel(ly * width + x, topColor);
+        }
+
+        for (let i = 0; i < touchedMaskIndices.length; i++) {
+          liftedMask[touchedMaskIndices[i]] = 0;
+        }
+      }
+
+      // 3. Volcar al canvas únicamente la región modificada
+      if (minDirtyX <= maxDirtyX && minDirtyY <= maxDirtyY) {
+        const dirtyW = maxDirtyX - minDirtyX + 1;
+        const dirtyH = maxDirtyY - minDirtyY + 1;
+        ctx.putImageData(imgData, 0, 0, minDirtyX, minDirtyY, dirtyW, dirtyH);
+      } else if (prevDrawnIndices.length === 0) {
+        ctx.clearRect(0, 0, width, height);
+      }
+    },
+    [data, width, height]
+  );
+
+  // Secuencia de Entrada por Estados (Fase 2: Separación -> Fase 3: Caída y Micro-rebote)
+  useEffect(() => {
+    if (!data || introDone) return;
+
+    // Respetar prefers-reduced-motion
+    if (
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) {
+      setIntroDone(true);
+      return;
+    }
+
+    // Precalcular orden de pintado (Norte a Sur para oclusión correcta: Painter's Algorithm)
+    // y tiempos geográficos (Noroeste -> Sureste) con alturas variables (3 a 6 vóxeles)
+    const sortedStates = [...data.states].sort((a, b) => a.anchor.y - b.anchor.y);
+
+    let minGeo = Infinity;
+    let maxGeo = -Infinity;
+    for (const st of sortedStates) {
+      const g = st.anchor.x * 0.65 + st.anchor.y;
+      if (g < minGeo) minGeo = g;
+      if (g > maxGeo) maxGeo = g;
+    }
+    const geoSpan = Math.max(1, maxGeo - minGeo);
+
+    const stateSchedule = sortedStates.map((st) => {
+      const g = (st.anchor.x * 0.65 + st.anchor.y - minGeo) / geoSpan;
+      // Pequeña variación determinista en retraso y altura máxima para que se sientan piezas independientes
+      const jitterMs = ((st.numId * 37) % 90) - 45;
+      const startMs = Math.max(0, g * MAP_INTRO_STAGGER_MS + jitterMs);
+      // Altura máxima entre 3.2 y 5.8 vóxeles
+      const maxVoxels = 3.2 + ((st.numId * 19) % 27) / 10;
+      return {
+        stateId: st.id,
+        startMs,
+        maxVoxels,
+      };
+    });
+
+    const totalIntroDuration = MAP_INTRO_STAGGER_MS + MAP_STATE_ANIM_MS + 100;
+    let rafId = 0;
+    let startTime: number | null = null;
+
+    const timerId = window.setTimeout(() => {
+      const tick = (now: number) => {
+        if (startTime === null) startTime = now;
+        const elapsed = now - startTime;
+
+        const frameStates: Array<{
+          stateId: string;
+          liftPx: number;
+          mode: 'intro';
+        }> = [];
+
+        for (let i = 0; i < stateSchedule.length; i++) {
+          const item = stateSchedule[i];
+          const localT = elapsed - item.startMs;
+          if (localT > 0 && localT < MAP_STATE_ANIM_MS) {
+            const p = localT / MAP_STATE_ANIM_MS;
+            const liftPx = computeIntroLiftPx(p, item.maxVoxels, data.pixelScale);
+            if (liftPx > 0) {
+              frameStates.push({
+                stateId: item.stateId,
+                liftPx,
+                mode: 'intro',
+              });
+            }
+          }
+        }
+
+        renderElevatedStates(frameStates);
+
+        if (elapsed < totalIntroDuration) {
+          rafId = window.requestAnimationFrame(tick);
         } else {
-          // Modo Hover
-          if (isNorthOrWestEdge) {
-            topColor = cliffPalette.rimHighlight;
-          } else if (isSouthOrEastEdge) {
-            topColor = cliffPalette.rimLip;
-          } else {
-            topColor = orig !== 0 ? brightenU32(orig, 26) : hexToU32('#807FF9');
-          }
+          renderElevatedStates([]);
+          setIntroDone(true);
         }
+      };
 
-        setPixel(ly * width + x, topColor);
-      }
+      rafId = window.requestAnimationFrame(tick);
+    }, MAP_INTRO_DELAY_MS);
 
-      // Limpiar `liftedMask` para reutilizarlo en la siguiente llamada sin coste de GC
-      for (let i = 0; i < touchedMaskIndices.length; i++) {
-        liftedMask[touchedMaskIndices[i]] = 0;
-      }
+    return () => {
+      window.clearTimeout(timerId);
+      if (rafId) window.cancelAnimationFrame(rafId);
     };
+  }, [data, introDone, renderElevatedStates]);
 
-    // Pintar primero el seleccionado y después el hovered para respetar jerarquía visual
+  // Renderizado volumétrico interactivo normal (Hover y Selección) una vez concluida la intro
+  useEffect(() => {
+    if (!data || !introDone) return;
+
+    const liftPx = ELEVATION_VOXELS * data.pixelScale;
+    const statesToDraw: Array<{
+      stateId: string;
+      liftPx: number;
+      mode: 'hover' | 'select';
+    }> = [];
+
     if (selectedStateId) {
-      paintElevatedState(selectedStateId, 'select');
+      statesToDraw.push({
+        stateId: selectedStateId,
+        liftPx,
+        mode: 'select',
+      });
     }
 
     if (currentHoveredId && currentHoveredId !== selectedStateId) {
-      paintElevatedState(currentHoveredId, 'hover');
+      statesToDraw.push({
+        stateId: currentHoveredId,
+        liftPx,
+        mode: 'hover',
+      });
     }
 
-    // 3. Volcar al canvas únicamente la región modificada para máximo rendimiento
-    if (minDirtyX <= maxDirtyX && minDirtyY <= maxDirtyY) {
-      const dirtyW = maxDirtyX - minDirtyX + 1;
-      const dirtyH = maxDirtyY - minDirtyY + 1;
-      ctx.putImageData(imgData, 0, 0, minDirtyX, minDirtyY, dirtyW, dirtyH);
-    } else if (prevDrawnIndices.length === 0) {
-      ctx.clearRect(0, 0, width, height);
-    }
-  }, [data, selectedStateId, currentHoveredId, width, height]);
+    renderElevatedStates(statesToDraw);
+  }, [data, introDone, selectedStateId, currentHoveredId, renderElevatedStates]);
 
   // Conversión precisa de coordenadas de pantalla a la rejilla lógica de vóxeles
   const getLogicalCoords = useCallback(
-    (e: React.PointerEvent<HTMLCanvasElement>) => {
+    (e: React.PointerEvent<HTMLCanvasElement>): { lx: number; ly: number } | null => {
       const canvas = canvasRef.current;
       if (!canvas) return null;
       const rect = canvas.getBoundingClientRect();
-      if (rect.width <= 0 || rect.height <= 0) return null;
+      if (rect.width === 0 || rect.height === 0) return null;
 
       const scaleX = width / rect.width;
       const scaleY = height / rect.height;
 
       const lx = Math.floor((e.clientX - rect.left) * scaleX);
       const ly = Math.floor((e.clientY - rect.top) * scaleY);
-
-      if (lx < 0 || lx >= width || ly < 0 || ly >= height) return null;
       return { lx, ly };
     },
     [width, height]
@@ -543,7 +712,7 @@ export function PixelMap({
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {
-      if (!data) return;
+      if (!data || !introDone) return;
       const coords = getLogicalCoords(e);
       const isTouch = e.pointerType === 'touch';
       const activeNumId = activeState ? activeState.numId : null;
@@ -557,12 +726,12 @@ export function PixelMap({
         onHoverState?.(resolved);
       }
     },
-    [data, width, height, currentHoveredId, activeState, getLogicalCoords, onHoverState]
+    [data, introDone, width, height, currentHoveredId, activeState, getLogicalCoords, onHoverState]
   );
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {
-      if (!data) return;
+      if (!data || !introDone) return;
       const coords = getLogicalCoords(e);
       const isTouch = e.pointerType === 'touch';
       const activeNumId = activeState ? activeState.numId : null;
@@ -576,7 +745,7 @@ export function PixelMap({
         onSelectState?.(nextSelected);
       }
     },
-    [data, width, height, selectedStateId, activeState, getLogicalCoords, onSelectState]
+    [data, introDone, width, height, selectedStateId, activeState, getLogicalCoords, onSelectState]
   );
 
   const handlePointerLeave = useCallback(() => {
@@ -628,7 +797,7 @@ export function PixelMap({
           loading="eager"
         />
 
-        {/* Capa 3: Canvas para interacción y resaltado volumétrico */}
+        {/* Capa 3: Canvas para animación de entrada por estados e interacción volumétrica */}
         <canvas
           ref={canvasRef}
           width={width}
