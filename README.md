@@ -15,7 +15,7 @@ Plataforma digital de participación cívica que transforma los datos de la **CC
 
 ## 🌟 El Gancho Visual y Diferenciadores
 
-1. **Prueba Social Visible (Mapa de Dalias):** Mapa interactivo de México representado con **dalias** (flor nacional de México) como unidad visual de participación informada. Hacer visible que *"otros como tú ya se están informando"* genera una presión social positiva sin exponer identidades individuales.
+1. **Prueba Social Visible (Mapa Isométrico de Dalias):** Mapa interactivo de México en **pixel art isométrico voxel**, con extrusión prismática 3D en los acantilados, 9 islas cúbicas decorativas y **dalias** (flor nacional de México) como unidad visual de participación cívica informada. Cada dalia representa a una persona que decidió informarse, generando una prueba social atractiva sin comprometer la privacidad.
 2. **Traducción de la CCPC por Preguntas:** Convierte el dataset técnico de la CCPC del INE en respuestas intuitivas a preguntas de interés social (ej. *"¿Por qué mi estado vota tan poco?"*, *"¿Los jóvenes realmente votan menos que mis papás?"*).
 3. **Modo Juego Pixel Art Complementario:** Alternativa narrativamente gamificada para el público joven, con diálogos para **desmentir mitos cívicos** y un **simulador interactivo de votación en casilla**.
 4. **Puentes Intermedios Accionables:** Enlaces directos y contextuales a plataformas oficiales del INE (ubicador de casillas, casillas foráneas, registro de observadores electorales).
@@ -60,6 +60,15 @@ pnpm dev
 ```
 *(Abre [`http://localhost:3000`](http://localhost:3000) en tu navegador).*
 
+### Comandos de Utilidad para el Mapa Voxel (Offline)
+```bash
+# Regenerar los 4 activos del mapa (base PNG, ids BIN, sombra WebP, estados JSON)
+pnpm build-map
+
+# Generar comparativa visual lado a lado contra docs/referencias/mockup-mapa.jpeg
+pnpm compare-map
+```
+
 ---
 
 ## 🛠️ Estructura del Monorepo
@@ -70,7 +79,7 @@ sadaPops/
 │   └── web/                                # Next.js 14 App Router (TypeScript, Tailwind, shadcn/ui)
 │       ├── app/                            # Rutas principales y layout
 │       └── src/features/
-│           ├── mapa-dalias/                # Mapa SVG Zoom 1-3, dalias dinámicas, GeoJSON INEGI
+│           ├── mapa-dalias/                # Motor isométrico Pixel Art (<PixelMap/>, <PixelMapAnchor/>, O(1))
 │           ├── narrativa/                  # Storytelling e información de electores foráneos
 │           ├── dashboard-ccpc/             # Gráficas por preguntas (Recharts/Visx)
 │           ├── juego/                      # Wrapper dinámico (ssr: false) para @mapa-dalias/game
@@ -87,6 +96,10 @@ sadaPops/
 │   ├── etl/ccpc_ingest.py                  # Script ETL de ingesta de datos CCPC del INE
 │   ├── Dockerfile
 │   └── entrypoint.sh                       # Script automatizado para Docker
+│
+├── scripts/                                # Scripts de build y calibración offline
+│   ├── build-map.ts                        # Pipeline de rasterizado voxel, extrusión 3D y corte
+│   └── compare-map.ts                      # Comparador visual automatizado contra mockup-mapa.jpeg
 │
 ├── docs/                                   # Documentación completa del proyecto
 │   ├── PROJECT_CONTEXT.md
@@ -116,6 +129,7 @@ sadaPops/
 
 ## 📚 Documentación del Proyecto (`docs/`)
 
+- 🗺️ **[`ROADMAP_MAPA_DALIAS.md`](ROADMAP_MAPA_DALIAS.md):** Hoja de ruta técnica de fidelidad visual del mapa, dalias voxel y calibración isométrica (Hitos H0 a H8).
 - 📖 **[`docs/SETUP.md`](docs/SETUP.md):** Guía detallada de inicialización local.
 - 📋 **[`docs/PLAN_DE_DESARROLLO.md`](docs/PLAN_DE_DESARROLLO.md):** Plan de desarrollo por Sprints y asignación de tareas por desarrollador (Dev 1 a 4).
 - 🧭 **[`docs/PROJECT_CONTEXT.md`](docs/PROJECT_CONTEXT.md):** Contexto técnico y de dominio completo.
