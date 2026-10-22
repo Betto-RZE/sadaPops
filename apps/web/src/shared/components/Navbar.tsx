@@ -10,7 +10,7 @@ export function Navbar() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Roadmap v3: INICIO, DATOS, JUEGO (sin "Narrativa")
+  // Menú según especificación v3: INICIO, DATOS, JUEGO
   const navLinks = [
     { name: 'INICIO', href: '/' },
     { name: 'DATOS', href: '/datos' },
@@ -18,91 +18,88 @@ export function Navbar() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full backdrop-blur-md bg-[#EEEDEA]/80 border-b border-black/5 transition-colors">
-      <div className="mx-auto flex h-20 max-w-[1440px] items-center justify-between px-6 lg:px-12">
+    <header className="relative z-50 w-full bg-transparent pt-6 md:pt-8 px-6 lg:px-12 pointer-events-none">
+      <div className="mx-auto flex max-w-[1440px] items-start justify-between">
         
-        {/* Logo Section */}
-        <Link href="/" className="flex items-center gap-4 group">
-          <div className="flex items-center gap-2">
-            {/* INE Logo */}
-            <div className="flex flex-col items-center">
-              <div className="flex items-center">
-                <span className="text-3xl font-black text-brand-navy tracking-tighter">INE</span>
-                <div className="w-3.5 h-3.5 bg-dalia-600 transform rotate-45 ml-1 transition-transform group-hover:scale-110"></div>
-              </div>
-              <span className="text-[7.5px] font-semibold text-brand-navy/80 tracking-widest uppercase mt-0.5">
-                Instituto Nacional Electoral
-              </span>
-            </div>
+        {/* Superior Izquierdo: Logo INE directamente sobre el fondo (sin card ni background) */}
+        <Link 
+          href="/" 
+          className="pointer-events-auto flex items-center gap-3 group focus:outline-none focus-visible:ring-2 focus-visible:ring-dalia-600 rounded-lg p-1"
+        >
+          <div className="flex items-center">
+            <span className="text-3xl md:text-4xl font-black text-brand-navy tracking-tighter select-none">
+              INE
+            </span>
+            <div className="w-3 md:w-3.5 h-3 md:h-3.5 bg-dalia-600 transform rotate-45 ml-1 transition-transform group-hover:scale-125" />
           </div>
-          <div className="h-9 w-px bg-black/10 hidden sm:block"></div>
-          <div className="hidden sm:flex flex-col">
-            <h1 className="text-sm font-bold text-brand-navy leading-tight">Mapa de Dalias</h1>
-            <p className="text-[11px] font-medium text-brand-navy/60 leading-tight">Participación Ciudadana</p>
+          <div className="h-8 w-px bg-brand-navy/15 hidden sm:block" />
+          <div className="hidden sm:flex flex-col text-left">
+            <span className="text-[12px] font-bold text-brand-navy tracking-tight leading-none">
+              Mapa de Dalias
+            </span>
+            <span className="text-[10px] font-medium text-brand-navy/60 leading-tight mt-0.5">
+              Participación Ciudadana
+            </span>
           </div>
         </Link>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-10">
-          {navLinks.map((link) => {
-            const isActive =
-              link.href === '/'
-                ? pathname === '/'
-                : pathname.startsWith(link.href);
-            return (
-              <Link
-                key={link.name}
-                href={link.href}
-                className={cn(
-                  'relative py-1 text-xs font-bold tracking-widest transition-colors',
-                  isActive
-                    ? 'text-brand-navy'
-                    : 'text-brand-navy/60 hover:text-brand-navy'
-                )}
-              >
-                {link.name}
-                {isActive && (
-                  <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-dalia-600 rounded-full" />
-                )}
-              </Link>
-            );
-          })}
-        </nav>
+        {/* Superior Derecho: Mini Sidebar / Menú flotante compacto transparente */}
+        <div className="pointer-events-auto flex items-start gap-3">
+          
+          {/* Navegación Desktop: Compacta, transparente y vertical/flotante */}
+          <nav className="hidden md:flex flex-col items-end gap-1.5 text-right">
+            <div className="flex items-center gap-6 pb-1">
+              {navLinks.map((link) => {
+                const isActive =
+                  link.href === '/'
+                    ? pathname === '/'
+                    : pathname.startsWith(link.href);
+                return (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    className={cn(
+                      'relative py-1 text-xs font-extrabold tracking-widest uppercase transition-colors',
+                      isActive
+                        ? 'text-brand-navy font-black'
+                        : 'text-brand-navy/60 hover:text-brand-navy'
+                    )}
+                  >
+                    {link.name}
+                    {isActive && (
+                      <span className="absolute -bottom-0.5 left-0 right-0 h-0.5 bg-dalia-600 rounded-full" />
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
 
-        {/* Actions Section: Botón "Agrega tu Dalia" */}
-        <div className="hidden md:flex items-center gap-4">
-          <div
-            className="flex items-center bg-white/70 hover:bg-white backdrop-blur-sm rounded-full px-5 py-2.5 gap-3 border border-black/10 shadow-sm transition-all"
-            title="Completa un módulo para desbloquear"
+            {/* Agrega tu Dalia (compacto, sin caja blanca invasiva) */}
+            <div 
+              className="flex items-center gap-2 text-brand-navy/60 hover:text-brand-navy text-[11px] font-bold tracking-tight cursor-default select-none pt-0.5"
+              title="Completa un módulo para desbloquear"
+            >
+              <Lock className="w-3 h-3 text-dalia-600" />
+              <span>Agrega tu Dalia</span>
+              <span className="text-[9px] font-medium text-brand-navy/40">(Bloqueado)</span>
+            </div>
+          </nav>
+
+          {/* Botón Móvil */}
+          <button 
+            className="md:hidden p-2 text-brand-navy rounded-lg bg-black/5 hover:bg-black/10 transition-colors pointer-events-auto"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label={isMobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
           >
-            <div className="flex items-center justify-center w-7 h-7 rounded-full bg-black/5 text-brand-navy">
-              <Lock className="w-3.5 h-3.5" />
-            </div>
-            <div className="flex flex-col text-left">
-              <span className="text-xs font-bold text-brand-navy tracking-tight leading-tight">
-                Agrega tu Dalia
-              </span>
-              <span className="text-[9px] font-medium text-brand-navy/50 leading-tight">
-                Bloqueado (completa 1 módulo)
-              </span>
-            </div>
-          </div>
+            {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
         </div>
-
-        {/* Mobile Menu Button */}
-        <button 
-          className="md:hidden p-2 text-brand-navy rounded-lg hover:bg-black/5"
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          aria-label={isMobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
-        >
-          {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </button>
       </div>
 
-      {/* Mobile Menu Drawer */}
+      {/* Drawer Móvil Desplegable */}
       {isMobileMenuOpen && (
-        <div className="md:hidden border-t border-black/5 bg-[#EEEDEA]/95 backdrop-blur-lg px-6 py-4 shadow-xl animate-in slide-in-from-top-2 duration-200">
-          <div className="flex flex-col space-y-3">
+        <div className="md:hidden mt-3 rounded-2xl bg-[#EEEDEA]/95 backdrop-blur-md border border-black/5 p-4 shadow-xl pointer-events-auto animate-in slide-in-from-top-2 duration-150">
+          <div className="flex flex-col space-y-2">
             {navLinks.map((link) => {
               const isActive =
                 link.href === '/'
@@ -125,15 +122,9 @@ export function Navbar() {
                 </Link>
               );
             })}
-            
-            <div className="pt-2 border-t border-black/5">
-              <div className="flex items-center bg-white/60 rounded-xl p-3 gap-3">
-                <Lock className="w-4 h-4 text-brand-navy/60" />
-                <div className="flex flex-col text-left">
-                  <span className="text-xs font-bold text-brand-navy">Agrega tu Dalia</span>
-                  <span className="text-[10px] text-brand-navy/50">Completa un módulo para desbloquear</span>
-                </div>
-              </div>
+            <div className="pt-2 border-t border-black/5 flex items-center gap-2 px-3 py-1 text-xs text-brand-navy/60">
+              <Lock className="w-3.5 h-3.5 text-dalia-600" />
+              <span className="font-semibold">Agrega tu Dalia (Bloqueado)</span>
             </div>
           </div>
         </div>
