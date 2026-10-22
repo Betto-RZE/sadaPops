@@ -42,3 +42,80 @@ body {
 .map-isometric-shadow {
   filter: drop-shadow(0 25px 35px rgba(28, 37, 65, 0.15)) drop-shadow(0 10px 15px rgba(28, 37, 65, 0.08));
 }
+
+/* =========================================================================
+   ANIMACIÓN HERO FASE 1: REVELACIÓN PALABRA POR PALABRA
+   Aparece con nitidez en Fase 1 y se suaviza a marca de agua al entrar el mapa
+   ========================================================================= */
+
+@keyframes heroWordReveal {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 22px, 0);
+  }
+  20% {
+    opacity: 0.82;
+    transform: translate3d(0, 0, 0);
+  }
+  65% {
+    opacity: 0.82;
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    opacity: 0.32;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes heroMagentaReveal {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 24px, 0) scale(0.96);
+  }
+  25% {
+    opacity: 0.98;
+    transform: translate3d(0, 0, 0) scale(1.02);
+  }
+  50% {
+    opacity: 0.95;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    opacity: 0.85;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+.hero-word {
+  display: inline-block;
+  opacity: 0;
+  animation-name: heroWordReveal;
+  animation-duration: 3.4s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  animation-fill-mode: forwards;
+  will-change: transform, opacity;
+}
+
+.hero-word-magenta {
+  display: inline-block;
+  opacity: 0;
+  animation-name: heroMagentaReveal;
+  animation-duration: 3.4s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  animation-fill-mode: forwards;
+  will-change: transform, opacity;
+}
+
+/* Accesibilidad: Sin retardos ni animaciones si el usuario prefiere movimiento reducido */
+@media (prefers-reduced-motion: reduce) {
+  .hero-word {
+    animation: none !important;
+    opacity: 0.32 !important;
+    transform: none !important;
+  }
+  .hero-word-magenta {
+    animation: none !important;
+    opacity: 0.85 !important;
+    transform: none !important;
+  }
+}

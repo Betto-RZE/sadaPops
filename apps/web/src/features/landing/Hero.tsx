@@ -19,34 +19,48 @@ export function Hero() {
         {/* Contenedor compacto que aprovecha el espacio vertical sin scroll */}
         <div className="relative flex flex-col items-center justify-center min-h-[500px] sm:min-h-[560px] lg:min-h-[620px]">
           
-          {/* ========================================================= */}
-          {/* CAPA 1: TITULAR MONUMENTAL EN BLOQUES ASIMÉTRICOS DETRÁS  */}
-          {/* ========================================================= */}
+          {/* ========================================================================= */}
+          {/* CAPA 1: TITULAR MONUMENTAL - REVELACIÓN PALABRA POR PALABRA (FASE 1)      */}
+          {/* ========================================================================= */}
           <div 
             aria-hidden="true"
             className="absolute inset-0 z-0 flex flex-col justify-between py-1 sm:py-2 md:py-3 pointer-events-none select-none"
           >
-            {/* Bloque Superior Izquierdo: "Tu participación" */}
+            {/* Bloque Superior Izquierdo: "Tu" + "participación" */}
             <div className="w-full flex justify-start pl-2 sm:pl-6 md:pl-10 lg:pl-12">
-              <span className="text-[clamp(2.4rem,6.8vw,6.4rem)] font-black tracking-tighter leading-[0.88] text-brand-navy/30 uppercase font-sans">
-                Tu participación
+              <span className="text-[clamp(2.4rem,6.8vw,6.4rem)] font-black tracking-tighter leading-[0.88] text-brand-navy uppercase font-sans flex flex-wrap gap-x-3 sm:gap-x-4 md:gap-x-6">
+                <span className="hero-word" style={{ animationDelay: '0.10s' }}>
+                  Tu
+                </span>
+                <span className="hero-word" style={{ animationDelay: '0.35s' }}>
+                  participación
+                </span>
               </span>
             </div>
 
             {/* Bloque Medio Asimétrico: "hace" (gris) + "florecer" (magenta INE) */}
             <div className="w-full flex justify-between items-center px-1 sm:px-3 md:px-6 -my-3 sm:-my-5">
-              <span className="text-[clamp(2.4rem,7vw,6.6rem)] font-black tracking-tighter leading-[0.88] text-brand-navy/30 uppercase font-sans">
-                hace
+              <span className="text-[clamp(2.4rem,7vw,6.6rem)] font-black tracking-tighter leading-[0.88] text-brand-navy uppercase font-sans">
+                <span className="hero-word" style={{ animationDelay: '0.65s' }}>
+                  hace
+                </span>
               </span>
-              <span className="text-[clamp(2.6rem,7.4vw,7rem)] font-black tracking-tighter leading-[0.88] text-dalia-600/80 uppercase font-sans">
-                florecer
+              <span className="text-[clamp(2.6rem,7.4vw,7rem)] font-black tracking-tighter leading-[0.88] text-dalia-600 uppercase font-sans">
+                <span className="hero-word-magenta" style={{ animationDelay: '0.95s' }}>
+                  florecer
+                </span>
               </span>
             </div>
 
-            {/* Bloque Inferior Derecho: "a México." */}
+            {/* Bloque Inferior Derecho: "a" + "México." */}
             <div className="w-full flex justify-end pr-2 sm:pr-8 md:pr-14 lg:pr-16 pb-4 sm:pb-6">
-              <span className="text-[clamp(2.6rem,7.2vw,6.8rem)] font-black tracking-tighter leading-[0.88] text-brand-navy/35 uppercase font-sans">
-                a México.
+              <span className="text-[clamp(2.6rem,7.2vw,6.8rem)] font-black tracking-tighter leading-[0.88] text-brand-navy uppercase font-sans flex flex-wrap gap-x-3 sm:gap-x-4 md:gap-x-6">
+                <span className="hero-word" style={{ animationDelay: '1.25s' }}>
+                  a
+                </span>
+                <span className="hero-word" style={{ animationDelay: '1.45s' }}>
+                  México.
+                </span>
               </span>
             </div>
           </div>
