@@ -7,6 +7,7 @@ import {
   BETWEEN_CHARACTERS_DELAY_MS,
   ANCIANA_DEFAULTS,
   stepAncianaMovement,
+  stepNarrativeRetreatMovement,
   updateAncianaSpawnDelay,
   updateQueueTransitionDelay,
 } from "./ancianaConfig";
@@ -16,6 +17,7 @@ export type QueueStatus =
   | "walking"
   | "arrived"
   | "in_conversation"
+  | "leaving"
   | "waiting_next_character"
   | "all_completed";
 
@@ -34,6 +36,8 @@ export interface NarrativeNpcQueueState {
   isWalking: boolean;
   /** Indica si hay un personaje activo y visible en el escenario */
   isActive: boolean;
+  /** Dirección hacia donde mira el personaje ('left' al avanzar o estar en mesa, 'right' al retirarse) */
+  facingDirection: "left" | "right";
 }
 
 export interface UseNarrativeNpcsQueueProps {
@@ -153,26 +157,17 @@ export function useNarrativeNpcsQueue({
   }, []);
 
   /**
-   * Concluye la conversación actual y activa el retardo de 10 segundos antes del siguiente personaje.
-   * El personaje que acaba de terminar se desvanece/desmonta de la mesa.
+   * Concluye la conversación actual e inicia el retiro provisional del personaje.
+   * El personaje camina desde la mesa directiva (x: 26.0%) hacia el lado derecho del escenario (x: 102.0%).
+   * Al cruzar el borde derecho, concluye su salida y se activa el retardo de 10 segundos
+   * antes de la llegada del siguiente personaje.
    */
   const dismissConversation = useCallback(() => {
-    const nextIdx = currentIndexRef.current + 1;
-    if (nextIdx < NARRATIVE_CHARACTERS_ORDER.length) {
-      statusRef.current = "waiting_next_character";
-      transitionElapsedMsRef.current = 0;
-      setStatus("waiting_next_character");
-      setIsActive(false);
-      setIsWalking(false);
-      setRemainingTransitionMs(betweenCharactersDelayMs);
-    } else {
-      statusRef.current = "all_completed";
-      setStatus("all_completed");
-      setIsActive(false);
-      setIsWalking(false);
-      setRemainingTransitionMs(0);
-    }
-  }, [betweenCharactersDelayMs]);
+    statusRef.current = "leaving";
+    setStatus("leaving");
+    setIsActive(true);
+    setIsWalking(true);
+  }, []);
 
   /** Salta inmediatamente al siguiente personaje sin esperar los 10 segundos */
   const skipToNextCharacter = useCallback(() => {
@@ -291,7 +286,39 @@ export function useNarrativeNpcsQueue({
             }
           }
         }
-        // Fase 3: Espera de 10 segundos entre personajes tras finalizar una conversación
+        // Fase 3 (Provisional): Retiro del personaje caminando de regreso al lado derecho (x: 26 -> x: 102)
+        else if (statusRef.current === "leaving") {
+          const step = stepNarrativeRetreatMovement({
+            currentPos: positionRef.current,
+            targetPos: startPosition,
+            speed,
+            dt,
+          });
+
+          positionRef.current = step.nextPos;
+
+          if (isMountedRef.current) {
+            setPosition(step.nextPos);
+            if (step.isArrived) {
+              const nextIdx = currentIndexRef.current + 1;
+              if (nextIdx < NARRATIVE_CHARACTERS_ORDER.length) {
+                statusRef.current = "waiting_next_character";
+                transitionElapsedMsRef.current = 0;
+                setStatus("waiting_next_character");
+                setIsActive(false);
+                setIsWalking(false);
+                setRemainingTransitionMs(betweenCharactersDelayMs);
+              } else {
+                statusRef.current = "all_completed";
+                setStatus("all_completed");
+                setIsActive(false);
+                setIsWalking(false);
+                setRemainingTransitionMs(0);
+              }
+            }
+          }
+        }
+        // Fase 4: Espera de 10 segundos entre personajes tras finalizar el retiro
         else if (statusRef.current === "waiting_next_character") {
           const transitionProgress = updateQueueTransitionDelay({
             elapsedMs: transitionElapsedMsRef.current,
@@ -357,6 +384,8 @@ export function useNarrativeNpcsQueue({
     speed,
   ]);
 
+  const facingDirection: "left" | "right" = status === "leaving" ? "right" : "left";
+
   return {
     currentIndex,
     currentCharacterId,
@@ -365,6 +394,7 @@ export function useNarrativeNpcsQueue({
     position,
     isWalking,
     isActive,
+    facingDirection,
     elapsedDelayMs,
     remainingTransitionMs,
     startConversation,

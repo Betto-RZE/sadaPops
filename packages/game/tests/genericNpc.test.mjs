@@ -65,7 +65,7 @@ describe("Sistema de NPCs Genéricos - Pruebas de Integración y Ciclo de Vida",
       );
       assert.equal(
         getGenericNpcFrameSrc("idle", 0),
-        "/assets/juego/personajes/generico/generico-idle00086400.png",
+        "/assets/juego/personajes/generico/generico-idle.png",
       );
     });
   });

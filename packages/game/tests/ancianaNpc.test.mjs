@@ -29,6 +29,10 @@ import {
   INDIGENA_CONVERSATION_MESSAGES_ES,
   TRANS_CONVERSATION_MESSAGES_ES,
   DISCAPACITADO_CONVERSATION_MESSAGES_ES,
+  NARRATIVE_CHARACTERS_ANIMATION_CONFIG,
+  getNarrativeCharacterSideFrameSrc,
+  getNarrativeCharacterIdleSrc,
+  stepNarrativeRetreatMovement,
 } from "../src/features/mitos/ancianaConfig.ts";
 
 
@@ -1145,6 +1149,199 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
       assert.equal(getSpeakerNameAlignment("Inecito", portraits), "left");
       assert.equal(isPortraitActive("Don Roberto", portraits.right.speakerNames), true);
       assert.equal(isPortraitActive("Inecito", portraits.left.speakerNames), true);
+    });
+  });
+
+  describe("Fase 5.7: Animaciones de caminata, IDLE en mesa y sistema provisional de retiro", () => {
+    test("posee configuraciones exactas de cuadros para anciana, joven, indigena y trans", () => {
+      assert.equal(NARRATIVE_CHARACTERS_ANIMATION_CONFIG.anciana.frameCount, 36);
+      assert.equal(NARRATIVE_CHARACTERS_ANIMATION_CONFIG.anciana.folder, "anciana");
+      assert.equal(NARRATIVE_CHARACTERS_ANIMATION_CONFIG.anciana.filePrefix, "anciana-side");
+
+      assert.equal(NARRATIVE_CHARACTERS_ANIMATION_CONFIG.joven.frameCount, 29);
+      assert.equal(NARRATIVE_CHARACTERS_ANIMATION_CONFIG.joven.folder, "joven");
+      assert.equal(NARRATIVE_CHARACTERS_ANIMATION_CONFIG.joven.filePrefix, "chavo-side");
+
+      assert.equal(NARRATIVE_CHARACTERS_ANIMATION_CONFIG.indigena.frameCount, 32);
+      assert.equal(NARRATIVE_CHARACTERS_ANIMATION_CONFIG.indigena.folder, "indigena");
+      assert.equal(NARRATIVE_CHARACTERS_ANIMATION_CONFIG.indigena.filePrefix, "indigena-side");
+
+      assert.equal(NARRATIVE_CHARACTERS_ANIMATION_CONFIG.transgenero.frameCount, 34);
+      assert.equal(NARRATIVE_CHARACTERS_ANIMATION_CONFIG.transgenero.folder, "trans");
+      assert.equal(NARRATIVE_CHARACTERS_ANIMATION_CONFIG.transgenero.filePrefix, "trans-side");
+
+      assert.equal(NARRATIVE_CHARACTERS_ANIMATION_CONFIG.discapacitado.frameCount, 0);
+    });
+
+    test("getNarrativeCharacterSideFrameSrc resuelve rutas exactas con padding para cada personaje", () => {
+      // Anciana (Abuela)
+      assert.equal(
+        getNarrativeCharacterSideFrameSrc("anciana", 0),
+        "/assets/juego/personajes/anciana/side/anciana-side00086400.png",
+      );
+      assert.equal(
+        getNarrativeCharacterSideFrameSrc("anciana", 35),
+        "/assets/juego/personajes/anciana/side/anciana-side00086435.png",
+      );
+
+      // Joven (Mateo / Chavo)
+      assert.equal(
+        getNarrativeCharacterSideFrameSrc("joven", 0),
+        "/assets/juego/personajes/joven/side/chavo-side00086400.png",
+      );
+      assert.equal(
+        getNarrativeCharacterSideFrameSrc("joven", 28),
+        "/assets/juego/personajes/joven/side/chavo-side00086428.png",
+      );
+
+      // Indígena (María / Citlali)
+      assert.equal(
+        getNarrativeCharacterSideFrameSrc("indigena", 0),
+        "/assets/juego/personajes/indigena/side/indigena-side00086400.png",
+      );
+      assert.equal(
+        getNarrativeCharacterSideFrameSrc("indigena", 31),
+        "/assets/juego/personajes/indigena/side/indigena-side00086431.png",
+      );
+
+      // Transgénero (Alex / Morgan)
+      assert.equal(
+        getNarrativeCharacterSideFrameSrc("transgenero", 0),
+        "/assets/juego/personajes/trans/side/trans-side00086400.png",
+      );
+      assert.equal(
+        getNarrativeCharacterSideFrameSrc("transgenero", 33),
+        "/assets/juego/personajes/trans/side/trans-side00086433.png",
+      );
+    });
+
+    test("getNarrativeCharacterIdleSrc resuelve las posiciones IDLE oficiales en la mesa", () => {
+      assert.equal(
+        getNarrativeCharacterIdleSrc("anciana"),
+        "/assets/juego/personajes/anciana/anciana-idle.png",
+      );
+      assert.equal(
+        getNarrativeCharacterIdleSrc("joven"),
+        "/assets/juego/personajes/joven/joven-idle.png",
+      );
+      assert.equal(
+        getNarrativeCharacterIdleSrc("indigena"),
+        "/assets/juego/personajes/indigena/indigena-idle.png",
+      );
+      assert.equal(
+        getNarrativeCharacterIdleSrc("transgenero"),
+        "/assets/juego/personajes/trans/trans-idle.png",
+      );
+    });
+
+    test("stepNarrativeRetreatMovement desplaza hacia la derecha (x: 26 -> x: 102) con velocidad constante", () => {
+      const startPos = { x: 26.0, y: 66.0 };
+      const targetPos = { x: 102.0, y: 66.0 };
+      const speed = 9.0;
+      const dt = 1.0; // 1 segundo = 9% de desplazamiento hacia la derecha
+
+      const step1 = stepNarrativeRetreatMovement({
+        currentPos: startPos,
+        targetPos,
+        speed,
+        dt,
+      });
+
+      assert.equal(step1.nextPos.x, 35.0);
+      assert.equal(step1.nextPos.y, 66.0);
+      assert.equal(step1.isArrived, false);
+    });
+
+    test("stepNarrativeRetreatMovement no sobrepasa la coordenada de salida y reporta isArrived: true", () => {
+      const currentPos = { x: 100.0, y: 66.0 };
+      const targetPos = { x: 102.0, y: 66.0 };
+      const speed = 9.0;
+      const dt = 1.0; // Avanzaría a 109%, pero se limita exactamente a 102.0%
+
+      const step = stepNarrativeRetreatMovement({
+        currentPos,
+        targetPos,
+        speed,
+        dt,
+      });
+
+      assert.equal(step.nextPos.x, 102.0);
+      assert.equal(step.isArrived, true);
+
+      // Si ya está en la posición o más allá
+      const stepBeyond = stepNarrativeRetreatMovement({
+        currentPos: { x: 105.0, y: 66.0 },
+        targetPos,
+        speed,
+        dt,
+      });
+      assert.equal(stepBeyond.nextPos.x, 102.0);
+      assert.equal(stepBeyond.isArrived, true);
+    });
+
+    test("simulación determinista: llegada a mesa, cambio a IDLE, retiro a derecha y avance de cola tras 10s", () => {
+      // 1. Llegada (x: 102 -> 26)
+      let pos = { x: 102.0, y: 66.0 };
+      const targetTablePos = { x: 26.0, y: 66.0 };
+      const exitPos = { x: 102.0, y: 66.0 };
+      const speed = 9.0;
+      const dt = 1 / 60; // 60 FPS
+
+      let arrivedAtTable = false;
+      let frames = 0;
+      while (!arrivedAtTable && frames < 1000) {
+        frames++;
+        const step = stepAncianaMovement({
+          currentPos: pos,
+          targetPos: targetTablePos,
+          speed,
+          dt,
+        });
+        pos = step.nextPos;
+        arrivedAtTable = step.isArrived;
+      }
+
+      assert.equal(arrivedAtTable, true);
+      assert.equal(pos.x, 26.0);
+
+      // 2. En la mesa: el personaje cambia a IDLE
+      const idleSrc = getNarrativeCharacterIdleSrc("joven");
+      assert.equal(idleSrc, "/assets/juego/personajes/joven/joven-idle.png");
+
+      // 3. Al concluir la conversación: se retira hacia la derecha (x: 26 -> 102)
+      let exitedScene = false;
+      let retreatFrames = 0;
+      while (!exitedScene && retreatFrames < 1000) {
+        retreatFrames++;
+        const step = stepNarrativeRetreatMovement({
+          currentPos: pos,
+          targetPos: exitPos,
+          speed,
+          dt,
+        });
+        pos = step.nextPos;
+        exitedScene = step.isArrived;
+      }
+
+      assert.equal(exitedScene, true);
+      assert.equal(pos.x, 102.0);
+
+      // 4. Tras salir del escenario: transcurren los 10 segundos antes del siguiente personaje
+      let elapsedDelay = 0;
+      const delayStep1 = updateQueueTransitionDelay({
+        elapsedMs: elapsedDelay,
+        dtSeconds: 5.0,
+        delayMs: 10000,
+      });
+      assert.equal(delayStep1.isReady, false);
+
+      const delayStep2 = updateQueueTransitionDelay({
+        elapsedMs: delayStep1.newElapsedMs,
+        dtSeconds: 5.0,
+        delayMs: 10000,
+      });
+      assert.equal(delayStep2.isReady, true);
+      assert.equal(delayStep2.newElapsedMs, 10000);
     });
   });
 });

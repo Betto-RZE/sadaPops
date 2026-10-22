@@ -1,4 +1,4 @@
-export * from "./index.tsx";
+export * from "./index";
 export {
   PixelSpeechBubble,
   type PixelSpeechBubbleProps,

@@ -70,6 +70,7 @@ export function releaseAncianaImages(): void {
     }
     PRELOADED_ANCIANA_IMAGES[anim] = [];
   }
+  releaseNarrativeCharactersImages();
 }
 
 /**
@@ -754,6 +755,166 @@ export const NARRATIVE_CHARACTERS_ORDER: readonly NarrativeCharacterId[] = [
  * con un personaje y comienza la llegada del siguiente personaje.
  */
 export const BETWEEN_CHARACTERS_DELAY_MS = 10000;
+
+export interface NarrativeCharacterAnimationInfo {
+  folder: string;
+  filePrefix: string;
+  frameCount: number;
+  idleSrc: string;
+}
+
+/**
+ * Configuración de animaciones de caminata lateral e imagen IDLE de los 5 personajes narrativos:
+ * - anciana: 36 frames (anciana-side), idle en anciana-idle.png
+ * - joven: 29 frames (chavo-side), idle en joven-idle.png
+ * - indigena: 32 frames (indigena-side), idle en indigena-idle.png
+ * - transgenero: 34 frames (trans-side), idle en trans-idle.png
+ * - discapacitado: fallback a retrato en diálogo
+ */
+export const NARRATIVE_CHARACTERS_ANIMATION_CONFIG: Record<
+  NarrativeCharacterId,
+  NarrativeCharacterAnimationInfo
+> = {
+  anciana: {
+    folder: "anciana",
+    filePrefix: "anciana-side",
+    frameCount: 36,
+    idleSrc: "/assets/juego/personajes/anciana/anciana-idle.png",
+  },
+  joven: {
+    folder: "joven",
+    filePrefix: "chavo-side",
+    frameCount: 29,
+    idleSrc: "/assets/juego/personajes/joven/joven-idle.png",
+  },
+  indigena: {
+    folder: "indigena",
+    filePrefix: "indigena-side",
+    frameCount: 32,
+    idleSrc: "/assets/juego/personajes/indigena/indigena-idle.png",
+  },
+  transgenero: {
+    folder: "trans",
+    filePrefix: "trans-side",
+    frameCount: 34,
+    idleSrc: "/assets/juego/personajes/trans/trans-idle.png",
+  },
+  discapacitado: {
+    folder: "discapacitado",
+    filePrefix: "discapacitado-side",
+    frameCount: 0,
+    idleSrc: "/assets/juego/dialogos/retrato-discapacitado.png",
+  },
+};
+
+/**
+ * Resuelve la ruta pública del frame de caminata lateral para cualquier personaje narrativo.
+ */
+export function getNarrativeCharacterSideFrameSrc(
+  characterId: NarrativeCharacterId,
+  frameIndex: number,
+): string {
+  const config = NARRATIVE_CHARACTERS_ANIMATION_CONFIG[characterId];
+  if (!config || config.frameCount <= 0) return "";
+  const safeIndex = Math.max(0, Math.min(frameIndex, config.frameCount - 1));
+  const paddedIndex = String(safeIndex).padStart(2, "0");
+  return `/assets/juego/personajes/${config.folder}/side/${config.filePrefix}000864${paddedIndex}.png`;
+}
+
+/**
+ * Resuelve la ruta pública del sprite IDLE para cualquier personaje narrativo en la mesa.
+ */
+export function getNarrativeCharacterIdleSrc(
+  characterId: NarrativeCharacterId,
+): string {
+  return NARRATIVE_CHARACTERS_ANIMATION_CONFIG[characterId]?.idleSrc || "";
+}
+
+/**
+ * Función pura que calcula el siguiente paso de movimiento en línea recta de retiro (hacia la derecha).
+ * Cuando el personaje concluye su conversación en la mesa, camina de regreso hacia el lado derecho
+ * (x: 26.0% -> x: 102.0%) siguiendo la misma trayectoria en reversa.
+ */
+export function stepNarrativeRetreatMovement({
+  currentPos,
+  targetPos = ANCIANA_DEFAULTS.startPosition,
+  speed = ANCIANA_DEFAULTS.speed,
+  dt,
+}: {
+  currentPos: { x: number; y: number };
+  targetPos?: { x: number; y: number };
+  speed?: number;
+  dt: number;
+}): { nextPos: { x: number; y: number }; isArrived: boolean } {
+  if (currentPos.x >= targetPos.x) {
+    return {
+      nextPos: { x: targetPos.x, y: targetPos.y },
+      isArrived: true,
+    };
+  }
+
+  const nextX = Math.min(targetPos.x, currentPos.x + speed * dt);
+  const isArrived = nextX >= targetPos.x;
+
+  return {
+    nextPos: { x: nextX, y: targetPos.y },
+    isArrived,
+  };
+}
+
+/**
+ * Caché en memoria de imágenes precargadas de los personajes narrativos.
+ */
+export const PRELOADED_NARRATIVE_IMAGES: Record<
+  NarrativeCharacterId,
+  HTMLImageElement[]
+> = {
+  anciana: [],
+  joven: [],
+  indigena: [],
+  transgenero: [],
+  discapacitado: [],
+};
+
+/**
+ * Precarga en segundo plano los frames y sprites idle de los personajes narrativos.
+ */
+export function preloadNarrativeCharactersImages(): void {
+  if (typeof window === "undefined") return;
+
+  const charIds = Object.keys(
+    NARRATIVE_CHARACTERS_ANIMATION_CONFIG,
+  ) as NarrativeCharacterId[];
+  for (const charId of charIds) {
+    if (PRELOADED_NARRATIVE_IMAGES[charId].length > 0) continue;
+    const config = NARRATIVE_CHARACTERS_ANIMATION_CONFIG[charId];
+    if (config.idleSrc) {
+      const idleImg = new Image();
+      idleImg.src = config.idleSrc;
+      PRELOADED_NARRATIVE_IMAGES[charId].push(idleImg);
+    }
+    for (let i = 0; i < config.frameCount; i++) {
+      const img = new Image();
+      img.src = getNarrativeCharacterSideFrameSrc(charId, i);
+      PRELOADED_NARRATIVE_IMAGES[charId].push(img);
+    }
+  }
+}
+
+/**
+ * Libera la memoria de imágenes precargadas de los personajes narrativos.
+ */
+export function releaseNarrativeCharactersImages(): void {
+  const charIds = Object.keys(
+    PRELOADED_NARRATIVE_IMAGES,
+  ) as NarrativeCharacterId[];
+  for (const charId of charIds) {
+    for (const img of PRELOADED_NARRATIVE_IMAGES[charId]) {
+      img.src = "";
+    }
+    PRELOADED_NARRATIVE_IMAGES[charId] = [];
+  }
+}
 
 /**
  * Diálogos de llegada para Mateo (El Joven) (Español y Náhuatl).

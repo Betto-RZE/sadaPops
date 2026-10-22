@@ -28,6 +28,12 @@ export {
   type ChapterDefinition,
   type ChapterCardImage,
 } from "./features/capitulos/chapters";
+export {
+  PixelSpeechBubble,
+  type PixelSpeechBubbleProps,
+} from "./PixelSpeechBubble";
+export * from "./features/npcs";
+export * from "./features/mitos";
 
 type GameScreen = "splash" | "chapters" | "gameplay";
 

@@ -8,7 +8,7 @@ import type {
  * Cantidad exacta de cuadros (frames) por animación del personaje genérico.
  * - back: 23 frames (generico-back00086400.png a ...00086422.png)
  * - front: 28 frames (generico-front00086400.png a ...00086427.png)
- * - idle: 1 frame estático (generico-idle00086400.png)
+ * - idle: 1 frame estático (generico-idle.png)
  */
 export const GENERIC_NPC_FRAME_COUNTS: Record<GenericNpcAnimation, number> = {
   back: 23,
@@ -24,7 +24,7 @@ export function getGenericNpcFrameSrc(
   frameIndex: number,
 ): string {
   if (animation === "idle") {
-    return "/assets/juego/personajes/generico/generico-idle00086400.png";
+    return "/assets/juego/personajes/generico/generico-idle.png";
   }
 
   const paddedIndex = String(frameIndex).padStart(2, "0");

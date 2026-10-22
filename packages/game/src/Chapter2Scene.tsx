@@ -166,6 +166,11 @@ export default function Chapter2Scene({
     narrativeQueuePosRef.current = narrativeQueue.position;
   }, [narrativeQueue.position]);
 
+  const narrativeQueueRef = useRef(narrativeQueue);
+  useEffect(() => {
+    narrativeQueueRef.current = narrativeQueue;
+  }, [narrativeQueue]);
+
   // Diálogo activado al llegar un personaje a la mesa directiva
   type NpcArrivalDialogueState =
     | "idle"
@@ -229,16 +234,13 @@ export default function Chapter2Scene({
     if (npcConversationState === "exiting") {
       const timer = setTimeout(() => {
         setNpcConversationState("dismissed");
-        // Al terminar el diálogo, concluye la conversación en la cola y arranca el retardo de 10 segundos
-        narrativeQueue.dismissConversation();
-        setArrivalDialogueState("idle");
       }, 350);
       return () => clearTimeout(timer);
     }
     if (npcConversationState === "dismissed") {
       setNpcConversationState("idle");
     }
-  }, [npcConversationState, narrativeQueue]);
+  }, [npcConversationState]);
 
   // El icono de exclamación (!) aparece en el lado izquierdo de la mesa cuando
   // el personaje actual está en la mesa, su anuncio de llegada ha concluido
@@ -316,8 +318,13 @@ export default function Chapter2Scene({
       position: narrativeQueue.position,
       assignedMamparaId: 1,
       currentAnimation: "side" as any,
-      state: narrativeQueue.status === "walking" ? "ENTERING" : "IDLE",
-      speed: narrativeQueue.status === "walking" ? ANCIANA_DEFAULTS.speed : 0,
+      state:
+        narrativeQueue.status === "walking"
+          ? "ENTERING"
+          : narrativeQueue.status === "leaving"
+            ? "LEAVING"
+            : "IDLE",
+      speed: narrativeQueue.isWalking ? ANCIANA_DEFAULTS.speed : 0,
       votingWaitTimeMs: 0,
       elapsedInStateMs: 0,
       isActive: true,
@@ -960,6 +967,7 @@ export default function Chapter2Scene({
             <NarrativeNpcSprite
               characterId={narrativeQueue.currentCharacterId}
               isWalking={narrativeQueue.isWalking}
+              facingDirection={narrativeQueue.facingDirection}
               isPaused={isPaused}
             />
           </div>
@@ -1278,6 +1286,8 @@ export default function Chapter2Scene({
               onClick={(e) => {
                 e.stopPropagation();
                 setNpcConversationState("exiting");
+                narrativeQueueRef.current.dismissConversation();
+                setArrivalDialogueState("idle");
               }}
               type="button"
               title="Saltar todos los textos con un solo clic (Test)"
@@ -1308,7 +1318,11 @@ export default function Chapter2Scene({
                 setIsWalking(false);
                 setLastDirection("4");
               }}
-              onDismiss={() => setNpcConversationState("exiting")}
+              onDismiss={() => {
+                setNpcConversationState("exiting");
+                narrativeQueueRef.current.dismissConversation();
+                setArrivalDialogueState("idle");
+              }}
             />
           </div>
         </div>
