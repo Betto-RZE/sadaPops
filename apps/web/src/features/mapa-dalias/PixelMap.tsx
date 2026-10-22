@@ -133,6 +133,10 @@ const SELECT_CLIFF = {
 const BASE_SHADOW_1 = hexToU32('#1A1638', 85); // 1er pixel debajo (~33% alfa)
 const BASE_SHADOW_2 = hexToU32('#1A1638', 40); // 2do pixel debajo (~15% alfa)
 
+// Fondo de papel con sombra para cubrir la huella del acantilado viejo al flotar (Opción A)
+const PAPER_SHADOW = hexToU32('#C3C1C8', 255);
+const SOCKET_GROOVE = hexToU32('#27197A', 255);
+
 /** Elevación vertical en vóxeles al hacer hover o seleccionar (2 vóxeles = 6px a escala 3x) */
 const ELEVATION_VOXELS = 2;
 
@@ -248,6 +252,7 @@ export function PixelMap({
     imgData: ImageData;
     u32: Uint32Array;
     prevDrawnIndices: number[];
+    liftedMask: Uint8Array;
   } | null>(null);
 
   // Estado local para hover cuando el componente no está completamente controlado
@@ -281,10 +286,11 @@ export function PixelMap({
         imgData,
         u32: new Uint32Array(imgData.data.buffer),
         prevDrawnIndices: [],
+        liftedMask: new Uint8Array(width * height),
       };
     }
 
-    const { imgData, u32, prevDrawnIndices } = bufferRef.current;
+    const { imgData, u32, prevDrawnIndices, liftedMask } = bufferRef.current;
     const { mapIds, basePixels, pixelScale } = data;
     const liftPx = ELEVATION_VOXELS * pixelScale; // 6px
 
@@ -336,58 +342,83 @@ export function PixelMap({
       const top = pixelIndex.topPixels;
       const side = pixelIndex.sidePixels;
 
-      // Paso 2.1: Conservar y conectar las paredes costeras existentes (sidePixels)
+      // Opción A: Levantar el bloque completo (cara superior + acantilado frontal) como una pieza sólida 3D.
+      // Paso A1: Registrar en `liftedMask` las posiciones donde aterrizará el bloque elevado (y - liftPx)
+      const touchedMaskIndices: number[] = [];
+      for (let i = 0; i < top.length; i++) {
+        const idx = top[i];
+        const y = Math.floor(idx / width);
+        if (y >= liftPx) {
+          const targetIdx = idx - liftPx * width;
+          liftedMask[targetIdx] = 1;
+          touchedMaskIndices.push(targetIdx);
+        }
+      }
+      for (let i = 0; i < side.length; i++) {
+        const idx = side[i];
+        const y = Math.floor(idx / width);
+        if (y >= liftPx) {
+          const targetIdx = idx - liftPx * width;
+          liftedMask[targetIdx] = 1;
+          touchedMaskIndices.push(targetIdx);
+        }
+      }
+
+      // Paso A2: Enmascarar la huella inferior del acantilado en map-base.png para que no se duplique abajo
+      for (let i = 0; i < side.length; i++) {
+        const idx = side[i];
+        if (!liftedMask[idx]) {
+          // Cubrir la base vieja expuesta con textura de papel sombreado
+          setPixel(idx, PAPER_SHADOW);
+        }
+      }
+
+      // Paso A3: Dibujar el acantilado costero/frontal suspendido en (x, y - liftPx)
       for (let i = 0; i < side.length; i++) {
         const idx = side[i];
         const x = idx % width;
         const y = Math.floor(idx / width);
+        if (y < liftPx) continue;
+
         const orig = basePixels[idx];
         const wallCol =
           mode === 'select'
             ? cliffPalette.dark
             : orig !== 0
-            ? brightenU32(orig, 14)
+            ? brightenU32(orig, 16)
             : cliffPalette.mid;
 
-        // Mantener anclada la base del acantilado y desplazar copia hacia arriba para unión continua
-        setPixel(idx, wallCol);
-        if (y >= liftPx) {
-          setPixel((y - liftPx) * width + x, wallCol);
+        const liftedIdx = (y - liftPx) * width + x;
+        setPixel(liftedIdx, wallCol);
+
+        // Sombra de contacto suave debajo de la base del acantilado elevado
+        const belowId = (y + 1 < height) ? mapIds[(y + 1) * width + x] : 0;
+        if (belowId !== numId && belowId !== numId + 32) {
+          const shadowY1 = y - liftPx + 1;
+          if (shadowY1 < height) {
+            setPixel(shadowY1 * width + x, BASE_SHADOW_1);
+          }
         }
       }
 
-      // Paso 2.2: Extruir nueva pared prismática de 6px (2 vóxeles) bajo todo el perímetro inferior/derecho
+      // Paso A4: Extruir nueva pared vertical (6px) en bordes continentales limítrofes con otros estados
       for (let i = 0; i < top.length; i++) {
         const idx = top[i];
         const x = idx % width;
         const y = Math.floor(idx / width);
 
-        const isBottomEdge = y + 1 >= height || mapIds[(y + 1) * width + x] !== numId;
-        const isRightEdge = x + 1 >= width || mapIds[y * width + (x + 1)] !== numId;
+        const isBottomEdge = y + 1 >= height || (mapIds[(y + 1) * width + x] !== numId && mapIds[(y + 1) * width + x] !== numId + 32);
+        const isRightEdge = x + 1 >= width || (mapIds[y * width + (x + 1)] !== numId && mapIds[y * width + (x + 1)] !== numId + 32);
 
         if (isBottomEdge) {
-          // Detectar si es pliegue de escalón de 1px
+          // Orientación de la pared continental
           const leftSame = x > 0 && mapIds[y * width + (x - 1)] === numId;
           const rightSame = x + 1 < width && mapIds[y * width + (x + 1)] === numId;
           const isStepCrease = !leftSame || !rightSame;
 
-          // Estimar orientación de la pared (Suroeste iluminada vs Sureste en sombra)
-          const leftExtendsDown =
-            x >= pixelScale &&
-            y + pixelScale < height &&
-            mapIds[(y + pixelScale) * width + (x - pixelScale)] === numId;
-          const rightExtendsDown =
-            x + pixelScale < width &&
-            y + pixelScale < height &&
-            mapIds[(y + pixelScale) * width + (x + pixelScale)] === numId;
-
           let wallColor = cliffPalette.mid;
           if (isStepCrease) {
             wallColor = cliffPalette.deep;
-          } else if (rightExtendsDown && !leftExtendsDown) {
-            wallColor = cliffPalette.light;
-          } else if (leftExtendsDown && !rightExtendsDown) {
-            wallColor = cliffPalette.dark;
           }
 
           for (let d = 1; d <= liftPx; d++) {
@@ -397,7 +428,7 @@ export function PixelMap({
             }
           }
 
-          // Micro-sombra de contacto bajo la base del estado elevado (despegue 3D)
+          // Micro-sombra de contacto bajo el estado elevado
           if (y + 1 < height && mapIds[(y + 1) * width + x] !== numId && mapIds[(y + 1) * width + x] !== numId + 32) {
             setPixel((y + 1) * width + x, BASE_SHADOW_1);
             if (y + 2 < height && mapIds[(y + 2) * width + x] !== numId && mapIds[(y + 2) * width + x] !== numId + 32) {
@@ -406,7 +437,7 @@ export function PixelMap({
           }
         }
 
-        // Pared lateral derecha (espesor este) cuando el bloque se eleva sobre su vecino oriental
+        // Pared este (sombra profunda)
         if (isRightEdge && x + 1 < width) {
           for (let d = 1; d <= liftPx; d++) {
             const wy = y - liftPx + d;
@@ -417,7 +448,7 @@ export function PixelMap({
         }
       }
 
-      // Paso 2.3: Pintar la cara superior desplazada en (x, y - liftPx) con colores sólidos vibrantes
+      // Paso A5: Pintar la cara superior desplazada en (x, y - liftPx) con biseles y colores vibrantes
       for (let i = 0; i < top.length; i++) {
         const idx = top[i];
         const x = idx % width;
@@ -447,7 +478,7 @@ export function PixelMap({
             topColor = orig !== 0 ? tintSelectU32(orig) : hexToU32('#E83882');
           }
         } else {
-          // Modo Hover: preserva biseles originales con realce luminoso sólido (cero gris)
+          // Modo Hover
           if (isNorthOrWestEdge) {
             topColor = cliffPalette.rimHighlight;
           } else if (isSouthOrEastEdge) {
@@ -458,6 +489,11 @@ export function PixelMap({
         }
 
         setPixel(ly * width + x, topColor);
+      }
+
+      // Limpiar `liftedMask` para reutilizarlo en la siguiente llamada sin coste de GC
+      for (let i = 0; i < touchedMaskIndices.length; i++) {
+        liftedMask[touchedMaskIndices[i]] = 0;
       }
     };
 
