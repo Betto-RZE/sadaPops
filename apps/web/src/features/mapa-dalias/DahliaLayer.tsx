@@ -67,26 +67,43 @@ export function DahliaLayer({
       return;
     }
 
+    // Disparar inmediatamente al montar si ya está en pantalla o con fallback
+    const triggerBloom = () => {
+      setHasBloomed(true);
+      const timer = setTimeout(() => {
+        onBloomComplete?.();
+      }, 1400);
+      return () => clearTimeout(timer);
+    };
+
+    if (typeof window === 'undefined' || !('IntersectionObserver' in window)) {
+      triggerBloom();
+      return;
+    }
+
     const observer = new IntersectionObserver(
       (entries) => {
         const [entry] = entries;
         if (entry.isIntersecting && !hasBloomed) {
-          setHasBloomed(true);
-          // La oleada más tardía termina en aprox 1.4s
-          const timer = setTimeout(() => {
-            onBloomComplete?.();
-          }, 1400);
-          return () => clearTimeout(timer);
+          triggerBloom();
         }
       },
-      { threshold: 0.2 }
+      { threshold: 0.05 }
     );
 
     if (layerRef.current) {
       observer.observe(layerRef.current);
     }
 
-    return () => observer.disconnect();
+    // Fallback de seguridad: si IntersectionObserver no dispara en 300ms, activar de todos modos
+    const fallbackTimer = setTimeout(() => {
+      setHasBloomed(true);
+    }, 300);
+
+    return () => {
+      observer.disconnect();
+      clearTimeout(fallbackTimer);
+    };
   }, [hasBloomed, onBloomComplete]);
 
   if (!data) return null;
@@ -108,23 +125,23 @@ export function DahliaLayer({
       <style>{`
         @keyframes dahlia-bloom-step {
           0% {
-            transform: translate(-50%, -58%) scale(0);
+            transform: scale(0);
             opacity: 0;
           }
           25% {
-            transform: translate(-50%, -58%) scale(0.35);
+            transform: scale(0.35);
             opacity: 1;
           }
           50% {
-            transform: translate(-50%, -58%) scale(0.68);
+            transform: scale(0.68);
             opacity: 1;
           }
           75% {
-            transform: translate(-50%, -58%) scale(1.08);
+            transform: scale(1.08);
             opacity: 1;
           }
           100% {
-            transform: translate(-50%, -58%) scale(1);
+            transform: scale(1);
             opacity: 1;
           }
         }
@@ -139,7 +156,7 @@ export function DahliaLayer({
         @media (prefers-reduced-motion: reduce) {
           .dahlia-bloom {
             animation: none !important;
-            transform: translate(-50%, -58%) scale(1) !important;
+            transform: scale(1) !important;
             opacity: 1 !important;
           }
         }
@@ -149,7 +166,8 @@ export function DahliaLayer({
         const level = (levelsMap.get(st.id) ?? 1) as 1 | 2 | 3;
         const meta = DAHLIA_SPRITE_META[level];
 
-        // Ancho porcentual respecto al ancho lógico del mapa (660 px)
+        // Ancho porcentual respecto al contenedor del mapa (660 px)
+        // Ejemplo: meta.logicalWidth de 18 px en un mapa de 660 px = 2.72% del mapa
         const widthPercent = (meta.logicalWidth / data.width) * 100;
 
         // Retardo escalonado de la oleada: entre 0.15s y 0.95s según la latitud norte->sur
@@ -163,9 +181,8 @@ export function DahliaLayer({
                 hasBloomed ? 'dahlia-bloom' : 'opacity-0 scale-0'
               )}
               style={{
-                width: `${widthPercent * 8.5}vw`,
-                maxWidth: `${meta.logicalWidth * 2.4}px`,
-                minWidth: `${meta.logicalWidth}px`,
+                width: `${meta.width}px`,
+                maxWidth: `${meta.width}px`,
                 animationDelay: hasBloomed ? `${waveDelay}s` : '0s',
                 transformOrigin: '50% 58%',
               }}
