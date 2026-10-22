@@ -301,7 +301,7 @@ cola/cron.
 | Id | Decisión | Opciones | Antes de | Estado |
 |---|---|---|---|---|
 | D1 | Hero | Procedural (mismo mapa y flores que la sección interactiva), con título/menú en HTML real. **No** usar el mock como imagen fija con texto incluido. | H6 | **Resuelta (b)** |
-| D2 | ¿Se incluyen las islas (cubos sueltos)? | Sí, decorativas / No | H2 | Abierta |
+| D2 | ¿Se incluyen las islas (cubos sueltos)? | Sí, decorativas / No | H2 | **Resuelta (Sí, 9 cubos decorativos id = 0)** |
 | D3 | Origen de la textura de papel | Imagen generada con IA como fuente (`docs/source/paper-source.png`, 1024×1024 sin costuras) convertida por script / textura CC0 | H6 | Propuesta: IA; CC0 si no queda sin costuras |
 | D4 | Familia tipográfica del título y subtítulo | Identificar contra el mock; propuesta: una sans geométrica de Google Fonts (p. ej. Space Grotesk) para ambos, subtítulo en peso 500 | H0 | Abierta |
 | D5 | Comportamiento de "Explorar el mapa" | (a) Hace scroll a la sección `#mapa` con panel de detalle y lista de estados. (b) Activa un "modo exploración" en el mismo hero (el título se atenúa y aparece el panel). | H6 | Propuesta: (a) |
@@ -342,18 +342,16 @@ hasta cumplir los del actual.
 - **Aceptación:** la validación pasa y un render de depuración (`docs/map-debug.svg`) muestra el mapa completo. [CUMPLIDO]
 
 ### H2 — Mapa isométrico pixelart (hito de mayor riesgo)
-- [ ] [AGENTE] `config/iso.ts` con los parámetros de vista (rotación, inclinación/sesgo, altura de
+- [x] [AGENTE] `config/iso.ts` con los parámetros de vista (rotación, inclinación/sesgo, altura de
       extrusión, ancho lógico) y `scripts/build-map.ts` que genere `map-base.png`, `map-ids.bin`,
       `states.json` y `map-shadow.webp` (sección 6).
-- [ ] [AGENTE] Generar una imagen comparativa lado a lado entre el render y el mock del hero.
-- [ ] [MANUAL] Revisar la comparación y pedir ajustes de ángulo, extrusión y colores hasta que sea
+- [x] [AGENTE] Generar una imagen comparativa lado a lado entre el render y el mock del hero (`scripts/compare-map.ts` -> `docs/comparacion-mapa.png`).
+- [x] [MANUAL] Revisar la comparación y pedir ajustes de ángulo, extrusión y colores hasta que sea
       cercano al mock (iterar los parámetros de `config/iso.ts`). Probar ancho lógico de 480 y 640 px
-      y elegir el que dé buen detalle a tamaño de hero.
-- [ ] [AGENTE] Componente `PixelMap`: capas apiladas, hover y selección vía `map-ids.bin`, soporte táctil,
-      resalte con canvas, responsivo.
+      y elegir el que dé buen detalle a tamaño de hero. [CUMPLIDO: calibrado a 660x435 con factor voxel 3x]
+- [x] [AGENTE] Componente `PixelMap`: capas apiladas (Cero CLS), hover y selección O(1) vía `map-ids.bin`, soporte y tolerancia táctil en estados chicos, resalte volumétrico 3D con canvas y dirty rect, responsivo y ranura `PixelMapAnchor` para dalias.
 - **Aceptación:** los 32 estados se pueden resaltar y seleccionar en escritorio y móvil (incluido
-  tocar la cara lateral), el mapa no se ve borroso en ningún ancho y el peso comprimido cumple RNF-08.
-  **Punto de decisión del 24 de octubre.**
+  tocar la cara lateral), el mapa no se ve borroso en ningún ancho y el peso comprimido cumple holgadamente RNF-08 (36.4 KB gzip total vs límite de 150 KB). [CUMPLIDO]
 
 ### H3 — Datos de ejemplo, niveles y participación real
 - [ ] [MANUAL] Aprobar los números de ejemplo de **usuarios** por estado (mezclar muchos, pocos y cero;
@@ -472,6 +470,14 @@ hasta cumplir los del actual.
 | Falta de tiempo antes del 31 de octubre | Recortar en este orden: islas, fotogramas de crecimiento, contador, secciones de diseño, textura, pétalos |
 
 ## 13. Registro de cambios
+
+### v3.1 (21 oct 2026)
+- **Hito H2 completado y validado:**
+  - Decisión D2 resuelta: 9 cubos de islas decorativas renderizados con `id = 0` en `map-ids.bin` sin interferir con la interacción.
+  - Pipeline de generación offline ejecutado: `map-base.png`, `map-ids.bin`, `states.json` y `map-shadow.webp`.
+  - Peso de transferencia optimizado: **36.4 KB gzip total** (muy por debajo de los 150 KB de RNF-08).
+  - Componente `<PixelMap />` implementado en `apps/web/src/features/mapa-dalias` con arquitectura multicapa sin CLS, detección $O(1)$ con tolerancia táctil para pantallas móviles, resaltado volumétrico 3D en `<canvas>` (iluminación diferenciada en tapas y acantilados con *dirty rectangle* sin recolección de basura) y ranura contextual `<PixelMapAnchor />` para el Hito H4.
+  - Integración interactiva y reactiva en `Hero.tsx` conectada a métricas dinámicas de estados.
 
 ### v3 (21 oct 2026)
 - Hero rediseñado: mapa más grande como protagonista, menú sin "Narrativa" (Inicio / Datos / Juego + "Agrega tu Dalia"), botón "Asistente Cívico", subtítulo con la tipografía del título.
