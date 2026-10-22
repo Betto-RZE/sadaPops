@@ -1,5 +1,5 @@
 /**
- * Configuración de proyección isométrica y rasterizado voxel para el Mapa de México.
+ * Configuración de proyección isométrica y rasterizado voxel 3D para el Mapa de México.
  * Calibrado directamente contra docs/referencias/mockup-mapa.jpeg
  */
 
@@ -18,7 +18,7 @@ export interface IsoMapConfig {
   /** Dimensiones de la rejilla voxel lógica */
   gridWidth: number;
   gridHeight: number;
-  /** Factor de escalado entero de cada voxel a píxeles de salida (ej. 2 o 3) */
+  /** Factor de escalado entero de cada voxel a píxeles de salida (ej. 3 -> bloques de 3x3 px) */
   pixelScale: number;
 
   /**
@@ -42,15 +42,12 @@ export interface IsoMapConfig {
 
   /** Transformación afín 2.5D sobre el espacio proyectado */
   transform: {
-    /** Rotación en grados para alinear la diagonal NW-SE con mockup-mapa.jpeg */
     rotationDeg: number;
-    /** Compresión vertical isométrica */
     scaleY: number;
-    /** Sesgo horizontal oblicuo */
     shearX: number;
   };
 
-  /** Parámetros de extrusión vertical hacia abajo (Delta X = 0, Delta Y = +1) */
+  /** Parámetros de extrusión vertical 3D */
   extrusion: {
     /** Altura de las paredes continentales en vóxeles */
     heightInVoxels: number;
@@ -60,58 +57,56 @@ export interface IsoMapConfig {
 
   /** Limpieza geométrica en espacio de rejilla (unidades: vóxeles²) */
   geometry: {
-    /** Polígonos secundarios (islas del GeoJSON) con área menor se descartan (usamos cubos voxel) */
     minIslandAreaVoxels: number;
-    /** Huecos interiores (artefactos de simplificación) con área menor se descartan */
     minHoleAreaVoxels: number;
-    /** Componentes de tierra conectados con menos celdas se eliminan (ruido) */
     minComponentCells: number;
-    /** Celdas mínimas garantizadas por estado (CDMX, Tlaxcala, Morelos...) */
     minStateCells: number;
-    /** Pasadas de suavizado morfológico por mayoría para evitar bordes zigzagueantes ruidosos */
     smoothingPasses: number;
   };
 
   /** Sombra suave prehorneada sobre el papel (map-shadow.webp) */
   shadow: {
-    /** Desplazamiento en píxeles de salida */
     offsetX: number;
     offsetY: number;
-    /** Sigma del desenfoque gaussiano en píxeles de salida */
     blurSigma: number;
-    /** Opacidad máxima [0..1] */
     opacity: number;
-    /** Factor de resolución del archivo (0.5 = mitad; se escala suavizado en CSS) */
     resolutionScale: number;
   };
 
   /**
-   * Paleta exacta muestreada de docs/referencias/mockup-mapa.jpeg
+   * Paleta 3D Voxel muestreada a zoom de docs/referencias/mockup-mapa.jpeg
+   * Luz direccional principal desde Arriba-Izquierda (Noroeste / Suroeste en paredes).
    */
   palette: {
-    /** Tonos superiores índigo-periwinkle sutilmente diferenciados por estado */
+    /** Tonos base de cara superior por estado */
     topVariants: string[];
-    /** Bisel luminoso en el labio superior del acantilado */
-    coastalHighlight: string;
-    /** Líneas divisorias entre estados (1 voxel) */
+    /** Anillo de vóxeles del borde costero (1 voxel completo de grosor alrededor del perímetro) */
+    coastalRimVoxel: string;
+    /** Brillo especular de 1px en la arista exterior del borde costero */
+    coastalRimHighlight: string;
+    /** Sombra interna de 1px entre el anillo costero y el interior del estado */
+    coastalInnerBevel: string;
+    /** Cresta luminosa de las fronteras internas entre estados */
     borderInner: string;
-    /** Tono de transición suave junto al borde interno */
+    /** Bisel intermedio de la frontera */
     borderSoft: string;
-    /** Pared lateral frontal / orientación Sureste (iluminada) */
+    /** Surco oscuro de 1px junto a la frontera (efecto ranura entre piezas 3D) */
+    borderGroove: string;
+    /** Pared lateral iluminada (orientación Suroeste / Izquierda) */
     cliffLight: string;
-    /** Pared lateral media (orientación Sur) */
+    /** Pared lateral frontal (orientación Sur) */
     cliffMid: string;
-    /** Pared lateral en sombra (orientación Suroeste / escalón izquierdo) */
+    /** Pared lateral en sombra (orientación Sureste / Derecha) */
     cliffDark: string;
-    /** Base de contacto del acantilado con el papel */
-    cliffEdge: string;
+    /** Pared lateral profunda en costas orientadas al Este y pliegues de escalón */
+    cliffDeepShadow: string;
     /** Color de la sombra difusa sobre el papel */
     shadowColor: string;
     /** Color base de respaldo de papel */
     paperBg: string;
   };
 
-  /** Control y posicionamiento de los cubos de islas decorativas */
+  /** Control y posicionamiento de los 9 cubos de islas decorativas */
   islands: {
     enabled: boolean;
     definitions: IslandVoxel[];
@@ -122,8 +117,6 @@ export interface IsoMapConfig {
 }
 
 export const ISO_MAP_CONFIG: IsoMapConfig = {
-  // Rejilla de 220x145 vóxeles (proporción 1.517 idéntica a 1544x1018 de mockup-mapa.jpeg)
-  // A pixelScale = 3 genera 660x435 px con bloques voxel bien marcados y nítidos.
   gridWidth: 220,
   gridHeight: 145,
   pixelScale: 3,
@@ -132,7 +125,7 @@ export const ISO_MAP_CONFIG: IsoMapConfig = {
     relMinX: 0.108,
     relMaxX: 0.945,
     relMinY: 0.098,
-    relMaxY: 0.882, // + 5 vóxeles de extrusión llega a ~0.917 como en el mockup
+    relMaxY: 0.878,
   },
 
   geo: {
@@ -143,14 +136,13 @@ export const ISO_MAP_CONFIG: IsoMapConfig = {
   },
 
   transform: {
-    // Valores optimizados por máxima intersección sobre unión (IoU = 86.4%) contra mockup-mapa.jpeg
     rotationDeg: -3.0,
     scaleY: 0.92,
     shearX: -0.02,
   },
 
   extrusion: {
-    heightInVoxels: 5,
+    heightInVoxels: 6,
     islandHeightInVoxels: 3,
   },
 
@@ -163,31 +155,33 @@ export const ISO_MAP_CONFIG: IsoMapConfig = {
   },
 
   shadow: {
-    offsetX: -3,
-    offsetY: 8,
+    offsetX: -2,
+    offsetY: 9,
     blurSigma: 7,
-    opacity: 0.24,
+    opacity: 0.26,
     resolutionScale: 0.5,
   },
 
   palette: {
-    // Tonos muestreados de Sonora, Chihuahua, Durango, Oaxaca y Yucatán en mockup-mapa.jpeg
     topVariants: [
-      '#6867E8',
-      '#6D6CEB',
-      '#6362E3',
-      '#7270EF',
-      '#605FE0',
-      '#6B68EA',
+      '#6665E7',
+      '#6C6BEC',
+      '#6160E2',
+      '#706FEF',
+      '#5E5DDF',
+      '#6967EA',
     ],
-    coastalHighlight: '#8A88F9',
-    borderInner: '#D0C6FF',
-    borderSoft: '#9D95F6',
-    cliffLight: '#5140B2',
-    cliffMid: '#4837A4',
-    cliffDark: '#3C2D93',
-    cliffEdge: '#2B1E78',
-    shadowColor: '#231D45',
+    coastalRimVoxel: '#8A89FA',
+    coastalRimHighlight: '#B4B2FF',
+    coastalInnerBevel: '#5554D4',
+    borderInner: '#DCD4FF',
+    borderSoft: '#A59EF9',
+    borderGroove: '#4E4CC6',
+    cliffLight: '#5B49C6',
+    cliffMid: '#4C3AB2',
+    cliffDark: '#33248B',
+    cliffDeepShadow: '#23176E',
+    shadowColor: '#211B42',
     paperBg: '#ECEBE9',
   },
 
@@ -195,21 +189,24 @@ export const ISO_MAP_CONFIG: IsoMapConfig = {
     enabled: true,
     definitions: [
       // 3 cubos frente a Baja California Norte
-      { name: 'bc_1', relPos: [0.0955, 0.245], size: { w: 2, h: 2 } },
-      { name: 'bc_2', relPos: [0.1091, 0.272], size: { w: 2, h: 2 } },
-      { name: 'bc_3', relPos: [0.1337, 0.304], size: { w: 2, h: 2 } },
+      { name: 'bc_1', relPos: [0.0955, 0.245], size: { w: 3, h: 2 } },
+      { name: 'bc_2', relPos: [0.1091, 0.272], size: { w: 3, h: 2 } },
+      { name: 'bc_3', relPos: [0.1337, 0.304], size: { w: 3, h: 2 } },
+
+      // 1 cubo en el Golfo de California (visible en crop_bc.png)
+      { name: 'golfo_tiburon', relPos: [0.2150, 0.254], size: { w: 3, h: 2 } },
 
       // 2 cubos frente a Baja California Sur
-      { name: 'bcs_1', relPos: [0.1992, 0.478], size: { w: 2, h: 2 } },
-      { name: 'bcs_2', relPos: [0.2147, 0.498], size: { w: 2, h: 2 } },
+      { name: 'bcs_1', relPos: [0.1992, 0.478], size: { w: 3, h: 2 } },
+      { name: 'bcs_2', relPos: [0.2147, 0.498], size: { w: 3, h: 2 } },
 
       // 2 cubos frente a Nayarit / Sinaloa (Islas Marías)
-      { name: 'nayarit_1', relPos: [0.3663, 0.595], size: { w: 2, h: 2 } },
-      { name: 'nayarit_2', relPos: [0.3799, 0.623], size: { w: 2, h: 2 } },
+      { name: 'nayarit_1', relPos: [0.3663, 0.595], size: { w: 3, h: 2 } },
+      { name: 'nayarit_2', relPos: [0.3799, 0.623], size: { w: 3, h: 2 } },
 
       // 2 cubos en el Caribe (Cozumel y Banco Chinchorro)
-      { name: 'caribe_cozumel', relPos: [0.9281, 0.646], size: { w: 2, h: 2 } },
-      { name: 'caribe_sur', relPos: [0.9055, 0.728], size: { w: 2, h: 2 } },
+      { name: 'caribe_cozumel', relPos: [0.9281, 0.646], size: { w: 3, h: 2 } },
+      { name: 'caribe_sur', relPos: [0.9055, 0.728], size: { w: 3, h: 2 } },
     ],
   },
 
