@@ -1,8 +1,13 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+const plusJakarta = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-heading',
+});
 
 export const metadata: Metadata = {
   title: 'Mapa de Dalias y Participación Ciudadana | Hackathon INE',
@@ -24,7 +29,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className={`${inter.variable} font-sans antialiased selection:bg-dalia-600 selection:text-white bg-background text-brand-navy`}>
+      <body className={`${inter.variable} ${plusJakarta.variable} font-sans antialiased selection:bg-dalia-600 selection:text-white bg-[#EEEDEA] text-brand-navy`}>
         {children}
       </body>
     </html>

@@ -1,4 +1,4 @@
-﻿@import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,13 +6,20 @@
 
 :root {
   --foreground-rgb: 28, 37, 65; /* brand-navy */
-  --background-rgb: 250, 250, 250; /* background */
+}
+
+html, body {
+  min-height: 100vh;
 }
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: rgb(var(--background-rgb));
-  min-height: 100vh;
+  background-color: #EEEDEA;
+  background-image: url('/bg/bg-ine-hero.webp');
+  background-repeat: repeat;
+  background-position: center top;
+  background-attachment: fixed;
+  background-size: cover;
 }
 
 .font-pixel {
@@ -25,8 +32,13 @@ body {
 
 /* Subtle utilities */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+/* Sombra suave de elevación para el mapa isométrico sobre el papel */
+.map-isometric-shadow {
+  filter: drop-shadow(0 25px 35px rgba(28, 37, 65, 0.15)) drop-shadow(0 10px 15px rgba(28, 37, 65, 0.08));
 }

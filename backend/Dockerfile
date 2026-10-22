@@ -4,6 +4,7 @@ WORKDIR /app
 
 # Install system dependencies & netcat for entrypoint healthcheck
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
     netcat-openbsd \
     curl \
     && rm -rf /var/lib/apt/lists/*

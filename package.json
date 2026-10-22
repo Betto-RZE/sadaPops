@@ -5,10 +5,21 @@
   "scripts": {
     "dev": "pnpm --filter web dev",
     "build": "pnpm --filter web build",
-    "lint": "pnpm --filter web lint"
+    "lint": "pnpm --filter web lint",
+    "build-map": "tsx scripts/build-map.ts",
+    "build-flowers": "tsx scripts/build-flowers.ts",
+    "build-petals": "tsx scripts/build-petals.ts",
+    "compare-map": "tsx scripts/compare-map.ts"
   },
   "devDependencies": {
+    "@types/d3-geo": "^3.1.1",
+    "@types/node": "^22.20.5",
+    "@types/polylabel": "^2.0.0",
     "@types/react": "^18.3.31",
+    "d3-geo": "^3.1.1",
+    "polylabel": "^2.1.0",
+    "sharp": "^0.35.5",
+    "tsx": "^4.23.15",
     "typescript": "^5.3.0"
   }
 }
