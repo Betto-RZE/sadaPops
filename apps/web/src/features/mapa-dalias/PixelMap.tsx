@@ -17,9 +17,10 @@ import type {
 import { cn } from '../../shared/utils';
 
 // Constantes globales de sincronización de la secuencia de entrada (Hito H6)
-export const MAP_INTRO_DELAY_MS = 2000;     // Instante en que inicia la Fase 2 tras la lectura del texto
-export const MAP_INTRO_STAGGER_MS = 650;    // Ventana de escalonamiento geográfico (Noroeste -> Sureste)
-export const MAP_STATE_ANIM_MS = 950;       // Duración física de cada pieza (Separación -> Caída -> Microrebote)
+export const MAP_INTRO_DELAY_MS = 1950;     // Instante en que irrumpe el mapa elevado tras leer el titular
+export const MAP_INTRO_HOLD_MS = 220;       // Breve instante suspendido en el aire antes de iniciar la oleada
+export const MAP_INTRO_STAGGER_MS = 580;    // Ventana de escalonamiento geográfico (Noroeste -> Sureste)
+export const MAP_STATE_ANIM_MS = 620;       // Duración física del descenso y micro-rebote de cada pieza
 
 // Contexto para compartir metadatos y estado activo con componentes hijos (como PixelMapAnchor)
 const PixelMapContext = createContext<PixelMapContextValue | null>(null);
@@ -157,33 +158,33 @@ const PAPER_SHADOW = hexToU32('#C3C1C8', 255);
 const ELEVATION_VOXELS = 2;
 
 /**
- * Curva física de 3 etapas para la entrada de cada estado (Fase 2: Separación -> Fase 3: Caída y Micro-rebote):
- *  - p in [0.00, 0.34]: Se separa suavemente del plano hasta `maxVoxels` (smoothstep).
- *  - p in [0.34, 0.72]: Desciende y encaja por primera vez en 0 (aceleración controlada).
- *  - p in [0.72, 0.88]: Micro-rebote amortiguado (~26% de la altura original).
- *  - p in [0.88, 1.00]: Se asienta definitivamente en 0.
+ * Curva física para el aterrizaje de cada pieza desde su posición ya suspendida:
+ *  - p <= 0: Permanece suspendida arriba a `startVoxels` (ej. 4..7 vóxeles).
+ *  - p in (0.00, 0.65]: Desciende con gravedad física hasta impactar en 0.
+ *  - p in (0.65, 0.90]: Pequeño rebote amortiguado (~1.2 vóxeles) tras el impacto.
+ *  - p > 0.90: Asentado firmemente en 0.
  */
-function computeIntroLiftPx(p: number, maxVoxels: number, pixelScale: number): number {
-  if (p <= 0 || p >= 1) return 0;
+function computeDropBounceLiftPx(p: number, startVoxels: number, pixelScale: number): number {
+  if (p <= 0) {
+    return Math.round(startVoxels * pixelScale);
+  }
+  if (p >= 1) {
+    return 0;
+  }
 
   let voxels = 0;
-  if (p < 0.34) {
-    const u = p / 0.34;
-    const ease = u * u * (3 - 2 * u);
-    voxels = maxVoxels * ease;
-  } else if (p < 0.72) {
-    const u = (p - 0.34) / 0.38;
-    // Descenso con peso físico suave
+  if (p <= 0.65) {
+    const u = p / 0.65;
+    // Aceleración gravitatoria suave (quad-in)
     const ease = u * u;
-    voxels = maxVoxels * (1 - ease);
-  } else if (p < 0.88) {
-    const u = (p - 0.72) / 0.16;
-    const bounceAmp = Math.max(1.1, maxVoxels * 0.26);
+    voxels = startVoxels * (1 - ease);
+  } else if (p <= 0.92) {
+    const u = (p - 0.65) / 0.27;
+    // Rebote corto y seco (~22% de la altura inicial, máx 1.4 vóxeles)
+    const bounceAmp = Math.min(1.4, Math.max(0.85, startVoxels * 0.22));
     voxels = bounceAmp * Math.sin(u * Math.PI);
   } else {
-    const u = (p - 0.88) / 0.12;
-    const microAmp = 0.35;
-    voxels = microAmp * Math.sin(u * Math.PI);
+    voxels = 0;
   }
 
   return Math.max(0, Math.round(voxels * pixelScale));
@@ -290,7 +291,7 @@ export function PixelMap({
     liftedMask: Uint8Array;
   } | null>(null);
 
-  // Estado para controlar la fase de animación de entrada por estados
+  // Estado para controlar cuando los 32 estados ya terminaron de aterrizar
   const [introDone, setIntroDone] = useState(false);
 
   // Estado local para hover cuando el componente no está completamente controlado
@@ -305,14 +306,15 @@ export function PixelMap({
   const activeStateId = currentHoveredId || selectedStateId;
   const activeState = (data && activeStateId) ? data.stateById.get(activeStateId) : null;
 
-  // Función central reutilizable que pinta un conjunto de estados elevados en el canvas
-  const renderElevatedStates = useCallback(
+  // Función que pinta un conjunto de estados en el canvas con su elevación `liftPx` (incluso liftPx === 0 durante la intro)
+  const renderStatesFrame = useCallback(
     (
       statesToDraw: Array<{
         stateId: string;
         liftPx: number;
         mode: 'intro' | 'hover' | 'select';
-      }>
+      }>,
+      isFullIntroFrame = false
     ) => {
       const canvas = canvasRef.current;
       if (!canvas || !data) return;
@@ -360,10 +362,11 @@ export function PixelMap({
         prevDrawnIndices.push(idx);
       };
 
-      // 2. Pintar cada estado solicitado con su respectiva altura `customLiftPx`
+      // 2. Pintar cada estado en el orden suministrado
       for (let s = 0; s < statesToDraw.length; s++) {
         const { stateId, liftPx: customLiftPx, mode } = statesToDraw[s];
-        if (customLiftPx <= 0) continue;
+        // En modo normal (no intro), si liftPx es 0 no hace falta sobredibujar map-base.png
+        if (!isFullIntroFrame && customLiftPx <= 0) continue;
 
         const state = data.stateById.get(stateId);
         if (!state) continue;
@@ -392,6 +395,19 @@ export function PixelMap({
         const top = pixelIndex.topPixels;
         const side = pixelIndex.sidePixels;
 
+        // Si el estado ya aterrizó en 0 durante la intro, copiar directamente sus píxeles originales de map-base.png
+        if (customLiftPx === 0) {
+          for (let i = 0; i < side.length; i++) {
+            const idx = side[i];
+            setPixel(idx, basePixels[idx]);
+          }
+          for (let i = 0; i < top.length; i++) {
+            const idx = top[i];
+            setPixel(idx, basePixels[idx]);
+          }
+          continue;
+        }
+
         const touchedMaskIndices: number[] = [];
         for (let i = 0; i < top.length; i++) {
           const idx = top[i];
@@ -412,11 +428,21 @@ export function PixelMap({
           }
         }
 
-        // Enmascarar huella inferior expuesta
-        for (let i = 0; i < side.length; i++) {
-          const idx = side[i];
-          if (!liftedMask[idx]) {
-            setPixel(idx, PAPER_SHADOW);
+        // En modo normal (con map-base.png visible debajo), cubrir la huella inferior expuesta
+        if (!isFullIntroFrame) {
+          for (let i = 0; i < side.length; i++) {
+            const idx = side[i];
+            if (!liftedMask[idx]) {
+              setPixel(idx, PAPER_SHADOW);
+            }
+          }
+        } else {
+          // Durante la intro (sin map-base.png debajo), proyectar sombra suave en la huella sobre el papel
+          for (let i = 0; i < side.length; i++) {
+            const idx = side[i];
+            if (!liftedMask[idx]) {
+              setPixel(idx, BASE_SHADOW_2);
+            }
           }
         }
 
@@ -544,9 +570,9 @@ export function PixelMap({
               topColor = orig !== 0 ? brightenU32(orig, 26) : hexToU32('#807FF9');
             }
           } else {
-            // Modo 'intro': Las caras superiores conservan el violeta original del mapa
+            // Modo 'intro': Las caras superiores conservan su violeta original con bisel sutil
             if (isNorthOrWestEdge) {
-              topColor = orig !== 0 ? brightenU32(orig, 18) : cliffPalette.rimHighlight;
+              topColor = orig !== 0 ? brightenU32(orig, 16) : cliffPalette.rimHighlight;
             } else {
               topColor = orig !== 0 ? orig : hexToU32('#6A5FE0');
             }
@@ -560,7 +586,7 @@ export function PixelMap({
         }
       }
 
-      // 3. Volcar al canvas únicamente la región modificada
+      // 3. Volcar al canvas la región modificada
       if (minDirtyX <= maxDirtyX && minDirtyY <= maxDirtyY) {
         const dirtyW = maxDirtyX - minDirtyX + 1;
         const dirtyH = maxDirtyY - minDirtyY + 1;
@@ -572,11 +598,16 @@ export function PixelMap({
     [data, width, height]
   );
 
-  // Secuencia de Entrada por Estados (Fase 2: Separación -> Fase 3: Caída y Micro-rebote)
+  // Secuencia de Entrada:
+  // 1) Al cargarse `data`, pre-dibujamos en el canvas los 32 estados YA ELEVADOS en el aire
+  //    (con `map-base.png` oculto), para que cuando el contenedor aparezca a los 1.95s,
+  //    el mapa irrumpa directamente con relieve separado.
+  // 2) Tras un breve instante (MAP_INTRO_HOLD_MS), los estados caen en oleada de Noroeste a Sureste,
+  //    hacen su micro-rebote y encajan en 0.
+  // 3) Al terminar, se enciende `map-base.png` (transición invisible) y el canvas queda limpio para hover/click.
   useEffect(() => {
     if (!data || introDone) return;
 
-    // Respetar prefers-reduced-motion
     if (
       typeof window !== 'undefined' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -585,8 +616,7 @@ export function PixelMap({
       return;
     }
 
-    // Precalcular orden de pintado (Norte a Sur para oclusión correcta: Painter's Algorithm)
-    // y tiempos geográficos (Noroeste -> Sureste) con alturas variables (3 a 6 vóxeles)
+    // Ordenar de norte a sur (Painter's Algorithm isométrico)
     const sortedStates = [...data.states].sort((a, b) => a.anchor.y - b.anchor.y);
 
     let minGeo = Infinity;
@@ -600,19 +630,26 @@ export function PixelMap({
 
     const stateSchedule = sortedStates.map((st) => {
       const g = (st.anchor.x * 0.65 + st.anchor.y - minGeo) / geoSpan;
-      // Pequeña variación determinista en retraso y altura máxima para que se sientan piezas independientes
-      const jitterMs = ((st.numId * 37) % 90) - 45;
-      const startMs = Math.max(0, g * MAP_INTRO_STAGGER_MS + jitterMs);
-      // Altura máxima entre 3.2 y 5.8 vóxeles
-      const maxVoxels = 3.2 + ((st.numId * 19) % 27) / 10;
+      const jitterMs = ((st.numId * 37) % 70) - 35;
+      const dropStartMs = MAP_INTRO_HOLD_MS + Math.max(0, g * MAP_INTRO_STAGGER_MS + jitterMs);
+      // Altura inicial suspendida entre 4.0 y 6.8 vóxeles
+      const startVoxels = 4.0 + ((st.numId * 19) % 29) / 10;
       return {
         stateId: st.id,
-        startMs,
-        maxVoxels,
+        dropStartMs,
+        startVoxels,
       };
     });
 
-    const totalIntroDuration = MAP_INTRO_STAGGER_MS + MAP_STATE_ANIM_MS + 100;
+    // Pre-dibujar el estado inicial suspendido antes de que el contenedor haga fade-in a los 1.95s
+    const initialFrame = stateSchedule.map((item) => ({
+      stateId: item.stateId,
+      liftPx: Math.round(item.startVoxels * data.pixelScale),
+      mode: 'intro' as const,
+    }));
+    renderStatesFrame(initialFrame, true);
+
+    const totalIntroDuration = MAP_INTRO_HOLD_MS + MAP_INTRO_STAGGER_MS + MAP_STATE_ANIM_MS + 60;
     let rafId = 0;
     let startTime: number | null = null;
 
@@ -621,34 +658,22 @@ export function PixelMap({
         if (startTime === null) startTime = now;
         const elapsed = now - startTime;
 
-        const frameStates: Array<{
-          stateId: string;
-          liftPx: number;
-          mode: 'intro';
-        }> = [];
+        const frameStates = stateSchedule.map((item) => {
+          const localT = elapsed - item.dropStartMs;
+          const p = localT <= 0 ? 0 : Math.min(1, localT / MAP_STATE_ANIM_MS);
+          const liftPx = computeDropBounceLiftPx(p, item.startVoxels, data.pixelScale);
+          return {
+            stateId: item.stateId,
+            liftPx,
+            mode: 'intro' as const,
+          };
+        });
 
-        for (let i = 0; i < stateSchedule.length; i++) {
-          const item = stateSchedule[i];
-          const localT = elapsed - item.startMs;
-          if (localT > 0 && localT < MAP_STATE_ANIM_MS) {
-            const p = localT / MAP_STATE_ANIM_MS;
-            const liftPx = computeIntroLiftPx(p, item.maxVoxels, data.pixelScale);
-            if (liftPx > 0) {
-              frameStates.push({
-                stateId: item.stateId,
-                liftPx,
-                mode: 'intro',
-              });
-            }
-          }
-        }
-
-        renderElevatedStates(frameStates);
+        renderStatesFrame(frameStates, true);
 
         if (elapsed < totalIntroDuration) {
           rafId = window.requestAnimationFrame(tick);
         } else {
-          renderElevatedStates([]);
           setIntroDone(true);
         }
       };
@@ -660,7 +685,7 @@ export function PixelMap({
       window.clearTimeout(timerId);
       if (rafId) window.cancelAnimationFrame(rafId);
     };
-  }, [data, introDone, renderElevatedStates]);
+  }, [data, introDone, renderStatesFrame]);
 
   // Renderizado volumétrico interactivo normal (Hover y Selección) una vez concluida la intro
   useEffect(() => {
@@ -689,8 +714,8 @@ export function PixelMap({
       });
     }
 
-    renderElevatedStates(statesToDraw);
-  }, [data, introDone, selectedStateId, currentHoveredId, renderElevatedStates]);
+    renderStatesFrame(statesToDraw, false);
+  }, [data, introDone, selectedStateId, currentHoveredId, renderStatesFrame]);
 
   // Conversión precisa de coordenadas de pantalla a la rejilla lógica de vóxeles
   const getLogicalCoords = useCallback(
@@ -789,15 +814,18 @@ export function PixelMap({
           loading="eager"
         />
 
-        {/* Capa 2: Mapa Base Pixel Art con bordes nítidos */}
+        {/* Capa 2: Mapa Base Pixel Art (Oculto durante la intro para que las piezas elevadas no se dupliquen abajo) */}
         <img
           src="/data/map-base.png"
           alt="Silueta y estados de la República Mexicana en estilo pixel art isométrico"
-          className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none [image-rendering:pixelated]"
+          className={cn(
+            'absolute inset-0 w-full h-full object-contain pointer-events-none select-none [image-rendering:pixelated]',
+            introDone ? 'opacity-100' : 'opacity-0'
+          )}
           loading="eager"
         />
 
-        {/* Capa 3: Canvas para animación de entrada por estados e interacción volumétrica */}
+        {/* Capa 3: Canvas para animación de piezas elevadas e interacción volumétrica */}
         <canvas
           ref={canvasRef}
           width={width}

@@ -5,10 +5,11 @@ import {
   PixelMapAnchor,
   usePixelMapContext,
   MAP_INTRO_DELAY_MS,
+  MAP_INTRO_HOLD_MS,
   MAP_INTRO_STAGGER_MS,
   MAP_STATE_ANIM_MS,
 } from './PixelMap';
-import { computeLevels, DAHLIA_SPRITE_META, type DahliaLevel, type StateCountItem } from './computeLevels';
+import { computeLevels, DAHLIA_SPRITE_META, type StateCountItem } from './computeLevels';
 import { cn } from '../../shared/utils';
 
 export interface DahliaLayerProps {
@@ -46,10 +47,8 @@ const DEFAULT_DEMO_COUNTS: StateCountItem[] = [
  * DahliaLayer — Capa interactiva que proyecta las dalias voxel sobre los estados del mapa.
  *
  * Características Hito H6:
- *   - Fase 4: Florecimiento sincronizado con el micro-rebote de cada estado.
- *   - Cada dalia brota justo en el instante en que su estado correspondiente aterriza y se asienta.
- *   - Estilo pixel art con `steps(4, end)` y `image-rendering: pixelated`.
- *   - Soporte estricto de `prefers-reduced-motion`.
+ *   - Fase 4: Florecimiento sincronizado en paralelo con el aterrizaje de cada estado.
+ *   - Secuencia exacta: Caída -> Impacto -> Rebote -> Brote de la dalia.
  */
 export function DahliaLayer({
   userCounts = DEFAULT_DEMO_COUNTS,
@@ -65,7 +64,6 @@ export function DahliaLayer({
 
   // 2. Disparar florecimiento en sincronía con la secuencia de entrada del mapa
   useEffect(() => {
-    // Si el usuario prefiere movimiento reducido, florecer de inmediato
     if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       setHasBloomed(true);
       onBloomComplete?.();
@@ -76,15 +74,15 @@ export function DahliaLayer({
       setHasBloomed(true);
       const finishTimer = window.setTimeout(() => {
         onBloomComplete?.();
-      }, MAP_INTRO_STAGGER_MS + MAP_STATE_ANIM_MS + 600);
+      }, MAP_INTRO_DELAY_MS + MAP_INTRO_HOLD_MS + MAP_INTRO_STAGGER_MS + MAP_STATE_ANIM_MS + 400);
 
       return () => window.clearTimeout(finishTimer);
-    }, 100);
+    }, 50);
 
     return () => window.clearTimeout(timer);
   }, [onBloomComplete]);
 
-  // 3. Precalcular el tiempo exacto de brote para cada estado
+  // 3. Precalcular el tiempo exacto de brote para cada estado (justo al asentarse tras su rebote)
   const flowerStatesWithDelay = useMemo(() => {
     if (!data) return [];
 
@@ -103,15 +101,13 @@ export function DahliaLayer({
 
     return flowerStates.map((st) => {
       const g = (st.anchor.x * 0.65 + st.anchor.y - minGeo) / geoSpan;
-      const jitterMs = ((st.numId * 37) % 90) - 45;
-      const stateStartMs = Math.max(0, g * MAP_INTRO_STAGGER_MS + jitterMs);
+      const jitterMs = ((st.numId * 37) % 70) - 35;
+      const dropStartMs = MAP_INTRO_HOLD_MS + Math.max(0, g * MAP_INTRO_STAGGER_MS + jitterMs);
 
-      // El estado desciende y rebota entre el 72% y el 88% de MAP_STATE_ANIM_MS.
-      // La dalia brota justo al primer contacto firme (~74% de la animación del estado).
-      const settleContactMs = stateStartMs + MAP_STATE_ANIM_MS * 0.74;
-
-      // Retardo total absoluto desde la carga inicial de la página
-      const totalBloomDelaySec = (MAP_INTRO_DELAY_MS + settleContactMs) / 1000;
+      // El estado impacta en 0 al 65% de MAP_STATE_ANIM_MS y termina su rebote al 92%.
+      // La dalia brota justo en el cierre del rebote (~85% de MAP_STATE_ANIM_MS).
+      const settleMs = dropStartMs + MAP_STATE_ANIM_MS * 0.85;
+      const totalBloomDelaySec = (MAP_INTRO_DELAY_MS + settleMs) / 1000;
 
       return {
         state: st,
@@ -154,7 +150,7 @@ export function DahliaLayer({
 
         .dahlia-bloom {
           animation-name: dahlia-bloom-step;
-          animation-duration: 0.42s;
+          animation-duration: 0.38s;
           animation-timing-function: steps(4, end);
           animation-fill-mode: forwards;
         }
