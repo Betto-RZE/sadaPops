@@ -44,21 +44,21 @@ body {
 }
 
 /* =========================================================================
-   ANIMACIÓN HERO FASE 1: REVELACIÓN PALABRA POR PALABRA (0ms - 600ms)
-   Aparece con impacto inmediato y a los ~1.8s se asienta a marca de agua
+   ANIMACIÓN HERO FASE 1: REVELACIÓN PALABRA POR PALABRA (TIEMPO ORIGINAL PAUSADO)
+   Aparece con calma y a los ~2.3s se asienta suavemente a marca de agua
    ========================================================================= */
 
 @keyframes heroWordReveal {
   0% {
     opacity: 0;
-    transform: translate3d(0, 16px, 0);
+    transform: translate3d(0, 22px, 0);
   }
-  15% {
-    opacity: 0.90;
+  20% {
+    opacity: 0.85;
     transform: translate3d(0, 0, 0);
   }
-  60% {
-    opacity: 0.90;
+  65% {
+    opacity: 0.85;
     transform: translate3d(0, 0, 0);
   }
   100% {
@@ -70,13 +70,13 @@ body {
 @keyframes heroMagentaReveal {
   0% {
     opacity: 0;
-    transform: translate3d(0, 18px, 0) scale(0.96);
+    transform: translate3d(0, 24px, 0) scale(0.96);
   }
-  20% {
+  25% {
     opacity: 1;
     transform: translate3d(0, 0, 0) scale(1.02);
   }
-  55% {
+  50% {
     opacity: 0.98;
     transform: translate3d(0, 0, 0) scale(1);
   }
@@ -90,7 +90,7 @@ body {
   display: inline-block;
   opacity: 0;
   animation-name: heroWordReveal;
-  animation-duration: 2.4s;
+  animation-duration: 3.4s;
   animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
   animation-fill-mode: forwards;
   will-change: transform, opacity;
@@ -100,14 +100,14 @@ body {
   display: inline-block;
   opacity: 0;
   animation-name: heroMagentaReveal;
-  animation-duration: 2.4s;
+  animation-duration: 3.4s;
   animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
   animation-fill-mode: forwards;
   will-change: transform, opacity;
 }
 
 /* =========================================================================
-   ENTRADA DE LOGO INE Y NAVBAR A LOS 600ms (AL TERMINAR EL TITULAR)
+   ENTRADA DE LOGO INE Y NAVBAR TRAS COMPLETAR LA LECTURA TRANQUILA (~1.8s)
    ========================================================================= */
 
 @keyframes heroNavEnter {
@@ -124,15 +124,15 @@ body {
 .hero-nav-enter {
   opacity: 0;
   animation-name: heroNavEnter;
-  animation-duration: 0.6s;
-  animation-delay: 0.62s; /* Entra exactamente al terminar de leerse "México." */
+  animation-duration: 0.8s;
+  animation-delay: 1.8s; /* Aparece tras terminar de mostrarse todas las palabras */
   animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
   animation-fill-mode: forwards;
   will-change: transform, opacity;
 }
 
 /* =========================================================================
-   ENTRADA DEL CONTENEDOR DEL MAPA (600ms - 900ms)
+   ENTRADA DEL CONTENEDOR DEL MAPA (A LOS 1.95s, TRAS EL TEXTO)
    ========================================================================= */
 
 @keyframes heroMapContainerEnter {
@@ -147,8 +147,8 @@ body {
 .hero-map-delayed-enter {
   opacity: 0;
   animation-name: heroMapContainerEnter;
-  animation-duration: 0.3s;
-  animation-delay: 0.60s; /* Irrumpe a los 600ms */
+  animation-duration: 0.4s;
+  animation-delay: 1.95s; /* Aparece después de leer la frase completa */
   animation-timing-function: ease-out;
   animation-fill-mode: forwards;
   will-change: opacity;
