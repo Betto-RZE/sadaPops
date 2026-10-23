@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react';
 import { HERO_PETALS, type PetalConfig } from './config/petals';
 import {
   MAP_INTRO_DELAY_MS,
-  MAP_INTRO_HOLD_MS,
   MAP_INTRO_STAGGER_MS,
   MAP_STATE_ANIM_MS,
 } from './PixelMap';
@@ -34,11 +33,10 @@ export function FloatingPetals({
 }: FloatingPetalsProps) {
   const [hasStarted, setHasStarted] = useState(false);
 
-  // El mapa termina su construcción en: MAP_INTRO_DELAY_MS + MAP_INTRO_HOLD_MS + MAP_INTRO_STAGGER_MS + MAP_STATE_ANIM_MS (~3.37s).
-  // Los pétalos entran exactamente 2 segundos después (~5.37s).
+  // El mapa termina su construcción en: MAP_INTRO_DELAY_MS + MAP_INTRO_STAGGER_MS + MAP_STATE_ANIM_MS (~3.25s).
+  // Los pétalos entran exactamente 2 segundos después (~5.25s).
   const petalsStartDelayMs =
     MAP_INTRO_DELAY_MS +
-    MAP_INTRO_HOLD_MS +
     MAP_INTRO_STAGGER_MS +
     MAP_STATE_ANIM_MS +
     2000;

@@ -44,25 +44,28 @@ body {
 }
 
 /* =========================================================================
-   ANIMACIÓN HERO FASE 1: REVELACIÓN PALABRA POR PALABRA (TIEMPO ORIGINAL PAUSADO)
-   Aparece con calma y a los ~2.3s se asienta suavemente a marca de agua
+   ANIMACIÓN HERO FASE 1: REVELACIÓN PALABRA POR PALABRA (0.10s a 1.45s)
+   A los 1.85s (exactamente al iniciar la oleada de estados) las letras
+   hacen su transición gradual al tono gris de marca de agua editorial
    ========================================================================= */
 
 @keyframes heroWordReveal {
   0% {
     opacity: 0;
-    transform: translate3d(0, 22px, 0);
+    transform: translate3d(0, 18px, 0);
   }
-  20% {
-    opacity: 0.85;
+  16% {
+    opacity: 0.88;
     transform: translate3d(0, 0, 0);
   }
-  65% {
-    opacity: 0.85;
+  56% {
+    /* Mantiene nitidez total hasta los 1.85s */
+    opacity: 0.88;
     transform: translate3d(0, 0, 0);
   }
   100% {
-    opacity: 0.32;
+    /* Se atenúa a la par que la oleada de estados aterriza (1.85s a 3.0s) */
+    opacity: 0.30;
     transform: translate3d(0, 0, 0);
   }
 }
@@ -70,18 +73,18 @@ body {
 @keyframes heroMagentaReveal {
   0% {
     opacity: 0;
-    transform: translate3d(0, 24px, 0) scale(0.96);
+    transform: translate3d(0, 20px, 0) scale(0.96);
   }
-  25% {
+  20% {
     opacity: 1;
     transform: translate3d(0, 0, 0) scale(1.02);
   }
-  50% {
-    opacity: 0.98;
+  56% {
+    opacity: 1;
     transform: translate3d(0, 0, 0) scale(1);
   }
   100% {
-    opacity: 0.85;
+    opacity: 0.82;
     transform: translate3d(0, 0, 0) scale(1);
   }
 }
@@ -90,8 +93,8 @@ body {
   display: inline-block;
   opacity: 0;
   animation-name: heroWordReveal;
-  animation-duration: 3.4s;
-  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  animation-duration: 3.3s;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.25, 1);
   animation-fill-mode: forwards;
   will-change: transform, opacity;
 }
@@ -100,20 +103,20 @@ body {
   display: inline-block;
   opacity: 0;
   animation-name: heroMagentaReveal;
-  animation-duration: 3.4s;
-  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  animation-duration: 3.3s;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.25, 1);
   animation-fill-mode: forwards;
   will-change: transform, opacity;
 }
 
 /* =========================================================================
-   ENTRADA DE LOGO INE Y NAVBAR TRAS COMPLETAR LA LECTURA TRANQUILA (~1.8s)
+   ENTRADA DEL LOGO INE Y NAVBAR (FADE-IN SUAVE A LOS 1.65s)
    ========================================================================= */
 
 @keyframes heroNavEnter {
   0% {
     opacity: 0;
-    transform: translate3d(0, -8px, 0);
+    transform: translate3d(0, -10px, 0);
   }
   100% {
     opacity: 1;
@@ -124,46 +127,48 @@ body {
 .hero-nav-enter {
   opacity: 0;
   animation-name: heroNavEnter;
-  animation-duration: 0.8s;
-  animation-delay: 1.8s; /* Aparece tras terminar de mostrarse todas las palabras */
+  animation-duration: 0.65s;
+  animation-delay: 1.65s;
   animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
   animation-fill-mode: forwards;
   will-change: transform, opacity;
 }
 
 /* =========================================================================
-   ENTRADA DEL CONTENEDOR DEL MAPA (A LOS 1.95s, TRAS EL TEXTO)
+   ENTRADA DEL MAPA ELEVADO (FADE-IN SUAVE DE 0.45s ENTRE 1.55s Y 2.0s)
    ========================================================================= */
 
 @keyframes heroMapContainerEnter {
   0% {
     opacity: 0;
+    transform: scale(0.985);
   }
   100% {
     opacity: 1;
+    transform: scale(1);
   }
 }
 
 .hero-map-delayed-enter {
   opacity: 0;
   animation-name: heroMapContainerEnter;
-  animation-duration: 0.4s;
-  animation-delay: 1.95s; /* Aparece después de leer la frase completa */
-  animation-timing-function: ease-out;
+  animation-duration: 0.48s;
+  animation-delay: 1.55s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
   animation-fill-mode: forwards;
-  will-change: opacity;
+  will-change: opacity, transform;
 }
 
-/* Accesibilidad: Sin retardos ni animaciones si el usuario prefiere movimiento reducido */
+/* Accesibilidad */
 @media (prefers-reduced-motion: reduce) {
   .hero-word {
     animation: none !important;
-    opacity: 0.32 !important;
+    opacity: 0.30 !important;
     transform: none !important;
   }
   .hero-word-magenta {
     animation: none !important;
-    opacity: 0.85 !important;
+    opacity: 0.82 !important;
     transform: none !important;
   }
   .hero-nav-enter {
@@ -174,5 +179,6 @@ body {
   .hero-map-delayed-enter {
     animation: none !important;
     opacity: 1 !important;
+    transform: none !important;
   }
 }

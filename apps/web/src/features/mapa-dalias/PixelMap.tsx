@@ -17,10 +17,10 @@ import type {
 import { cn } from '../../shared/utils';
 
 // Constantes globales de sincronización de la secuencia de entrada (Hito H6)
-export const MAP_INTRO_DELAY_MS = 1950;     // Instante en que irrumpe el mapa elevado tras leer el titular
-export const MAP_INTRO_HOLD_MS = 220;       // Breve instante suspendido en el aire antes de iniciar la oleada
-export const MAP_INTRO_STAGGER_MS = 580;    // Ventana de escalonamiento geográfico (Noroeste -> Sureste)
-export const MAP_STATE_ANIM_MS = 620;       // Duración física del descenso y micro-rebote de cada pieza
+// Sincronizado: el mapa se materializa suave a los 1.55s y la oleada arranca a los 1.85s a la par del gris
+export const MAP_INTRO_DELAY_MS = 1850;     // Instante en que arranca la oleada (exacto al inicio del fade a gris)
+export const MAP_INTRO_STAGGER_MS = 780;    // Ventana amplia para que los 32 estados caigan en oleada visible uno a uno
+export const MAP_STATE_ANIM_MS = 620;       // Duración física con peso real, impacto y micro-rebote claro
 
 // Contexto para compartir metadatos y estado activo con componentes hijos (como PixelMapAnchor)
 const PixelMapContext = createContext<PixelMapContextValue | null>(null);
@@ -158,11 +158,8 @@ const PAPER_SHADOW = hexToU32('#C3C1C8', 255);
 const ELEVATION_VOXELS = 2;
 
 /**
- * Curva física para el aterrizaje de cada pieza desde su posición ya suspendida:
- *  - p <= 0: Permanece suspendida arriba a `startVoxels` (ej. 4..7 vóxeles).
- *  - p in (0.00, 0.65]: Desciende con gravedad física hasta impactar en 0.
- *  - p in (0.65, 0.90]: Pequeño rebote amortiguado (~1.2 vóxeles) tras el impacto.
- *  - p > 0.90: Asentado firmemente en 0.
+ * Curva física para el aterrizaje de cada pieza:
+ * Descenso con peso gravitatorio físico -> impacto seco en 0 -> micro-rebote amortiguado.
  */
 function computeDropBounceLiftPx(p: number, startVoxels: number, pixelScale: number): number {
   if (p <= 0) {
@@ -173,17 +170,18 @@ function computeDropBounceLiftPx(p: number, startVoxels: number, pixelScale: num
   }
 
   let voxels = 0;
-  if (p <= 0.65) {
-    const u = p / 0.65;
-    // Aceleración gravitatoria suave (quad-in)
+  if (p <= 0.62) {
+    // Descenso con gravedad: inicia suave y acelera hacia el suelo
+    const u = p / 0.62;
     const ease = u * u;
     voxels = startVoxels * (1 - ease);
-  } else if (p <= 0.92) {
-    const u = (p - 0.65) / 0.27;
-    // Rebote corto y seco (~22% de la altura inicial, máx 1.4 vóxeles)
-    const bounceAmp = Math.min(1.4, Math.max(0.85, startVoxels * 0.22));
+  } else if (p <= 0.88) {
+    // Micro-rebote físico visible (~24% de la altura de la pieza)
+    const u = (p - 0.62) / 0.26;
+    const bounceAmp = Math.min(1.4, Math.max(0.85, startVoxels * 0.24));
     voxels = bounceAmp * Math.sin(u * Math.PI);
   } else {
+    // Asentamiento firme en 0
     voxels = 0;
   }
 
@@ -616,24 +614,32 @@ export function PixelMap({
       return;
     }
 
-    // Ordenar de norte a sur (Painter's Algorithm isométrico)
+    // Ordenar de norte a sur para renderizado correcto en profundidad
     const sortedStates = [...data.states].sort((a, b) => a.anchor.y - b.anchor.y);
 
-    let minGeo = Infinity;
-    let maxGeo = -Infinity;
-    for (const st of sortedStates) {
-      const g = st.anchor.x * 0.65 + st.anchor.y;
-      if (g < minGeo) minGeo = g;
-      if (g > maxGeo) maxGeo = g;
+    // Para la oleada geográfica (Noroeste -> Sureste), calcular una métrica diagonal suave
+    // y asignar un ranking continuo [0..31] para que los 32 estados caigan en progresión real
+    // evitando que el centro caiga todo en un solo bloque.
+    const statesByGeoOrder = [...data.states]
+      .map((st) => ({
+        state: st,
+        geoVal: st.anchor.x * 0.72 + st.anchor.y,
+      }))
+      .sort((a, b) => a.geoVal - b.geoVal);
+
+    // Mapear cada estado a su progreso normalizado (0 a 1) en 32 pasos
+    const geoRankMap = new Map<string, number>();
+    const totalStates = statesByGeoOrder.length;
+    for (let r = 0; r < totalStates; r++) {
+      geoRankMap.set(statesByGeoOrder[r].state.id, r / Math.max(1, totalStates - 1));
     }
-    const geoSpan = Math.max(1, maxGeo - minGeo);
 
     const stateSchedule = sortedStates.map((st) => {
-      const g = (st.anchor.x * 0.65 + st.anchor.y - minGeo) / geoSpan;
-      const jitterMs = ((st.numId * 37) % 70) - 35;
-      const dropStartMs = MAP_INTRO_HOLD_MS + Math.max(0, g * MAP_INTRO_STAGGER_MS + jitterMs);
-      // Altura inicial suspendida entre 4.0 y 6.8 vóxeles
-      const startVoxels = 4.0 + ((st.numId * 19) % 29) / 10;
+      const g = geoRankMap.get(st.id) ?? 0;
+      // Oleada continua de 32 pasos a lo largo de MAP_INTRO_STAGGER_MS
+      const dropStartMs = g * MAP_INTRO_STAGGER_MS;
+      // Altura inicial suspendida entre 4.0 y 6.2 vóxeles con microvariación armónica
+      const startVoxels = 4.0 + ((st.numId * 17) % 23) / 10;
       return {
         stateId: st.id,
         dropStartMs,
@@ -649,7 +655,7 @@ export function PixelMap({
     }));
     renderStatesFrame(initialFrame, true);
 
-    const totalIntroDuration = MAP_INTRO_HOLD_MS + MAP_INTRO_STAGGER_MS + MAP_STATE_ANIM_MS + 60;
+    const totalIntroDuration = MAP_INTRO_STAGGER_MS + MAP_STATE_ANIM_MS + 40;
     let rafId = 0;
     let startTime: number | null = null;
 

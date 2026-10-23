@@ -5,7 +5,6 @@ import {
   PixelMapAnchor,
   usePixelMapContext,
   MAP_INTRO_DELAY_MS,
-  MAP_INTRO_HOLD_MS,
   MAP_INTRO_STAGGER_MS,
   MAP_STATE_ANIM_MS,
 } from './PixelMap';
@@ -74,7 +73,7 @@ export function DahliaLayer({
       setHasBloomed(true);
       const finishTimer = window.setTimeout(() => {
         onBloomComplete?.();
-      }, MAP_INTRO_DELAY_MS + MAP_INTRO_HOLD_MS + MAP_INTRO_STAGGER_MS + MAP_STATE_ANIM_MS + 400);
+      }, MAP_INTRO_DELAY_MS + MAP_INTRO_STAGGER_MS + MAP_STATE_ANIM_MS + 200);
 
       return () => window.clearTimeout(finishTimer);
     }, 50);
@@ -86,27 +85,30 @@ export function DahliaLayer({
   const flowerStatesWithDelay = useMemo(() => {
     if (!data) return [];
 
+    const statesByGeoOrder = [...data.states]
+      .map((st) => ({
+        state: st,
+        geoVal: st.anchor.x * 0.72 + st.anchor.y,
+      }))
+      .sort((a, b) => a.geoVal - b.geoVal);
+
+    const geoRankMap = new Map<string, number>();
+    const totalStates = statesByGeoOrder.length;
+    for (let r = 0; r < totalStates; r++) {
+      geoRankMap.set(statesByGeoOrder[r].state.id, r / Math.max(1, totalStates - 1));
+    }
+
     const flowerStates = data.states
       .filter((st) => (levelsMap.get(st.id) ?? 0) > 0)
       .sort((a, b) => a.anchor.y - b.anchor.y);
 
-    let minGeo = Infinity;
-    let maxGeo = -Infinity;
-    for (const st of data.states) {
-      const g = st.anchor.x * 0.65 + st.anchor.y;
-      if (g < minGeo) minGeo = g;
-      if (g > maxGeo) maxGeo = g;
-    }
-    const geoSpan = Math.max(1, maxGeo - minGeo);
-
     return flowerStates.map((st) => {
-      const g = (st.anchor.x * 0.65 + st.anchor.y - minGeo) / geoSpan;
-      const jitterMs = ((st.numId * 37) % 70) - 35;
-      const dropStartMs = MAP_INTRO_HOLD_MS + Math.max(0, g * MAP_INTRO_STAGGER_MS + jitterMs);
+      const g = geoRankMap.get(st.id) ?? 0;
+      const dropStartMs = g * MAP_INTRO_STAGGER_MS;
 
-      // El estado impacta en 0 al 65% de MAP_STATE_ANIM_MS y termina su rebote al 92%.
-      // La dalia brota justo en el cierre del rebote (~85% de MAP_STATE_ANIM_MS).
-      const settleMs = dropStartMs + MAP_STATE_ANIM_MS * 0.85;
+      // El estado impacta en 0 al 62% y amortigua su rebote al 85%
+      // La dalia florece al primer impacto firme con el plano
+      const settleMs = dropStartMs + MAP_STATE_ANIM_MS * 0.70;
       const totalBloomDelaySec = (MAP_INTRO_DELAY_MS + settleMs) / 1000;
 
       return {
