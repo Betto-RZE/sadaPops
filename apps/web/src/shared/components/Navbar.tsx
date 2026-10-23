@@ -19,7 +19,7 @@ export function Navbar() {
   ];
 
   return (
-    <header className="relative z-50 w-full bg-transparent pt-6 md:pt-8 px-6 lg:px-12 pointer-events-none">
+    <header className="hero-nav-enter relative z-50 w-full bg-transparent pt-6 md:pt-8 px-6 lg:px-12 pointer-events-none">
       <div className="mx-auto flex max-w-[1440px] items-start justify-between">
         
         {/* Superior Izquierdo: Logo Oficial del INE limpio y transparente sobre el fondo de papel */}

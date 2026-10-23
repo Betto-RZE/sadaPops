@@ -11,7 +11,7 @@ export function Hero() {
   return (
     <section className="relative w-full bg-transparent overflow-hidden pt-0 pb-6 sm:pb-8 select-none">
       
-      {/* Capa de Pétalos Flotantes concentrados en los bordes */}
+      {/* Capa de Pétalos concentrados en los bordes (Fase D: caen a los 4.0s) */}
       <FloatingPetals />
 
       <div className="mx-auto max-w-[1440px] px-3 sm:px-6 lg:px-10 relative z-10">
@@ -20,45 +20,45 @@ export function Hero() {
         <div className="relative flex flex-col items-center justify-center min-h-[500px] sm:min-h-[560px] lg:min-h-[620px]">
           
           {/* ========================================================================= */}
-          {/* CAPA 1: TITULAR MONUMENTAL - REVELACIÓN PALABRA POR PALABRA (FASE 1)      */}
+          {/* CAPA 1: TITULAR MONUMENTAL - REVELACIÓN ÁGIL (0.00s a 0.55s)              */}
           {/* ========================================================================= */}
           <div 
             aria-hidden="true"
             className="absolute inset-0 z-0 flex flex-col justify-between py-1 sm:py-2 md:py-3 pointer-events-none select-none"
           >
-            {/* Bloque Superior Izquierdo: "Tu" + "participación" */}
+            {/* Bloque Superior Izquierdo: "Tu" (0.05s) + "participación" (0.15s) */}
             <div className="w-full flex justify-start pl-2 sm:pl-6 md:pl-10 lg:pl-12">
               <span className="text-[clamp(2.4rem,6.8vw,6.4rem)] font-black tracking-tighter leading-[0.88] text-brand-navy uppercase font-sans flex flex-wrap gap-x-3 sm:gap-x-4 md:gap-x-6">
-                <span className="hero-word" style={{ animationDelay: '0.10s' }}>
+                <span className="hero-word" style={{ animationDelay: '0.05s' }}>
                   Tu
                 </span>
-                <span className="hero-word" style={{ animationDelay: '0.35s' }}>
+                <span className="hero-word" style={{ animationDelay: '0.15s' }}>
                   participación
                 </span>
               </span>
             </div>
 
-            {/* Bloque Medio Asimétrico: "hace" (gris) + "florecer" (magenta INE) */}
+            {/* Bloque Medio Asimétrico: "hace" (0.28s) + "florecer" (0.40s, magenta INE) */}
             <div className="w-full flex justify-between items-center px-1 sm:px-3 md:px-6 -my-3 sm:-my-5">
               <span className="text-[clamp(2.4rem,7vw,6.6rem)] font-black tracking-tighter leading-[0.88] text-brand-navy uppercase font-sans">
-                <span className="hero-word" style={{ animationDelay: '0.65s' }}>
+                <span className="hero-word" style={{ animationDelay: '0.28s' }}>
                   hace
                 </span>
               </span>
               <span className="text-[clamp(2.6rem,7.4vw,7rem)] font-black tracking-tighter leading-[0.88] text-dalia-600 uppercase font-sans">
-                <span className="hero-word-magenta" style={{ animationDelay: '0.95s' }}>
+                <span className="hero-word-magenta" style={{ animationDelay: '0.40s' }}>
                   florecer
                 </span>
               </span>
             </div>
 
-            {/* Bloque Inferior Derecho: "a" + "México." */}
+            {/* Bloque Inferior Derecho: "a" (0.50s) + "México." (0.58s) */}
             <div className="w-full flex justify-end pr-2 sm:pr-8 md:pr-14 lg:pr-16 pb-4 sm:pb-6">
               <span className="text-[clamp(2.6rem,7.2vw,6.8rem)] font-black tracking-tighter leading-[0.88] text-brand-navy uppercase font-sans flex flex-wrap gap-x-3 sm:gap-x-4 md:gap-x-6">
-                <span className="hero-word" style={{ animationDelay: '1.25s' }}>
+                <span className="hero-word" style={{ animationDelay: '0.50s' }}>
                   a
                 </span>
-                <span className="hero-word" style={{ animationDelay: '1.45s' }}>
+                <span className="hero-word" style={{ animationDelay: '0.58s' }}>
                   México.
                 </span>
               </span>
@@ -71,7 +71,7 @@ export function Hero() {
           </h1>
 
           {/* ========================================================================= */}
-          {/* CAPA 2 & 3: MAPA ISOMÉTRICO (OCULTO AL INICIO -> ENTRA EN FASE 3 A LOS 2.2s) */}
+          {/* CAPA 2 & 3: MAPA ISOMÉTRICO (IRRUMPE ELEVADO A LOS 600ms)                  */}
           {/* ========================================================================= */}
           <div 
             id="mapa-interactivo" 
