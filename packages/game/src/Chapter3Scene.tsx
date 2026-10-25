@@ -59,6 +59,8 @@ type DialogueState =
   | "exiting"
   | "dismissed";
 
+type BallotState = "on_table" | "picking_up" | "inspecting";
+
 // Zona caminable: explanada + casilla completa (mamparas, mesa y cartel 2)
 const isPlazaWalkable = (x: number, y: number): boolean => {
   if (y < PLAZA_BOUNDS.minY || y > PLAZA_BOUNDS.maxY) return false;
@@ -131,6 +133,18 @@ export default function Chapter3Scene({
   useEffect(() => {
     selectedMamparaIndexRef.current = selectedMamparaIndex;
   }, [selectedMamparaIndex]);
+
+  // Estado de la boleta electoral en la mesa / manos del jugador
+  const [ballotState, setBallotState] = useState<BallotState>("on_table");
+
+  const handleBallotClick = () => {
+    if (ballotState === "on_table") {
+      setBallotState("picking_up");
+      setTimeout(() => {
+        setBallotState("inspecting");
+      }, 700);
+    }
+  };
 
   const chapter3CompletedRef = useRef(false);
 
@@ -209,6 +223,7 @@ export default function Chapter3Scene({
         if (selectedMamparaIndexRef.current !== null && !isPausedRef.current) {
           e.preventDefault();
           setSelectedMamparaIndex(null);
+          setBallotState("on_table");
         }
       }
     };
@@ -749,19 +764,82 @@ export default function Chapter3Scene({
             animation: "povEntrance 0.35s ease-out forwards",
           }}
         >
-          {/* IMAGEN POV DE LA MAMPARA */}
+          {/* IMAGEN POV DE LA MAMPARA CON TRANSICIÓN DE DESENFOQUE (BLUR) */}
           <img
             src="/assets/juego/simulador-voto/mampara-pov.png"
             alt={`Mampara electoral ${selectedMamparaIndex + 1} - Vista POV`}
-            className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
-            style={{ imageRendering: "pixelated" }}
+            className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none transition-all duration-700 ease-out"
+            style={{
+              imageRendering: "pixelated",
+              filter:
+                ballotState !== "on_table"
+                  ? "blur(7px) brightness(0.85)"
+                  : "blur(0px) brightness(1)",
+              transform:
+                ballotState !== "on_table" ? "scale(1.04)" : "scale(1)",
+            }}
           />
 
-          {/* Área sobre la mesa para material electoral del simulador */}
+          {/* CAPA OVERLAY TRANSLÚCIDA PARA REALZAR EL ENFOQUE DE LA BOLETA */}
           <div
-            data-testid="voting-booth-table-surface"
-            className="absolute bottom-[6%] left-1/2 -translate-x-1/2 w-[85%] h-[35%] pointer-events-auto flex items-center justify-center"
+            className={`absolute inset-0 pointer-events-none transition-opacity duration-700 ease-out ${
+              ballotState !== "on_table"
+                ? "opacity-100 bg-black/20"
+                : "opacity-0"
+            }`}
           />
+
+          {/* CONTENEDOR DE LA BOLETA ELECTORAL INTERACTIVA */}
+          <div
+            data-testid="voting-booth-ballot-container"
+            className="absolute inset-0 w-full h-full pointer-events-none z-30"
+          >
+            <div
+              onClick={handleBallotClick}
+              role="button"
+              tabIndex={0}
+              aria-label="Boleta electoral para votar"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleBallotClick();
+                }
+              }}
+              style={{
+                position: "absolute",
+                imageRendering: "pixelated",
+                cursor: ballotState === "on_table" ? "pointer" : "default",
+                pointerEvents: "auto",
+                transition: "all 750ms cubic-bezier(0.16, 1, 0.3, 1)",
+                left: "50%",
+                top: ballotState === "on_table" ? "63%" : "50%",
+                height: ballotState === "on_table" ? "42%" : "95%",
+                width: "auto",
+                maxHeight: ballotState === "on_table" ? "42%" : "95%",
+                transformOrigin: "center center",
+                transform:
+                  ballotState === "on_table"
+                    ? "translate(-50%, -50%) perspective(650px) rotateX(46deg) rotateZ(-3deg) scale(1.0)"
+                    : "translate(-50%, -50%) perspective(1000px) rotateX(0deg) rotateZ(0deg) scale(1)",
+                filter:
+                  ballotState === "on_table"
+                    ? "drop-shadow(0px 8px 12px rgba(0,0,0,0.5))"
+                    : "drop-shadow(0px 20px 40px rgba(0,0,0,0.8))",
+              }}
+              className={`select-none ${
+                ballotState === "on_table"
+                  ? "hover:brightness-105 active:scale-95"
+                  : ""
+              }`}
+            >
+              <img
+                src="/assets/juego/simulador-voto/boleta-electoral.png"
+                alt="Boleta Electoral 2024"
+                className="h-full w-auto object-contain pointer-events-none select-none"
+                style={{ imageRendering: "pixelated" }}
+              />
+            </div>
+          </div>
         </div>
       )}
 
