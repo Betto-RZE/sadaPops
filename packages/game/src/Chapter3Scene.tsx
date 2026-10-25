@@ -1054,6 +1054,7 @@ export default function Chapter3Scene({
           data-testid="voting-booth-pov"
           className="absolute inset-0 w-full h-full z-40 flex flex-col items-center justify-center overflow-hidden bg-black select-none"
           style={{
+            containerType: "inline-size",
             animation: "povEntrance 0.35s ease-out forwards",
           }}
         >
@@ -1131,20 +1132,24 @@ export default function Chapter3Scene({
           {/* GUÍA DE INSPECCIÓN: "EXAMINA LA BOLETA" (SIN CONTENEDORES NI BORDES NEÓN, CON CASILLAS A LA IZQUIERDA) */}
           <div
             data-testid="ballot-inspection-panel"
-            className={`absolute left-4 sm:left-7 top-1/2 -translate-y-1/2 z-40 w-[clamp(220px,27cqw,360px)] max-w-[28%] transition-all duration-500 ease-out select-none flex flex-col gap-4 sm:gap-5 ${
+            className={`absolute top-1/2 -translate-y-1/2 z-40 transition-all duration-500 ease-out select-none flex flex-col ${
               ballotState === "inspecting" && activeExaminingZone === null
                 ? "opacity-100 translate-x-0 pointer-events-auto"
                 : "opacity-0 -translate-x-8 pointer-events-none"
             }`}
+            style={{
+              left: "clamp(16px, 2.5cqw, 54px)",
+              width: "clamp(220px, 27cqw, 540px)",
+              maxWidth: "28%",
+              gap: "clamp(12px, 1.6cqw, 32px)",
+            }}
           >
             {/* Título pixel art grande sin contenedores ni brillo neón */}
             <h3
               className="text-white font-black tracking-wider uppercase select-none m-0"
               style={{
                 fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
-                fontSize: isFullscreen
-                  ? "clamp(14px, 1.55cqw, 23px)"
-                  : "clamp(11px, 1.25cqw, 18px)",
+                fontSize: "clamp(11px, 1.35cqw, 28px)",
                 lineHeight: "1.35",
                 textShadow:
                   "2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 2px 0 #000, 0 -2px 0 #000, 2px 0 0 #000, -2px 0 0 #000",
@@ -1154,7 +1159,10 @@ export default function Chapter3Scene({
             </h3>
 
             {/* Lista de partes a examinar con casillas cuadradas a la izquierda (sin fondos de tarjeta) */}
-            <ul className="flex flex-col gap-3.5 sm:gap-4 list-none p-0 m-0">
+            <ul
+              className="flex flex-col list-none p-0 m-0"
+              style={{ gap: "clamp(10px, 1.35cqw, 28px)" }}
+            >
               {BALLOT_INSPECTION_ZONES.map((zone) => {
                 const isChecked = examinedZones[zone.id];
                 const isHovered =
@@ -1187,11 +1195,12 @@ export default function Chapter3Scene({
                         handleSelectZoneToExamine(zone.id);
                       }
                     }}
-                    className={`flex items-center gap-2.5 sm:gap-3.5 select-none transition-all duration-200 ${
+                    className={`flex items-center select-none transition-all duration-200 ${
                       isChecked
                         ? "cursor-default opacity-85"
                         : "cursor-pointer"
                     } ${isHovered ? "translate-x-1.5" : "translate-x-0"}`}
+                    style={{ gap: "clamp(8px, 1.05cqw, 22px)" }}
                     title={
                       isChecked
                         ? `${zone.label} (Ya examinado)`
@@ -1200,23 +1209,18 @@ export default function Chapter3Scene({
                   >
                     {/* Casilla cuadrada a la izquierda (se marca con palomita al examinarse) */}
                     <div
-                      className={`shrink-0 rounded-[2px] border-[2px] flex items-center justify-center transition-all ${
+                      className={`shrink-0 rounded-[2px] flex items-center justify-center transition-all ${
                         isChecked
-                          ? "border-black bg-[#10b981] text-black shadow-[2px_2px_0px_0px_#000]"
+                          ? "border-black bg-[#10b981] text-black shadow-[clamp(2px,0.22cqw,4px)_clamp(2px,0.22cqw,4px)_0px_0px_#000]"
                           : isHovered
-                            ? "border-[#ef4444] bg-white text-transparent shadow-[2px_2px_0px_0px_#ef4444]"
-                            : "border-black bg-white text-transparent shadow-[2px_2px_0px_0px_#000]"
+                            ? "border-[#ef4444] bg-white text-transparent shadow-[clamp(2px,0.22cqw,4px)_clamp(2px,0.22cqw,4px)_0px_0px_#ef4444]"
+                            : "border-black bg-white text-transparent shadow-[clamp(2px,0.22cqw,4px)_clamp(2px,0.22cqw,4px)_0px_0px_#000]"
                       }`}
                       style={{
-                        width: isFullscreen
-                          ? "clamp(18px, 1.7cqw, 26px)"
-                          : "clamp(14px, 1.35cqw, 20px)",
-                        height: isFullscreen
-                          ? "clamp(18px, 1.7cqw, 26px)"
-                          : "clamp(14px, 1.35cqw, 20px)",
-                        fontSize: isFullscreen
-                          ? "clamp(13px, 1.3cqw, 18px)"
-                          : "clamp(10px, 1cqw, 14px)",
+                        width: "clamp(14px, 1.55cqw, 32px)",
+                        height: "clamp(14px, 1.55cqw, 32px)",
+                        fontSize: "clamp(10px, 1.15cqw, 24px)",
+                        borderWidth: "clamp(2px, 0.22cqw, 4px)",
                         lineHeight: "1",
                         fontWeight: 900,
                       }}
@@ -1228,16 +1232,14 @@ export default function Chapter3Scene({
                     <span
                       className={`font-black tracking-wide select-none transition-all ${
                         isChecked
-                          ? "text-[#a7f3d0] line-through decoration-black decoration-2"
+                          ? "text-[#a7f3d0] line-through decoration-black decoration-[clamp(2px,0.22cqw,4px)]"
                           : isHovered
                             ? "text-red-400"
                             : "text-white"
                       }`}
                       style={{
                         fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
-                        fontSize: isFullscreen
-                          ? "clamp(10.5px, 1.15cqw, 16px)"
-                          : "clamp(8.5px, 0.95cqw, 13px)",
+                        fontSize: "clamp(8.5px, 1.05cqw, 22px)",
                         lineHeight: "1.4",
                         textShadow:
                           "2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 2px 0 #000, 0 -2px 0 #000, 2px 0 0 #000, -2px 0 0 #000",
