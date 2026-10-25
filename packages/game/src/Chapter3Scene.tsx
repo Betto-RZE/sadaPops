@@ -22,6 +22,8 @@ import {
   getLeftBoundaryX,
   getRightBoundaryX,
   getBaseRightBoundaryX,
+  EXCLAMATION_ICON_POSITIONS,
+  EXCLAMATION_ICON_WIDTH,
 } from "./GameplayScene";
 import type { ChapterSceneProps } from "./features/capitulos/ChapterSceneRouter";
 import {
@@ -121,6 +123,15 @@ export default function Chapter3Scene({
     onChapterCompleteRef.current = onChapterComplete;
   }, [onChapterComplete]);
 
+  // Mampara elegida para el simulador de voto (vista POV)
+  const [selectedMamparaIndex, setSelectedMamparaIndex] = useState<number | null>(
+    null,
+  );
+  const selectedMamparaIndexRef = useRef(selectedMamparaIndex);
+  useEffect(() => {
+    selectedMamparaIndexRef.current = selectedMamparaIndex;
+  }, [selectedMamparaIndex]);
+
   const chapter3CompletedRef = useRef(false);
 
   // Ciclo de transición del diálogo de apertura (2.5s teclado bloqueado)
@@ -158,6 +169,48 @@ export default function Chapter3Scene({
     const handleKeyDown = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
       keysPressed[key] = true;
+
+      // Presionar E cerca de una mampara para entrar a votar (iniciar vista POV)
+      if (key === "e") {
+        if (
+          dialogueStateRef.current === "dismissed" &&
+          selectedMamparaIndexRef.current === null &&
+          !isPausedRef.current
+        ) {
+          let closestIdx = -1;
+          let closestDist = Infinity;
+          CASILLA_POSITIONS.forEach((pos, idx) => {
+            const iconPos = EXCLAMATION_ICON_POSITIONS.casillas[idx];
+            const dist = Math.min(
+              Math.hypot(
+                playerPosRef.current.x - pos.x,
+                playerPosRef.current.y - pos.y,
+              ),
+              Math.hypot(
+                playerPosRef.current.x - iconPos.x,
+                playerPosRef.current.y - iconPos.y,
+              ),
+            );
+            if (dist < closestDist) {
+              closestDist = dist;
+              closestIdx = idx;
+            }
+          });
+
+          if (closestIdx !== -1 && closestDist < 8.5) {
+            e.preventDefault();
+            setSelectedMamparaIndex(closestIdx);
+          }
+        }
+      }
+
+      // Salir de la mampara con Escape si está en vista POV
+      if (key === "escape") {
+        if (selectedMamparaIndexRef.current !== null && !isPausedRef.current) {
+          e.preventDefault();
+          setSelectedMamparaIndex(null);
+        }
+      }
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
@@ -205,6 +258,13 @@ export default function Chapter3Scene({
 
       // Modal de pausa abierto: congelar
       if (isPausedRef.current) {
+        stop();
+        animationFrameId = requestAnimationFrame(updateGameLoop);
+        return;
+      }
+
+      // Controles congelados si la vista de mampara POV está abierta
+      if (selectedMamparaIndexRef.current !== null) {
         stop();
         animationFrameId = requestAnimationFrame(updateGameLoop);
         return;
@@ -554,10 +614,113 @@ export default function Chapter3Scene({
           className="absolute bottom-0 right-0 w-[26%] h-auto object-contain pointer-events-none select-none z-30"
           style={{ imageRendering: "pixelated" }}
         />
+
+        {/* ICONOS DE EXCLAMACIÓN (!) EN TODAS LAS MAMPARAS TRAS CONCLUIR EL DIÁLOGO INICIAL */}
+        {dialogueState === "dismissed" &&
+          selectedMamparaIndex === null &&
+          CASILLA_POSITIONS.map((pos, index) => {
+            const iconPos = EXCLAMATION_ICON_POSITIONS.casillas[index];
+            const dist = Math.min(
+              Math.hypot(playerPos.x - pos.x, playerPos.y - pos.y),
+              Math.hypot(playerPos.x - iconPos.x, playerPos.y - iconPos.y),
+            );
+            const isNearThisMampara = dist < 8.5;
+
+            return (
+              <div
+                key={`mampara-voting-spot-${index}`}
+                style={{
+                  left: `${iconPos.x}%`,
+                  top: `${iconPos.y}%`,
+                  transform: "translate(-50%, -50%)",
+                  zIndex: 35,
+                }}
+                className="absolute pointer-events-auto flex flex-col items-center select-none cursor-pointer"
+                onClick={() => {
+                  if (isNearThisMampara) {
+                    setSelectedMamparaIndex(index);
+                  }
+                }}
+              >
+                {/* Signo de exclamación flotante sobre la mampara */}
+                <div
+                  className="flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
+                  style={{
+                    width: EXCLAMATION_ICON_WIDTH,
+                    animation: "floatExclamation 1.4s ease-in-out infinite",
+                  }}
+                  title={`Mampara electoral ${index + 1}`}
+                >
+                  <img
+                    src="/assets/juego/exclamacion.png"
+                    alt={`Elegir Mampara ${index + 1}`}
+                    className="w-full h-auto object-contain drop-shadow-[0_2px_5px_rgba(0,0,0,0.6)]"
+                    style={{ imageRendering: "pixelated" }}
+                  />
+                </div>
+
+                {/* Texto pixel art "presiona E" al acercarse */}
+                {isNearThisMampara && (
+                  <div
+                    className="absolute -top-[32%] left-1/2 -translate-x-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
+                    style={{
+                      animation: "floatPrompt 1.4s ease-in-out infinite",
+                    }}
+                  >
+                    <div
+                      className="whitespace-nowrap text-[#ff4da6] font-black tracking-wider flex items-center gap-1 select-none"
+                      style={{
+                        fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
+                        fontSize: isFullscreen
+                          ? "clamp(6.5px, 0.68cqw, 10px)"
+                          : "clamp(4.5px, 0.48cqw, 6px)",
+                        lineHeight: "1",
+                        textShadow:
+                          "1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 1px 0 #000, 0 -1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 2px 4px rgba(0,0,0,0.9)",
+                      }}
+                    >
+                      <span>presiona</span>
+                      <span className="text-[#ff99d6]">E</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
       </div>
 
-      {/* BOTÓN TEST: COMPLETAR CAPÍTULO 3 */}
-      {dialogueState === "dismissed" && (
+      {/* ESTILOS DE ANIMACIÓN PIXEL ART */}
+      <style>{`
+        @keyframes floatExclamation {
+          0%, 100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-5px);
+          }
+        }
+        @keyframes floatPrompt {
+          0%, 100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-3px);
+          }
+        }
+        @keyframes povEntrance {
+          0% {
+            opacity: 0;
+            transform: scale(0.97);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+      `}</style>
+
+      {/* BOTÓN TEST: COMPLETAR CAPÍTULO 3 (VISTA GENERAL) */}
+      {dialogueState === "dismissed" && selectedMamparaIndex === null && (
         <div className="absolute top-3 right-3 z-50 pointer-events-auto">
           <button
             type="button"
@@ -574,6 +737,102 @@ export default function Chapter3Scene({
             <span>✔</span>
             <span>TERMINAR CAPÍTULO (TEST)</span>
           </button>
+        </div>
+      )}
+
+      {/* VISTA EN PRIMERA PERSONA (POV): SIMULADOR DE VOTO EN MAMPARA */}
+      {selectedMamparaIndex !== null && (
+        <div
+          data-testid="voting-booth-pov"
+          className="absolute inset-0 w-full h-full z-40 flex flex-col items-center justify-center overflow-hidden bg-black select-none"
+          style={{
+            animation: "povEntrance 0.35s ease-out forwards",
+          }}
+        >
+          {/* IMAGEN POV DE LA MAMPARA */}
+          <img
+            src="/assets/juego/simulador-voto/mampara-pov.png"
+            alt={`Mampara electoral ${selectedMamparaIndex + 1} - Vista POV`}
+            className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
+            style={{ imageRendering: "pixelated" }}
+          />
+
+          {/* BARRA SUPERIOR HUD DE LA MAMPARA */}
+          <div className="absolute top-3 left-16 right-3 flex items-center justify-between pointer-events-none z-20">
+            {/* Título de la mampara */}
+            <div className="bg-[#1b3a1a]/95 border-[2px] border-[#a3e635] px-3 py-1.5 rounded shadow-[2px_2px_0px_0px_#000] flex items-center gap-2">
+              <span
+                className="text-[#a3e635] font-black"
+                style={{
+                  fontFamily: "'Press Start 2P', monospace",
+                  fontSize: isFullscreen ? "10px" : "8px",
+                }}
+              >
+                🗳 MAMPARA #{selectedMamparaIndex + 1}
+              </span>
+              <span
+                className="text-white/80 hidden sm:inline"
+                style={{
+                  fontFamily: "'Press Start 2P', monospace",
+                  fontSize: isFullscreen ? "8px" : "7px",
+                }}
+              >
+                • SIMULADOR DE VOTO
+              </span>
+            </div>
+
+            {/* Acciones superiores: Terminar Capítulo (Test) y Salir de mampara */}
+            <div className="flex items-center gap-2 pointer-events-auto">
+              <button
+                type="button"
+                id="chapter-3-pov-complete"
+                onClick={handleTriggerComplete}
+                title="Completar capítulo (Test)"
+                className="bg-[#b5146c] hover:bg-[#ff2a85] active:bg-[#780946] text-white border-[2px] border-black shadow-[2px_2px_0px_0px_#000] cursor-pointer transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded select-none active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                style={{
+                  fontFamily: "'Press Start 2P', monospace",
+                  fontSize: isFullscreen ? "9px" : "7.5px",
+                }}
+              >
+                <span>✔</span>
+                <span>TERMINAR CAPÍTULO</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedMamparaIndex(null)}
+                title="Salir de la mampara y volver a la casilla (Escape)"
+                className="bg-[#940d57] hover:bg-[#ff2a85] active:bg-[#780946] text-white rounded border-[2px] border-black shadow-[2px_2px_0px_0px_#000] cursor-pointer transition-colors flex items-center gap-1.5 px-3 py-1.5 select-none active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                style={{
+                  fontFamily: "'Press Start 2P', monospace",
+                  fontSize: isFullscreen ? "9px" : "7.5px",
+                }}
+              >
+                <span>◀</span>
+                <span>SALIR DE MAMPARA</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Área sobre la mesa para material electoral del simulador */}
+          <div
+            data-testid="voting-booth-table-surface"
+            className="absolute bottom-[6%] left-1/2 -translate-x-1/2 w-[85%] h-[35%] pointer-events-none flex items-center justify-center"
+          >
+            <div
+              className="text-black bg-white/85 px-3 py-1.5 rounded border-[2px] border-black shadow-[2px_2px_0px_0px_#000] text-center"
+              style={{
+                fontFamily: "'Press Start 2P', monospace",
+                fontSize: isFullscreen ? "8px" : "6.5px",
+                lineHeight: "1.4",
+              }}
+            >
+              ¡Has entrado a la mampara #{selectedMamparaIndex + 1}!
+              <div className="text-[#a31566] mt-1 font-bold">
+                Aquí tu voto es secreto, libre e informado.
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
