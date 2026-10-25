@@ -77,8 +77,19 @@ import { CastShadow, DECORATION_SHADOWS } from "./features/sombras";
  * Tras 2.5 s aparece el dialogo de llegada de los primeros votantes.
  */
 
-export const INTRO_CAP2_MESSAGES_ES = CAP1_OUTRO_CAP2_INTRO_MESSAGES_ES;
-export const INTRO_CAP2_MESSAGES_NAH = CAP1_OUTRO_CAP2_INTRO_MESSAGES_NAH;
+export const INTRO_CAP2_MESSAGES_ES: string[] = [
+  "¡Mira nada más! ¡Ya comenzaron a llegar nuestros primeros votantes!",
+  "Después de tanto preparar la casilla, qué gusto ver que todo está funcionando como esperábamos.",
+  "Cada persona que llega tiene sus propias razones para participar, sus opiniones y, seguramente, una que otra duda.",
+  "Y aunque nuestro trabajo es ayudar a que la votación se desarrolle correctamente, también podemos orientar a quienes tengan preguntas.",
+];
+
+export const INTRO_CAP2_MESSAGES_NAH: string[] = [
+  "¡Xikita san tlen! ¡Ya pehualkeh ajsih tototlayokauh votantes!",
+  "Satepan kuak miak tikyektlalijkeh in casilla, ¡kualtsin tikitah nochi kisa ken timochiyayaj!",
+  "Sesen maseual akin ajsi kipixtok itlanemililis pampa tlapejpenis, itlamachilis wan tlatotonki se tlatlanilistli.",
+  "Wan maski totlanel tekiyo yeski ma kualtsin mopano in tlaixquetzalistli, no uelis tikinyakanaseh akin kipiah tlatlanilistli.",
+];
 
 export const ANCIANA_ARRIVAL_MESSAGES_ES: string[] = [
   "¡Oh! Parece que una señora se acercó a nuestra mesa.",
@@ -90,14 +101,25 @@ export const ANCIANA_ARRIVAL_MESSAGES_NAH: string[] = [
   "¡Tikitatij tlen ika uelis tikpalehuiseh!",
 ];
 
-/** Espera antes del primer globo de texto al iniciar el capitulo. */
+/** Espera antes del primer globo de texto al iniciar el capitulo (diálogo puente). */
 const INTRO_DELAY_MS = 2500;
+
+/** Tiempo de espera entre el diálogo puente y la llegada del primer NPC con el segundo diálogo (3 segundos). */
+const BETWEEN_INTRO_DIALOGUES_DELAY_MS = 3000;
 
 /** Posicion por defecto (modo CAPITULOS): a la izquierda de la mesa de funcionarios (donde concluye el Cap 1). */
 const DEFAULT_PLAYER_POS = { x: 15.0, y: 58.0 };
 
-type DialogueState =
+type BridgeDialogueState =
   | "initial_delay"
+  | "entering"
+  | "visible"
+  | "exiting"
+  | "dismissed";
+
+type VoterDialogueState =
+  | "idle"
+  | "waiting_delay"
   | "entering"
   | "visible"
   | "exiting"
@@ -127,8 +149,6 @@ export default function Chapter2Scene({
   onRequestExit,
   onChapterComplete,
 }: ChapterSceneProps) {
-  const hasSeenBridgeCap1 = Boolean(getChapterHandoff()?.fromChapter1Ending);
-
   // Lectura sin efectos (segura con StrictMode). Se limpia al iniciar otra sesion.
   const [playerPos, setPlayerPos] = useState(
     () => getChapterHandoff()?.playerPos ?? DEFAULT_PLAYER_POS,
@@ -137,16 +157,29 @@ export default function Chapter2Scene({
     () => getChapterHandoff()?.lastDirection ?? "1",
   );
   const [isWalking, setIsWalking] = useState(false);
-  const [dialogueState, setDialogueState] = useState<DialogueState>(() =>
-    hasSeenBridgeCap1 ? "dismissed" : "initial_delay",
-  );
+  // 1. Diálogo puente de inicio del Capítulo 2 (mismo con el que termina el Capítulo 1)
+  const [bridgeDialogueState, setBridgeDialogueState] =
+    useState<BridgeDialogueState>("initial_delay");
+
+  // 2. Diálogo de llegada de los primeros votantes (se abre 3s después de cerrar el diálogo puente)
+  const [voterDialogueState, setVoterDialogueState] =
+    useState<VoterDialogueState>("idle");
 
   // Detención del spawn de NPCs genéricos cuando se inicia la conversación con Don Roberto (discapacitado)
   const [isGenericSpawningStopped, setIsGenericSpawningStopped] = useState(false);
 
+  // El primer NPC genérico aparece y empieza a caminar exactamente cuando inicia el diálogo de votantes
+  const genericNpcDialogueState =
+    voterDialogueState === "entering" ||
+    voterDialogueState === "visible" ||
+    voterDialogueState === "exiting" ||
+    voterDialogueState === "dismissed"
+      ? voterDialogueState
+      : "initial_delay";
+
   // Sistema de personajes genéricos (votantes ambientales)
   const { npcs, isGlobalSystemActive } = useGenericNpcs({
-    dialogueState,
+    dialogueState: genericNpcDialogueState,
     isPaused,
     isSpawningDisabled: isGenericSpawningStopped,
   });
@@ -197,11 +230,11 @@ export default function Chapter2Scene({
     if (
       narrativeQueue.status === "arrived" &&
       arrivalDialogueState === "idle" &&
-      dialogueState === "dismissed"
+      voterDialogueState === "dismissed"
     ) {
       setArrivalDialogueState("entering");
     }
-  }, [narrativeQueue.status, arrivalDialogueState, dialogueState]);
+  }, [narrativeQueue.status, arrivalDialogueState, voterDialogueState]);
 
   useEffect(() => {
     if (arrivalDialogueState === "entering") {
@@ -383,7 +416,8 @@ export default function Chapter2Scene({
 
 
   const isPausedRef = useRef(isPaused);
-  const dialogueStateRef = useRef(dialogueState);
+  const bridgeDialogueStateRef = useRef(bridgeDialogueState);
+  const voterDialogueStateRef = useRef(voterDialogueState);
   const playerPosRef = useRef(playerPos);
   const lastDirectionRef = useRef(lastDirection);
   useEffect(() => {
@@ -450,8 +484,11 @@ export default function Chapter2Scene({
     isPausedRef.current = isPaused;
   }, [isPaused]);
   useEffect(() => {
-    dialogueStateRef.current = dialogueState;
-  }, [dialogueState]);
+    bridgeDialogueStateRef.current = bridgeDialogueState;
+  }, [bridgeDialogueState]);
+  useEffect(() => {
+    voterDialogueStateRef.current = voterDialogueState;
+  }, [voterDialogueState]);
   useEffect(() => {
     playerPosRef.current = playerPos;
   }, [playerPos]);
@@ -459,26 +496,51 @@ export default function Chapter2Scene({
     npcsRef.current = npcs;
   }, [npcs]);
 
-  // Contador de 2.5 s (empieza cuando la pantalla esta abierta) y animacion del globo
+  // 1. Contador de 2.5 s para el diálogo puente inicial (cierre de Cap 1) y animación del globo
   useEffect(() => {
     if (isTransitioning) return;
 
-    if (dialogueState === "initial_delay") {
+    if (bridgeDialogueState === "initial_delay") {
       const timer = setTimeout(
-        () => setDialogueState("entering"),
+        () => setBridgeDialogueState("entering"),
         INTRO_DELAY_MS,
       );
       return () => clearTimeout(timer);
     }
-    if (dialogueState === "entering") {
-      const timer = setTimeout(() => setDialogueState("visible"), 350);
+    if (bridgeDialogueState === "entering") {
+      const timer = setTimeout(() => setBridgeDialogueState("visible"), 350);
       return () => clearTimeout(timer);
     }
-    if (dialogueState === "exiting") {
-      const timer = setTimeout(() => setDialogueState("dismissed"), 350);
+    if (bridgeDialogueState === "exiting") {
+      const timer = setTimeout(() => setBridgeDialogueState("dismissed"), 350);
       return () => clearTimeout(timer);
     }
-  }, [isTransitioning, dialogueState]);
+  }, [isTransitioning, bridgeDialogueState]);
+
+  // 2. Tras cerrar el diálogo puente, pasan 3 segundos de espera antes de que aparezca
+  // el primer NPC genérico junto con el globo de texto de "¡Mira nada más! ¡Ya comenzaron a llegar..."
+  useEffect(() => {
+    if (bridgeDialogueState === "dismissed" && voterDialogueState === "idle") {
+      setVoterDialogueState("waiting_delay");
+    }
+  }, [bridgeDialogueState, voterDialogueState]);
+
+  useEffect(() => {
+    if (voterDialogueState === "waiting_delay") {
+      const timer = setTimeout(() => {
+        setVoterDialogueState("entering");
+      }, BETWEEN_INTRO_DIALOGUES_DELAY_MS);
+      return () => clearTimeout(timer);
+    }
+    if (voterDialogueState === "entering") {
+      const timer = setTimeout(() => setVoterDialogueState("visible"), 350);
+      return () => clearTimeout(timer);
+    }
+    if (voterDialogueState === "exiting") {
+      const timer = setTimeout(() => setVoterDialogueState("dismissed"), 350);
+      return () => clearTimeout(timer);
+    }
+  }, [voterDialogueState]);
 
   // Al desmontar se liberan los frames precargados de los personajes y la caché de profundidad
   useEffect(() => {
@@ -591,11 +653,12 @@ export default function Chapter2Scene({
         return;
       }
 
-      // Sin movimiento de controles hasta cerrar el diálogo inicial, el de llegada del personaje,
-      // o la conversación directa con él.
+      // Sin movimiento de controles hasta cerrar los diálogos iniciales (puente y votantes),
+      // el de llegada del personaje, o la conversación directa con él.
       // Durante diálogos se prioriza la estabilidad de la conversación y orientación.
       const isAnyDialogueActive =
-        dialogueStateRef.current !== "dismissed" ||
+        bridgeDialogueStateRef.current !== "dismissed" ||
+        voterDialogueStateRef.current !== "dismissed" ||
         (arrivalDialogueStateRef.current !== "idle" &&
           arrivalDialogueStateRef.current !== "dismissed") ||
         (npcConversationStateRef.current !== "idle" &&
@@ -606,8 +669,10 @@ export default function Chapter2Scene({
       if (isAnyDialogueActive) {
         stop();
         if (
-          dialogueStateRef.current === "entering" ||
-          dialogueStateRef.current === "visible" ||
+          bridgeDialogueStateRef.current === "entering" ||
+          bridgeDialogueStateRef.current === "visible" ||
+          voterDialogueStateRef.current === "entering" ||
+          voterDialogueStateRef.current === "visible" ||
           arrivalDialogueStateRef.current === "entering" ||
           arrivalDialogueStateRef.current === "visible" ||
           outroDialogueStateRef.current === "entering" ||
@@ -895,12 +960,20 @@ export default function Chapter2Scene({
     },
   });
 
-  const introMessages =
+  const bridgeMessages =
     language === "nah"
       ? (CAP1_OUTRO_CAP2_INTRO_MESSAGES_NAH as unknown as string[])
       : (CAP1_OUTRO_CAP2_INTRO_MESSAGES_ES as unknown as string[]);
-  const showDialogue =
-    dialogueState !== "initial_delay" && dialogueState !== "dismissed";
+  const showBridgeDialogue =
+    bridgeDialogueState !== "initial_delay" &&
+    bridgeDialogueState !== "dismissed";
+
+  const voterMessages =
+    language === "nah" ? INTRO_CAP2_MESSAGES_NAH : INTRO_CAP2_MESSAGES_ES;
+  const showVoterDialogue =
+    voterDialogueState !== "idle" &&
+    voterDialogueState !== "waiting_delay" &&
+    voterDialogueState !== "dismissed";
 
   const currentNarrativeConfig = narrativeQueue.currentCharacterConfig;
 
@@ -1283,18 +1356,18 @@ export default function Chapter2Scene({
         />
       </div>
 
-      {/* DIALOGO DE INICIO DEL CAPITULO 2 */}
-      {showDialogue && (
+      {/* DIÁLOGO 1: PUENTE DESDE CAPÍTULO 1 / INICIO DEL CAPÍTULO 2 */}
+      {showBridgeDialogue && (
         <div className="absolute inset-0 z-40 pointer-events-none flex items-end justify-center pb-[1.8cqw] px-[2cqw] overflow-hidden select-none">
           <div className="relative z-10 w-[96%] pointer-events-auto flex flex-col items-end">
             {/* Botón provisional para saltar todos los textos (Test) */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                setDialogueState("exiting");
+                setBridgeDialogueState("exiting");
               }}
               type="button"
-              title="Saltar todos los textos con un solo clic (Test)"
+              title="Saltar diálogo inicial (Test)"
               className="mb-1.5 bg-[#940d57] hover:bg-[#ff2a85] active:bg-[#780946] text-white rounded border-[2px] border-black shadow-[2px_2px_0px_0px_#000] cursor-pointer transition-colors flex items-center gap-1.5 px-3 py-1 select-none active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
               style={{
                 fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
@@ -1307,15 +1380,53 @@ export default function Chapter2Scene({
 
             <PixelSpeechBubble
               speaker={language === "nah" ? "Inecito Cívica" : "Inecito"}
-              messages={introMessages}
+              messages={bridgeMessages}
               actionKey="E"
               disabled={isPaused}
-              isDismissing={dialogueState === "exiting"}
+              isDismissing={bridgeDialogueState === "exiting"}
               onLineChange={() => {
                 setIsWalking(false);
                 setLastDirection("1");
               }}
-              onDismiss={() => setDialogueState("exiting")}
+              onDismiss={() => setBridgeDialogueState("exiting")}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* DIÁLOGO 2: LLEGADA DE LOS PRIMEROS VOTANTES (GENÉRICOS) */}
+      {showVoterDialogue && (
+        <div className="absolute inset-0 z-40 pointer-events-none flex items-end justify-center pb-[1.8cqw] px-[2cqw] overflow-hidden select-none">
+          <div className="relative z-10 w-[96%] pointer-events-auto flex flex-col items-end">
+            {/* Botón provisional para saltar todos los textos (Test) */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setVoterDialogueState("exiting");
+              }}
+              type="button"
+              title="Saltar diálogo de votantes (Test)"
+              className="mb-1.5 bg-[#940d57] hover:bg-[#ff2a85] active:bg-[#780946] text-white rounded border-[2px] border-black shadow-[2px_2px_0px_0px_#000] cursor-pointer transition-colors flex items-center gap-1.5 px-3 py-1 select-none active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+              style={{
+                fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
+                fontSize: isFullscreen ? "10px" : "8px",
+              }}
+            >
+              <span>⏩</span>
+              <span>SALTAR TEXTOS (TEST)</span>
+            </button>
+
+            <PixelSpeechBubble
+              speaker={language === "nah" ? "Inecito Cívica" : "Inecito"}
+              messages={voterMessages}
+              actionKey="E"
+              disabled={isPaused}
+              isDismissing={voterDialogueState === "exiting"}
+              onLineChange={() => {
+                setIsWalking(false);
+                setLastDirection("1");
+              }}
+              onDismiss={() => setVoterDialogueState("exiting")}
             />
           </div>
         </div>

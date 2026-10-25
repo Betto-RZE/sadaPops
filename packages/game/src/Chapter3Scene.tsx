@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { PixelSpeechBubble } from "./PixelSpeechBubble";
 import {
   AnimatedPlayerSprite,
@@ -18,8 +18,10 @@ import {
   OBJECT_COLLISION_BOXES,
   isInsideBox,
   isInsidePolygon,
+  tryPolygonWallSlide,
   getLeftBoundaryX,
   getRightBoundaryX,
+  getBaseRightBoundaryX,
 } from "./GameplayScene";
 import type { ChapterSceneProps } from "./features/capitulos/ChapterSceneRouter";
 import {
@@ -28,6 +30,10 @@ import {
   CAP2_OUTRO_CAP3_INTRO_MESSAGES_NAH,
   type PlayerDirection,
 } from "./features/capitulos/chapterHandoff";
+import {
+  calculateCharacterZIndex,
+  NPC_DEPTH_LAYERS,
+} from "./features/npcs";
 import { CastShadow, DECORATION_SHADOWS } from "./features/sombras";
 
 /**
@@ -40,6 +46,8 @@ import { CastShadow, DECORATION_SHADOWS } from "./features/sombras";
  */
 
 const INTRO_DELAY_MS = 2500;
+
+/** Posición por defecto (modo CAPÍTULOS): en el centro de la explanada (idéntico al inicio de JUGAR / Cap 1). */
 const DEFAULT_PLAYER_POS = { x: 50, y: 62 };
 
 type DialogueState =
@@ -48,6 +56,21 @@ type DialogueState =
   | "visible"
   | "exiting"
   | "dismissed";
+
+// Zona caminable: explanada + casilla completa (mamparas, mesa y cartel 2)
+const isPlazaWalkable = (x: number, y: number): boolean => {
+  if (y < PLAZA_BOUNDS.minY || y > PLAZA_BOUNDS.maxY) return false;
+  return x >= getLeftBoundaryX(y) && x <= getRightBoundaryX(y);
+};
+
+const isPositionWalkable = (x: number, y: number): boolean => {
+  if (!isPlazaWalkable(x, y)) return false;
+  const obs = OBJECT_COLLISION_BOXES;
+  if (obs.mamparas.some((box) => isInsideBox(x, y, box))) return false;
+  if (isInsidePolygon(x, y, obs.mesa)) return false;
+  if (isInsideBox(x, y, obs.cartel2)) return false;
+  return true;
+};
 
 export default function Chapter3Scene({
   language = "es",
@@ -127,29 +150,6 @@ export default function Chapter3Scene({
     };
   }, []);
 
-  // Sistema de colisiones estricto con límites de explanada y mobiliario electoral
-  const isPlazaWalkable = useCallback((x: number, y: number): boolean => {
-    if (y < PLAZA_BOUNDS.minY || y > PLAZA_BOUNDS.maxY) return false;
-    const minX = getLeftBoundaryX(y);
-    const maxX = getRightBoundaryX(y);
-    return x >= minX && x <= maxX;
-  }, []);
-
-  const isPositionWalkable = useCallback(
-    (x: number, y: number): boolean => {
-      if (!isPlazaWalkable(x, y)) return false;
-
-      const obs = OBJECT_COLLISION_BOXES;
-
-      if (obs.mamparas.some((box) => isInsideBox(x, y, box))) return false;
-      if (isInsidePolygon(x, y, obs.mesa)) return false;
-      if (isInsideBox(x, y, obs.cartel2)) return false;
-
-      return true;
-    },
-    [isPlazaWalkable],
-  );
-
   // Bucle de movimiento del jugador: se mantiene estrictamente bloqueado
   // mientras el diálogo inicial o la pausa estén activos
   useEffect(() => {
@@ -170,6 +170,15 @@ export default function Chapter3Scene({
 
     let animationFrameId: number;
     let lastTime = performance.now();
+
+    const handleVisibilityChange = () => {
+      if (typeof document !== "undefined" && !document.hidden) {
+        lastTime = performance.now();
+      }
+    };
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+    }
 
     const maxSpeed = 22.0;
     const RAMP_TIME = 1.0;
@@ -214,7 +223,7 @@ export default function Chapter3Scene({
         return;
       }
 
-      // Movimiento libre una vez desbloqueado el diálogo inicial
+      // 1. Leer entradas de movimiento y calcular velocidad deseada
       let dirX = 0;
       let dirY = 0;
 
@@ -233,55 +242,96 @@ export default function Chapter3Scene({
       }
 
       const isInputActive = dirX !== 0 || dirY !== 0;
+      keyHoldTime = isInputActive ? Math.min(RAMP_TIME, keyHoldTime + dt) : 0;
 
-      if (isInputActive) {
-        keyHoldTime = Math.min(RAMP_TIME, keyHoldTime + dt);
-        const rampProgress = keyHoldTime / RAMP_TIME;
-        const speedMultiplier = 0.5 + 0.5 * rampProgress;
-        const currentTargetSpeed = maxSpeed * speedMultiplier;
+      const rampFactor = isInputActive
+        ? Math.pow(keyHoldTime / RAMP_TIME, 2)
+        : 0;
+      const targetVx = dirX * maxSpeed * rampFactor;
+      const targetVy = dirY * maxSpeed * rampFactor;
+      const blend = Math.min(1, (isInputActive ? 16.0 : frictionRate) * dt);
+      velocity.x += ((isInputActive ? targetVx : 0) - velocity.x) * blend;
+      velocity.y += ((isInputActive ? targetVy : 0) - velocity.y) * blend;
+      if (!isInputActive && Math.abs(velocity.x) < 0.04) velocity.x = 0;
+      if (!isInputActive && Math.abs(velocity.y) < 0.04) velocity.y = 0;
 
-        const len = Math.hypot(dirX, dirY);
-        const normX = dirX / len;
-        const normY = dirY / len;
+      const voluntaryDx = velocity.x * dt;
+      const voluntaryDy = velocity.y * dt;
 
-        velocity.x = normX * currentTargetSpeed;
-        velocity.y = normY * currentTargetSpeed;
-        setIsWalking(true);
-      } else {
-        keyHoldTime = 0;
-        const decay = Math.exp(-frictionRate * dt);
-        velocity.x *= decay;
-        velocity.y *= decay;
+      const hasMovement =
+        Math.hypot(velocity.x, velocity.y) > 0.01 || isInputActive;
+      setIsWalking(hasMovement);
 
-        if (Math.hypot(velocity.x, velocity.y) < 0.5) {
+      if (Math.hypot(voluntaryDx, voluntaryDy) > 0.0001) {
+        setPlayerPos((prev) => {
+          let effectiveDx = voluntaryDx;
+          let effectiveDy = voluntaryDy;
+
+          const isInsideRightPath =
+            prev.y >= PLAZA_BOUNDS.rightPathTopY &&
+            prev.y <= PLAZA_BOUNDS.rightPathBottomY &&
+            prev.x > getBaseRightBoundaryX(prev.y);
+
+          // Deslizamiento sobre los bordes diagonales de la explanada (CONSERVADO INTACTO)
+          if (!isInsideRightPath) {
+            if (voluntaryDx < 0 && prev.x <= getLeftBoundaryX(prev.y) + 0.6) {
+              effectiveDy += Math.abs(voluntaryDx) * 0.75;
+            }
+            if (voluntaryDx > 0 && prev.x >= getRightBoundaryX(prev.y) - 0.6) {
+              effectiveDy += Math.abs(voluntaryDx) * 0.75;
+            }
+          }
+
+          const rawTargetX = prev.x + effectiveDx;
+          const rawTargetY = prev.y + effectiveDy;
+
+          if (isPositionWalkable(rawTargetX, rawTargetY)) {
+            return { x: rawTargetX, y: rawTargetY };
+          }
+
+          // Deslizamiento sobre la mesa directiva (tryPolygonWallSlide)
+          const mesaSlide = tryPolygonWallSlide(
+            prev,
+            effectiveDx,
+            effectiveDy,
+            OBJECT_COLLISION_BOXES.mesa,
+            isPositionWalkable,
+          );
+          if (mesaSlide) return mesaSlide;
+
+          // Pasillo lateral derecho
+          if (isInsideRightPath) {
+            const pathY = Math.min(
+              PLAZA_BOUNDS.rightPathBottomY,
+              Math.max(PLAZA_BOUNDS.rightPathTopY, rawTargetY),
+            );
+            const pathX = Math.min(
+              PLAZA_BOUNDS.rightPathMaxX,
+              Math.max(getBaseRightBoundaryX(pathY), rawTargetX),
+            );
+            if (isPositionWalkable(pathX, pathY)) return { x: pathX, y: pathY };
+          }
+
+          const clampedY = Math.min(
+            PLAZA_BOUNDS.maxY,
+            Math.max(PLAZA_BOUNDS.minY, rawTargetY),
+          );
+          const clampedX = Math.min(
+            getRightBoundaryX(clampedY),
+            Math.max(getLeftBoundaryX(clampedY), rawTargetX),
+          );
+          if (isPositionWalkable(clampedX, clampedY)) {
+            return { x: clampedX, y: clampedY };
+          }
+          if (isPositionWalkable(clampedX, prev.y)) {
+            return { x: clampedX, y: prev.y };
+          }
+          if (isPositionWalkable(prev.x, clampedY)) {
+            return { x: prev.x, y: clampedY };
+          }
+
           velocity.x = 0;
           velocity.y = 0;
-          setIsWalking(false);
-        } else {
-          setIsWalking(true);
-        }
-      }
-
-      if (velocity.x !== 0 || velocity.y !== 0) {
-        const dx = velocity.x * dt;
-        const dy = velocity.y * dt;
-
-        setPlayerPos((prev) => {
-          let nextX = prev.x + dx;
-          let nextY = prev.y + dy;
-
-          if (isPositionWalkable(nextX, nextY)) {
-            return { x: nextX, y: nextY };
-          }
-
-          // Deslizamiento en ejes separados
-          if (isPositionWalkable(nextX, prev.y)) {
-            return { x: nextX, y: prev.y };
-          }
-          if (isPositionWalkable(prev.x, nextY)) {
-            return { x: prev.x, y: nextY };
-          }
-
           return prev;
         });
       }
@@ -294,9 +344,12 @@ export default function Chapter3Scene({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+      }
       cancelAnimationFrame(animationFrameId);
     };
-  }, [isPositionWalkable]);
+  }, []);
 
   // Completar capítulo (con los 2.5 segundos de espera idénticos a Cap 1 y Cap 2)
   const handleTriggerComplete = () => {
@@ -359,8 +412,47 @@ export default function Chapter3Scene({
           style={{ imageRendering: "pixelated" }}
         />
 
-        {/* CONTENEDOR ISOMÉTRICO CON ELEMENTOS Y PERSONAJES */}
-        <div className="absolute inset-0 pointer-events-none">
+        {/* PERSONAJE PROTAGONISTA (INECITO) */}
+        <div
+          style={{
+            left: `${playerPos.x}%`,
+            top: `${playerPos.y}%`,
+            width: "6.5%",
+            transform: "translate(-50%, -90%)",
+            willChange: "left, top",
+            zIndex: calculateCharacterZIndex(playerPos.y, "player"),
+          }}
+          className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
+        >
+          <AnimatedPlayerSprite
+            isWalking={isWalking}
+            lastDirection={lastDirection}
+          />
+        </div>
+
+        {/* MAMPARAS */}
+        {CASILLA_POSITIONS.map((pos, index) => (
+          <div
+            key={`casilla-item-${index}`}
+            style={{
+              left: `${pos.x}%`,
+              top: `${pos.y}%`,
+              width: CASILLA_WIDTH,
+              transform: "translate(-50%, -90%)",
+              zIndex: NPC_DEPTH_LAYERS.mamparaLayer,
+            }}
+            className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
+          >
+            <CastShadow src="/assets/juego/casilla.png" preset="tall" />
+            <img
+              src="/assets/juego/casilla.png"
+              alt={`Mampara Electoral ${index + 1}`}
+              className="relative z-10 w-full h-auto object-contain"
+              style={{ imageRendering: "pixelated" }}
+            />
+          </div>
+        ))}
+
         {/* MESA DIRECTIVA */}
         <div
           style={{
@@ -368,7 +460,12 @@ export default function Chapter3Scene({
             top: `${MESA_POSITION.y}%`,
             width: MESA_WIDTH,
             transform: "translate(-50%, -90%)",
-            zIndex: playerPos.y >= MESA_POSITION.y ? 18 : 28,
+            zIndex:
+              playerPos.y >= MESA_POSITION.y ||
+              (playerPos.y > 56.6 && playerPos.x >= 20.8) ||
+              (playerPos.y <= 56.6 && playerPos.x >= 24.8)
+                ? NPC_DEPTH_LAYERS.mamparaLayer
+                : NPC_DEPTH_LAYERS.mesaBehindLayer,
           }}
           className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
         >
@@ -380,32 +477,6 @@ export default function Chapter3Scene({
             style={{ imageRendering: "pixelated" }}
           />
         </div>
-
-        {/* 5 MAMPARAS ELECTORALES */}
-        {CASILLA_POSITIONS.map((pos, index) => {
-          const isPlayerInFront = playerPos.y >= pos.y;
-          return (
-            <div
-              key={`casilla-item-${index}`}
-              style={{
-                left: `${pos.x}%`,
-                top: `${pos.y}%`,
-                width: CASILLA_WIDTH,
-                transform: "translate(-50%, -90%)",
-                zIndex: isPlayerInFront ? 18 : 28,
-              }}
-              className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
-            >
-              <CastShadow src="/assets/juego/casilla.png" preset="tall" />
-              <img
-                src="/assets/juego/casilla.png"
-                alt={`Mampara Electoral ${index + 1}`}
-                className="relative z-10 w-full h-auto object-contain"
-                style={{ imageRendering: "pixelated" }}
-              />
-            </div>
-          );
-        })}
 
         {/* DECORACIONES DE CASILLA */}
         {DECORACIONES_LIST.map((deco) => {
@@ -419,7 +490,11 @@ export default function Chapter3Scene({
                 width: deco.width,
                 transform: "translate(-50%, -90%)",
                 zIndex:
-                  deco.key === "cartel3" ? 35 : playerPos.y >= pos.y ? 18 : 28,
+                  deco.key === "cartel3"
+                    ? NPC_DEPTH_LAYERS.cartel3Foreground
+                    : playerPos.y >= pos.y
+                      ? NPC_DEPTH_LAYERS.mamparaLayer
+                      : NPC_DEPTH_LAYERS.mesaBehindLayer,
               }}
               className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
             >
@@ -442,19 +517,15 @@ export default function Chapter3Scene({
 
         {/* BOLETAS SOBRE LAS MESAS DE LAS MAMPARAS */}
         {BOLETAS_POSITIONS.map((pos, index) => {
-          const boletaWidth = BOLETAS_SIZES[index] || BOLETA_WIDTH;
-          const casillaY = CASILLA_POSITIONS[index]?.y ?? 36.0;
-          const isPlayerInFront = playerPos.y >= casillaY;
-
           return (
             <div
               key={`boleta-item-${index}`}
               style={{
                 left: `${pos.x}%`,
                 top: `${pos.y}%`,
-                width: boletaWidth,
+                width: BOLETAS_SIZES[index] || BOLETA_WIDTH,
                 transform: "translate(-50%, -90%)",
-                zIndex: isPlayerInFront ? 21 : 29,
+                zIndex: NPC_DEPTH_LAYERS.boletaLayer,
               }}
               className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
             >
@@ -468,37 +539,21 @@ export default function Chapter3Scene({
           );
         })}
 
-        {/* PERSONAJE PROTAGONISTA (INECITO) */}
-        <div
-          style={{
-            left: `${playerPos.x}%`,
-            top: `${playerPos.y}%`,
-            width: "6.5%",
-            transform: "translate(-50%, -90%)",
-            zIndex: playerPos.y >= MESA_POSITION.y ? 29 : 19,
-          }}
-          className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
-        >
-          <AnimatedPlayerSprite
-            isWalking={isWalking}
-            lastDirection={lastDirection}
-          />
-        </div>
-
         {/* ARBUSTOS DEL PRIMER PLANO */}
         <img
           src="/assets/juego/arbusto-izquierda.png"
           alt="Arbustos Izquierda"
+          aria-hidden="true"
           className="absolute bottom-0 left-0 w-[30.6%] h-auto object-contain pointer-events-none select-none z-30"
           style={{ imageRendering: "pixelated" }}
         />
         <img
           src="/assets/juego/arbusto-derecha.png"
           alt="Arbustos Derecha"
+          aria-hidden="true"
           className="absolute bottom-0 right-0 w-[26%] h-auto object-contain pointer-events-none select-none z-30"
           style={{ imageRendering: "pixelated" }}
         />
-      </div>
       </div>
 
       {/* BOTÓN TEST: COMPLETAR CAPÍTULO 3 */}
