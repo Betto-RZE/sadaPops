@@ -757,82 +757,11 @@ export default function Chapter3Scene({
             style={{ imageRendering: "pixelated" }}
           />
 
-          {/* BARRA SUPERIOR HUD DE LA MAMPARA */}
-          <div className="absolute top-3 left-16 right-3 flex items-center justify-between pointer-events-none z-20">
-            {/* Título de la mampara */}
-            <div className="bg-[#1b3a1a]/95 border-[2px] border-[#a3e635] px-3 py-1.5 rounded shadow-[2px_2px_0px_0px_#000] flex items-center gap-2">
-              <span
-                className="text-[#a3e635] font-black"
-                style={{
-                  fontFamily: "'Press Start 2P', monospace",
-                  fontSize: isFullscreen ? "10px" : "8px",
-                }}
-              >
-                🗳 MAMPARA #{selectedMamparaIndex + 1}
-              </span>
-              <span
-                className="text-white/80 hidden sm:inline"
-                style={{
-                  fontFamily: "'Press Start 2P', monospace",
-                  fontSize: isFullscreen ? "8px" : "7px",
-                }}
-              >
-                • SIMULADOR DE VOTO
-              </span>
-            </div>
-
-            {/* Acciones superiores: Terminar Capítulo (Test) y Salir de mampara */}
-            <div className="flex items-center gap-2 pointer-events-auto">
-              <button
-                type="button"
-                id="chapter-3-pov-complete"
-                onClick={handleTriggerComplete}
-                title="Completar capítulo (Test)"
-                className="bg-[#b5146c] hover:bg-[#ff2a85] active:bg-[#780946] text-white border-[2px] border-black shadow-[2px_2px_0px_0px_#000] cursor-pointer transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded select-none active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
-                style={{
-                  fontFamily: "'Press Start 2P', monospace",
-                  fontSize: isFullscreen ? "9px" : "7.5px",
-                }}
-              >
-                <span>✔</span>
-                <span>TERMINAR CAPÍTULO</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setSelectedMamparaIndex(null)}
-                title="Salir de la mampara y volver a la casilla (Escape)"
-                className="bg-[#940d57] hover:bg-[#ff2a85] active:bg-[#780946] text-white rounded border-[2px] border-black shadow-[2px_2px_0px_0px_#000] cursor-pointer transition-colors flex items-center gap-1.5 px-3 py-1.5 select-none active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
-                style={{
-                  fontFamily: "'Press Start 2P', monospace",
-                  fontSize: isFullscreen ? "9px" : "7.5px",
-                }}
-              >
-                <span>◀</span>
-                <span>SALIR DE MAMPARA</span>
-              </button>
-            </div>
-          </div>
-
           {/* Área sobre la mesa para material electoral del simulador */}
           <div
             data-testid="voting-booth-table-surface"
-            className="absolute bottom-[6%] left-1/2 -translate-x-1/2 w-[85%] h-[35%] pointer-events-none flex items-center justify-center"
-          >
-            <div
-              className="text-black bg-white/85 px-3 py-1.5 rounded border-[2px] border-black shadow-[2px_2px_0px_0px_#000] text-center"
-              style={{
-                fontFamily: "'Press Start 2P', monospace",
-                fontSize: isFullscreen ? "8px" : "6.5px",
-                lineHeight: "1.4",
-              }}
-            >
-              ¡Has entrado a la mampara #{selectedMamparaIndex + 1}!
-              <div className="text-[#a31566] mt-1 font-bold">
-                Aquí tu voto es secreto, libre e informado.
-              </div>
-            </div>
-          </div>
+            className="absolute bottom-[6%] left-1/2 -translate-x-1/2 w-[85%] h-[35%] pointer-events-auto flex items-center justify-center"
+          />
         </div>
       )}
 
