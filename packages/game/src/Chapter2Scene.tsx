@@ -60,6 +60,7 @@ import {
   stepPlayerAlignmentWalk,
   PLAYER_ALIGNMENT_WALK_SPEED,
   getNarrativeCharacterPortraits,
+  BETWEEN_CHARACTERS_DELAY_MS,
 } from "./features/mitos";
 import { CastShadow, DECORATION_SHADOWS } from "./features/sombras";
 
@@ -162,7 +163,7 @@ export default function Chapter2Scene({
     isPaused,
     isTriggered: isFirstNpcIdleFinished,
     initialSpawnDelayMs: 4000,
-    betweenCharactersDelayMs: 10000,
+    betweenCharactersDelayMs: BETWEEN_CHARACTERS_DELAY_MS,
   });
   const narrativeQueuePosRef = useRef(narrativeQueue.position);
   useEffect(() => {

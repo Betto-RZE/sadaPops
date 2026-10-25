@@ -1145,7 +1145,7 @@ export const JOVEN_CONVERSATION_MESSAGES_ES: DialogueLine[] = [
   {
     speaker: "Inecito",
     speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
-    text: "¡Ahora quiero saber qué aprendiste! Si somos millones de personas, ¿por qué importa participar en las elecciones?",
+    text: "Si somos millones de personas, ¿por qué importa participar en las elecciones?",
     target: "user",
     portraitOverride: {
       leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.png",
@@ -1153,7 +1153,7 @@ export const JOVEN_CONVERSATION_MESSAGES_ES: DialogueLine[] = [
     },
     trivia: {
       question:
-        "¡Una pregunta para ti! Si somos millones de personas, ¿por qué importa participar en las elecciones?",
+        "Si somos millones de personas, ¿por qué importa participar en las elecciones?",
       options: [
         {
           id: "opt-a",
@@ -1757,7 +1757,7 @@ export const TRANS_CONVERSATION_MESSAGES_ES: DialogueLine[] = [
   {
     speaker: "Inecito",
     speakerColor: DIALOGUE_SPEAKER_COLORS.inecito,
-    text: "¡Ahora quiero comprobar lo que aprendiste! ¿Qué sucede si la apariencia de una persona trans no coincide con la fotografía de su credencial para votar?",
+    text: "¿Qué sucede si la apariencia de una persona trans no coincide con la fotografía de su credencial para votar?",
     target: "user",
     portraitOverride: {
       leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.png",
@@ -1765,7 +1765,7 @@ export const TRANS_CONVERSATION_MESSAGES_ES: DialogueLine[] = [
     },
     trivia: {
       question:
-        "¡Ahora quiero comprobar lo que aprendiste! ¿Qué sucede si la apariencia de una persona trans no coincide con la fotografía de su credencial para votar?",
+        "¿Qué sucede si la apariencia de una persona trans no coincide con la fotografía de su credencial para votar?",
       options: [
         {
           id: "opt-a",

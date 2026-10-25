@@ -1350,22 +1350,22 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
       assert.equal(exitedScene, true);
       assert.equal(pos.x, 102.0);
 
-      // 4. Tras salir del escenario: transcurren los 10 segundos antes del siguiente personaje
+      // 4. Tras salir del escenario: transcurren los 5 segundos antes del siguiente personaje
       let elapsedDelay = 0;
       const delayStep1 = updateQueueTransitionDelay({
         elapsedMs: elapsedDelay,
-        dtSeconds: 5.0,
-        delayMs: 10000,
+        dtSeconds: 2.5,
+        delayMs: BETWEEN_CHARACTERS_DELAY_MS,
       });
       assert.equal(delayStep1.isReady, false);
 
       const delayStep2 = updateQueueTransitionDelay({
         elapsedMs: delayStep1.newElapsedMs,
-        dtSeconds: 5.0,
-        delayMs: 10000,
+        dtSeconds: 2.5,
+        delayMs: BETWEEN_CHARACTERS_DELAY_MS,
       });
       assert.equal(delayStep2.isReady, true);
-      assert.equal(delayStep2.newElapsedMs, 10000);
+      assert.equal(delayStep2.newElapsedMs, 5000);
     });
   });
 });
