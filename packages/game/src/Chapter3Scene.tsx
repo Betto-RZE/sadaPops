@@ -70,13 +70,55 @@ export type BallotInspectionZoneId =
 export interface BallotInspectionZone {
   id: BallotInspectionZoneId;
   label: string;
+  left: string;
+  top: string;
+  width: string;
+  height: string;
+  originX: number;
+  originY: number;
 }
 
 export const BALLOT_INSPECTION_ZONES: BallotInspectionZone[] = [
-  { id: "encabezado", label: "Encabezado de la boleta" },
-  { id: "anio_electoral", label: "Año electoral" },
-  { id: "datos_geograficos", label: "Datos geográficos electorales" },
-  { id: "opciones_politicas", label: "Opciones políticas" },
+  {
+    id: "encabezado",
+    label: "Encabezado de la boleta",
+    left: "6%",
+    top: "5.2%",
+    width: "70%",
+    height: "9.5%",
+    originX: 41,
+    originY: 10,
+  },
+  {
+    id: "anio_electoral",
+    label: "Año electoral",
+    left: "77%",
+    top: "5.2%",
+    width: "17%",
+    height: "9.5%",
+    originX: 85.5,
+    originY: 10,
+  },
+  {
+    id: "datos_geograficos",
+    label: "Datos geográficos electorales",
+    left: "6.5%",
+    top: "15.5%",
+    width: "87%",
+    height: "6.5%",
+    originX: 50,
+    originY: 18.7,
+  },
+  {
+    id: "opciones_politicas",
+    label: "Opciones políticas",
+    left: "6.5%",
+    top: "24.8%",
+    width: "87%",
+    height: "61.5%",
+    originX: 50,
+    originY: 55,
+  },
 ];
 
 // Zona caminable: explanada + casilla completa (mamparas, mesa y cartel 2)
@@ -161,6 +203,14 @@ export default function Chapter3Scene({
 
   // Estado de hover interactivo sobre la boleta en la mesa de la mampara
   const [isBallotHovered, setIsBallotHovered] = useState(false);
+
+  // Zona actualmente en hover durante la examinación de la boleta
+  const [hoveredZone, setHoveredZone] =
+    useState<BallotInspectionZoneId | null>(null);
+
+  const activeHoveredZone = hoveredZone
+    ? BALLOT_INSPECTION_ZONES.find((z) => z.id === hoveredZone) ?? null
+    : null;
 
   // Zonas examinadas de la boleta electoral
   const [examinedZones, setExaminedZones] = useState<
@@ -920,9 +970,14 @@ export default function Chapter3Scene({
             <ul className="flex flex-col gap-3.5 sm:gap-4 list-none p-0 m-0">
               {BALLOT_INSPECTION_ZONES.map((zone) => {
                 const isChecked = examinedZones[zone.id];
+                const isHovered = hoveredZone === zone.id;
                 return (
                   <li
                     key={`inspection-zone-${zone.id}`}
+                    onMouseEnter={() => setHoveredZone(zone.id)}
+                    onMouseLeave={() =>
+                      setHoveredZone((cur) => (cur === zone.id ? null : cur))
+                    }
                     onClick={() => {
                       setExaminedZones((prev) => ({
                         ...prev,
@@ -940,15 +995,19 @@ export default function Chapter3Scene({
                         }));
                       }
                     }}
-                    className="flex items-center gap-2.5 sm:gap-3.5 select-none cursor-pointer group"
-                    title={`Haz clic para marcar/desmarcar ${zone.label}`}
+                    className={`flex items-center gap-2.5 sm:gap-3.5 select-none cursor-pointer transition-all duration-200 ${
+                      isHovered ? "translate-x-1.5" : "translate-x-0"
+                    }`}
+                    title={`Examinar ${zone.label}`}
                   >
                     {/* Casilla cuadrada a la izquierda (se marca con palomita al examinarse) */}
                     <div
-                      className={`shrink-0 rounded-[2px] border-[2px] border-black flex items-center justify-center transition-all shadow-[2px_2px_0px_0px_#000] ${
+                      className={`shrink-0 rounded-[2px] border-[2px] flex items-center justify-center transition-all ${
                         isChecked
-                          ? "bg-[#10b981] text-black"
-                          : "bg-white text-transparent group-hover:bg-slate-100"
+                          ? "border-black bg-[#10b981] text-black shadow-[2px_2px_0px_0px_#000]"
+                          : isHovered
+                            ? "border-[#ef4444] bg-white text-transparent shadow-[2px_2px_0px_0px_#ef4444]"
+                            : "border-black bg-white text-transparent shadow-[2px_2px_0px_0px_#000]"
                       }`}
                       style={{
                         width: isFullscreen
@@ -972,7 +1031,9 @@ export default function Chapter3Scene({
                       className={`font-black tracking-wide select-none transition-all ${
                         isChecked
                           ? "text-[#a7f3d0] line-through decoration-black decoration-2"
-                          : "text-white group-hover:text-amber-200"
+                          : isHovered
+                            ? "text-red-400"
+                            : "text-white"
                       }`}
                       style={{
                         fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
@@ -1019,10 +1080,6 @@ export default function Chapter3Scene({
                 imageRendering: "pixelated",
                 cursor: ballotState === "on_table" ? "pointer" : "default",
                 pointerEvents: "auto",
-                transition:
-                  ballotState === "on_table"
-                    ? "all 220ms cubic-bezier(0.2, 0.8, 0.2, 1)"
-                    : "all 750ms cubic-bezier(0.16, 1, 0.3, 1)",
                 left: "50%",
                 top:
                   ballotState === "on_table"
@@ -1031,15 +1088,24 @@ export default function Chapter3Scene({
                       : "63%"
                     : "50%",
                 height: ballotState === "on_table" ? "42%" : "95%",
-                width: "auto",
+                aspectRatio: "819 / 1024",
                 maxHeight: ballotState === "on_table" ? "42%" : "95%",
-                transformOrigin: "center center",
+                transformOrigin:
+                  ballotState === "inspecting" && activeHoveredZone
+                    ? `${activeHoveredZone.originX}% ${activeHoveredZone.originY}%`
+                    : "center center",
                 transform:
                   ballotState === "on_table"
                     ? isBallotHovered
                       ? "translate(-50%, -50%) perspective(650px) rotateX(42deg) rotateZ(-2.5deg) scale(1.04)"
                       : "translate(-50%, -50%) perspective(650px) rotateX(46deg) rotateZ(-3deg) scale(1.0)"
-                    : "translate(-50%, -50%) perspective(1000px) rotateX(0deg) rotateZ(0deg) scale(1)",
+                    : activeHoveredZone
+                      ? "translate(-50%, -50%) perspective(1000px) scale(1.08)"
+                      : "translate(-50%, -50%) perspective(1000px) scale(1)",
+                transition:
+                  ballotState === "on_table"
+                    ? "all 220ms cubic-bezier(0.2, 0.8, 0.2, 1)"
+                    : "transform 260ms cubic-bezier(0.16, 1, 0.3, 1), transform-origin 260ms cubic-bezier(0.16, 1, 0.3, 1), filter 300ms ease-out",
                 filter:
                   ballotState === "on_table"
                     ? isBallotHovered
@@ -1047,14 +1113,67 @@ export default function Chapter3Scene({
                       : "drop-shadow(0px 8px 12px rgba(0,0,0,0.5))"
                     : "drop-shadow(0px 20px 40px rgba(0,0,0,0.8))",
               }}
-              className="select-none active:scale-95"
+              className="select-none active:scale-95 relative"
             >
               <img
                 src="/assets/juego/simulador-voto/boleta-electoral.png"
                 alt="Boleta Electoral 2024"
-                className="h-full w-auto object-contain pointer-events-none select-none"
+                className="w-full h-full object-contain pointer-events-none select-none"
                 style={{ imageRendering: "pixelated" }}
               />
+
+              {/* CAPA DE ZONAS INTERACTIVAS PARA EXAMINAR LA BOLETA */}
+              {ballotState === "inspecting" && (
+                <div className="absolute inset-0 w-full h-full pointer-events-auto z-40">
+                  {BALLOT_INSPECTION_ZONES.map((zone) => {
+                    const isHovered = hoveredZone === zone.id;
+                    return (
+                      <div
+                        key={`ballot-zone-${zone.id}`}
+                        data-testid={`ballot-zone-${zone.id}`}
+                        onMouseEnter={() => setHoveredZone(zone.id)}
+                        onMouseLeave={() =>
+                          setHoveredZone((cur) =>
+                            cur === zone.id ? null : cur
+                          )
+                        }
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setExaminedZones((prev) => ({
+                            ...prev,
+                            [zone.id]: !prev[zone.id],
+                          }));
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setExaminedZones((prev) => ({
+                              ...prev,
+                              [zone.id]: !prev[zone.id],
+                            }));
+                          }
+                        }}
+                        title={`${zone.label} (Haz clic para examinar)`}
+                        className={`absolute transition-all duration-200 cursor-pointer rounded-[3px] select-none ${
+                          isHovered
+                            ? "border-[3px] border-[#ef4444] bg-red-500/15 shadow-[0_0_0_1px_#000,2px_2px_0px_0px_#000] scale-[1.02]"
+                            : "border-[2px] border-transparent hover:border-[#ef4444]"
+                        }`}
+                        style={{
+                          left: zone.left,
+                          top: zone.top,
+                          width: zone.width,
+                          height: zone.height,
+                          transformOrigin: "center center",
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>
