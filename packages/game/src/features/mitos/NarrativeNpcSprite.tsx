@@ -8,6 +8,7 @@ import {
   preloadNarrativeCharactersImages,
 } from "./ancianaConfig";
 import { AncianaSprite } from "./AncianaSprite";
+import { CastShadow } from "../sombras";
 
 export interface NarrativeNpcSpriteProps {
   /** Identificador del personaje narrativo ("anciana" | "joven" | "indigena" | "transgenero" | "discapacitado") */
@@ -103,10 +104,15 @@ export const NarrativeNpcSprite = React.memo(function NarrativeNpcSprite({
         className={`relative flex flex-col items-center justify-center w-full shrink-0 select-none ${className}`}
         style={style}
       >
+        <CastShadow
+          src={imageSrc}
+          preset="character"
+          flipX={facingDirection === "right"}
+        />
         <img
           src={imageSrc}
           alt={label}
-          className="w-full h-auto object-contain select-none pointer-events-none drop-shadow-md shrink-0"
+          className="w-full h-auto object-contain select-none pointer-events-none shrink-0"
           style={{
             transform: facingDirection === "right" ? "scaleX(-1)" : "none",
             imageRendering: "pixelated",
@@ -137,10 +143,17 @@ export const NarrativeNpcSprite = React.memo(function NarrativeNpcSprite({
           100% { transform: translateY(-3.5px); }
         }
       `}</style>
+      {charConfig?.portraitSrc && (
+        <CastShadow
+          src={charConfig.portraitSrc}
+          preset="character"
+          flipX={facingDirection === "right"}
+        />
+      )}
       <img
         src={charConfig?.portraitSrc}
         alt={label}
-        className="w-full h-auto object-contain select-none pointer-events-none drop-shadow-[0_4px_8px_rgba(0,0,0,0.55)] shrink-0"
+        className="w-full h-auto object-contain select-none pointer-events-none shrink-0"
         style={{
           transform: facingDirection === "right" ? "scaleX(-1)" : "none",
           imageRendering: "pixelated",

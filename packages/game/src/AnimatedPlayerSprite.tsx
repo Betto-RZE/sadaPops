@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { CastShadow } from "./features/sombras";
 
 // Frame count definitions for each of the 8 character animation folders
 export const PLAYER_FRAME_COUNTS: Record<string, number> = {
@@ -76,10 +77,11 @@ export function AnimatedPlayerSprite({
 
   return (
     <div className="relative flex flex-col items-center justify-center w-full shrink-0">
+      <CastShadow src={imageSrc} preset="character" />
       <img
         src={imageSrc}
         alt="Personaje Principal"
-        className="w-full h-auto object-contain select-none pointer-events-none drop-shadow-md shrink-0"
+        className="w-full h-auto object-contain select-none pointer-events-none shrink-0"
         style={{ imageRendering: "pixelated" }}
       />
     </div>

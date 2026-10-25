@@ -6,6 +6,7 @@ import {
   preloadGenericNpcImages,
   GENERIC_NPC_TINT_FILTER,
 } from "./genericNpcConfig";
+import { CastShadow } from "../sombras";
 
 export interface GenericNpcSpriteProps {
   /** Animación actual ('back' | 'front' | 'idle') */
@@ -67,22 +68,19 @@ export const GenericNpcSprite = React.memo(function GenericNpcSprite({
 
   const imageSrc = getGenericNpcFrameSrc(animation, frameIndex);
 
-  const combinedFilter = filter
-    ? `${filter} drop-shadow(0 4px 6px rgba(0, 0, 0, 0.25))`
-    : undefined;
-
   return (
     <div
       className={`relative flex flex-col items-center justify-center w-full shrink-0 ${className}`}
       style={style}
     >
+      <CastShadow src={imageSrc} preset="character" />
       <img
         src={imageSrc}
         alt={altText}
         className="w-full h-auto object-contain select-none pointer-events-none shrink-0"
         style={{
           imageRendering: "pixelated",
-          filter: combinedFilter,
+          filter: filter || undefined,
         }}
       />
     </div>

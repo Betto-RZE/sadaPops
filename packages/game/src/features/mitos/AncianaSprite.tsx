@@ -5,6 +5,7 @@ import {
   getAncianaFrameSrc,
   preloadAncianaImages,
 } from "./ancianaConfig";
+import { CastShadow } from "../sombras";
 
 export interface AncianaSpriteProps {
   /** Animación actual ('side' | 'front' | 'back' | 'idle') */
@@ -79,10 +80,15 @@ export const AncianaSprite = React.memo(function AncianaSprite({
       className={`relative flex flex-col items-center justify-center w-full shrink-0 ${className}`}
       style={style}
     >
+      <CastShadow
+        src={imageSrc}
+        preset="character"
+        flipX={facingDirection === "right"}
+      />
       <img
         src={imageSrc}
         alt={altText}
-        className="w-full h-auto object-contain select-none pointer-events-none drop-shadow-md shrink-0"
+        className="w-full h-auto object-contain select-none pointer-events-none shrink-0"
         style={{
           transform: facingDirection === "right" ? "scaleX(-1)" : "none",
           imageRendering: "pixelated",

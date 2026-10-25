@@ -61,6 +61,7 @@ import {
   PLAYER_ALIGNMENT_WALK_SPEED,
   getNarrativeCharacterPortraits,
 } from "./features/mitos";
+import { CastShadow, DECORATION_SHADOWS } from "./features/sombras";
 
 /**
  * Capitulo 2: "Desmintiendo mitos".
@@ -992,6 +993,7 @@ export default function Chapter2Scene({
             }}
             className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
           >
+            <CastShadow src="/assets/juego/casilla.png" preset="tall" />
             <img
               src="/assets/juego/casilla.png"
               alt={`Casilla Electoral ${index + 1}`}
@@ -1017,6 +1019,7 @@ export default function Chapter2Scene({
           }}
           className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
         >
+          <CastShadow src="/assets/juego/mesa.png" preset="mesa" />
           <img
             src="/assets/juego/mesa.png"
             alt="Mesa Directiva de Casilla"
@@ -1113,6 +1116,13 @@ export default function Chapter2Scene({
               }}
               className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
             >
+              {DECORATION_SHADOWS[deco.key] && (
+                <CastShadow
+                  src={deco.sprite}
+                  preset={DECORATION_SHADOWS[deco.key].preset}
+                  overrides={DECORATION_SHADOWS[deco.key].overrides}
+                />
+              )}
               <img
                 src={deco.sprite}
                 alt={deco.name}
@@ -1123,7 +1133,7 @@ export default function Chapter2Scene({
           );
         })}
 
-        {/* BOLETAS SOBRE LAS MAMPARAS */}
+        {/* BOLETAS SOBRE LAS MAMPARAS (sin sombra a petición de diseño) */}
         {BOLETAS_POSITIONS.map((pos, index) => {
           return (
             <div

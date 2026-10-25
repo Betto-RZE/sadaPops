@@ -17,6 +17,7 @@ import {
   preloadPlayerFolder,
   PLAYER_FRAME_COUNTS,
 } from "./AnimatedPlayerSprite";
+import { CastShadow, DECORATION_SHADOWS } from "./features/sombras";
 
 // Centralized Plaza Collision Bounds (Edit these 9 numbers to dynamically adjust boundaries in real-time!)
 export const PLAZA_BOUNDS = {
@@ -2211,7 +2212,8 @@ export default function GameplayScene({
               }}
               className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
             >
-              {/* Sprite pixel art de la casilla electoral */}
+              {/* Sprite pixel art de la casilla electoral + sombra proyectada con su silueta */}
+              <CastShadow src="/assets/juego/casilla.png" preset="tall" />
               <img
                 src="/assets/juego/casilla.png"
                 alt={`Casilla Electoral ${index + 1}`}
@@ -2222,7 +2224,7 @@ export default function GameplayScene({
           );
         })}
 
-        {/* OBJETO COLOCADO: MESA DE VOTACIÓN CON URNAS (sin sombras artificiales) */}
+        {/* OBJETO COLOCADO: MESA DE VOTACIÓN CON URNAS (con sombra proyectada) */}
         {isMesaPlaced && (
           <div
             style={{
@@ -2239,7 +2241,8 @@ export default function GameplayScene({
             }}
             className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
           >
-            {/* Sprite pixel art de la mesa de votación */}
+            {/* Sprite pixel art de la mesa de votación + sombra en el suelo */}
+            <CastShadow src="/assets/juego/mesa.png" preset="mesa" />
             <img
               src="/assets/juego/mesa.png"
               alt="Mesa Directiva de Casilla"
@@ -2249,7 +2252,7 @@ export default function GameplayScene({
           </div>
         )}
 
-        {/* OBJETOS COLOCADOS: 4 DECORACIONES (Cartel 1, Cartel 2, Folleto, Letrero VOTA) (sin sombras artificiales) */}
+        {/* OBJETOS COLOCADOS: 4 DECORACIONES (Cartel 1, Cartel 2, Folleto, Letrero VOTA) (con sombra proyectada) */}
         {DECORACIONES_LIST.map((deco) => {
           const isPlaced =
             minigamePhase === "phase_3_done" ||
@@ -2275,7 +2278,14 @@ export default function GameplayScene({
               }}
               className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
             >
-              {/* Sprite pixel art de la decoracion */}
+              {/* Sprite pixel art de la decoracion + sombra en el suelo (solo si aplica; folleto sin sombra) */}
+              {DECORATION_SHADOWS[deco.key] && (
+                <CastShadow
+                  src={deco.sprite}
+                  preset={DECORATION_SHADOWS[deco.key].preset}
+                  overrides={DECORATION_SHADOWS[deco.key].overrides}
+                />
+              )}
               <img
                 src={deco.sprite}
                 alt={deco.name}
@@ -2286,7 +2296,7 @@ export default function GameplayScene({
           );
         })}
 
-        {/* OBJETOS COLOCADOS: BOLETAS SOBRE LAS MESAS DE LAS MAMPARAS (sin sombras artificiales) */}
+        {/* OBJETOS COLOCADOS: BOLETAS SOBRE LAS MESAS DE LAS MAMPARAS (sin sombra a petición de diseño) */}
         {BOLETAS_POSITIONS.map((pos, index) => {
           const isPlaced =
             minigamePhase === "phase_4_done" ||
