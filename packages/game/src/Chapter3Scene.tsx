@@ -647,6 +647,7 @@ export default function Chapter3Scene({
                 style={{
                   left: `${iconPos.x}%`,
                   top: `${iconPos.y}%`,
+                  width: EXCLAMATION_ICON_WIDTH,
                   transform: "translate(-50%, -50%)",
                   zIndex: 35,
                 }}
@@ -659,9 +660,8 @@ export default function Chapter3Scene({
               >
                 {/* Signo de exclamación flotante sobre la mampara */}
                 <div
-                  className="flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
+                  className="relative w-full flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
                   style={{
-                    width: EXCLAMATION_ICON_WIDTH,
                     animation: "floatExclamation 1.4s ease-in-out infinite",
                   }}
                   title={`Mampara electoral ${index + 1}`}
@@ -672,33 +672,28 @@ export default function Chapter3Scene({
                     className="w-full h-auto object-contain drop-shadow-[0_2px_5px_rgba(0,0,0,0.6)]"
                     style={{ imageRendering: "pixelated" }}
                   />
-                </div>
 
-                {/* Texto pixel art "presiona E" al acercarse */}
-                {isNearThisMampara && (
-                  <div
-                    className="absolute -top-[32%] left-1/2 -translate-x-1/2 z-40 pointer-events-none flex flex-col items-center select-none"
-                    style={{
-                      animation: "floatPrompt 1.4s ease-in-out infinite",
-                    }}
-                  >
-                    <div
-                      className="whitespace-nowrap text-[#ff4da6] font-black tracking-wider flex items-center gap-1 select-none"
-                      style={{
-                        fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
-                        fontSize: isFullscreen
-                          ? "clamp(6.5px, 0.68cqw, 10px)"
-                          : "clamp(4.5px, 0.48cqw, 6px)",
-                        lineHeight: "1",
-                        textShadow:
-                          "1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 1px 0 #000, 0 -1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 2px 4px rgba(0,0,0,0.9)",
-                      }}
-                    >
-                      <span>presiona</span>
-                      <span className="text-[#ff99d6]">E</span>
+                  {/* Texto pixel art "presiona E" al acercarse (perfectamente centrado sobre el icono) */}
+                  {isNearThisMampara && (
+                    <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 z-40 pointer-events-none flex flex-col items-center select-none">
+                      <div
+                        className="whitespace-nowrap text-[#ff4da6] font-black tracking-wider flex items-center gap-1 select-none"
+                        style={{
+                          fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
+                          fontSize: isFullscreen
+                            ? "clamp(7px, 0.72cqw, 10.5px)"
+                            : "clamp(5px, 0.52cqw, 7px)",
+                          lineHeight: "1",
+                          textShadow:
+                            "1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 1px 0 #000, 0 -1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 2px 4px rgba(0,0,0,0.9)",
+                        }}
+                      >
+                        <span>presiona</span>
+                        <span className="text-[#ff99d6]">E</span>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             );
           })}
@@ -716,10 +711,10 @@ export default function Chapter3Scene({
         }
         @keyframes floatPrompt {
           0%, 100% {
-            transform: translateY(0px);
+            transform: translate(-50%, 0px);
           }
           50% {
-            transform: translateY(-3px);
+            transform: translate(-50%, -5px);
           }
         }
         @keyframes povEntrance {
