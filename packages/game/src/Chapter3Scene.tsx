@@ -61,6 +61,24 @@ type DialogueState =
 
 type BallotState = "on_table" | "picking_up" | "inspecting";
 
+export type BallotInspectionZoneId =
+  | "encabezado"
+  | "anio_electoral"
+  | "datos_geograficos"
+  | "opciones_politicas";
+
+export interface BallotInspectionZone {
+  id: BallotInspectionZoneId;
+  label: string;
+}
+
+export const BALLOT_INSPECTION_ZONES: BallotInspectionZone[] = [
+  { id: "encabezado", label: "Encabezado de la boleta" },
+  { id: "anio_electoral", label: "Año electoral" },
+  { id: "datos_geograficos", label: "Datos geográficos electorales" },
+  { id: "opciones_politicas", label: "Opciones políticas" },
+];
+
 // Zona caminable: explanada + casilla completa (mamparas, mesa y cartel 2)
 const isPlazaWalkable = (x: number, y: number): boolean => {
   if (y < PLAZA_BOUNDS.minY || y > PLAZA_BOUNDS.maxY) return false;
@@ -143,6 +161,27 @@ export default function Chapter3Scene({
 
   // Estado de hover interactivo sobre la boleta en la mesa de la mampara
   const [isBallotHovered, setIsBallotHovered] = useState(false);
+
+  // Zonas examinadas de la boleta electoral
+  const [examinedZones, setExaminedZones] = useState<
+    Record<BallotInspectionZoneId, boolean>
+  >({
+    encabezado: false,
+    anio_electoral: false,
+    datos_geograficos: false,
+    opciones_politicas: false,
+  });
+
+  const markZoneExamined = (zoneId: BallotInspectionZoneId) => {
+    setExaminedZones((prev) => {
+      if (prev[zoneId]) return prev;
+      return { ...prev, [zoneId]: true };
+    });
+  };
+
+  const examinedCount = Object.values(examinedZones).filter(Boolean).length;
+  // Exponer temporalmente para inspección o pruebas si es necesario
+  void markZoneExamined;
 
   const handleBallotClick = () => {
     if (ballotStateRef.current === "on_table") {
@@ -829,7 +868,7 @@ export default function Chapter3Scene({
                   handleBallotClick();
                 }
               }}
-              className="px-5 py-2.5 bg-black/80 backdrop-blur-sm border-[2px] border-[#ff4da6] rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.85)] cursor-pointer hover:bg-black/95 hover:border-[#ff80c0] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2"
+              className="px-6 sm:px-8 py-3 sm:py-3.5 bg-black/85 backdrop-blur-sm border-[3px] border-black rounded-lg shadow-[4px_4px_0px_0px_#000] cursor-pointer hover:bg-black/95 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2"
               style={{
                 animation: "floatBanner 2s ease-in-out infinite",
               }}
@@ -840,16 +879,117 @@ export default function Chapter3Scene({
                 style={{
                   fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
                   fontSize: isFullscreen
-                    ? "clamp(10px, 1.15cqw, 16px)"
-                    : "clamp(8px, 0.9cqw, 12.5px)",
-                  lineHeight: "1.2",
+                    ? "clamp(15px, 1.7cqw, 24px)"
+                    : "clamp(12px, 1.35cqw, 18px)",
+                  lineHeight: "1.25",
                   textShadow:
-                    "1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 0 10px rgba(255, 77, 166, 0.9)",
+                    "2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 2px 0 #000, 0 -2px 0 #000, 2px 0 0 #000, -2px 0 0 #000",
                 }}
               >
                 Agarra la boleta
               </span>
             </div>
+          </div>
+
+          {/* GUÍA DE INSPECCIÓN: "EXAMINA LA BOLETA" (SIN CONTENEDORES NI BORDES NEÓN, CON CASILLAS A LA IZQUIERDA) */}
+          <div
+            data-testid="ballot-inspection-panel"
+            className={`absolute left-4 sm:left-7 top-1/2 -translate-y-1/2 z-40 w-[clamp(220px,27cqw,360px)] max-w-[28%] transition-all duration-500 ease-out select-none pointer-events-auto flex flex-col gap-4 sm:gap-5 ${
+              ballotState === "inspecting"
+                ? "opacity-100 translate-x-0"
+                : "opacity-0 -translate-x-8 pointer-events-none"
+            }`}
+          >
+            {/* Título pixel art grande sin contenedores ni brillo neón */}
+            <h3
+              className="text-white font-black tracking-wider uppercase select-none m-0"
+              style={{
+                fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
+                fontSize: isFullscreen
+                  ? "clamp(14px, 1.55cqw, 23px)"
+                  : "clamp(11px, 1.25cqw, 18px)",
+                lineHeight: "1.35",
+                textShadow:
+                  "2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 2px 0 #000, 0 -2px 0 #000, 2px 0 0 #000, -2px 0 0 #000",
+              }}
+            >
+              Examina la boleta
+            </h3>
+
+            {/* Lista de partes a examinar con casillas cuadradas a la izquierda (sin fondos de tarjeta) */}
+            <ul className="flex flex-col gap-3.5 sm:gap-4 list-none p-0 m-0">
+              {BALLOT_INSPECTION_ZONES.map((zone) => {
+                const isChecked = examinedZones[zone.id];
+                return (
+                  <li
+                    key={`inspection-zone-${zone.id}`}
+                    onClick={() => {
+                      setExaminedZones((prev) => ({
+                        ...prev,
+                        [zone.id]: !prev[zone.id],
+                      }));
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setExaminedZones((prev) => ({
+                          ...prev,
+                          [zone.id]: !prev[zone.id],
+                        }));
+                      }
+                    }}
+                    className="flex items-center gap-2.5 sm:gap-3.5 select-none cursor-pointer group"
+                    title={`Haz clic para marcar/desmarcar ${zone.label}`}
+                  >
+                    {/* Casilla cuadrada a la izquierda (se marca con palomita al examinarse) */}
+                    <div
+                      className={`shrink-0 rounded-[2px] border-[2px] border-black flex items-center justify-center transition-all shadow-[2px_2px_0px_0px_#000] ${
+                        isChecked
+                          ? "bg-[#10b981] text-black"
+                          : "bg-white text-transparent group-hover:bg-slate-100"
+                      }`}
+                      style={{
+                        width: isFullscreen
+                          ? "clamp(18px, 1.7cqw, 26px)"
+                          : "clamp(14px, 1.35cqw, 20px)",
+                        height: isFullscreen
+                          ? "clamp(18px, 1.7cqw, 26px)"
+                          : "clamp(14px, 1.35cqw, 20px)",
+                        fontSize: isFullscreen
+                          ? "clamp(13px, 1.3cqw, 18px)"
+                          : "clamp(10px, 1cqw, 14px)",
+                        lineHeight: "1",
+                        fontWeight: 900,
+                      }}
+                    >
+                      {isChecked ? "✔" : ""}
+                    </div>
+
+                    {/* Texto del punto a examinar (sin contenedores que lo encierren) */}
+                    <span
+                      className={`font-black tracking-wide select-none transition-all ${
+                        isChecked
+                          ? "text-[#a7f3d0] line-through decoration-black decoration-2"
+                          : "text-white group-hover:text-amber-200"
+                      }`}
+                      style={{
+                        fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
+                        fontSize: isFullscreen
+                          ? "clamp(10.5px, 1.15cqw, 16px)"
+                          : "clamp(8.5px, 0.95cqw, 13px)",
+                        lineHeight: "1.4",
+                        textShadow:
+                          "2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 2px 0 #000, 0 -2px 0 #000, 2px 0 0 #000, -2px 0 0 #000",
+                      }}
+                    >
+                      {zone.label}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
 
           {/* CONTENEDOR DE LA BOLETA ELECTORAL INTERACTIVA */}
