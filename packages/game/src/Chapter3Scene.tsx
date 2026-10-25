@@ -136,6 +136,94 @@ export const BALLOT_INSPECTION_ZONES: BallotInspectionZone[] = [
   },
 ];
 
+export type OpcionesSubZoneId = "emblema" | "nombres" | "recuadro";
+
+export interface OpcionesSubZone {
+  id: OpcionesSubZoneId;
+  label: string;
+  left: string;
+  top: string;
+  width: string;
+  height: string;
+  originX: number;
+  originY: number;
+  examiningScale: number;
+  examiningTranslateX: string;
+  examiningTranslateY: string;
+  messagesEs: string[];
+  messagesNah: string[];
+}
+
+export const OPCIONES_SUBZONES: OpcionesSubZone[] = [
+  {
+    id: "emblema",
+    label: "Emblemas de las opciones políticas",
+    left: "8.5%",
+    top: "27.2%",
+    width: "12.3%",
+    height: "9.2%",
+    originX: 14.7,
+    originY: 31.8,
+    examiningScale: 3.5,
+    examiningTranslateX: "-14.7%",
+    examiningTranslateY: "-42.3%",
+    messagesEs: [
+      "Estos símbolos representan a los partidos políticos que participan en la elección. Cada partido tiene su propio emblema para que puedas identificarlo fácilmente.",
+      "En nuestro simulador todos los partidos y sus símbolos son ficticios. ¡No representan a ningún partido político real!",
+    ],
+    messagesNah: [
+      "Inin machiyotl kinextiah in partidos políticos tlen tlapaleuiyah ipan tlapejpenalistli. Sejsen partido kipia iyaxka machiyo pampa tikixmatis kualtsin.",
+      "Ipan tosimulador nochi partidos wan inmachiyo san tlaixkopinalmeh. ¡Amo tlen kinextiah se partido melauak!",
+    ],
+  },
+  {
+    id: "nombres",
+    label: "Nombres de partidos y candidaturas",
+    left: "21.6%",
+    top: "27.2%",
+    width: "19.4%",
+    height: "9.2%",
+    originX: 31.3,
+    originY: 31.8,
+    examiningScale: 3.5,
+    examiningTranslateX: "-31.3%",
+    examiningTranslateY: "-42.3%",
+    messagesEs: [
+      "Junto a los emblemas aparecen los nombres de los partidos y, en las boletas reales, los nombres de las personas candidatas al cargo.",
+      "Así puedes identificar por quién estás votando. Recuerda que tu elección debe ser libre y basada en tus propias preferencias.",
+    ],
+    messagesNah: [
+      "Inawak in machiyomeh nesi intooka partidos wan, ipan melauak boletas, intooka in tlakameh tlen motlaliah.",
+      "Ijkintsin tikmatis akonewatitlan titlapejpenaltok. Ilnamiki moelewilis moneki ma yeto tlatlatsinketl wan mopaxiltilis.",
+    ],
+  },
+  {
+    id: "recuadro",
+    label: "Recuadros para marcar el voto",
+    left: "41.8%",
+    top: "29.8%",
+    width: "6.0%",
+    height: "5.2%",
+    originX: 44.8,
+    originY: 31.8,
+    examiningScale: 3.5,
+    examiningTranslateX: "-44.8%",
+    examiningTranslateY: "-42.3%",
+    messagesEs: [
+      "¡Estos pequeños cuadros son muy importantes! Aquí podrás marcar la opción que prefieras durante nuestra simulación.",
+      "En una boleta real, normalmente se marca dentro del recuadro que contiene el emblema y los datos de la candidatura. No es obligatorio que exista una pequeña casilla separada como en nuestro juego.",
+      "Lo más común es colocar una X dentro del recuadro de la opción que prefieras.",
+      "¡Pero ojo! En algunas elecciones, marcar más de un partido que postula a la misma candidatura también puede ser válido. Lo importante es que tu intención sea clara.",
+    ],
+    messagesNah: [
+      "¡Inin chikititsin kuadros senka ueyi tlamantli! Nikan uelis tikmachiyotilis tlen tiknekis ipan totlamahuiltil.",
+      "Ipan se melauak boleta, kualtsin motlalia ipan se kuadro kampa nesi in machiyotl wan intooka. Amo moneki se chikititsin casilla ken nikan.",
+      "Tlen achi mochijtiwa ye se X tlatlalili ipan in kuadro tlen tikneki.",
+      "¡Tlakualtlachia! Ipan seki tlapejpenalmeh, tikmachiyotilis miak partidos pampa se tlakatl no ueli kuali. Tlen ueyi ye ma momati tlen tineki.",
+    ],
+  },
+];
+
 export const INSPECTION_MESSAGES_ES: Record<BallotInspectionZoneId, string[]> = {
   encabezado: [
     "Aquí se indica qué cargo público se está eligiendo. En México existen diferentes boletas dependiendo de la elección, como Presidencia de la República, senadurías, diputaciones o cargos locales.",
@@ -149,7 +237,8 @@ export const INSPECTION_MESSAGES_ES: Record<BallotInspectionZoneId, string[]> = 
     "El municipio indica la localidad administrativa correspondiente. Estos datos ayudan a identificar el ámbito territorial de la elección.",
   ],
   opciones_politicas: [
-    "Aquí se muestran las diferentes opciones políticas, candidaturas y partidos participantes en la contienda electoral.",
+    "Estos símbolos representan a los partidos políticos que participan en la elección. Cada partido tiene su propio emblema para que puedas identificarlo fácilmente.",
+    "En nuestro simulador todos los partidos y sus símbolos son ficticios. ¡No representan a ningún partido político real!",
   ],
 };
 
@@ -166,7 +255,8 @@ export const INSPECTION_MESSAGES_NAH: Record<BallotInspectionZoneId, string[]> =
     "In altepetl (municipio) techititia in kampa titekitih. Inin tlapowalistli techpalewia ma tikixmatikan in ámbito territorial.",
   ],
   opciones_politicas: [
-    "Nikan moittah in tlatlamantli partidos políticos wan tlapejpenalmeh tlen tlayekanaseh.",
+    "Inin machiyotl kinextiah in partidos políticos tlen tlapaleuiyah ipan tlapejpenalistli. Sejsen partido kipia iyaxka machiyo pampa tikixmatis kualtsin.",
+    "Ipan tosimulador nochi partidos wan inmachiyo san tlaixkopinalmeh. ¡Amo tlen kinextiah se partido melauak!",
   ],
 };
 
@@ -261,6 +351,9 @@ export default function Chapter3Scene({
   const [activeExaminingZone, setActiveExaminingZone] =
     useState<BallotInspectionZoneId | null>(null);
 
+  // Sub-paso dentro de la examinación de "opciones_politicas" (0: emblema, 1: nombres, 2: recuadro)
+  const [opcionesSubStepIndex, setOpcionesSubStepIndex] = useState(0);
+
   const [isDismissingExamDialogue, setIsDismissingExamDialogue] =
     useState(false);
 
@@ -271,6 +364,13 @@ export default function Chapter3Scene({
   const activeExaminingZoneObj = activeExaminingZone
     ? BALLOT_INSPECTION_ZONES.find((z) => z.id === activeExaminingZone) ?? null
     : null;
+
+  const activeSubzone =
+    activeExaminingZone === "opciones_politicas"
+      ? OPCIONES_SUBZONES[opcionesSubStepIndex] ?? null
+      : null;
+
+  const currentExaminingTarget = activeSubzone ?? activeExaminingZoneObj;
 
   // Zonas examinadas de la boleta electoral
   const [examinedZones, setExaminedZones] = useState<
@@ -290,6 +390,7 @@ export default function Chapter3Scene({
 
     setHoveredZone(null);
     setIsDismissingExamDialogue(false);
+    setOpcionesSubStepIndex(0);
     setActiveExaminingZone(zoneId);
   };
 
@@ -301,6 +402,7 @@ export default function Chapter3Scene({
         [zoneId]: true,
       }));
       setActiveExaminingZone(null);
+      setOpcionesSubStepIndex(0);
       setIsDismissingExamDialogue(false);
     }, 250);
   };
@@ -430,6 +532,8 @@ export default function Chapter3Scene({
           setSelectedMamparaIndex(null);
           setBallotState("on_table");
           setIsBallotHovered(false);
+          setActiveExaminingZone(null);
+          setOpcionesSubStepIndex(0);
         }
       }
     };
@@ -1186,16 +1290,16 @@ export default function Chapter3Scene({
                 maxHeight: ballotState === "on_table" ? "42%" : "95%",
                 transformOrigin:
                   ballotState === "inspecting" &&
-                  (activeExaminingZoneObj || activeHoveredZone)
-                    ? `${(activeExaminingZoneObj || activeHoveredZone)!.originX}% ${(activeExaminingZoneObj || activeHoveredZone)!.originY}%`
+                  (currentExaminingTarget || activeHoveredZone)
+                    ? `${(currentExaminingTarget || activeHoveredZone)!.originX}% ${(currentExaminingTarget || activeHoveredZone)!.originY}%`
                     : "center center",
                 transform:
                   ballotState === "on_table"
                     ? isBallotHovered
                       ? "translate(-50%, -50%) perspective(650px) rotateX(42deg) rotateZ(-2.5deg) scale(1.04)"
                       : "translate(-50%, -50%) perspective(650px) rotateX(46deg) rotateZ(-3deg) scale(1.0)"
-                    : activeExaminingZoneObj
-                      ? `translate(${activeExaminingZoneObj.examiningTranslateX}, ${activeExaminingZoneObj.examiningTranslateY}) perspective(1000px) scale(${activeExaminingZoneObj.examiningScale})`
+                    : currentExaminingTarget
+                      ? `translate(${currentExaminingTarget.examiningTranslateX}, ${currentExaminingTarget.examiningTranslateY}) perspective(1000px) scale(${currentExaminingTarget.examiningScale})`
                       : activeHoveredZone
                         ? "translate(-50%, -50%) perspective(1000px) scale(1.08)"
                         : "translate(-50%, -50%) perspective(1000px) scale(1)",
@@ -1233,6 +1337,17 @@ export default function Chapter3Scene({
                       activeExaminingZone === null;
                     const isVisibleRedBox = isExamining || isHovered;
 
+                    const currentSub =
+                      isExamining && zone.id === "opciones_politicas"
+                        ? OPCIONES_SUBZONES[opcionesSubStepIndex]
+                        : null;
+
+                    const boxLeft = currentSub ? currentSub.left : zone.left;
+                    const boxTop = currentSub ? currentSub.top : zone.top;
+                    const boxWidth = currentSub ? currentSub.width : zone.width;
+                    const boxHeight =
+                      currentSub ? currentSub.height : zone.height;
+
                     return (
                       <div
                         key={`ballot-zone-${zone.id}`}
@@ -1269,7 +1384,7 @@ export default function Chapter3Scene({
                             ? `${zone.label} (Ya examinado)`
                             : `${zone.label} (Haz clic para examinar)`
                         }
-                        className={`absolute transition-all duration-200 select-none rounded-[3px] ${
+                        className={`absolute transition-all duration-300 select-none rounded-[3px] ${
                           isChecked
                             ? "cursor-default pointer-events-none"
                             : activeExaminingZone !== null
@@ -1283,10 +1398,10 @@ export default function Chapter3Scene({
                             : "border-[2px] border-transparent hover:border-[#ef4444]"
                         }`}
                         style={{
-                          left: zone.left,
-                          top: zone.top,
-                          width: zone.width,
-                          height: zone.height,
+                          left: boxLeft,
+                          top: boxTop,
+                          width: boxWidth,
+                          height: boxHeight,
                           transformOrigin: "center center",
                         }}
                       />
@@ -1305,15 +1420,26 @@ export default function Chapter3Scene({
             >
               <div className="relative z-10 w-[96%] pointer-events-auto flex flex-col items-end">
                 <PixelSpeechBubble
+                  key={`ballot-dialogue-${activeExaminingZone}-${opcionesSubStepIndex}`}
                   speaker={language === "nah" ? "Inecito Cívica" : "Inecito"}
                   messages={
-                    language === "nah"
-                      ? INSPECTION_MESSAGES_NAH[activeExaminingZone]
-                      : INSPECTION_MESSAGES_ES[activeExaminingZone]
+                    activeExaminingZone === "opciones_politicas"
+                      ? language === "nah"
+                        ? OPCIONES_SUBZONES[opcionesSubStepIndex].messagesNah
+                        : OPCIONES_SUBZONES[opcionesSubStepIndex].messagesEs
+                      : language === "nah"
+                        ? INSPECTION_MESSAGES_NAH[activeExaminingZone]
+                        : INSPECTION_MESSAGES_ES[activeExaminingZone]
                   }
                   actionKey="E"
                   isDismissing={isDismissingExamDialogue}
                   onDismiss={() => {
+                    if (activeExaminingZone === "opciones_politicas") {
+                      if (opcionesSubStepIndex < OPCIONES_SUBZONES.length - 1) {
+                        setOpcionesSubStepIndex((prev) => prev + 1);
+                        return;
+                      }
+                    }
                     handleFinishZoneExamination(activeExaminingZone);
                   }}
                 />
