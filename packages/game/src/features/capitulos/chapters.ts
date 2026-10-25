@@ -80,7 +80,17 @@ export const CHAPTERS: readonly ChapterDefinition[] = [
       position: "center",
     },
   },
-  { id: 3, number: 3, title: "Aprende a votar", cardImage: undefined },
+  {
+    id: 3,
+    number: 3,
+    title: "Aprende a votar",
+    cardImage: {
+      src: "/assets/juego/capitulos/capitulo-3.png",
+      alt: "Capítulo 3: Aprende a votar",
+      fit: "cover",
+      position: "center",
+    },
+  },
 ];
 
 export const FIRST_CHAPTER_ID: ChapterId = 1;

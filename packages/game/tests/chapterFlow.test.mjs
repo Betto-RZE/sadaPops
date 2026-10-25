@@ -49,10 +49,10 @@ describe("Registro de capitulos", () => {
     );
   });
 
-  test("los recuadros 1 y 2 tienen su arte final asignado y el 3 sigue pendiente", () => {
+  test("los tres recuadros tienen su arte final asignado", () => {
     assert.equal(CHAPTERS[0].cardImage?.src, "/assets/juego/capitulos/capitulo-1.png");
     assert.equal(CHAPTERS[1].cardImage?.src, "/assets/juego/capitulos/capitulo-2.png");
-    assert.equal(CHAPTERS[2].cardImage, undefined);
+    assert.equal(CHAPTERS[2].cardImage?.src, "/assets/juego/capitulos/capitulo-3.png");
   });
 
   test("preparacion para imagenes futuras: acepta cardImage sin alterar navegacion", () => {
