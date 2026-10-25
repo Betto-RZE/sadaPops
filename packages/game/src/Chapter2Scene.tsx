@@ -28,6 +28,8 @@ import type { ChapterSceneProps } from "./features/capitulos/ChapterSceneRouter"
 import {
   getChapterHandoff,
   setChapterHandoff,
+  CAP1_OUTRO_CAP2_INTRO_MESSAGES_ES,
+  CAP1_OUTRO_CAP2_INTRO_MESSAGES_NAH,
   CAP2_OUTRO_CAP3_INTRO_MESSAGES_ES,
   CAP2_OUTRO_CAP3_INTRO_MESSAGES_NAH,
   type PlayerDirection,
@@ -75,19 +77,8 @@ import { CastShadow, DECORATION_SHADOWS } from "./features/sombras";
  * Tras 2.5 s aparece el dialogo de llegada de los primeros votantes.
  */
 
-export const INTRO_CAP2_MESSAGES_ES: string[] = [
-  "¡Mira nada más! ¡Ya comenzaron a llegar nuestros primeros votantes!",
-  "Después de tanto preparar la casilla, qué gusto ver que todo está funcionando como esperábamos.",
-  "Cada persona que llega tiene sus propias razones para participar, sus opiniones y, seguramente, una que otra duda.",
-  "Y aunque nuestro trabajo es ayudar a que la votación se desarrolle correctamente, también podemos orientar a quienes tengan preguntas.",
-];
-
-export const INTRO_CAP2_MESSAGES_NAH: string[] = [
-  "¡Xikita san tlen! ¡Ya pehualkeh ajsih tototlayokauh votantes!",
-  "Satepan kuak miak tikyektlalijkeh in casilla, ¡kualtsin tikitah nochi kisa ken timochiyayaj!",
-  "Sesen maseual akin ajsi kipixtok itlanemililis pampa tlapejpenis, itlamachilis wan tlatotonki se tlatlanilistli.",
-  "Wan maski totlanel tekiyo yeski ma kualtsin mopano in tlaixquetzalistli, no uelis tikinyakanaseh akin kipiah tlatlanilistli.",
-];
+export const INTRO_CAP2_MESSAGES_ES = CAP1_OUTRO_CAP2_INTRO_MESSAGES_ES;
+export const INTRO_CAP2_MESSAGES_NAH = CAP1_OUTRO_CAP2_INTRO_MESSAGES_NAH;
 
 export const ANCIANA_ARRIVAL_MESSAGES_ES: string[] = [
   "¡Oh! Parece que una señora se acercó a nuestra mesa.",
@@ -102,8 +93,8 @@ export const ANCIANA_ARRIVAL_MESSAGES_NAH: string[] = [
 /** Espera antes del primer globo de texto al iniciar el capitulo. */
 const INTRO_DELAY_MS = 2500;
 
-/** Posicion por defecto (modo CAPITULOS): junto a la mesa directiva. */
-const DEFAULT_PLAYER_POS = { x: 20, y: 52 };
+/** Posicion por defecto (modo CAPITULOS): a la izquierda de la mesa de funcionarios (donde concluye el Cap 1). */
+const DEFAULT_PLAYER_POS = { x: 15.0, y: 58.0 };
 
 type DialogueState =
   | "initial_delay"
@@ -136,6 +127,8 @@ export default function Chapter2Scene({
   onRequestExit,
   onChapterComplete,
 }: ChapterSceneProps) {
+  const hasSeenBridgeCap1 = Boolean(getChapterHandoff()?.fromChapter1Ending);
+
   // Lectura sin efectos (segura con StrictMode). Se limpia al iniciar otra sesion.
   const [playerPos, setPlayerPos] = useState(
     () => getChapterHandoff()?.playerPos ?? DEFAULT_PLAYER_POS,
@@ -144,8 +137,9 @@ export default function Chapter2Scene({
     () => getChapterHandoff()?.lastDirection ?? "1",
   );
   const [isWalking, setIsWalking] = useState(false);
-  const [dialogueState, setDialogueState] =
-    useState<DialogueState>("initial_delay");
+  const [dialogueState, setDialogueState] = useState<DialogueState>(() =>
+    hasSeenBridgeCap1 ? "dismissed" : "initial_delay",
+  );
 
   // Detención del spawn de NPCs genéricos cuando se inicia la conversación con Don Roberto (discapacitado)
   const [isGenericSpawningStopped, setIsGenericSpawningStopped] = useState(false);
@@ -902,7 +896,9 @@ export default function Chapter2Scene({
   });
 
   const introMessages =
-    language === "nah" ? INTRO_CAP2_MESSAGES_NAH : INTRO_CAP2_MESSAGES_ES;
+    language === "nah"
+      ? (CAP1_OUTRO_CAP2_INTRO_MESSAGES_NAH as unknown as string[])
+      : (CAP1_OUTRO_CAP2_INTRO_MESSAGES_ES as unknown as string[]);
   const showDialogue =
     dialogueState !== "initial_delay" && dialogueState !== "dismissed";
 

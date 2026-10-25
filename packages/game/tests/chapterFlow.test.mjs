@@ -14,6 +14,8 @@ import {
   resolveChapterCompletion,
 } from "../src/features/capitulos/chapters.ts";
 import {
+  CAP1_OUTRO_CAP2_INTRO_MESSAGES_ES,
+  CAP1_OUTRO_CAP2_INTRO_MESSAGES_NAH,
   CAP2_OUTRO_CAP3_INTRO_MESSAGES_ES,
   CAP2_OUTRO_CAP3_INTRO_MESSAGES_NAH,
   setChapterHandoff,
@@ -250,6 +252,68 @@ describe("Puente narrativo: Cierre de Capítulo 2 e Inicio de Capítulo 3", () =
     assert.equal(h.fromChapter2Ending, true);
     assert.equal(h.playerPos.x, 30);
     assert.equal(h.lastDirection, "4");
+
+    clearChapterHandoff();
+    assert.equal(getChapterHandoff(), null);
+  });
+});
+
+describe("Puente narrativo: Cierre de Capítulo 1 e Inicio de Capítulo 2", () => {
+  test("el diálogo contiene exactamente los 7 mensajes solicitados por Inecito en español", () => {
+    assert.equal(CAP1_OUTRO_CAP2_INTRO_MESSAGES_ES.length, 7);
+    assert.equal(
+      CAP1_OUTRO_CAP2_INTRO_MESSAGES_ES[0],
+      "¡Uffff! ¡Por fin terminamos de organizar todo! No voy a mentirte, pensé que sería más sencillo, ¡ja, ja!"
+    );
+    assert.equal(
+      CAP1_OUTRO_CAP2_INTRO_MESSAGES_ES[1],
+      "Ahora ya sabes que cada uno de estos elementos cumple una función importante para que las elecciones se desarrollen correctamente."
+    );
+    assert.equal(
+      CAP1_OUTRO_CAP2_INTRO_MESSAGES_ES[2],
+      "Y aunque parezca que ya terminamos... ¡nuestro verdadero trabajo apenas comienza!"
+    );
+    assert.equal(
+      CAP1_OUTRO_CAP2_INTRO_MESSAGES_ES[3],
+      "En cualquier momento empezarán a llegar las personas que vienen a ejercer su derecho al voto."
+    );
+    assert.equal(
+      CAP1_OUTRO_CAP2_INTRO_MESSAGES_ES[4],
+      "Algunas tendrán preguntas, otras necesitarán orientación y seguramente escucharemos uno que otro rumor sobre las elecciones."
+    );
+    assert.equal(
+      CAP1_OUTRO_CAP2_INTRO_MESSAGES_ES[5],
+      "¡Así que mantente atento! Porque nuestra siguiente misión será ayudarlas a resolver sus dudas."
+    );
+    assert.equal(
+      CAP1_OUTRO_CAP2_INTRO_MESSAGES_ES[6],
+      "¡Vamos, que ya casi llegan nuestros primeros votantes!"
+    );
+  });
+
+  test("el diálogo posee equivalentes en náhuatl para las 7 frases de Inecito", () => {
+    assert.equal(CAP1_OUTRO_CAP2_INTRO_MESSAGES_NAH.length, 7);
+    CAP1_OUTRO_CAP2_INTRO_MESSAGES_NAH.forEach((msg, idx) => {
+      assert.ok(msg.length > 0, `Mensaje ${idx} en náhuatl no debe estar vacío`);
+    });
+  });
+
+  test("setChapterHandoff registra el indicador fromChapter1Ending para evitar repetir el diálogo en Full Game", () => {
+    clearChapterHandoff();
+    assert.equal(getChapterHandoff(), null);
+
+    setChapterHandoff({
+      playerPos: { x: 15.0, y: 58.0 },
+      lastDirection: "1",
+      fromChapter1Ending: true,
+    });
+
+    const h = getChapterHandoff();
+    assert.ok(h);
+    assert.equal(h.fromChapter1Ending, true);
+    assert.equal(h.playerPos.x, 15.0);
+    assert.equal(h.playerPos.y, 58.0);
+    assert.equal(h.lastDirection, "1");
 
     clearChapterHandoff();
     assert.equal(getChapterHandoff(), null);

@@ -12,8 +12,33 @@ export type PlayerDirection = "1" | "2" | "3" | "4";
 export interface ChapterHandoff {
   playerPos: { x: number; y: number };
   lastDirection: PlayerDirection;
+  fromChapter1Ending?: boolean;
   fromChapter2Ending?: boolean;
 }
+
+/**
+ * Diálogo de Inecito que marca el cierre del Capítulo 1 (Funcionario de casilla)
+ * y el inicio del Capítulo 2 (Desmintiendo mitos).
+ */
+export const CAP1_OUTRO_CAP2_INTRO_MESSAGES_ES: readonly string[] = [
+  "¡Uffff! ¡Por fin terminamos de organizar todo! No voy a mentirte, pensé que sería más sencillo, ¡ja, ja!",
+  "Ahora ya sabes que cada uno de estos elementos cumple una función importante para que las elecciones se desarrollen correctamente.",
+  "Y aunque parezca que ya terminamos... ¡nuestro verdadero trabajo apenas comienza!",
+  "En cualquier momento empezarán a llegar las personas que vienen a ejercer su derecho al voto.",
+  "Algunas tendrán preguntas, otras necesitarán orientación y seguramente escucharemos uno que otro rumor sobre las elecciones.",
+  "¡Así que mantente atento! Porque nuestra siguiente misión será ayudarlas a resolver sus dudas.",
+  "¡Vamos, que ya casi llegan nuestros primeros votantes!",
+] as const;
+
+export const CAP1_OUTRO_CAP2_INTRO_MESSAGES_NAH: readonly string[] = [
+  "¡Uffff! ¡Ipan tlamilistli tikyektlalijkeh nochitlamantli! Axtlapik nimitsiluis, nimoiluiaya achi auki yeskia, ¡ja, ja!",
+  "Axkan ya tikmati sesen tlamantli kipixtok se ueyi tekitl pampa in tlaixquetzalistli kualtsin ma mopano.",
+  "Wan maski nesi ya titlankeh... ¡totlanel tekiyo axkan peua!",
+  "San tlen tonalli pehuaskeh ajsiskeh in maseualmeh akin kinekij kitlaliseh inivoto.",
+  "Sekij kitlalaniseh tlahtolmeh, sekij monekis kinyakanaseh wan kualtsin tikakiskeh seki sasamili.",
+  "¡Yeka kualtsin xikpixto moix! Totlanel tekiyo yeski tikinpalehuiseh ika intlahtoltilistli.",
+  "¡Ma tiuikan, ya mero ajsih tototlayokauh votantes!",
+] as const;
 
 /**
  * Diálogo de Inecito que marca el cierre del Capítulo 2 (Desmintiendo mitos)
@@ -47,6 +72,7 @@ export function setChapterHandoff(data: ChapterHandoff): void {
   handoff = {
     playerPos: { ...data.playerPos },
     lastDirection: data.lastDirection,
+    fromChapter1Ending: data.fromChapter1Ending,
     fromChapter2Ending: data.fromChapter2Ending,
   };
 }

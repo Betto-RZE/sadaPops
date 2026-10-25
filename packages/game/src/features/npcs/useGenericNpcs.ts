@@ -106,7 +106,9 @@ export function useGenericNpcs({
    */
   useEffect(() => {
     const isDialogueActive =
-      dialogueState === "entering" || dialogueState === "visible";
+      dialogueState === "entering" ||
+      dialogueState === "visible" ||
+      dialogueState === "dismissed";
 
     if (isDialogueActive && !hasSpawnedRef.current) {
       hasSpawnedRef.current = true;

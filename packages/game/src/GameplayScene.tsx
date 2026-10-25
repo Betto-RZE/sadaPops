@@ -10,7 +10,11 @@ import { PixelSpeechBubble, DialogueLine } from "./PixelSpeechBubble";
  * - Cada vez que se vuelve a montar arranca desde cero (sin estado residual).
  */
 
-import { setChapterHandoff } from "./features/capitulos/chapterHandoff";
+import {
+  setChapterHandoff,
+  CAP1_OUTRO_CAP2_INTRO_MESSAGES_ES,
+  CAP1_OUTRO_CAP2_INTRO_MESSAGES_NAH,
+} from "./features/capitulos/chapterHandoff";
 import {
   AnimatedPlayerSprite,
   releasePlayerImages,
@@ -671,25 +675,12 @@ const BOLETAS_MESSAGES_NAH: string[] = [
 ];
 
 // Diálogos de cierre del Capítulo 1 al interactuar con la mesa de funcionarios
-const CIERRE_CAPITULO_MESSAGES_ES: string[] = [
-  "¡Uffff! ¡Por fin terminamos de organizar todo! No voy a mentirte, pensé que sería más sencillo, ¡ja, ja!",
-  "Ahora ya sabes que cada uno de estos elementos cumple una función importante para que las elecciones se desarrollen correctamente.",
-  "Y aunque parezca que ya terminamos... ¡nuestro verdadero trabajo apenas comienza!",
-  "En cualquier momento empezarán a llegar las personas que vienen a ejercer su derecho al voto.",
-  "Algunas tendrán preguntas, otras necesitarán orientación y seguramente escucharemos uno que otro rumor sobre las elecciones.",
-  "¡Así que mantente atento! Porque nuestra siguiente misión será ayudarlas a resolver sus dudas.",
-  "¡Vamos, que ya casi llegan nuestros primeros votantes!",
-];
+// (sirven de puente narrativo hacia el Capítulo 2)
+const CIERRE_CAPITULO_MESSAGES_ES: string[] =
+  CAP1_OUTRO_CAP2_INTRO_MESSAGES_ES as unknown as string[];
 
-const CIERRE_CAPITULO_MESSAGES_NAH: string[] = [
-  "¡Uffff! ¡Ipan tlamilistli tikyektlalijkeh nochitlamantli! Axtlapik nimitsiluis, nimoiluiaya achi auki yeskia, ¡ja, ja!",
-  "Axkan ya tikmati sesen tlamantli kipixtok se ueyi tekitl pampa in tlaixquetzalistli kualtsin ma mopano.",
-  "Wan maski nesi ya titlankeh... ¡totlanel tekiyo axkan peua!",
-  "San tlen tonalli pehuaskeh ajsiskeh in maseualmeh akin kinekij kitlaliseh inivoto.",
-  "Sekij kitlalaniseh tlahtolmeh, sekij monekis kinyakanaseh wan kualtsin tikakiskeh seki sasamili.",
-  "¡Yeka kualtsin xikpixto moix! Totlanel tekiyo yeski tikinpalehuiseh ika intlahtoltilistli.",
-  "¡Ma tiuikan, ya mero ajsih tototlayokauh votantes!",
-];
+const CIERRE_CAPITULO_MESSAGES_NAH: string[] =
+  CAP1_OUTRO_CAP2_INTRO_MESSAGES_NAH as unknown as string[];
 
 export interface GameplaySceneProps {
   language?: "es" | "nah";
@@ -934,6 +925,7 @@ export default function GameplayScene({
         setChapterHandoff({
           playerPos: playerPosRef.current,
           lastDirection: lastDirectionRef.current,
+          fromChapter1Ending: true,
         });
         onChapterCompleteRef.current?.();
       }, 2500);
