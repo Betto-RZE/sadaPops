@@ -27,6 +27,9 @@ import {
 import type { ChapterSceneProps } from "./features/capitulos/ChapterSceneRouter";
 import {
   getChapterHandoff,
+  setChapterHandoff,
+  CAP2_OUTRO_CAP3_INTRO_MESSAGES_ES,
+  CAP2_OUTRO_CAP3_INTRO_MESSAGES_NAH,
   type PlayerDirection,
 } from "./features/capitulos/chapterHandoff";
 import {
@@ -131,6 +134,7 @@ export default function Chapter2Scene({
   isTransitioning,
   isPaused,
   onRequestExit,
+  onChapterComplete,
 }: ChapterSceneProps) {
   // Lectura sin efectos (segura con StrictMode). Se limpia al iniciar otra sesion.
   const [playerPos, setPlayerPos] = useState(
@@ -143,10 +147,14 @@ export default function Chapter2Scene({
   const [dialogueState, setDialogueState] =
     useState<DialogueState>("initial_delay");
 
+  // Detención del spawn de NPCs genéricos cuando se inicia la conversación con Don Roberto (discapacitado)
+  const [isGenericSpawningStopped, setIsGenericSpawningStopped] = useState(false);
+
   // Sistema de personajes genéricos (votantes ambientales)
   const { npcs, isGlobalSystemActive } = useGenericNpcs({
     dialogueState,
     isPaused,
+    isSpawningDisabled: isGenericSpawningStopped,
   });
 
   // La anciana aparece 4 segundos después de que el primer NPC genérico termina su animación de IDLE
@@ -246,6 +254,78 @@ export default function Chapter2Scene({
     }
   }, [npcConversationState]);
 
+  // Diálogo de cierre del Capítulo 2 y traspaso al Capítulo 3:
+  // Se activa al concluir el retiro del 5to personaje (Don Roberto sale de escena: narrativeQueue.status === "all_completed").
+  // Se bloquea el teclado inmediatamente por 2.5 segundos (INTRO_DELAY_MS) antes de abrir el globo de texto.
+  type OutroDialogueState =
+    | "idle"
+    | "initial_delay"
+    | "entering"
+    | "visible"
+    | "exiting"
+    | "dismissed";
+
+  const [outroDialogueState, setOutroDialogueState] =
+    useState<OutroDialogueState>("idle");
+  const outroDialogueStateRef = useRef(outroDialogueState);
+  useEffect(() => {
+    outroDialogueStateRef.current = outroDialogueState;
+  }, [outroDialogueState]);
+
+  const chapter2CompletedRef = useRef(false);
+
+  useEffect(() => {
+    if (
+      narrativeQueue.status === "all_completed" &&
+      outroDialogueState === "idle" &&
+      !chapter2CompletedRef.current
+    ) {
+      setOutroDialogueState("initial_delay");
+    }
+  }, [narrativeQueue.status, outroDialogueState]);
+
+  useEffect(() => {
+    if (outroDialogueState === "initial_delay") {
+      const timer = setTimeout(() => {
+        setOutroDialogueState("entering");
+      }, INTRO_DELAY_MS);
+      return () => clearTimeout(timer);
+    }
+    if (outroDialogueState === "entering") {
+      const timer = setTimeout(() => setOutroDialogueState("visible"), 350);
+      return () => clearTimeout(timer);
+    }
+    if (outroDialogueState === "exiting") {
+      const timer = setTimeout(() => setOutroDialogueState("dismissed"), 350);
+      return () => clearTimeout(timer);
+    }
+  }, [outroDialogueState]);
+
+  const onChapterCompleteRef = useRef(onChapterComplete);
+  useEffect(() => {
+    onChapterCompleteRef.current = onChapterComplete;
+  }, [onChapterComplete]);
+
+  // Fin del Capitulo 2: todos los personajes atendidos y el monólogo final ya cerrado.
+  // Se espera 2.5 segundos tras cerrar el último globo de texto antes de concluir el capítulo
+  // (exactamente igual que en el fin del Capítulo 1), permitiendo una transición suave
+  // hacia el menú o siguiente escena sin cortes abruptos.
+  useEffect(() => {
+    if (chapter2CompletedRef.current) return;
+    if (outroDialogueState === "dismissed") {
+      const timer = setTimeout(() => {
+        chapter2CompletedRef.current = true;
+        setChapterHandoff({
+          playerPos: playerPosRef.current,
+          lastDirection: lastDirectionRef.current,
+          fromChapter2Ending: true,
+        });
+        onChapterCompleteRef.current?.();
+      }, 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [outroDialogueState]);
+
   // El icono de exclamación (!) aparece en el lado izquierdo de la mesa cuando
   // el personaje actual está en la mesa, su anuncio de llegada ha concluido
   // y la conversación directa aún no haya iniciado.
@@ -274,6 +354,9 @@ export default function Chapter2Scene({
   // 2. Si ya se encuentra en la posición, inicia la charla directamente orientado a la derecha ("4")
   // 3. Si no, inicia una caminata suave animada (walking_to_spot) paso a paso sin teletransporte
   const handleStartNpcConversation = useCallback(() => {
+    if (narrativeQueue.currentCharacterId === "discapacitado") {
+      setIsGenericSpawningStopped(true);
+    }
     const targetY = narrativeQueuePosRef.current.y;
     const targetPos = calculatePlayerAlignedPositionWithNpc({
       currentPos: playerPosRef.current,
@@ -308,6 +391,10 @@ export default function Chapter2Scene({
   const isPausedRef = useRef(isPaused);
   const dialogueStateRef = useRef(dialogueState);
   const playerPosRef = useRef(playerPos);
+  const lastDirectionRef = useRef(lastDirection);
+  useEffect(() => {
+    lastDirectionRef.current = lastDirection;
+  }, [lastDirection]);
   const npcsRef = useRef(npcs);
   const activePushStateRef = useRef<ActivePushState | null>(null);
 
@@ -342,6 +429,22 @@ export default function Chapter2Scene({
     narrativeQueue.status,
   ]);
 
+
+  useEffect(() => {
+    if (
+      narrativeQueue.currentCharacterId === "discapacitado" &&
+      (npcConversationState !== "idle" ||
+        narrativeQueue.status === "in_conversation" ||
+        narrativeQueue.status === "leaving" ||
+        narrativeQueue.status === "all_completed")
+    ) {
+      setIsGenericSpawningStopped(true);
+    }
+  }, [
+    narrativeQueue.currentCharacterId,
+    npcConversationState,
+    narrativeQueue.status,
+  ]);
 
   const allCollidableNpcsRef = useRef(allCollidableNpcs);
 
@@ -502,7 +605,9 @@ export default function Chapter2Scene({
         (arrivalDialogueStateRef.current !== "idle" &&
           arrivalDialogueStateRef.current !== "dismissed") ||
         (npcConversationStateRef.current !== "idle" &&
-          npcConversationStateRef.current !== "dismissed");
+          npcConversationStateRef.current !== "dismissed") ||
+        (outroDialogueStateRef.current !== "idle" &&
+          outroDialogueStateRef.current !== "dismissed");
 
       if (isAnyDialogueActive) {
         stop();
@@ -510,7 +615,9 @@ export default function Chapter2Scene({
           dialogueStateRef.current === "entering" ||
           dialogueStateRef.current === "visible" ||
           arrivalDialogueStateRef.current === "entering" ||
-          arrivalDialogueStateRef.current === "visible"
+          arrivalDialogueStateRef.current === "visible" ||
+          outroDialogueStateRef.current === "entering" ||
+          outroDialogueStateRef.current === "visible"
         ) {
           setLastDirection("1");
         } else if (
@@ -814,6 +921,11 @@ export default function Chapter2Scene({
       : currentNarrativeConfig.conversationMessagesEs;
   const showConversation =
     npcConversationState !== "idle" && npcConversationState !== "dismissed";
+
+  const showOutroDialogue =
+    outroDialogueState !== "idle" &&
+    outroDialogueState !== "initial_delay" &&
+    outroDialogueState !== "dismissed";
 
   const currentPortraits = useMemo(() => {
     return getNarrativeCharacterPortraits(narrativeQueue.currentCharacterId);
@@ -1339,6 +1451,47 @@ export default function Chapter2Scene({
                 narrativeQueueRef.current.dismissConversation();
                 setArrivalDialogueState("idle");
               }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* DIÁLOGO DE CIERRE DEL CAPÍTULO 2 / PUENTE AL CAPÍTULO 3 */}
+      {showOutroDialogue && (
+        <div className="absolute inset-0 z-40 pointer-events-none flex items-end justify-center pb-[1.8cqw] px-[2cqw] overflow-hidden select-none">
+          <div className="relative z-10 w-[96%] pointer-events-auto flex flex-col items-end">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setOutroDialogueState("exiting");
+              }}
+              type="button"
+              title="Saltar diálogo de cierre (Test)"
+              className="mb-1.5 bg-[#940d57] hover:bg-[#ff2a85] active:bg-[#780946] text-white rounded border-[2px] border-black shadow-[2px_2px_0px_0px_#000] cursor-pointer transition-colors flex items-center gap-1.5 px-3 py-1 select-none active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+              style={{
+                fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
+                fontSize: isFullscreen ? "10px" : "8px",
+              }}
+            >
+              <span>⏩</span>
+              <span>SALTAR TEXTOS (TEST)</span>
+            </button>
+
+            <PixelSpeechBubble
+              speaker={language === "nah" ? "Inecito Cívica" : "Inecito"}
+              messages={
+                language === "nah"
+                  ? (CAP2_OUTRO_CAP3_INTRO_MESSAGES_NAH as unknown as string[])
+                  : (CAP2_OUTRO_CAP3_INTRO_MESSAGES_ES as unknown as string[])
+              }
+              actionKey="E"
+              disabled={isPaused}
+              isDismissing={outroDialogueState === "exiting"}
+              onLineChange={() => {
+                setIsWalking(false);
+                setLastDirection("1");
+              }}
+              onDismiss={() => setOutroDialogueState("exiting")}
             />
           </div>
         </div>

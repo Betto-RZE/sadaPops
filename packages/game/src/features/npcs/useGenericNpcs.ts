@@ -20,6 +20,9 @@ export interface UseGenericNpcsProps {
 
   /** Configuración inicial personalizada opcional de mamparas */
   initialMamparas?: MamparaBoothConfig[];
+
+  /** Desactiva la generación de nuevos NPCs genéricos (los activos terminan su recorrido con normalidad) */
+  isSpawningDisabled?: boolean;
 }
 
 export interface UseGenericNpcsReturn {
@@ -57,6 +60,7 @@ export function useGenericNpcs({
   dialogueState,
   isPaused,
   initialMamparas,
+  isSpawningDisabled = false,
 }: UseGenericNpcsProps): UseGenericNpcsReturn {
   const [npcs, setNpcs] = useState<GenericNpc[]>([]);
   const [mamparas, setMamparas] = useState<MamparaBoothConfig[]>(
@@ -70,6 +74,7 @@ export function useGenericNpcs({
   const isGlobalSystemActiveRef = useRef(false);
   const npcIdCounterRef = useRef(0);
   const isPausedRef = useRef(isPaused);
+  const isSpawningDisabledRef = useRef(Boolean(isSpawningDisabled));
   const npcsRef = useRef<GenericNpc[]>(npcs);
   const mamparasRef = useRef<MamparaBoothConfig[]>(mamparas);
 
@@ -83,6 +88,10 @@ export function useGenericNpcs({
   useEffect(() => {
     isPausedRef.current = isPaused;
   }, [isPaused]);
+
+  useEffect(() => {
+    isSpawningDisabledRef.current = Boolean(isSpawningDisabled);
+  }, [isSpawningDisabled]);
 
   useEffect(() => {
     npcsRef.current = npcs;
@@ -175,6 +184,7 @@ export function useGenericNpcs({
             mamparas: mamparasRef.current,
             isGlobalSystemActive: isGlobalSystemActiveRef.current,
             npcIdCounter: npcIdCounterRef.current,
+            isSpawningDisabled: isSpawningDisabledRef.current,
           },
           dt,
           currentTime,
@@ -252,6 +262,7 @@ export function useGenericNpcs({
   const resetNpcs = useCallback(() => {
     hasSpawnedRef.current = false;
     isGlobalSystemActiveRef.current = false;
+    isSpawningDisabledRef.current = false;
     npcIdCounterRef.current = 0;
     clearDepthCache();
     npcsRef.current = [];

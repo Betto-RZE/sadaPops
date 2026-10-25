@@ -1,6 +1,12 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import type { ChapterDefinition } from "./chapters";
 import type { ChapterSceneProps } from "./ChapterSceneRouter";
+import { PixelSpeechBubble } from "../../PixelSpeechBubble";
+import {
+  getChapterHandoff,
+  CAP2_OUTRO_CAP3_INTRO_MESSAGES_ES,
+  CAP2_OUTRO_CAP3_INTRO_MESSAGES_NAH,
+} from "./chapterHandoff";
 
 /**
  * ESCENA PROVISIONAL para capitulos que aun no estan implementados (2 y 3).
@@ -13,6 +19,7 @@ const ARCADE_FONT = "'Press Start 2P', 'Silkscreen', monospace";
 
 export default function ChapterPlaceholderScene({
   chapter,
+  language = "es",
   stageImageUrl,
   isFullscreen,
   isTransitioning,
@@ -20,7 +27,23 @@ export default function ChapterPlaceholderScene({
   onRequestExit,
   onChapterComplete,
 }: ChapterSceneProps & { chapter: ChapterDefinition }) {
-  const isLocked = isPaused || isTransitioning;
+  const hasSeenBridge = Boolean(getChapterHandoff()?.fromChapter2Ending);
+  const [dialogueState, setDialogueState] = useState<
+    "entering" | "visible" | "exiting" | "dismissed"
+  >(() => (chapter.id === 3 && !hasSeenBridge ? "entering" : "dismissed"));
+
+  useEffect(() => {
+    if (dialogueState === "entering") {
+      const timer = setTimeout(() => setDialogueState("visible"), 350);
+      return () => clearTimeout(timer);
+    }
+    if (dialogueState === "exiting") {
+      const timer = setTimeout(() => setDialogueState("dismissed"), 350);
+      return () => clearTimeout(timer);
+    }
+  }, [dialogueState]);
+
+  const isLocked = isPaused || isTransitioning || dialogueState !== "dismissed";
 
   return (
     <div
@@ -103,6 +126,43 @@ export default function ChapterPlaceholderScene({
           </button>
         </div>
       </div>
+
+      {/* DIÁLOGO INTRODUCTORIO DEL CAPÍTULO 3 (INECITO) */}
+      {chapter.id === 3 && dialogueState !== "dismissed" && (
+        <div className="absolute inset-0 z-40 pointer-events-none flex items-end justify-center pb-[1.8cqw] px-[2cqw] overflow-hidden select-none">
+          <div className="relative z-10 w-[96%] pointer-events-auto flex flex-col items-end">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setDialogueState("exiting");
+              }}
+              type="button"
+              title="Saltar diálogo inicial (Test)"
+              className="mb-1.5 bg-[#940d57] hover:bg-[#ff2a85] active:bg-[#780946] text-white rounded border-[2px] border-black shadow-[2px_2px_0px_0px_#000] cursor-pointer transition-colors flex items-center gap-1.5 px-3 py-1 select-none active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+              style={{
+                fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
+                fontSize: isFullscreen ? "10px" : "8px",
+              }}
+            >
+              <span>⏩</span>
+              <span>SALTAR TEXTOS (TEST)</span>
+            </button>
+
+            <PixelSpeechBubble
+              speaker={language === "nah" ? "Inecito Cívica" : "Inecito"}
+              messages={
+                language === "nah"
+                  ? (CAP2_OUTRO_CAP3_INTRO_MESSAGES_NAH as unknown as string[])
+                  : (CAP2_OUTRO_CAP3_INTRO_MESSAGES_ES as unknown as string[])
+              }
+              actionKey="E"
+              disabled={isPaused}
+              isDismissing={dialogueState === "exiting"}
+              onDismiss={() => setDialogueState("exiting")}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

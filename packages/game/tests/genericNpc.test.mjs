@@ -2420,6 +2420,70 @@ describe("Sistema de NPCs Genéricos - Pruebas de Integración y Ciclo de Vida",
       assert.equal(shift.x, -2.0);
       assert.equal(shift.y, 13.5);
     });
+
+    test("5. detención de spawn de NPCs genéricos con isSpawningDisabled", () => {
+      // Mampara lista para generar un NPC (nextSpawnDelayMs = 0)
+      const mamparas = INITIAL_MAMPARAS_CONFIG.map((m) => ({
+        ...m,
+        isOccupied: false,
+        occupiedByNpcId: null,
+        spawnTimerConfig: {
+          ...m.spawnTimerConfig,
+          isEnabled: true,
+          nextSpawnDelayMs: 0,
+        },
+      }));
+
+      // NPC activo en salida (LEAVING)
+      const activeNpc = {
+        ...createGenericNpcInstance(INITIAL_MAMPARAS_CONFIG[0], "npc-active"),
+        state: "LEAVING",
+        position: { x: 32.0, y: 70.0 },
+      };
+
+      const result = simulateNpcsStep(
+        {
+          npcs: [activeNpc],
+          mamparas,
+          isGlobalSystemActive: true,
+          npcIdCounter: 10,
+          isSpawningDisabled: true,
+        },
+        0.5,
+        1000,
+      );
+
+      // 1. Cero nuevos spawns
+      assert.equal(result.newSpawnIds.length, 0);
+
+      // 2. El NPC activo avanzó hacia la salida
+      assert.ok(result.npcs[0].position.y > 70.0);
+
+      // 3. Cuando un NPC llega a FINISHED con isSpawningDisabled, su mampara no se reactiva
+      const finishedNpc = {
+        ...activeNpc,
+        position: { x: 32.0, y: 106.0 }, // llega a exitPoint.y
+      };
+
+      const finishResult = simulateNpcsStep(
+        {
+          npcs: [finishedNpc],
+          mamparas,
+          isGlobalSystemActive: true,
+          npcIdCounter: 10,
+          isSpawningDisabled: true,
+        },
+        0.5,
+        2000,
+      );
+
+      assert.equal(finishResult.finishedMamparaIds.length, 1);
+      assert.equal(finishResult.finishedMamparaIds[0], 1);
+      const mampara1 = finishResult.mamparas.find((m) => m.id === 1);
+      assert.equal(mampara1.isOccupied, false);
+      assert.equal(mampara1.spawnTimerConfig.isEnabled, false);
+      assert.equal(finishResult.newSpawnIds.length, 0);
+    });
   });
 });
 

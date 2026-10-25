@@ -428,6 +428,8 @@ export interface NpcSimulationState {
   mamparas: MamparaBoothConfig[];
   isGlobalSystemActive: boolean;
   npcIdCounter: number;
+  /** Si es true, detiene el spawn de nuevos NPCs (los activos terminan su recorrido con normalidad) */
+  isSpawningDisabled?: boolean;
 }
 
 export interface NpcSimulationOptions {
@@ -549,9 +551,12 @@ export function simulateNpcsStep(
           occupiedByNpcId: null,
           spawnTimerConfig: {
             ...m.spawnTimerConfig,
-            isEnabled: isGlobalActive,
-            // Comienza su temporizador de 1 a 3 segundos para el siguiente ciclo
-            nextSpawnDelayMs: isGlobalActive ? getSpawnDelay(m.id) : 0,
+            isEnabled: isGlobalActive && !state.isSpawningDisabled,
+            // Comienza su temporizador de 1 a 3 segundos para el siguiente ciclo si el spawn sigue habilitado
+            nextSpawnDelayMs:
+              isGlobalActive && !state.isSpawningDisabled
+                ? getSpawnDelay(m.id)
+                : 0,
             lastSpawnTimestampMs: currentTimeMs,
           },
         };
@@ -560,8 +565,8 @@ export function simulateNpcsStep(
     });
   }
 
-  // --- C. Si el sistema global está activo, descontar temporizadores y spawnear nuevos NPCs ---
-  if (isGlobalActive) {
+  // --- C. Si el sistema global está activo y el spawn no está detenido, descontar temporizadores y spawnear nuevos NPCs ---
+  if (isGlobalActive && !state.isSpawningDisabled) {
     const newSpawns: GenericNpc[] = [];
 
     mamparas = mamparas.map((m) => {

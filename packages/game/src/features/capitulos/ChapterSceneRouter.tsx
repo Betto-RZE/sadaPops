@@ -1,6 +1,5 @@
 import React, { lazy } from "react";
-import { getChapter, type ChapterId } from "./chapters";
-import ChapterPlaceholderScene from "./ChapterPlaceholderScene";
+import type { ChapterId } from "./chapters";
 
 /**
  * Contrato comun de todas las escenas de capitulo.
@@ -22,14 +21,14 @@ export interface ChapterSceneProps {
   onChapterComplete: () => void;
 }
 
-// Los capitulos 1 y 2 viven en un mismo chunk diferido: no se descarga hasta que
-// se va a jugar, y el paso 1 -> 2 (JUGAR) no vuelve a suspender.
+// Los capitulos 1, 2 y 3 viven en un mismo chunk diferido: no se descarga hasta que
+// se va a jugar, y el paso 1 -> 2 -> 3 (JUGAR) no vuelve a suspender.
 const loadStoryScenes = () => import("./StoryChapterScenes");
 const StoryChapterScenes = lazy(loadStoryScenes);
 
 /** Empieza a descargar el chunk del capitulo mientras se cierra el iris. */
 export function preloadChapterScene(chapterId: ChapterId): void {
-  if (chapterId === 1 || chapterId === 2) void loadStoryScenes();
+  if (chapterId === 1 || chapterId === 2 || chapterId === 3) void loadStoryScenes();
 }
 
 /**
@@ -44,14 +43,8 @@ export function ChapterSceneRouter({
   switch (chapterId) {
     case 1:
     case 2:
+    case 3:
       return <StoryChapterScenes chapterId={chapterId} {...sceneProps} />;
-    case 3: // Aprende a votar (pendiente)
-      return (
-        <ChapterPlaceholderScene
-          chapter={getChapter(chapterId)}
-          {...sceneProps}
-        />
-      );
   }
   return null;
 }
