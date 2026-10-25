@@ -136,15 +136,27 @@ export default function Chapter3Scene({
 
   // Estado de la boleta electoral en la mesa / manos del jugador
   const [ballotState, setBallotState] = useState<BallotState>("on_table");
+  const ballotStateRef = useRef(ballotState);
+  useEffect(() => {
+    ballotStateRef.current = ballotState;
+  }, [ballotState]);
+
+  // Estado de hover interactivo sobre la boleta en la mesa de la mampara
+  const [isBallotHovered, setIsBallotHovered] = useState(false);
 
   const handleBallotClick = () => {
-    if (ballotState === "on_table") {
+    if (ballotStateRef.current === "on_table") {
+      setIsBallotHovered(false);
       setBallotState("picking_up");
       setTimeout(() => {
         setBallotState("inspecting");
       }, 700);
     }
   };
+  const handleBallotClickRef = useRef(handleBallotClick);
+  useEffect(() => {
+    handleBallotClickRef.current = handleBallotClick;
+  });
 
   const chapter3CompletedRef = useRef(false);
 
@@ -218,12 +230,34 @@ export default function Chapter3Scene({
         }
       }
 
+      // Interactuar en la vista POV de la mampara: Agarrar la boleta con E, Espacio o Enter
+      if (
+        selectedMamparaIndexRef.current !== null &&
+        ballotStateRef.current === "on_table" &&
+        !isPausedRef.current
+      ) {
+        if (
+          key === "e" ||
+          key === " " ||
+          key === "spacebar" ||
+          key === "enter" ||
+          e.code === "KeyE" ||
+          e.code === "Space" ||
+          e.code === "Enter"
+        ) {
+          e.preventDefault();
+          handleBallotClickRef.current();
+          return;
+        }
+      }
+
       // Salir de la mampara con Escape si está en vista POV
       if (key === "escape") {
         if (selectedMamparaIndexRef.current !== null && !isPausedRef.current) {
           e.preventDefault();
           setSelectedMamparaIndex(null);
           setBallotState("on_table");
+          setIsBallotHovered(false);
         }
       }
     };
@@ -717,6 +751,14 @@ export default function Chapter3Scene({
             transform: translate(-50%, -5px);
           }
         }
+        @keyframes floatBanner {
+          0%, 100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-4px);
+          }
+        }
         @keyframes povEntrance {
           0% {
             opacity: 0;
@@ -729,26 +771,6 @@ export default function Chapter3Scene({
         }
       `}</style>
 
-      {/* BOTÓN TEST: COMPLETAR CAPÍTULO 3 (VISTA GENERAL) */}
-      {dialogueState === "dismissed" && selectedMamparaIndex === null && (
-        <div className="absolute top-3 right-3 z-50 pointer-events-auto">
-          <button
-            type="button"
-            id="chapter-3-complete"
-            data-testid="chapter-complete-button"
-            onClick={handleTriggerComplete}
-            title="Completar capítulo (Test)"
-            className="bg-[#b5146c] hover:bg-[#ff2a85] active:bg-[#780946] text-white border-[2px] border-black shadow-[2px_2px_0px_0px_#000] cursor-pointer transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded select-none active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
-            style={{
-              fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
-              fontSize: isFullscreen ? "10px" : "8px",
-            }}
-          >
-            <span>✔</span>
-            <span>TERMINAR CAPÍTULO (TEST)</span>
-          </button>
-        </div>
-      )}
 
       {/* VISTA EN PRIMERA PERSONA (POV): SIMULADOR DE VOTO EN MAMPARA */}
       {selectedMamparaIndex !== null && (
@@ -784,6 +806,52 @@ export default function Chapter3Scene({
             }`}
           />
 
+          {/* TEXTO DE INSTRUCCIÓN SUPERIOR: "AGARRA LA BOLETA" */}
+          <div
+            data-testid="voting-booth-instruction"
+            className={`absolute top-6 sm:top-8 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 ease-out flex flex-col items-center select-none ${
+              ballotState === "on_table"
+                ? "opacity-100 translate-y-0 pointer-events-auto"
+                : "opacity-0 -translate-y-4 pointer-events-none"
+            }`}
+          >
+            <div
+              onClick={handleBallotClick}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (
+                  e.key === "Enter" ||
+                  e.key === " " ||
+                  e.key.toLowerCase() === "e"
+                ) {
+                  e.preventDefault();
+                  handleBallotClick();
+                }
+              }}
+              className="px-5 py-2.5 bg-black/80 backdrop-blur-sm border-[2px] border-[#ff4da6] rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.85)] cursor-pointer hover:bg-black/95 hover:border-[#ff80c0] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2"
+              style={{
+                animation: "floatBanner 2s ease-in-out infinite",
+              }}
+              title="Haz clic o presiona E / Espacio / Enter para agarrar la boleta"
+            >
+              <span
+                className="text-white font-black tracking-wider uppercase text-center select-none"
+                style={{
+                  fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
+                  fontSize: isFullscreen
+                    ? "clamp(10px, 1.15cqw, 16px)"
+                    : "clamp(8px, 0.9cqw, 12.5px)",
+                  lineHeight: "1.2",
+                  textShadow:
+                    "1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 0 10px rgba(255, 77, 166, 0.9)",
+                }}
+              >
+                Agarra la boleta
+              </span>
+            </div>
+          </div>
+
           {/* CONTENEDOR DE LA BOLETA ELECTORAL INTERACTIVA */}
           <div
             data-testid="voting-booth-ballot-container"
@@ -791,6 +859,12 @@ export default function Chapter3Scene({
           >
             <div
               onClick={handleBallotClick}
+              onMouseEnter={() => {
+                if (ballotState === "on_table") setIsBallotHovered(true);
+              }}
+              onMouseLeave={() => {
+                if (ballotState === "on_table") setIsBallotHovered(false);
+              }}
               role="button"
               tabIndex={0}
               aria-label="Boleta electoral para votar"
@@ -805,27 +879,35 @@ export default function Chapter3Scene({
                 imageRendering: "pixelated",
                 cursor: ballotState === "on_table" ? "pointer" : "default",
                 pointerEvents: "auto",
-                transition: "all 750ms cubic-bezier(0.16, 1, 0.3, 1)",
+                transition:
+                  ballotState === "on_table"
+                    ? "all 220ms cubic-bezier(0.2, 0.8, 0.2, 1)"
+                    : "all 750ms cubic-bezier(0.16, 1, 0.3, 1)",
                 left: "50%",
-                top: ballotState === "on_table" ? "63%" : "50%",
+                top:
+                  ballotState === "on_table"
+                    ? isBallotHovered
+                      ? "61.8%"
+                      : "63%"
+                    : "50%",
                 height: ballotState === "on_table" ? "42%" : "95%",
                 width: "auto",
                 maxHeight: ballotState === "on_table" ? "42%" : "95%",
                 transformOrigin: "center center",
                 transform:
                   ballotState === "on_table"
-                    ? "translate(-50%, -50%) perspective(650px) rotateX(46deg) rotateZ(-3deg) scale(1.0)"
+                    ? isBallotHovered
+                      ? "translate(-50%, -50%) perspective(650px) rotateX(42deg) rotateZ(-2.5deg) scale(1.04)"
+                      : "translate(-50%, -50%) perspective(650px) rotateX(46deg) rotateZ(-3deg) scale(1.0)"
                     : "translate(-50%, -50%) perspective(1000px) rotateX(0deg) rotateZ(0deg) scale(1)",
                 filter:
                   ballotState === "on_table"
-                    ? "drop-shadow(0px 8px 12px rgba(0,0,0,0.5))"
+                    ? isBallotHovered
+                      ? "drop-shadow(0px 14px 20px rgba(0,0,0,0.65)) brightness(1.08)"
+                      : "drop-shadow(0px 8px 12px rgba(0,0,0,0.5))"
                     : "drop-shadow(0px 20px 40px rgba(0,0,0,0.8))",
               }}
-              className={`select-none ${
-                ballotState === "on_table"
-                  ? "hover:brightness-105 active:scale-95"
-                  : ""
-              }`}
+              className="select-none active:scale-95"
             >
               <img
                 src="/assets/juego/simulador-voto/boleta-electoral.png"
