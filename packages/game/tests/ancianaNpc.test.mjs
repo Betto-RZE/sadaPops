@@ -711,8 +711,8 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
       ]);
     });
 
-    test("el retardo entre personajes está calibrado exactamente en 10 segundos (10,000 ms)", () => {
-      assert.equal(BETWEEN_CHARACTERS_DELAY_MS, 10000);
+    test("el retardo entre personajes está calibrado exactamente en 5 segundos (5,000 ms)", () => {
+      assert.equal(BETWEEN_CHARACTERS_DELAY_MS, 5000);
     });
 
     test("cada uno de los 5 personajes posee configuración completa y válida", () => {
@@ -774,7 +774,7 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
       });
     });
 
-    test("updateQueueTransitionDelay descuenta el retardo de 10 segundos con precisión", () => {
+    test("updateQueueTransitionDelay descuenta el retardo de 5 segundos con precisión", () => {
       // 0s transcurridos
       const t0 = updateQueueTransitionDelay({
         elapsedMs: 0,
@@ -784,32 +784,32 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
       assert.equal(t0.newElapsedMs, 0);
       assert.equal(t0.isReady, false);
 
-      // 4 segundos transcurridos
+      // 2 segundos transcurridos
       const t1 = updateQueueTransitionDelay({
         elapsedMs: 0,
-        dtSeconds: 4.0,
+        dtSeconds: 2.0,
       });
-      assert.equal(t1.newElapsedMs, 4000);
+      assert.equal(t1.newElapsedMs, 2000);
       assert.equal(t1.isReady, false);
 
-      // 9.5 segundos transcurridos
+      // 4.5 segundos transcurridos
       const t2 = updateQueueTransitionDelay({
         elapsedMs: t1.newElapsedMs,
-        dtSeconds: 5.5,
+        dtSeconds: 2.5,
       });
-      assert.equal(t2.newElapsedMs, 9500);
+      assert.equal(t2.newElapsedMs, 4500);
       assert.equal(t2.isReady, false);
 
-      // 10.0 segundos cumplidos (transición completada)
+      // 5.0 segundos cumplidos (transición completada)
       const t3 = updateQueueTransitionDelay({
         elapsedMs: t2.newElapsedMs,
         dtSeconds: 0.5,
       });
-      assert.equal(t3.newElapsedMs, 10000);
+      assert.equal(t3.newElapsedMs, 5000);
       assert.equal(t3.isReady, true);
     });
 
-    test("simula el avance secuencial completo de los 5 personajes con retardo de 10s entre ellos", () => {
+    test("simula el avance secuencial completo de los 5 personajes con retardo de 5s entre ellos", () => {
       let currentIndex = 0;
       let status = "walking";
       let pos = { ...ANCIANA_DEFAULTS.startPosition }; // { x: 102.0, y: 66.0 }
@@ -843,10 +843,10 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
         if (currentIndex < NARRATIVE_CHARACTERS_ORDER.length - 1) {
           status = "waiting_next_character";
 
-          // 4. Retardo de 10 segundos
+          // 4. Retardo de 5 segundos
           const delayCheck = updateQueueTransitionDelay({
             elapsedMs: 0,
-            dtSeconds: 10.0,
+            dtSeconds: 5.0,
           });
           assert.equal(delayCheck.isReady, true);
 
@@ -1178,7 +1178,9 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
       assert.equal(NARRATIVE_CHARACTERS_ANIMATION_CONFIG.transgenero.folder, "trans");
       assert.equal(NARRATIVE_CHARACTERS_ANIMATION_CONFIG.transgenero.filePrefix, "trans-side");
 
-      assert.equal(NARRATIVE_CHARACTERS_ANIMATION_CONFIG.discapacitado.frameCount, 0);
+      assert.equal(NARRATIVE_CHARACTERS_ANIMATION_CONFIG.discapacitado.frameCount, 40);
+      assert.equal(NARRATIVE_CHARACTERS_ANIMATION_CONFIG.discapacitado.folder, "discapacitado");
+      assert.equal(NARRATIVE_CHARACTERS_ANIMATION_CONFIG.discapacitado.filePrefix, "discapacitado");
     });
 
     test("getNarrativeCharacterSideFrameSrc resuelve rutas exactas con padding para cada personaje", () => {
@@ -1221,6 +1223,16 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
         getNarrativeCharacterSideFrameSrc("transgenero", 33),
         "/assets/juego/personajes/trans/side/trans-side00086433.png",
       );
+
+      // Discapacitado (Don Roberto)
+      assert.equal(
+        getNarrativeCharacterSideFrameSrc("discapacitado", 0),
+        "/assets/juego/personajes/discapacitado/side/discapacitado00086400.png",
+      );
+      assert.equal(
+        getNarrativeCharacterSideFrameSrc("discapacitado", 39),
+        "/assets/juego/personajes/discapacitado/side/discapacitado00086439.png",
+      );
     });
 
     test("getNarrativeCharacterIdleSrc resuelve las posiciones IDLE oficiales en la mesa", () => {
@@ -1239,6 +1251,10 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
       assert.equal(
         getNarrativeCharacterIdleSrc("transgenero"),
         "/assets/juego/personajes/trans/trans-idle.png",
+      );
+      assert.equal(
+        getNarrativeCharacterIdleSrc("discapacitado"),
+        "/assets/juego/personajes/discapacitado/side/discapacitado00086400.png",
       );
     });
 

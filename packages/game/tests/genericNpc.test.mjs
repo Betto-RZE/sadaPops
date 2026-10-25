@@ -446,9 +446,9 @@ describe("Sistema de NPCs Genéricos - Pruebas de Integración y Ciclo de Vida",
         const m = step.mamparas.find((booth) => booth.id === id);
         assert.ok(m.spawnTimerConfig.isEnabled, `Mampara ${id} debe estar habilitada`);
         assert.ok(
-          m.spawnTimerConfig.nextSpawnDelayMs >= 2900 &&
-            m.spawnTimerConfig.nextSpawnDelayMs <= 15000,
-          `Mampara ${id} debe tener un delay en [3000, 15000] ms menos dt`,
+          m.spawnTimerConfig.nextSpawnDelayMs >= 9900 &&
+            m.spawnTimerConfig.nextSpawnDelayMs <= 30000,
+          `Mampara ${id} debe tener un delay en [10000, 30000] ms menos dt`,
         );
       });
     });
@@ -487,13 +487,13 @@ describe("Sistema de NPCs Genéricos - Pruebas de Integración y Ciclo de Vida",
       assert.ok(state.mamparas[2].spawnTimerConfig.nextSpawnDelayMs > 0);
     });
 
-    test("7. cada mampara genera tiempos independientes entre 3000 y 15000 ms con decimales", () => {
+    test("7. cada mampara genera tiempos independientes entre 10000 y 30000 ms con decimales", () => {
       const delays = [];
       for (let i = 0; i < 50; i++) {
         const delay = getRandomSpawnDelayMs();
         assert.ok(
-          delay >= 3000 && delay <= 15000,
-          `El delay ${delay} debe estar en el intervalo [3000, 15000] ms`,
+          delay >= 10000 && delay <= 30000,
+          `El delay ${delay} debe estar en el intervalo [10000, 30000] ms`,
         );
         assert.ok(!Number.isInteger(delay), "Debe permitir valores decimales");
         delays.push(delay);
@@ -1820,10 +1820,10 @@ describe("Sistema de NPCs Genéricos - Pruebas de Integración y Ciclo de Vida",
         };
       }
 
-      // En 10 minutos activos, el sistema debe haber atendido decenas de votantes
+      // En 10 minutos activos, con spawn ampliado a 10-30s, el sistema atiende decenas de votantes
       assert.ok(
-        totalVotersCompleted >= 80,
-        `En 10 minutos se completaron ${totalVotersCompleted} ciclos de votación (esperado >= 80)`,
+        totalVotersCompleted >= 50,
+        `En 10 minutos se completaron ${totalVotersCompleted} ciclos de votación (esperado >= 50)`,
       );
       assert.ok(
         maxNpcsObserved <= 5,

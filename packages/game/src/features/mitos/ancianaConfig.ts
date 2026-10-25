@@ -803,10 +803,10 @@ export const NARRATIVE_CHARACTERS_ORDER: readonly NarrativeCharacterId[] = [
 ] as const;
 
 /**
- * Retardo exacto de 10 segundos (10,000 ms) entre que concluye la conversación
+ * Retardo exacto de 5 segundos (5,000 ms) entre que concluye la conversación
  * con un personaje y comienza la llegada del siguiente personaje.
  */
-export const BETWEEN_CHARACTERS_DELAY_MS = 10000;
+export const BETWEEN_CHARACTERS_DELAY_MS = 5000;
 
 export interface NarrativeCharacterAnimationInfo {
   folder: string;
@@ -821,7 +821,7 @@ export interface NarrativeCharacterAnimationInfo {
  * - joven: 29 frames (chavo-side), idle en joven-idle.png
  * - indigena: 32 frames (indigena-side), idle en indigena-idle.png
  * - transgenero: 34 frames (trans-side), idle en trans-idle.png
- * - discapacitado: fallback a retrato en diálogo
+ * - discapacitado: 40 frames (discapacitado00086400 a ...00086439), idle en discapacitado00086400.png
  */
 export const NARRATIVE_CHARACTERS_ANIMATION_CONFIG: Record<
   NarrativeCharacterId,
@@ -853,9 +853,9 @@ export const NARRATIVE_CHARACTERS_ANIMATION_CONFIG: Record<
   },
   discapacitado: {
     folder: "discapacitado",
-    filePrefix: "discapacitado-side",
-    frameCount: 0,
-    idleSrc: "/assets/juego/dialogos/retrato-discapacitado.png",
+    filePrefix: "discapacitado",
+    frameCount: 40,
+    idleSrc: "/assets/juego/personajes/discapacitado/side/discapacitado00086400.png",
   },
 };
 
@@ -2346,7 +2346,7 @@ export function getNarrativeCharacterPortraits(
 }
 
 /**
- * Función pura que calcula el progreso del retardo de 10 segundos entre personajes.
+ * Función pura que calcula el progreso del retardo de 5 segundos entre personajes.
  */
 export function updateQueueTransitionDelay({
   elapsedMs,

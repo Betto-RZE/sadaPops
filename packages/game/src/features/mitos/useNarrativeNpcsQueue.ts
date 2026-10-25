@@ -47,7 +47,7 @@ export interface UseNarrativeNpcsQueueProps {
   isTriggered?: boolean;
   /** Tiempo de espera inicial para el primer personaje (por defecto 4000 ms) */
   initialSpawnDelayMs?: number;
-  /** Tiempo de espera entre personajes tras finalizar una conversación (por defecto 10000 ms = 10s) */
+  /** Tiempo de espera entre personajes tras finalizar una conversación (por defecto 5000 ms = 5s) */
   betweenCharactersDelayMs?: number;
   /** Posición inicial en el camino derecho */
   startPosition?: { x: number; y: number };
@@ -64,7 +64,7 @@ export interface UseNarrativeNpcsQueueReturn extends NarrativeNpcQueueState {
   remainingTransitionMs: number;
   /** Inicia la conversación con el personaje actual en la mesa */
   startConversation: () => void;
-  /** Concluye la conversación y activa el retardo de 10 segundos antes del siguiente personaje */
+  /** Concluye la conversación y activa el retardo de 5 segundos antes del siguiente personaje */
   dismissConversation: () => void;
   /** Salta inmediatamente al siguiente personaje (para pruebas y depuración) */
   skipToNextCharacter: () => void;
@@ -83,8 +83,8 @@ export interface UseNarrativeNpcsQueueReturn extends NarrativeNpcQueueState {
  * Cada personaje:
  * - Llega desde el camino derecho (x: 102.0%, y: 66.0%) caminando hacia la mesa (x: 26.0%, y: 66.0%).
  * - Al llegar muestra el icono de interacción en el lado izquierdo de la mesa (x: 14.0%, y: 60.0%).
- * - Al terminar su conversación, transcurre un retardo exacto de 10 segundos (10,000 ms).
- * - Concluidos los 10 segundos, aparece el siguiente personaje de la cola.
+ * - Al terminar su conversación, transcurre un retardo exacto de 5 segundos (5,000 ms).
+ * - Concluidos los 5 segundos, aparece el siguiente personaje de la cola.
  */
 export function useNarrativeNpcsQueue({
   isPaused,

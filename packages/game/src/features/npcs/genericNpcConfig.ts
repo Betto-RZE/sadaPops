@@ -91,10 +91,10 @@ export const GENERIC_NPC_DEFAULTS = {
   minVotingWaitTimeMs: 4000,
   /** Rango máximo de tiempo para votar (ms) */
   maxVotingWaitTimeMs: 8000,
-  /** Rango mínimo de espera para la aparición de nuevos NPCs en una mampara (ms) */
-  minSpawnDelayMs: 3000,
-  /** Rango máximo de espera para la aparición de nuevos NPCs en una mampara (ms) */
-  maxSpawnDelayMs: 15000,
+  /** Rango mínimo de espera para la aparición de nuevos NPCs en una mampara (ms) (10 a 30s) */
+  minSpawnDelayMs: 10000,
+  /** Rango máximo de espera para la aparición de nuevos NPCs en una mampara (ms) (10 a 30s) */
+  maxSpawnDelayMs: 30000,
   /** Ancho porcentual del sprite en pantalla (alineado al del jugador 6.5%) */
   spriteWidthPercent: "6.5%",
 };
@@ -113,9 +113,11 @@ export const GENERIC_NPC_TINT_VARIANTS = {
   /** Moradito suave cívico (~255deg) */
   moradito: "sepia(0.9) hue-rotate(255deg) saturate(2.4) brightness(1.15)",
   /** Fusión moradito-rosita (~270deg, balance por defecto) */
-  moraditoRosita: "sepia(0.88) hue-rotate(270deg) saturate(2.3) brightness(1.22)",
+  moraditoRosita:
+    "sepia(0.88) hue-rotate(270deg) saturate(2.3) brightness(1.22)",
   /** Rosa pastel suave, dulce y luminoso (~285deg, estética pastel) */
-  rosita: "sepia(0.85) hue-rotate(285deg) saturate(2.1) brightness(1.32) contrast(0.92)",
+  rosita:
+    "sepia(0.85) hue-rotate(285deg) saturate(2.1) brightness(1.32) contrast(0.92)",
 } as const;
 
 export type GenericNpcTintVariant = keyof typeof GENERIC_NPC_TINT_VARIANTS;
@@ -133,7 +135,7 @@ export function getRandomVotingTimeMs(
 
 /**
  * Genera un tiempo de espera aleatorio continuo para el spawn de un NPC en una mampara disponible.
- * Por defecto en [3000, 15000] ms (3 a 15 segundos) con decimales.
+ * Por defecto en [10000, 30000] ms (10 a 30 segundos) con decimales.
  */
 export function getRandomSpawnDelayMs(
   minMs: number = GENERIC_NPC_DEFAULTS.minSpawnDelayMs,
@@ -242,7 +244,6 @@ export const INITIAL_MAMPARAS_CONFIG: MamparaBoothConfig[] = [
     },
   },
 ];
-
 
 /**
  * Fábrica para instanciar un nuevo NPC genérico asignado a una mampara.
@@ -618,5 +619,3 @@ export function simulateNpcsStep(
     newSpawnIds,
   };
 }
-
-

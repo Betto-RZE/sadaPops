@@ -778,7 +778,7 @@ export default function Chapter2Scene({
 
   // Cámara cinematográfica dinámica:
   // 1. Sigue suavemente al primer NPC al entrar, espera 2.5s en la mampara y regresa suavemente al jugador.
-  // 2. Al llegar un personaje a la mesa, enfoca al personaje durante 3 segundos y regresa suavemente al jugador.
+  // 2. Al llegar un personaje a la mesa, enfoca al personaje durante 1.5 segundos y regresa suavemente al jugador.
   const zoomScale = 2.0;
   const { camX, camY } = useCinematicNpcCamera({
     playerPos,
@@ -789,7 +789,7 @@ export default function Chapter2Scene({
     focusTarget: {
       position: narrativeQueue.position,
       isActive: narrativeQueue.status === "arrived",
-      durationMs: 3000,
+      durationMs: 1500,
     },
   });
 

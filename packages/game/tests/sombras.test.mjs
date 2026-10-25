@@ -74,13 +74,14 @@ describe("Sistema de sombras en el suelo (ground footprint shadows)", () => {
       }
     });
 
-    test("el letrero VOTA ancla su sombra al pie real del poste (7.5% transparente en la base)", () => {
+    test("el letrero VOTA ancla su sombra al pie real del poste con dimensiones reducidas al ancho del poste", () => {
       const cfg = DECORATION_SHADOWS.cartel3;
       const options = resolveShadowOptions(cfg.preset, cfg.overrides);
-      assert.equal(options.baseInsetPercent, 7.5);
+      assert.equal(options.baseInsetPercent, 7.2);
       const style = getGroundShadowStyle(options);
-      assert.equal(style.bottom, "7.5%");
-      assert.equal(style.width, "72%");
+      assert.equal(style.bottom, "7.2%");
+      assert.equal(style.width, "28%");
+      assert.equal(style.height, "9%");
     });
 
     test("resolveShadowOptions respeta el preset y aplica solo los ajustes indicados", () => {
@@ -90,4 +91,36 @@ describe("Sistema de sombras en el suelo (ground footprint shadows)", () => {
       assert.equal(o.heightPercent, SHADOW_PRESETS.tall.heightPercent);
     });
   });
+
+  describe("4. Sombras calibradas específicas por objeto colocado (no idénticas)", () => {
+    test("la mesa directiva tiene sombra diagonal de gran cobertura que abarca todo el cuerpo de la mesa", () => {
+      assert.equal(SHADOW_PRESETS.mesa.rotateDeg, -32);
+      assert.equal(SHADOW_PRESETS.mesa.widthPercent, 74);
+      assert.equal(SHADOW_PRESETS.mesa.heightPercent, 46);
+      assert.equal(SHADOW_PRESETS.mesa.offsetYPercent, 28);
+      const style = getGroundShadowStyle(SHADOW_PRESETS.mesa);
+      assert.ok(String(style.transform).includes("rotate(-32deg)"));
+    });
+
+    test("las mamparas (casillas) tienen sombra amplia que cubre las 4 patas", () => {
+      assert.equal(SHADOW_PRESETS.tall.widthPercent, 88);
+      assert.equal(SHADOW_PRESETS.tall.heightPercent, 16);
+    });
+
+    test("cartel 1 (caballete frontal) y cartel 2 (caballete lateral) tienen geometrías y anchos distintos", () => {
+      const c1 = resolveShadowOptions(DECORATION_SHADOWS.cartel1.preset, DECORATION_SHADOWS.cartel1.overrides);
+      const c2 = resolveShadowOptions(DECORATION_SHADOWS.cartel2.preset, DECORATION_SHADOWS.cartel2.overrides);
+      assert.notEqual(c1.widthPercent, c2.widthPercent);
+      assert.notEqual(c1.centerPercent, c2.centerPercent);
+      assert.equal(c2.rotateDeg, 12);
+    });
+
+    test("el letrero VOTA es mucho más estrecho que la mesa y la casilla (ajustado al poste)", () => {
+      const c3 = resolveShadowOptions(DECORATION_SHADOWS.cartel3.preset, DECORATION_SHADOWS.cartel3.overrides);
+      assert.ok(c3.widthPercent < SHADOW_PRESETS.tall.widthPercent);
+      assert.ok(c3.widthPercent < SHADOW_PRESETS.mesa.widthPercent);
+      assert.equal(c3.widthPercent, 28);
+    });
+  });
 });
+

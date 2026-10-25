@@ -29,10 +29,9 @@ export interface NarrativeNpcSpriteProps {
 
 /**
  * Componente visual unificado para renderizar los 5 personajes narrativos en el escenario.
- * - Para Anciana, Joven, Indígena y Transgénero: Reproduce su secuencia de caminata lateral a 24 FPS
+ * - Para Anciana, Joven, Indígena, Transgénero y Discapacitado: Reproduce su secuencia de caminata lateral a 24 FPS
  *   y cambia al sprite oficial IDLE al estar detenidos frente a la mesa directiva.
  * - Soporta volteo horizontal (transform: scaleX(-1)) cuando el personaje se retira caminando hacia la derecha.
- * - Para Discapacitado: Muestra su retrato estilizado con balanceo de caminata (fallback).
  */
 export const NarrativeNpcSprite = React.memo(function NarrativeNpcSprite({
   characterId,

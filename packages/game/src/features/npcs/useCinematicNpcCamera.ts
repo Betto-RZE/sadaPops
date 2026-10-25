@@ -20,7 +20,7 @@ export interface CinematicFocusTarget {
   position: { x: number; y: number };
   /** Indica si el evento de enfoque está activo y debe ejecutarse */
   isActive: boolean;
-  /** Duración de permanencia en el objetivo en ms (por defecto 3000 ms = 3 segundos) */
+  /** Duración de permanencia en el objetivo en ms (por defecto 1500 ms = 1.5 segundos) */
   durationMs?: number;
 }
 
@@ -304,7 +304,7 @@ export function useCinematicNpcCamera({
           }
 
           holdElapsedMsRef.current += dt * 1000;
-          const duration = focusTargetRef.current?.durationMs ?? 3000;
+          const duration = focusTargetRef.current?.durationMs ?? 1500;
           if (holdElapsedMsRef.current >= duration) {
             stateRef.current = "RETURNING_TO_PLAYER";
             if (isMountedRef.current) {
