@@ -82,11 +82,11 @@ export const BALLOT_INSPECTION_ZONES: BallotInspectionZone[] = [
   {
     id: "encabezado",
     label: "Encabezado de la boleta",
-    left: "6%",
+    left: "23.5%",
     top: "5.2%",
-    width: "70%",
+    width: "52.5%",
     height: "9.5%",
-    originX: 41,
+    originX: 50,
     originY: 10,
   },
   {
@@ -113,11 +113,11 @@ export const BALLOT_INSPECTION_ZONES: BallotInspectionZone[] = [
     id: "opciones_politicas",
     label: "Opciones políticas",
     left: "6.5%",
-    top: "24.8%",
+    top: "26.0%",
     width: "87%",
     height: "61.5%",
     originX: 50,
-    originY: 55,
+    originY: 57,
   },
 ];
 
