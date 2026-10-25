@@ -76,6 +76,9 @@ export interface BallotInspectionZone {
   height: string;
   originX: number;
   originY: number;
+  examiningScale: number;
+  examiningTranslateX: string;
+  examiningTranslateY: string;
 }
 
 export const BALLOT_INSPECTION_ZONES: BallotInspectionZone[] = [
@@ -88,6 +91,9 @@ export const BALLOT_INSPECTION_ZONES: BallotInspectionZone[] = [
     height: "9.5%",
     originX: 50,
     originY: 10,
+    examiningScale: 2.6,
+    examiningTranslateX: "-50%",
+    examiningTranslateY: "-20.5%",
   },
   {
     id: "anio_electoral",
@@ -98,6 +104,9 @@ export const BALLOT_INSPECTION_ZONES: BallotInspectionZone[] = [
     height: "9.5%",
     originX: 85.5,
     originY: 10,
+    examiningScale: 3.4,
+    examiningTranslateX: "-85.5%",
+    examiningTranslateY: "-20.5%",
   },
   {
     id: "datos_geograficos",
@@ -108,6 +117,9 @@ export const BALLOT_INSPECTION_ZONES: BallotInspectionZone[] = [
     height: "6.5%",
     originX: 50,
     originY: 18.7,
+    examiningScale: 2.7,
+    examiningTranslateX: "-50%",
+    examiningTranslateY: "-29.2%",
   },
   {
     id: "opciones_politicas",
@@ -118,8 +130,45 @@ export const BALLOT_INSPECTION_ZONES: BallotInspectionZone[] = [
     height: "61.5%",
     originX: 50,
     originY: 57,
+    examiningScale: 1.65,
+    examiningTranslateX: "-50%",
+    examiningTranslateY: "-62.3%",
   },
 ];
+
+export const INSPECTION_MESSAGES_ES: Record<BallotInspectionZoneId, string[]> = {
+  encabezado: [
+    "Aquí se indica qué cargo público se está eligiendo. En México existen diferentes boletas dependiendo de la elección, como Presidencia de la República, senadurías, diputaciones o cargos locales.",
+    "¡Es importante revisar el encabezado para saber en qué elección estás participando!",
+  ],
+  anio_electoral: [
+    "Este apartado nos indica el año al que corresponde la elección. Así podemos identificar el proceso electoral para el que fue preparada la boleta.",
+  ],
+  datos_geograficos: [
+    "La entidad federativa nos dice en qué estado se realiza la elección, mientras que el distrito electoral identifica una zona utilizada para organizar la representación política.",
+    "El municipio indica la localidad administrativa correspondiente. Estos datos ayudan a identificar el ámbito territorial de la elección.",
+  ],
+  opciones_politicas: [
+    "Aquí se muestran las diferentes opciones políticas, candidaturas y partidos participantes en la contienda electoral.",
+  ],
+};
+
+export const INSPECTION_MESSAGES_NAH: Record<BallotInspectionZoneId, string[]> = {
+  encabezado: [
+    "Nikan motlalia tlen tekitl tlatokatiyan tlapejpenalo. Ipan México onka tlatlamantli boletas ken Presidencia, senadurías, diputaciones noso locales.",
+    "¡Ueyi tlamantli tikitas in encabezado pampa tikmatis tlen tlapejpenalistli tiktlakaitas!",
+  ],
+  anio_electoral: [
+    "Inin tlatilantli techititia in xiwitl tlen tlapejpenalo. Ijkintsin tikixmatih in proceso electoral pampa tlen omoyektlali in boleta.",
+  ],
+  datos_geograficos: [
+    "In entidad federativa techilwia katli estado mochijtiwah in tlapejpenalistli, wan in distrito electoral kiixmati se tlaltikpak kampa mochantia in tlayekankeh.",
+    "In altepetl (municipio) techititia in kampa titekitih. Inin tlapowalistli techpalewia ma tikixmatikan in ámbito territorial.",
+  ],
+  opciones_politicas: [
+    "Nikan moittah in tlatlamantli partidos políticos wan tlapejpenalmeh tlen tlayekanaseh.",
+  ],
+};
 
 // Zona caminable: explanada + casilla completa (mamparas, mesa y cartel 2)
 const isPlazaWalkable = (x: number, y: number): boolean => {
@@ -208,8 +257,19 @@ export default function Chapter3Scene({
   const [hoveredZone, setHoveredZone] =
     useState<BallotInspectionZoneId | null>(null);
 
+  // Zona actualmente en examen activo (con zoom grande y globo de texto explicativo)
+  const [activeExaminingZone, setActiveExaminingZone] =
+    useState<BallotInspectionZoneId | null>(null);
+
+  const [isDismissingExamDialogue, setIsDismissingExamDialogue] =
+    useState(false);
+
   const activeHoveredZone = hoveredZone
     ? BALLOT_INSPECTION_ZONES.find((z) => z.id === hoveredZone) ?? null
+    : null;
+
+  const activeExaminingZoneObj = activeExaminingZone
+    ? BALLOT_INSPECTION_ZONES.find((z) => z.id === activeExaminingZone) ?? null
     : null;
 
   // Zonas examinadas de la boleta electoral
@@ -221,6 +281,29 @@ export default function Chapter3Scene({
     datos_geograficos: false,
     opciones_politicas: false,
   });
+
+  const handleSelectZoneToExamine = (zoneId: BallotInspectionZoneId) => {
+    // Si ya fue examinada, no se puede volver a examinar
+    if (examinedZones[zoneId]) return;
+    // Si ya estamos examinando una zona, no interrumpir
+    if (activeExaminingZone !== null) return;
+
+    setHoveredZone(null);
+    setIsDismissingExamDialogue(false);
+    setActiveExaminingZone(zoneId);
+  };
+
+  const handleFinishZoneExamination = (zoneId: BallotInspectionZoneId) => {
+    setIsDismissingExamDialogue(true);
+    setTimeout(() => {
+      setExaminedZones((prev) => ({
+        ...prev,
+        [zoneId]: true,
+      }));
+      setActiveExaminingZone(null);
+      setIsDismissingExamDialogue(false);
+    }, 250);
+  };
 
   const markZoneExamined = (zoneId: BallotInspectionZoneId) => {
     setExaminedZones((prev) => {
@@ -944,9 +1027,9 @@ export default function Chapter3Scene({
           {/* GUÍA DE INSPECCIÓN: "EXAMINA LA BOLETA" (SIN CONTENEDORES NI BORDES NEÓN, CON CASILLAS A LA IZQUIERDA) */}
           <div
             data-testid="ballot-inspection-panel"
-            className={`absolute left-4 sm:left-7 top-1/2 -translate-y-1/2 z-40 w-[clamp(220px,27cqw,360px)] max-w-[28%] transition-all duration-500 ease-out select-none pointer-events-auto flex flex-col gap-4 sm:gap-5 ${
-              ballotState === "inspecting"
-                ? "opacity-100 translate-x-0"
+            className={`absolute left-4 sm:left-7 top-1/2 -translate-y-1/2 z-40 w-[clamp(220px,27cqw,360px)] max-w-[28%] transition-all duration-500 ease-out select-none flex flex-col gap-4 sm:gap-5 ${
+              ballotState === "inspecting" && activeExaminingZone === null
+                ? "opacity-100 translate-x-0 pointer-events-auto"
                 : "opacity-0 -translate-x-8 pointer-events-none"
             }`}
           >
@@ -970,35 +1053,46 @@ export default function Chapter3Scene({
             <ul className="flex flex-col gap-3.5 sm:gap-4 list-none p-0 m-0">
               {BALLOT_INSPECTION_ZONES.map((zone) => {
                 const isChecked = examinedZones[zone.id];
-                const isHovered = hoveredZone === zone.id;
+                const isHovered =
+                  hoveredZone === zone.id &&
+                  !isChecked &&
+                  activeExaminingZone === null;
                 return (
                   <li
                     key={`inspection-zone-${zone.id}`}
-                    onMouseEnter={() => setHoveredZone(zone.id)}
+                    onMouseEnter={() => {
+                      if (!isChecked && activeExaminingZone === null) {
+                        setHoveredZone(zone.id);
+                      }
+                    }}
                     onMouseLeave={() =>
                       setHoveredZone((cur) => (cur === zone.id ? null : cur))
                     }
                     onClick={() => {
-                      setExaminedZones((prev) => ({
-                        ...prev,
-                        [zone.id]: !prev[zone.id],
-                      }));
+                      handleSelectZoneToExamine(zone.id);
                     }}
                     role="button"
-                    tabIndex={0}
+                    tabIndex={isChecked || activeExaminingZone !== null ? -1 : 0}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
+                      if (
+                        (e.key === "Enter" || e.key === " ") &&
+                        !isChecked &&
+                        activeExaminingZone === null
+                      ) {
                         e.preventDefault();
-                        setExaminedZones((prev) => ({
-                          ...prev,
-                          [zone.id]: !prev[zone.id],
-                        }));
+                        handleSelectZoneToExamine(zone.id);
                       }
                     }}
-                    className={`flex items-center gap-2.5 sm:gap-3.5 select-none cursor-pointer transition-all duration-200 ${
-                      isHovered ? "translate-x-1.5" : "translate-x-0"
-                    }`}
-                    title={`Examinar ${zone.label}`}
+                    className={`flex items-center gap-2.5 sm:gap-3.5 select-none transition-all duration-200 ${
+                      isChecked
+                        ? "cursor-default opacity-85"
+                        : "cursor-pointer"
+                    } ${isHovered ? "translate-x-1.5" : "translate-x-0"}`}
+                    title={
+                      isChecked
+                        ? `${zone.label} (Ya examinado)`
+                        : `Examinar ${zone.label}`
+                    }
                   >
                     {/* Casilla cuadrada a la izquierda (se marca con palomita al examinarse) */}
                     <div
@@ -1091,21 +1185,26 @@ export default function Chapter3Scene({
                 aspectRatio: "819 / 1024",
                 maxHeight: ballotState === "on_table" ? "42%" : "95%",
                 transformOrigin:
-                  ballotState === "inspecting" && activeHoveredZone
-                    ? `${activeHoveredZone.originX}% ${activeHoveredZone.originY}%`
+                  ballotState === "inspecting" &&
+                  (activeExaminingZoneObj || activeHoveredZone)
+                    ? `${(activeExaminingZoneObj || activeHoveredZone)!.originX}% ${(activeExaminingZoneObj || activeHoveredZone)!.originY}%`
                     : "center center",
                 transform:
                   ballotState === "on_table"
                     ? isBallotHovered
                       ? "translate(-50%, -50%) perspective(650px) rotateX(42deg) rotateZ(-2.5deg) scale(1.04)"
                       : "translate(-50%, -50%) perspective(650px) rotateX(46deg) rotateZ(-3deg) scale(1.0)"
-                    : activeHoveredZone
-                      ? "translate(-50%, -50%) perspective(1000px) scale(1.08)"
-                      : "translate(-50%, -50%) perspective(1000px) scale(1)",
+                    : activeExaminingZoneObj
+                      ? `translate(${activeExaminingZoneObj.examiningTranslateX}, ${activeExaminingZoneObj.examiningTranslateY}) perspective(1000px) scale(${activeExaminingZoneObj.examiningScale})`
+                      : activeHoveredZone
+                        ? "translate(-50%, -50%) perspective(1000px) scale(1.08)"
+                        : "translate(-50%, -50%) perspective(1000px) scale(1)",
                 transition:
                   ballotState === "on_table"
                     ? "all 220ms cubic-bezier(0.2, 0.8, 0.2, 1)"
-                    : "transform 260ms cubic-bezier(0.16, 1, 0.3, 1), transform-origin 260ms cubic-bezier(0.16, 1, 0.3, 1), filter 300ms ease-out",
+                    : activeExaminingZone !== null
+                      ? "transform 600ms cubic-bezier(0.16, 1, 0.3, 1), transform-origin 600ms cubic-bezier(0.16, 1, 0.3, 1)"
+                      : "transform 260ms cubic-bezier(0.16, 1, 0.3, 1), transform-origin 260ms cubic-bezier(0.16, 1, 0.3, 1), filter 300ms ease-out",
                 filter:
                   ballotState === "on_table"
                     ? isBallotHovered
@@ -1126,12 +1225,23 @@ export default function Chapter3Scene({
               {ballotState === "inspecting" && (
                 <div className="absolute inset-0 w-full h-full pointer-events-auto z-40">
                   {BALLOT_INSPECTION_ZONES.map((zone) => {
-                    const isHovered = hoveredZone === zone.id;
+                    const isChecked = examinedZones[zone.id];
+                    const isExamining = activeExaminingZone === zone.id;
+                    const isHovered =
+                      hoveredZone === zone.id &&
+                      !isChecked &&
+                      activeExaminingZone === null;
+                    const isVisibleRedBox = isExamining || isHovered;
+
                     return (
                       <div
                         key={`ballot-zone-${zone.id}`}
                         data-testid={`ballot-zone-${zone.id}`}
-                        onMouseEnter={() => setHoveredZone(zone.id)}
+                        onMouseEnter={() => {
+                          if (!isChecked && activeExaminingZone === null) {
+                            setHoveredZone(zone.id);
+                          }
+                        }}
                         onMouseLeave={() =>
                           setHoveredZone((cur) =>
                             cur === zone.id ? null : cur
@@ -1139,26 +1249,36 @@ export default function Chapter3Scene({
                         }
                         onClick={(e) => {
                           e.stopPropagation();
-                          setExaminedZones((prev) => ({
-                            ...prev,
-                            [zone.id]: !prev[zone.id],
-                          }));
+                          handleSelectZoneToExamine(zone.id);
                         }}
                         role="button"
-                        tabIndex={0}
+                        tabIndex={isChecked || activeExaminingZone !== null ? -1 : 0}
                         onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
+                          if (
+                            (e.key === "Enter" || e.key === " ") &&
+                            !isChecked &&
+                            activeExaminingZone === null
+                          ) {
                             e.preventDefault();
                             e.stopPropagation();
-                            setExaminedZones((prev) => ({
-                              ...prev,
-                              [zone.id]: !prev[zone.id],
-                            }));
+                            handleSelectZoneToExamine(zone.id);
                           }
                         }}
-                        title={`${zone.label} (Haz clic para examinar)`}
-                        className={`absolute transition-all duration-200 cursor-pointer rounded-[3px] select-none ${
-                          isHovered
+                        title={
+                          isChecked
+                            ? `${zone.label} (Ya examinado)`
+                            : `${zone.label} (Haz clic para examinar)`
+                        }
+                        className={`absolute transition-all duration-200 select-none rounded-[3px] ${
+                          isChecked
+                            ? "cursor-default pointer-events-none"
+                            : activeExaminingZone !== null
+                              ? isExamining
+                                ? "pointer-events-none"
+                                : "pointer-events-none"
+                              : "cursor-pointer pointer-events-auto"
+                        } ${
+                          isVisibleRedBox
                             ? "border-[3px] border-[#ef4444] bg-red-500/15 shadow-[0_0_0_1px_#000,2px_2px_0px_0px_#000] scale-[1.02]"
                             : "border-[2px] border-transparent hover:border-[#ef4444]"
                         }`}
@@ -1176,6 +1296,30 @@ export default function Chapter3Scene({
               )}
             </div>
           </div>
+
+          {/* GLOBO DE TEXTO EXPLICATIVO DE LA ZONA EXAMINADA */}
+          {ballotState === "inspecting" && activeExaminingZone !== null && (
+            <div
+              data-testid="ballot-inspection-dialogue"
+              className="absolute inset-0 z-50 pointer-events-none flex items-end justify-center pb-[1.8cqw] px-[2cqw] overflow-hidden select-none"
+            >
+              <div className="relative z-10 w-[96%] pointer-events-auto flex flex-col items-end">
+                <PixelSpeechBubble
+                  speaker={language === "nah" ? "Inecito Cívica" : "Inecito"}
+                  messages={
+                    language === "nah"
+                      ? INSPECTION_MESSAGES_NAH[activeExaminingZone]
+                      : INSPECTION_MESSAGES_ES[activeExaminingZone]
+                  }
+                  actionKey="E"
+                  isDismissing={isDismissingExamDialogue}
+                  onDismiss={() => {
+                    handleFinishZoneExamination(activeExaminingZone);
+                  }}
+                />
+              </div>
+            </div>
+          )}
         </div>
       )}
 
