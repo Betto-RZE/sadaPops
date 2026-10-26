@@ -274,6 +274,24 @@ export const VOTING_INTRO_MESSAGES_NAH: string[] = [
   "¿Ya tiyektok? ¡Ma tikmachiyotilikan toboleta!",
 ];
 
+import {
+  BALLOT_VOTING_BOXES,
+  VOTING_REVIEW_NOTICES,
+  evaluateBallotReview,
+  type BallotVotingBox,
+  type VotingReviewCase,
+  type VotingReviewNotice,
+} from "./features/simulador-voto/votingBallotConfig";
+
+export {
+  BALLOT_VOTING_BOXES,
+  VOTING_REVIEW_NOTICES,
+  evaluateBallotReview,
+  type BallotVotingBox,
+  type VotingReviewCase,
+  type VotingReviewNotice,
+};
+
 // Zona caminable: explanada + casilla completa (mamparas, mesa y cartel 2)
 const isPlazaWalkable = (x: number, y: number): boolean => {
   if (y < PLAZA_BOUNDS.minY || y > PLAZA_BOUNDS.maxY) return false;
@@ -375,6 +393,17 @@ export default function Chapter3Scene({
 
   const [isDismissingVotingIntro, setIsDismissingVotingIntro] = useState(false);
 
+  // Opciones marcadas con X en la boleta (simulador de voto)
+  const [markedVoteBoxIds, setMarkedVoteBoxIds] = useState<
+    Record<string, boolean>
+  >({});
+
+  // Aviso activo resultante de pulsar "REVISAR"
+  const [reviewNotice, setReviewNotice] = useState<VotingReviewNotice | null>(
+    null,
+  );
+  const [reviewNoticeKey, setReviewNoticeKey] = useState(0);
+
   const [isDismissingExamDialogue, setIsDismissingExamDialogue] =
     useState(false);
 
@@ -419,6 +448,27 @@ export default function Chapter3Scene({
       setBallotState("voting");
       setIsDismissingVotingIntro(false);
     }, 250);
+  };
+
+  const handleToggleVoteBox = (boxId: string) => {
+    // Si hay un aviso de revisión activo, lo cerramos al interactuar con las casillas
+    if (reviewNotice !== null) {
+      setReviewNotice(null);
+    }
+    setMarkedVoteBoxIds((prev) => ({
+      ...prev,
+      [boxId]: !prev[boxId],
+    }));
+  };
+
+  const handleRevisarVoto = () => {
+    const markedCount = Object.values(markedVoteBoxIds).filter(Boolean).length;
+    setReviewNotice(evaluateBallotReview(markedCount));
+    setReviewNoticeKey((prev) => prev + 1);
+  };
+
+  const handleTerminarVoto = () => {
+    // Listo para las siguientes instrucciones del usuario
   };
 
   const handleSelectZoneToExamine = (zoneId: BallotInspectionZoneId) => {
@@ -582,6 +632,8 @@ export default function Chapter3Scene({
           setActiveExaminingZone(null);
           setOpcionesSubStepIndex(0);
           setVotingPhase("idle");
+          setMarkedVoteBoxIds({});
+          setReviewNotice(null);
         }
       }
     };
@@ -1093,6 +1145,16 @@ export default function Chapter3Scene({
             transform: scale(1);
           }
         }
+        @keyframes fadeSlideInLeft {
+          0% {
+            opacity: 0;
+            transform: translate(-18px, -50%);
+          }
+          100% {
+            opacity: 1;
+            transform: translate(0, -50%);
+          }
+        }
       `}</style>
 
 
@@ -1301,6 +1363,59 @@ export default function Chapter3Scene({
             </ul>
           </div>
 
+          {/* BOTONES DE ACCIÓN LATERALES: "REVISAR" Y "TERMINAR" (MODO SIMULADOR DE VOTO) */}
+          {ballotState === "voting" && (
+            <div
+              data-testid="ballot-voting-actions-column"
+              className="absolute top-1/2 -translate-y-1/2 z-40 select-none flex flex-col"
+              style={{
+                left: "clamp(16px, 2.5cqw, 54px)",
+                gap: "clamp(14px, 1.8cqw, 30px)",
+                width: "clamp(190px, 22cqw, 380px)",
+                maxWidth: "26%",
+                animation: "fadeSlideInLeft 0.35s ease-out forwards",
+              }}
+            >
+              {/* Botón REVISAR */}
+              <button
+                onClick={handleRevisarVoto}
+                type="button"
+                data-testid="btn-revisar-voto"
+                className="w-full bg-[#1e40af] hover:bg-[#2563eb] active:bg-[#1d4ed8] text-white border-[3px] border-black rounded-lg shadow-[4px_4px_0px_0px_#000] cursor-pointer transition-all flex items-center justify-center select-none active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0px_0px_#000] hover:scale-[1.02]"
+                style={{
+                  padding: "clamp(12px, 1.4cqw, 24px) clamp(16px, 2cqw, 32px)",
+                  fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
+                  fontSize: "clamp(10px, 1.25cqw, 22px)",
+                  lineHeight: "1.3",
+                  textShadow:
+                    "2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 2px 0 #000, 0 -2px 0 #000, 2px 0 0 #000, -2px 0 0 #000",
+                }}
+                title="Revisar el estado actual de la boleta"
+              >
+                REVISAR
+              </button>
+
+              {/* Botón TERMINAR */}
+              <button
+                onClick={handleTerminarVoto}
+                type="button"
+                data-testid="btn-terminar-voto"
+                className="w-full bg-[#15803d] hover:bg-[#16a34a] active:bg-[#166534] text-white border-[3px] border-black rounded-lg shadow-[4px_4px_0px_0px_#000] cursor-pointer transition-all flex items-center justify-center select-none active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0px_0px_#000] hover:scale-[1.02]"
+                style={{
+                  padding: "clamp(12px, 1.4cqw, 24px) clamp(16px, 2cqw, 32px)",
+                  fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
+                  fontSize: "clamp(10px, 1.25cqw, 22px)",
+                  lineHeight: "1.3",
+                  textShadow:
+                    "2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 2px 0 #000, 0 -2px 0 #000, 2px 0 0 #000, -2px 0 0 #000",
+                }}
+                title="Terminar la simulación de voto"
+              >
+                TERMINAR
+              </button>
+            </div>
+          )}
+
           {/* CONTENEDOR DE LA BOLETA ELECTORAL INTERACTIVA */}
           <div
             data-testid="voting-booth-ballot-container"
@@ -1465,6 +1580,82 @@ export default function Chapter3Scene({
                   })}
                 </div>
               )}
+
+              {/* CAPA DE CASILLAS PARA MARCAR EL VOTO (SIMULADOR DE VOTACIÓN) */}
+              {ballotState === "voting" && (
+                <div
+                  data-testid="ballot-voting-boxes-layer"
+                  className="absolute inset-0 w-full h-full pointer-events-auto z-40"
+                >
+                  {BALLOT_VOTING_BOXES.map((box) => {
+                    const isMarked = Boolean(markedVoteBoxIds[box.id]);
+                    return (
+                      <div
+                        key={`voting-box-${box.id}`}
+                        data-testid={`voting-box-${box.id}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleVoteBox(box.id);
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`${box.name} - ${
+                          isMarked
+                            ? "Marcado con X (clic para desmarcar)"
+                            : "Marcar casilla"
+                        }`}
+                        aria-pressed={isMarked}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleToggleVoteBox(box.id);
+                          }
+                        }}
+                        title={`${box.name} (${
+                          isMarked
+                            ? "Marcado con X (clic para desmarcar)"
+                            : "Clic para marcar casilla"
+                        })`}
+                        className="absolute cursor-pointer select-none rounded-[2px] transition-colors hover:bg-black/5 flex items-center justify-center"
+                        style={{
+                          left: box.left,
+                          top: box.top,
+                          width: box.width,
+                          height: box.height,
+                        }}
+                      >
+                        {isMarked && (
+                          <svg
+                            viewBox="0 0 40 40"
+                            className="w-full h-full p-[10%] pointer-events-none select-none"
+                            style={{ imageRendering: "pixelated" }}
+                          >
+                            <line
+                              x1="8"
+                              y1="8"
+                              x2="32"
+                              y2="32"
+                              stroke="#1e293b"
+                              strokeWidth="5"
+                              strokeLinecap="square"
+                            />
+                            <line
+                              x1="32"
+                              y1="8"
+                              x2="8"
+                              y2="32"
+                              stroke="#1e293b"
+                              strokeWidth="5"
+                              strokeLinecap="square"
+                            />
+                          </svg>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
 
@@ -1521,6 +1712,32 @@ export default function Chapter3Scene({
                   actionKey="E"
                   isDismissing={isDismissingVotingIntro}
                   onDismiss={handleDismissVotingIntroDialogue}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* AVISO DE EVALUACIÓN DEL VOTO AL PULSAR "REVISAR" */}
+          {ballotState === "voting" && reviewNotice && (
+            <div
+              data-testid="voting-review-dialogue"
+              className="absolute inset-0 z-50 pointer-events-none flex items-end justify-center pb-[1.8cqw] px-[2cqw] overflow-hidden select-none"
+            >
+              <div className="relative z-10 w-[96%] pointer-events-auto flex flex-col items-end">
+                <PixelSpeechBubble
+                  key={`review-dialogue-${reviewNoticeKey}`}
+                  speaker={
+                    language === "nah"
+                      ? reviewNotice.titleNah
+                      : reviewNotice.titleEs
+                  }
+                  messages={[
+                    language === "nah"
+                      ? reviewNotice.messageNah
+                      : reviewNotice.messageEs,
+                  ]}
+                  actionKey="E"
+                  onDismiss={() => setReviewNotice(null)}
                 />
               </div>
             </div>
