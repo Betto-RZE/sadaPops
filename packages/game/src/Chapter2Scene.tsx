@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
 import { PixelSpeechBubble } from "./PixelSpeechBubble";
 import {
   AnimatedPlayerSprite,
@@ -68,6 +74,7 @@ import {
   BETWEEN_CHARACTERS_DELAY_MS,
 } from "./features/mitos";
 import { CastShadow, DECORATION_SHADOWS } from "./features/sombras";
+import { PlazaAmbience } from "./features/ambientacion";
 
 /**
  * Capitulo 2: "Desmintiendo mitos".
@@ -166,7 +173,8 @@ export default function Chapter2Scene({
     useState<VoterDialogueState>("idle");
 
   // Detención del spawn de NPCs genéricos cuando se inicia la conversación con Don Roberto (discapacitado)
-  const [isGenericSpawningStopped, setIsGenericSpawningStopped] = useState(false);
+  const [isGenericSpawningStopped, setIsGenericSpawningStopped] =
+    useState(false);
 
   // El primer NPC genérico aparece y empieza a caminar exactamente cuando inicia el diálogo de votantes
   const genericNpcDialogueState =
@@ -414,7 +422,6 @@ export default function Chapter2Scene({
     handleStartNpcConversationRef.current = handleStartNpcConversation;
   }, [handleStartNpcConversation]);
 
-
   const isPausedRef = useRef(isPaused);
   const bridgeDialogueStateRef = useRef(bridgeDialogueState);
   const voterDialogueStateRef = useRef(voterDialogueState);
@@ -456,7 +463,6 @@ export default function Chapter2Scene({
     narrativeQueue.position,
     narrativeQueue.status,
   ]);
-
 
   useEffect(() => {
     if (
@@ -572,7 +578,6 @@ export default function Chapter2Scene({
           handleStartNpcConversationRef.current();
         }
       }
-
     };
     const handleKeyUp = (e: KeyboardEvent) => {
       keysPressed[e.key.toLowerCase()] = false;
@@ -938,7 +943,10 @@ export default function Chapter2Scene({
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
       if (typeof document !== "undefined") {
-        document.removeEventListener("visibilitychange", handleVisibilityChange);
+        document.removeEventListener(
+          "visibilitychange",
+          handleVisibilityChange,
+        );
       }
     };
   }, []);
@@ -1026,7 +1034,6 @@ export default function Chapter2Scene({
     npcs,
   ]);
 
-
   return (
     <div
       data-testid="chapter-scene-2"
@@ -1075,7 +1082,6 @@ export default function Chapter2Scene({
               ? "blur(5px)"
               : "none",
         }}
-
       >
         <img
           src={stageImageUrl}
@@ -1160,7 +1166,6 @@ export default function Chapter2Scene({
             />
           </div>
         )}
-
 
         {/* MAMPARAS */}
         {CASILLA_POSITIONS.map((pos, index) => (
@@ -1247,7 +1252,6 @@ export default function Chapter2Scene({
                 className="w-full h-auto object-contain drop-shadow-[0_2px_5px_rgba(0,0,0,0.6)]"
                 style={{ imageRendering: "pixelated" }}
               />
-
 
               {/* Texto pixel art 'presiona E' al acercarse al lado izquierdo de la mesa */}
               {isNearMesaLeft && (
@@ -1354,6 +1358,9 @@ export default function Chapter2Scene({
           className="absolute bottom-0 right-0 w-[26%] h-auto object-contain pointer-events-none select-none z-30"
           style={{ imageRendering: "pixelated" }}
         />
+
+        {/* AMBIENTACIÓN DINÁMICA: RAYOS DE LUZ, PARTÍCULAS, PÉTALOS Y MARIPOSITAS EN ÁREAS VERDES */}
+        <PlazaAmbience isPaused={isPaused} />
       </div>
 
       {/* DIÁLOGO 1: PUENTE DESDE CAPÍTULO 1 / INICIO DEL CAPÍTULO 2 */}
@@ -1437,9 +1444,13 @@ export default function Chapter2Scene({
         <div className="absolute top-3 right-3 z-30 pointer-events-auto flex items-center gap-2 bg-[#1b3a1a]/95 border-[2px] border-[#a3e635] px-3 py-1.5 rounded shadow-[2px_2px_0px_0px_#000]">
           <span
             className="text-white text-xs font-mono"
-            style={{ fontFamily: "'Press Start 2P', monospace", fontSize: "8px" }}
+            style={{
+              fontFamily: "'Press Start 2P', monospace",
+              fontSize: "8px",
+            }}
           >
-            Próximo votante en: {Math.ceil(narrativeQueue.remainingTransitionMs / 1000)}s
+            Próximo votante en:{" "}
+            {Math.ceil(narrativeQueue.remainingTransitionMs / 1000)}s
           </span>
           <button
             type="button"
@@ -1495,19 +1506,13 @@ export default function Chapter2Scene({
           {/* Capa de desenfoque y oscurecimiento cinematográfico de fondo (Backdrop Blur) */}
           <div
             className={`absolute inset-0 pointer-events-none transition-all duration-500 ease-out ${
-              npcConversationState === "exiting"
-                ? "opacity-0"
-                : "opacity-100"
+              npcConversationState === "exiting" ? "opacity-0" : "opacity-100"
             }`}
             style={{
               backdropFilter:
-                npcConversationState === "exiting"
-                  ? "blur(0px)"
-                  : "blur(6px)",
+                npcConversationState === "exiting" ? "blur(0px)" : "blur(6px)",
               WebkitBackdropFilter:
-                npcConversationState === "exiting"
-                  ? "blur(0px)"
-                  : "blur(6px)",
+                npcConversationState === "exiting" ? "blur(0px)" : "blur(6px)",
               backgroundColor:
                 npcConversationState === "exiting"
                   ? "rgba(0, 0, 0, 0)"
@@ -1603,7 +1608,6 @@ export default function Chapter2Scene({
           </div>
         </div>
       )}
-
     </div>
   );
 }

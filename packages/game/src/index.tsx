@@ -34,6 +34,7 @@ export {
 } from "./PixelSpeechBubble";
 export * from "./features/npcs";
 export * from "./features/mitos";
+export * from "./features/ambientacion";
 
 type GameScreen = "splash" | "chapters" | "gameplay";
 

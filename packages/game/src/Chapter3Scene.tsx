@@ -37,6 +37,7 @@ import {
   NPC_DEPTH_LAYERS,
 } from "./features/npcs";
 import { CastShadow, DECORATION_SHADOWS } from "./features/sombras";
+import { PlazaAmbience } from "./features/ambientacion";
 
 /**
  * Capítulo 3: "Aprende a votar".
@@ -1402,6 +1403,11 @@ export default function Chapter3Scene({
           className="absolute bottom-0 right-0 w-[26%] h-auto object-contain pointer-events-none select-none z-30"
           style={{ imageRendering: "pixelated" }}
         />
+
+        {/* AMBIENTACIÓN DINÁMICA: RAYOS DE LUZ, PARTÍCULAS, PÉTALOS Y MARIPOSITAS EN ÁREAS VERDES */}
+        {selectedMamparaIndex === null && (
+          <PlazaAmbience isPaused={isPaused} />
+        )}
 
         {/* ICONOS DE EXCLAMACIÓN (!) EN TODAS LAS MAMPARAS TRAS CONCLUIR EL DIÁLOGO INICIAL (SOLO SE VOTA UNA VEZ) */}
         {dialogueState === "dismissed" &&

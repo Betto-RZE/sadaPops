@@ -22,6 +22,7 @@ import {
   PLAYER_FRAME_COUNTS,
 } from "./AnimatedPlayerSprite";
 import { CastShadow, DECORATION_SHADOWS } from "./features/sombras";
+import { PlazaAmbience } from "./features/ambientacion";
 
 // Centralized Plaza Collision Bounds (Edit these 9 numbers to dynamically adjust boundaries in real-time!)
 export const PLAZA_BOUNDS = {
@@ -215,11 +216,19 @@ export const OBJECT_COLLISION_BOXES: ObstaclesConfig = {
   },
 };
 
-export const isInsideBox = (x: number, y: number, box: ObstacleBox): boolean => {
+export const isInsideBox = (
+  x: number,
+  y: number,
+  box: ObstacleBox,
+): boolean => {
   return x >= box.minX && x <= box.maxX && y >= box.minY && y <= box.maxY;
 };
 
-export const isInsidePolygon = (x: number, y: number, polygon: Point2D[]): boolean => {
+export const isInsidePolygon = (
+  x: number,
+  y: number,
+  polygon: Point2D[],
+): boolean => {
   if (!polygon || polygon.length < 3) return false;
   let inside = false;
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
@@ -2337,6 +2346,9 @@ export default function GameplayScene({
           className="absolute bottom-0 right-0 w-[26%] h-auto object-contain pointer-events-none select-none z-30"
           style={{ imageRendering: "pixelated" }}
         />
+
+        {/* AMBIENTACIÓN DINÁMICA: RAYOS DE LUZ, PARTÍCULAS, PÉTALOS Y MARIPOSITAS EN ÁREAS VERDES */}
+        <PlazaAmbience isPaused={isPaused} />
       </div>
 
       {/* INTRO SPEECH BUBBLE DIALOGUE OVERLAY */}
