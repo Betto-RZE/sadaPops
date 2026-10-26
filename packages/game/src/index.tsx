@@ -668,28 +668,52 @@ export function PixiGameCanvas({
           </Suspense>
         )}
 
-        {/* RETRO PIXEL ART EXIT CONFIRMATION MODAL (STABLE PIXEL ART LAYOUT) */}
+        {/* RETRO PIXEL ART EXIT CONFIRMATION MODAL (SCALED PROPORTIONALLY IN FULLSCREEN) */}
         {showExitConfirm && (
           <div className="absolute inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-[3cqw] animate-in fade-in duration-200 select-none">
             <div
-              className="relative w-[min(84cqw,460px)] bg-[#f9d7ea] border-[4px] border-black rounded-2xl shadow-[6px_6px_0px_0px_#400624,12px_12px_0px_0px_rgba(0,0,0,0.85)] p-[min(4cqw,22px)] flex flex-col items-center text-center overflow-hidden"
+              className={`relative bg-[#f9d7ea] border-black flex flex-col items-center text-center overflow-hidden transition-all duration-200 ${
+                isFullscreen
+                  ? "w-[min(84cqw,780px)] border-[6px] rounded-3xl p-[min(4.5cqw,36px)] shadow-[10px_10px_0px_0px_#400624,18px_18px_0px_0px_rgba(0,0,0,0.85)]"
+                  : "w-[min(84cqw,460px)] border-[4px] rounded-2xl p-[min(4cqw,22px)] shadow-[6px_6px_0px_0px_#400624,12px_12px_0px_0px_rgba(0,0,0,0.85)]"
+              }`}
               style={{
                 fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
               }}
             >
               {/* Inner Bevel Light Highlight Lines */}
-              <div className="absolute top-0 left-0 right-0 h-[3px] bg-white/95 pointer-events-none" />
-              <div className="absolute top-0 left-0 bottom-0 w-[3px] bg-white/95 pointer-events-none" />
-              <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#b5146c]/60 pointer-events-none" />
-              <div className="absolute top-0 right-0 bottom-0 w-[3px] bg-[#b5146c]/60 pointer-events-none" />
+              <div
+                className={`absolute top-0 left-0 right-0 ${
+                  isFullscreen ? "h-[5px]" : "h-[3px]"
+                } bg-white/95 pointer-events-none`}
+              />
+              <div
+                className={`absolute top-0 left-0 bottom-0 ${
+                  isFullscreen ? "w-[5px]" : "w-[3px]"
+                } bg-white/95 pointer-events-none`}
+              />
+              <div
+                className={`absolute bottom-0 left-0 right-0 ${
+                  isFullscreen ? "h-[5px]" : "h-[3px]"
+                } bg-[#b5146c]/60 pointer-events-none`}
+              />
+              <div
+                className={`absolute top-0 right-0 bottom-0 ${
+                  isFullscreen ? "w-[5px]" : "w-[3px]"
+                } bg-[#b5146c]/60 pointer-events-none`}
+              />
 
               {/* Modal Title in Press Start 2P Font */}
               <h3
-                className="font-black uppercase text-[#7a0c47] tracking-wider mb-[min(2.5cqw,14px)] leading-snug"
+                className={`font-black uppercase text-[#7a0c47] tracking-wider leading-snug ${
+                  isFullscreen ? "mb-[min(2.5cqw,22px)]" : "mb-[min(2.5cqw,14px)]"
+                }`}
                 style={{
                   fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
-                  fontSize: "min(2.5cqw, 15px)",
-                  textShadow: "2px 2px 0px #ffffff, -1px -1px 0px #f9d7ea",
+                  fontSize: isFullscreen ? "min(2.5cqw, 24px)" : "min(2.5cqw, 15px)",
+                  textShadow: isFullscreen
+                    ? "3px 3px 0px #ffffff, -2px -2px 0px #f9d7ea"
+                    : "2px 2px 0px #ffffff, -1px -1px 0px #f9d7ea",
                 }}
               >
                 ¿REGRESAR AL MENÚ?
@@ -697,11 +721,15 @@ export function PixiGameCanvas({
 
               {/* Warning Description Text */}
               <p
-                className="font-bold text-black leading-relaxed mb-[min(4cqw,20px)] max-w-[95%]"
+                className={`font-bold text-black leading-relaxed max-w-[95%] ${
+                  isFullscreen ? "mb-[min(4cqw,32px)]" : "mb-[min(4cqw,20px)]"
+                }`}
                 style={{
                   fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
-                  fontSize: "min(1.8cqw, 10.5px)",
-                  textShadow: "1px 1px 0px #ffffff",
+                  fontSize: isFullscreen ? "min(1.8cqw, 17px)" : "min(1.8cqw, 10.5px)",
+                  textShadow: isFullscreen
+                    ? "2px 2px 0px #ffffff"
+                    : "1px 1px 0px #ffffff",
                 }}
               >
                 Si regresas al menú principal, perderás todo tu progreso actual
@@ -709,14 +737,22 @@ export function PixiGameCanvas({
               </p>
 
               {/* Pixel Action Buttons */}
-              <div className="flex gap-[min(3cqw,14px)] w-full justify-center">
+              <div
+                className={`flex w-full justify-center ${
+                  isFullscreen ? "gap-[min(3.5cqw,22px)]" : "gap-[min(3cqw,14px)]"
+                }`}
+              >
                 <button
                   type="button"
                   onClick={() => setShowExitConfirm(false)}
-                  className="flex-1 bg-white hover:bg-slate-100 text-black border-[3px] border-black font-black uppercase shadow-[3px_3px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all py-[min(2cqw,10px)] rounded-xl cursor-pointer select-none"
+                  className={`flex-1 bg-white hover:bg-slate-100 text-black border-black font-black uppercase transition-all cursor-pointer select-none ${
+                    isFullscreen
+                      ? "border-[4px] rounded-2xl py-[min(2.2cqw,16px)] shadow-[5px_5px_0px_0px_#000] active:translate-x-[3px] active:translate-y-[3px]"
+                      : "border-[3px] rounded-xl py-[min(2cqw,10px)] shadow-[3px_3px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px]"
+                  } active:shadow-none`}
                   style={{
                     fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
-                    fontSize: "min(1.7cqw, 10px)",
+                    fontSize: isFullscreen ? "min(1.7cqw, 16px)" : "min(1.7cqw, 10px)",
                   }}
                 >
                   CANCELAR
@@ -727,11 +763,15 @@ export function PixiGameCanvas({
                     setShowExitConfirm(false);
                     changeScreenWithTransition("splash");
                   }}
-                  className="flex-1 bg-[#b5146c] hover:bg-[#9c0f5a] text-white border-[3px] border-black font-black uppercase shadow-[3px_3px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all py-[min(2cqw,10px)] rounded-xl cursor-pointer select-none"
+                  className={`flex-1 bg-[#b5146c] hover:bg-[#9c0f5a] text-white border-black font-black uppercase transition-all cursor-pointer select-none ${
+                    isFullscreen
+                      ? "border-[4px] rounded-2xl py-[min(2.2cqw,16px)] shadow-[5px_5px_0px_0px_#000] active:translate-x-[3px] active:translate-y-[3px]"
+                      : "border-[3px] rounded-xl py-[min(2cqw,10px)] shadow-[3px_3px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px]"
+                  } active:shadow-none`}
                   style={{
                     fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
-                    fontSize: "min(1.7cqw, 10px)",
-                    textShadow: "1px 1px 0px #000",
+                    fontSize: isFullscreen ? "min(1.7cqw, 16px)" : "min(1.7cqw, 10px)",
+                    textShadow: isFullscreen ? "2px 2px 0px #000" : "1px 1px 0px #000",
                   }}
                 >
                   SÍ, SALIR
