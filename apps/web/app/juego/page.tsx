@@ -1,5 +1,6 @@
 import { Navbar } from "@/shared/components/Navbar";
 import { GameLoader } from "@/features/juego/GameLoader";
+import { JuegoInfo } from "@/features/juego/JuegoInfo";
 
 export const metadata = {
   title: "MODO DE JUEGO PIXEL ART | Mapa de Dalias - INE",
@@ -32,6 +33,8 @@ export default function JuegoPage() {
           <section className="w-full mb-16 flex justify-center">
             <GameLoader />
           </section>
+
+          <JuegoInfo />
         </main>
       </div>
 
