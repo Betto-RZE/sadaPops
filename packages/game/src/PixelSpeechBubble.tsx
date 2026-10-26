@@ -343,7 +343,7 @@ export function PixelSpeechBubble({
 
   return (
     <div
-      className={`relative z-10 w-full aspect-[2012/380] transition-all duration-300 ease-out ${
+      className={`relative z-10 w-full aspect-[2012/380] transition-[opacity,transform] duration-300 ease-out ${
         isDismissing
           ? "translate-y-44 opacity-0 scale-95"
           : "translate-y-0 opacity-100 scale-100"
@@ -355,7 +355,7 @@ export function PixelSpeechBubble({
           {/* Interlocutor Izquierdo (ej: Inecito mirando hacia la derecha o al frente en trivia) */}
           {portraits.left && (
             <div
-              className="relative flex items-end justify-center transition-all duration-300 ease-out select-none"
+              className="relative flex items-end justify-center transition-[opacity,transform,filter] duration-300 ease-out select-none"
               style={{
                 width: "clamp(135px, 29cqw, 480px)",
                 height: "clamp(122px, 26.1cqw, 432px)",
@@ -376,7 +376,7 @@ export function PixelSpeechBubble({
           {/* Interlocutor Derecho (ej: Doña Carmen mirando hacia la izquierda) */}
           {portraits.right && !currentLine.portraitOverride?.hideRight && (
             <div
-              className="relative flex items-end justify-center transition-all duration-300 ease-out select-none"
+              className="relative flex items-end justify-center transition-[opacity,transform,filter] duration-300 ease-out select-none"
               style={{
                 width: "clamp(135px, 29cqw, 480px)",
                 height: "clamp(122px, 26.1cqw, 432px)",
@@ -422,7 +422,7 @@ export function PixelSpeechBubble({
               speakerAlignment === "right"
                 ? "justify-end text-right"
                 : "justify-start text-left"
-            } transition-all duration-200 ease-out`}
+            } transition-transform duration-200 ease-out`}
             style={{
               transform:
                 speakerAlignment === "right"

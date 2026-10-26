@@ -459,7 +459,7 @@ export function PixiGameCanvas({
   return (
     <div
       ref={containerRef}
-      className={`relative w-full max-w-5xl mx-auto select-none transition-all duration-300 ${
+      className={`relative w-full max-w-5xl mx-auto select-none ${
         isFullscreen
           ? "fixed inset-0 z-50 max-w-none rounded-none border-0 p-0 ring-0 shadow-none flex flex-col justify-center items-center bg-slate-950 overflow-hidden"
           : "rounded-2xl shadow-2xl overflow-hidden"
@@ -571,7 +571,7 @@ export function PixiGameCanvas({
 
             {/* MENU BUTTONS AT BOTTOM-CENTER: JUGAR (historia completa) + CAPITULOS */}
             <div
-              className={`absolute bottom-[7%] left-1/2 -translate-x-1/2 flex flex-col items-center justify-center z-20 transition-all duration-300 ${
+              className={`absolute bottom-[7%] left-1/2 -translate-x-1/2 flex flex-col items-center justify-center z-20 ${
                 isFullscreen
                   ? "w-[36%] min-w-[300px] max-w-[480px] gap-5"
                   : "w-[30%] min-w-[220px] max-w-[320px] gap-3"
@@ -582,7 +582,7 @@ export function PixiGameCanvas({
                 id="menu-play"
                 onClick={startFullGame}
                 type="button"
-                className={`w-full px-4 bg-[#f9d7ea] hover:bg-[#f6c2e0] rounded-md ring-2 ring-white ring-inset transition-all flex items-center justify-between cursor-pointer group shrink-0 ${
+                className={`w-full px-4 bg-[#f9d7ea] hover:bg-[#f6c2e0] rounded-md ring-2 ring-white ring-inset transition-colors flex items-center justify-between cursor-pointer group shrink-0 ${
                   isFullscreen
                     ? "h-[64px] sm:h-[72px] border-[5px] border-[#b5146c] shadow-[6px_6px_0px_0px_#7a0c47] active:translate-x-[3px] active:translate-y-[3px]"
                     : "h-[48px] sm:h-[52px] border-[4px] border-[#b5146c] shadow-[4px_4px_0px_0px_#7a0c47] active:translate-x-[2px] active:translate-y-[2px]"
@@ -605,7 +605,7 @@ export function PixiGameCanvas({
                 id="menu-chapters"
                 onClick={goToChapters}
                 type="button"
-                className={`w-full px-4 bg-white hover:bg-[#fdeef6] rounded-md ring-2 ring-[#f9d7ea] ring-inset transition-all flex items-center justify-between cursor-pointer group shrink-0 ${
+                className={`w-full px-4 bg-white hover:bg-[#fdeef6] rounded-md ring-2 ring-[#f9d7ea] ring-inset transition-colors flex items-center justify-between cursor-pointer group shrink-0 ${
                   isFullscreen
                     ? "h-[64px] sm:h-[72px] border-[5px] border-[#b5146c] shadow-[6px_6px_0px_0px_#7a0c47] active:translate-x-[3px] active:translate-y-[3px]"
                     : "h-[48px] sm:h-[52px] border-[4px] border-[#b5146c] shadow-[4px_4px_0px_0px_#7a0c47] active:translate-x-[2px] active:translate-y-[2px]"
@@ -670,9 +670,9 @@ export function PixiGameCanvas({
 
         {/* RETRO PIXEL ART EXIT CONFIRMATION MODAL (SCALED PROPORTIONALLY IN FULLSCREEN) */}
         {showExitConfirm && (
-          <div className="absolute inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-[3cqw] animate-in fade-in duration-200 select-none">
+          <div className="absolute inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-[3cqw] select-none">
             <div
-              className={`relative bg-[#f9d7ea] border-black flex flex-col items-center text-center overflow-hidden transition-all duration-200 ${
+              className={`relative bg-[#f9d7ea] border-black flex flex-col items-center text-center overflow-hidden ${
                 isFullscreen
                   ? "w-[min(84cqw,780px)] border-[6px] rounded-3xl p-[min(4.5cqw,36px)] shadow-[10px_10px_0px_0px_#400624,18px_18px_0px_0px_rgba(0,0,0,0.85)]"
                   : "w-[min(84cqw,460px)] border-[4px] rounded-2xl p-[min(4cqw,22px)] shadow-[6px_6px_0px_0px_#400624,12px_12px_0px_0px_rgba(0,0,0,0.85)]"
@@ -745,7 +745,7 @@ export function PixiGameCanvas({
                 <button
                   type="button"
                   onClick={() => setShowExitConfirm(false)}
-                  className={`flex-1 bg-white hover:bg-slate-100 text-black border-black font-black uppercase transition-all cursor-pointer select-none ${
+                  className={`flex-1 bg-white hover:bg-slate-100 text-black border-black font-black uppercase transition-colors cursor-pointer select-none ${
                     isFullscreen
                       ? "border-[4px] rounded-2xl py-[min(2.2cqw,16px)] shadow-[5px_5px_0px_0px_#000] active:translate-x-[3px] active:translate-y-[3px]"
                       : "border-[3px] rounded-xl py-[min(2cqw,10px)] shadow-[3px_3px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px]"
@@ -763,7 +763,7 @@ export function PixiGameCanvas({
                     setShowExitConfirm(false);
                     changeScreenWithTransition("splash");
                   }}
-                  className={`flex-1 bg-[#b5146c] hover:bg-[#9c0f5a] text-white border-black font-black uppercase transition-all cursor-pointer select-none ${
+                  className={`flex-1 bg-[#b5146c] hover:bg-[#9c0f5a] text-white border-black font-black uppercase transition-colors cursor-pointer select-none ${
                     isFullscreen
                       ? "border-[4px] rounded-2xl py-[min(2.2cqw,16px)] shadow-[5px_5px_0px_0px_#000] active:translate-x-[3px] active:translate-y-[3px]"
                       : "border-[3px] rounded-xl py-[min(2cqw,10px)] shadow-[3px_3px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px]"
