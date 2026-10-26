@@ -38,8 +38,8 @@ export interface GenericNpc {
     y: number;
   };
 
-  /** Identificador de la mampara asignada (1 al 5) */
-  assignedMamparaId: 1 | 2 | 3 | 4 | 5;
+  /** Identificador de la mampara asignada (1 al 4) */
+  assignedMamparaId: 1 | 2 | 3 | 4;
 
   /** Animación que debe reproducirse actualmente */
   currentAnimation: GenericNpcAnimation;
@@ -63,11 +63,11 @@ export interface GenericNpc {
 }
 
 /**
- * Configuración y estado de cada una de las 5 mamparas electorales de la explanada.
+ * Configuración y estado de cada una de las 4 mamparas electorales de la explanada.
  */
 export interface MamparaBoothConfig {
-  /** Identificador numérico único (1 al 5) */
-  id: 1 | 2 | 3 | 4 | 5;
+  /** Identificador numérico único (1 al 4) */
+  id: 1 | 2 | 3 | 4;
 
   /** Etiqueta descriptiva (ej. "Mampara 1") */
   name: string;

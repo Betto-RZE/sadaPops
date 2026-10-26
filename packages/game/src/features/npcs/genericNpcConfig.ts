@@ -152,7 +152,6 @@ export function getRandomSpawnDelayMs(
  * - Mampara 2: X = 42.0%, Y = 36.0%
  * - Mampara 3: X = 52.0%, Y = 36.0%
  * - Mampara 4: X = 62.0%, Y = 36.0%
- * - Mampara 5: X = 72.0%, Y = 36.0%
  *
  * Puntos de destino: Y = 36.5% (frente a la mampara, simulando la acción de votar)
  * Puntos de spawn y salida: Y = 106.0% (fuera del borde inferior visible de la explanada)
@@ -216,23 +215,6 @@ export const INITIAL_MAMPARAS_CONFIG: MamparaBoothConfig[] = [
     targetPosition: { x: 62.0, y: 36.5 },
     spawnPoint: { x: 62.0, y: 106.0 },
     exitPoint: { x: 62.0, y: 106.0 },
-    isOccupied: false,
-    occupiedByNpcId: null,
-    spawnTimerConfig: {
-      nextSpawnDelayMs: 0,
-      lastSpawnTimestampMs: 0,
-      minDelayMs: 3000,
-      maxDelayMs: 15000,
-      isEnabled: false,
-    },
-  },
-  {
-    id: 5,
-    name: "Mampara 5",
-    boothPosition: { x: 72.0, y: 36.0 },
-    targetPosition: { x: 72.0, y: 36.5 },
-    spawnPoint: { x: 72.0, y: 106.0 },
-    exitPoint: { x: 72.0, y: 106.0 },
     isOccupied: false,
     occupiedByNpcId: null,
     spawnTimerConfig: {
@@ -507,7 +489,7 @@ export function simulateNpcsStep(
       isGlobalActive = true;
       justActivatedGlobal = true;
 
-      // Inicializar temporizadores de las mamparas desocupadas (1, 2, 4 y 5):
+      // Inicializar temporizadores de las mamparas desocupadas (1, 2 y 4):
       // Cada una genera su propio tiempo independiente de 1 a 3 segundos
       mamparas = mamparas.map((m) => {
         if (!m.isOccupied && m.id !== 3) {

@@ -51,13 +51,12 @@ export const CASILLA_WIDTH = "8.5%";
 // Tamaño fijo y uniforme del icono de exclamación (destacado y nítido para todos los objetos)
 export const EXCLAMATION_ICON_WIDTH = "clamp(16px, 1.8cqw, 36px)";
 
-// COORDENADAS CONFIGURABLES DE LAS 5 MAMPARAS ELECTORALES (Edita aquí manualmente cada una):
+// COORDENADAS CONFIGURABLES DE LAS 4 MAMPARAS ELECTORALES (Edita aquí manualmente cada una):
 export const CASILLA_POSITIONS = [
   { x: 32.0, y: 36.0 }, // Mampara 1
   { x: 42.0, y: 36.0 }, // Mampara 2
   { x: 52.0, y: 36.0 }, // Mampara 3
   { x: 62.0, y: 36.0 }, // Mampara 4
-  { x: 72.0, y: 36.0 }, // Mampara 5
 ];
 export const CASILLAS_ROW = CASILLA_POSITIONS;
 
@@ -112,23 +111,21 @@ export const DECORACIONES_LIST = [
   },
 ];
 
-// TAMAÑOS CONFIGURABLES DE LAS 5 BOLETAS ELECTORALES (Edita aquí el ancho '%' de cada una):
+// TAMAÑOS CONFIGURABLES DE LAS 4 BOLETAS ELECTORALES (Edita aquí el ancho '%' de cada una):
 export const BOLETA_WIDTH = "2.8%";
 export const BOLETAS_SIZES = [
   "2.8%", // Boleta en Mampara 1
   "2.8%", // Boleta en Mampara 2
   "2.8%", // Boleta en Mampara 3
   "2.8%", // Boleta en Mampara 4
-  "2.8%", // Boleta en Mampara 5
 ];
 
-// COORDENADAS CONFIGURABLES DE LAS 5 BOLETAS (Sobre la mesa de cada mampara, edita aquí manualmente):
+// COORDENADAS CONFIGURABLES DE LAS 4 BOLETAS (Sobre la mesa de cada mampara, edita aquí manualmente):
 export const BOLETAS_POSITIONS = [
   { x: 32.0, y: 27.5 }, // Boleta en Mampara 1
   { x: 42.0, y: 27.5 }, // Boleta en Mampara 2
   { x: 52.0, y: 27.5 }, // Boleta en Mampara 3
   { x: 62.0, y: 27.5 }, // Boleta en Mampara 4
-  { x: 72.0, y: 27.5 }, // Boleta en Mampara 5
 ];
 
 // Ubicaciones configurables donde se colocarán los objetos en la explanada (%)
@@ -148,7 +145,6 @@ export const EXCLAMATION_ICON_POSITIONS = {
     { x: 42.0, y: 29.0 }, // Mampara 2 (2 puntos más arriba)
     { x: 52.0, y: 29.0 }, // Mampara 3 (2 puntos más arriba)
     { x: 62.0, y: 29.0 }, // Mampara 4 (2 puntos más arriba)
-    { x: 72.0, y: 29.0 }, // Mampara 5 (2 puntos más arriba)
   ],
   mesa: { x: 19.0, y: 65.0 }, // Centro visible de la mesa de votación
   mesaFinal: { x: 15.0, y: 58.0 },
@@ -163,7 +159,6 @@ export const EXCLAMATION_ICON_POSITIONS = {
     { x: 42.0, y: 25.0 }, // Boleta sobre mesa de Mampara 2
     { x: 52.0, y: 25.0 }, // Boleta sobre mesa de Mampara 3
     { x: 62.0, y: 25.0 }, // Boleta sobre mesa de Mampara 4
-    { x: 72.0, y: 25.0 }, // Boleta sobre mesa de Mampara 5
   ],
 };
 
@@ -194,7 +189,6 @@ export const OBJECT_COLLISION_BOXES: ObstaclesConfig = {
     { minX: 35.5, maxX: 48.5, minY: 32.5, maxY: 36.0 }, // Mampara 2
     { minX: 45.5, maxX: 58.5, minY: 32.5, maxY: 36.0 }, // Mampara 3
     { minX: 55.5, maxX: 68.5, minY: 32.5, maxY: 36.0 }, // Mampara 4
-    { minX: 66.0, maxX: 78.0, minY: 32.5, maxY: 36.0 }, // Mampara 5
   ],
   mesa: [
     { x: 16.8, y: 56.0 }, // Vértice 1

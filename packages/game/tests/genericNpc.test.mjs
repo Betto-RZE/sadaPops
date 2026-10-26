@@ -70,17 +70,17 @@ describe("Sistema de NPCs Genéricos - Pruebas de Integración y Ciclo de Vida",
     });
   });
 
-  describe("Configuración de las cinco mamparas", () => {
-    test("existen exactamente 5 mamparas con identificadores del 1 al 5", () => {
-      assert.equal(INITIAL_MAMPARAS_CONFIG.length, 5);
+  describe("Configuración de las cuatro mamparas", () => {
+    test("existen exactamente 4 mamparas con identificadores del 1 al 4", () => {
+      assert.equal(INITIAL_MAMPARAS_CONFIG.length, 4);
       assert.deepEqual(
         INITIAL_MAMPARAS_CONFIG.map((m) => m.id),
-        [1, 2, 3, 4, 5],
+        [1, 2, 3, 4],
       );
     });
 
     test("las mamparas coinciden con las coordenadas reales de la explanada", () => {
-      const expectedX = [32.0, 42.0, 52.0, 62.0, 72.0];
+      const expectedX = [32.0, 42.0, 52.0, 62.0];
       INITIAL_MAMPARAS_CONFIG.forEach((mampara, index) => {
         assert.equal(mampara.boothPosition.x, expectedX[index]);
         assert.equal(mampara.boothPosition.y, 36.0);
@@ -441,8 +441,8 @@ describe("Sistema de NPCs Genéricos - Pruebas de Integración y Ciclo de Vida",
       const step = simulateNpcsStep(state, 0.1, 1000);
       assert.equal(step.justActivatedGlobal, true);
 
-      // Mamparas 1, 2, 4 y 5 deben estar habilitadas con tiempos > 0
-      [1, 2, 4, 5].forEach((id) => {
+      // Mamparas 1, 2 y 4 deben estar habilitadas con tiempos > 0
+      [1, 2, 4].forEach((id) => {
         const m = step.mamparas.find((booth) => booth.id === id);
         assert.ok(m.spawnTimerConfig.isEnabled, `Mampara ${id} debe estar habilitada`);
         assert.ok(
@@ -529,9 +529,9 @@ describe("Sistema de NPCs Genéricos - Pruebas de Integración y Ciclo de Vida",
         npcIdCounter: 0,
       };
 
-      // Avanzamos 600ms: las 5 mamparas generan exactamente 1 NPC cada una
+      // Avanzamos 600ms: las 4 mamparas generan exactamente 1 NPC cada una
       state = simulateNpcsStep(state, 0.6, 600, mockOptions);
-      assert.equal(state.npcs.length, 5);
+      assert.equal(state.npcs.length, 4);
       state.mamparas.forEach((m) => {
         assert.equal(m.isOccupied, true);
         assert.ok(m.occupiedByNpcId !== null);
@@ -539,7 +539,7 @@ describe("Sistema de NPCs Genéricos - Pruebas de Integración y Ciclo de Vida",
 
       // Avanzamos 2.0s más: ningún NPC adicional debe ser creado mientras están ocupadas
       state = simulateNpcsStep(state, 2.0, 2600, mockOptions);
-      assert.equal(state.npcs.length, 5);
+      assert.equal(state.npcs.length, 4);
     });
 
     test("10. los NPCs se eliminan correctamente de la lista al salir del mapa", () => {
@@ -1409,7 +1409,6 @@ describe("Sistema de NPCs Genéricos - Pruebas de Integración y Ciclo de Vida",
       assert.equal(step1.mamparas[1].spawnTimerConfig.nextSpawnDelayMs, 1500);
       assert.equal(step1.mamparas[2].spawnTimerConfig.nextSpawnDelayMs, 2500);
       assert.equal(step1.mamparas[3].spawnTimerConfig.nextSpawnDelayMs, 3500);
-      assert.equal(step1.mamparas[4].spawnTimerConfig.nextSpawnDelayMs, 4500);
     });
 
     test("3. manejo seguro de deltaTime elevado sin sobrepasos ni teletransportación", () => {
@@ -1663,8 +1662,8 @@ describe("Sistema de NPCs Genéricos - Pruebas de Integración y Ciclo de Vida",
         };
       }
 
-      // Los 5 siguen avanzando y la lista contiene exactamente 5 elementos
-      assert.equal(currentState.npcs.length, 5);
+      // Los 4 siguen avanzando y la lista contiene exactamente 4 elementos
+      assert.equal(currentState.npcs.length, 4);
       currentState.npcs.forEach((npc) => {
         assert.ok(npc.position.y < 106.0, "Todos los NPCs deben haber avanzado hacia arriba");
       });
@@ -1675,7 +1674,7 @@ describe("Sistema de NPCs Genéricos - Pruebas de Integración y Ciclo de Vida",
         // En cada iteración se inicia desde el estado base
         clearDepthCache();
         const baseMamparas = [...INITIAL_MAMPARAS_CONFIG];
-        assert.equal(baseMamparas.length, 5);
+        assert.equal(baseMamparas.length, 4);
         assert.ok(baseMamparas.every((m) => !m.isOccupied && m.occupiedByNpcId === null));
       }
     });
@@ -1930,14 +1929,14 @@ describe("Sistema de NPCs Genéricos - Pruebas de Integración y Ciclo de Vida",
           },
         }));
 
-        assert.equal(cleanMamparas.length, 5);
+        assert.equal(cleanMamparas.length, 4);
         assert.ok(cleanMamparas.every((m) => !m.isOccupied));
 
-        // Inyectar 5 NPCs activos
+        // Inyectar 4 NPCs activos
         const npcs = cleanMamparas.map((m, idx) =>
           createGenericNpcInstance(m, `npc-run-${run}-${idx}`, 5000),
         );
-        assert.equal(npcs.length, 5);
+        assert.equal(npcs.length, 4);
 
         // Al ejecutar clearDepthCache, el mapa se restablece limpiamente
         const depth = calculateSceneCharactersDepth([]);
