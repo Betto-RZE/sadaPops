@@ -67,12 +67,14 @@ type FoldingPhase =
   | "ready_to_fold"
   | "folding"
   | "sliding"
+  | "cleared_view"
   | "exiting";
 
 /** Duraciones de la animación de doblado de la boleta (ms) */
 const BALLOT_FOLD_DURATION_MS = 900;
 const BALLOT_FOLD_PAUSE_MS = 250;
 const BALLOT_SLIDE_DURATION_MS = 450;
+const POV_CLEARED_VIEW_DURATION_MS = 1500;
 const POV_EXIT_DURATION_MS = 350;
 
 /** Márgenes del papel dentro de la imagen boleta-electoral.png */
@@ -476,6 +478,14 @@ export default function Chapter3Scene({
     selectedMamparaIndexRef.current = selectedMamparaIndex;
   }, [selectedMamparaIndex]);
 
+  // Indica si el jugador ya seleccionó una mampara para votar (solo se vota una vez)
+  const [hasSelectedMamparaToVote, setHasSelectedMamparaToVote] =
+    useState(false);
+  const hasSelectedMamparaToVoteRef = useRef(hasSelectedMamparaToVote);
+  useEffect(() => {
+    hasSelectedMamparaToVoteRef.current = hasSelectedMamparaToVote;
+  }, [hasSelectedMamparaToVote]);
+
   // Estado de la boleta electoral en la mesa / manos del jugador
   const [ballotState, setBallotState] = useState<BallotState>("on_table");
   const ballotStateRef = useRef(ballotState);
@@ -620,7 +630,7 @@ export default function Chapter3Scene({
     setReviewNotice(null);
   };
 
-  // Línea de tiempo de la animación: doblez → deslizamiento → salida de la vista POV
+  // Línea de tiempo de la animación: doblez → deslizamiento → vista limpia (1.5s) → salida de la vista POV
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
     if (foldingPhase === "folding") {
@@ -630,8 +640,13 @@ export default function Chapter3Scene({
       );
     } else if (foldingPhase === "sliding") {
       timer = setTimeout(
-        () => setFoldingPhase("exiting"),
+        () => setFoldingPhase("cleared_view"),
         BALLOT_SLIDE_DURATION_MS,
+      );
+    } else if (foldingPhase === "cleared_view") {
+      timer = setTimeout(
+        () => setFoldingPhase("exiting"),
+        POV_CLEARED_VIEW_DURATION_MS,
       );
     } else if (foldingPhase === "exiting") {
       timer = setTimeout(() => exitVotingBooth(), POV_EXIT_DURATION_MS);
@@ -646,7 +661,13 @@ export default function Chapter3Scene({
     ballotState === "folding" &&
     (foldingPhase === "folding" ||
       foldingPhase === "sliding" ||
+      foldingPhase === "cleared_view" ||
       foldingPhase === "exiting");
+
+  const isBoothBlurred =
+    ballotState !== "on_table" &&
+    foldingPhase !== "cleared_view" &&
+    foldingPhase !== "exiting";
 
   const handleSelectZoneToExamine = (zoneId: BallotInspectionZoneId) => {
     // Si ya fue examinada o ya no estamos en fase de inspección, no se puede examinar
@@ -744,11 +765,21 @@ export default function Chapter3Scene({
       const key = e.key.toLowerCase();
       keysPressed[key] = true;
 
-      // Presionar E cerca de una mampara para entrar a votar (iniciar vista POV)
-      if (key === "e") {
+      // Presionar E, Espacio o Enter cerca de una mampara para entrar a votar (iniciar vista POV)
+      const isMamparaSelectKey =
+        key === "e" ||
+        key === " " ||
+        key === "spacebar" ||
+        key === "enter" ||
+        e.code === "KeyE" ||
+        e.code === "Space" ||
+        e.code === "Enter";
+
+      if (isMamparaSelectKey) {
         if (
           dialogueStateRef.current === "dismissed" &&
           selectedMamparaIndexRef.current === null &&
+          !hasSelectedMamparaToVoteRef.current &&
           !isPausedRef.current
         ) {
           let closestIdx = -1;
@@ -774,6 +805,8 @@ export default function Chapter3Scene({
           if (closestIdx !== -1 && closestDist < 8.5) {
             e.preventDefault();
             setSelectedMamparaIndex(closestIdx);
+            setHasSelectedMamparaToVote(true);
+            return;
           }
         }
       }
@@ -1210,9 +1243,10 @@ export default function Chapter3Scene({
           style={{ imageRendering: "pixelated" }}
         />
 
-        {/* ICONOS DE EXCLAMACIÓN (!) EN TODAS LAS MAMPARAS TRAS CONCLUIR EL DIÁLOGO INICIAL */}
+        {/* ICONOS DE EXCLAMACIÓN (!) EN TODAS LAS MAMPARAS TRAS CONCLUIR EL DIÁLOGO INICIAL (SOLO SE VOTA UNA VEZ) */}
         {dialogueState === "dismissed" &&
           selectedMamparaIndex === null &&
+          !hasSelectedMamparaToVote &&
           CASILLA_POSITIONS.map((pos, index) => {
             const iconPos = EXCLAMATION_ICON_POSITIONS.casillas[index];
             const dist = Math.min(
@@ -1235,6 +1269,7 @@ export default function Chapter3Scene({
                 onClick={() => {
                   if (isNearThisMampara) {
                     setSelectedMamparaIndex(index);
+                    setHasSelectedMamparaToVote(true);
                   }
                 }}
               >
@@ -1377,21 +1412,17 @@ export default function Chapter3Scene({
             className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none transition-all duration-700 ease-out"
             style={{
               imageRendering: "pixelated",
-              filter:
-                ballotState !== "on_table"
-                  ? "blur(7px) brightness(0.85)"
-                  : "blur(0px) brightness(1)",
-              transform:
-                ballotState !== "on_table" ? "scale(1.04)" : "scale(1)",
+              filter: isBoothBlurred
+                ? "blur(7px) brightness(0.85)"
+                : "blur(0px) brightness(1)",
+              transform: isBoothBlurred ? "scale(1.04)" : "scale(1)",
             }}
           />
 
           {/* CAPA OVERLAY TRANSLÚCIDA PARA REALZAR EL ENFOQUE DE LA BOLETA */}
           <div
             className={`absolute inset-0 pointer-events-none transition-opacity duration-700 ease-out ${
-              ballotState !== "on_table"
-                ? "opacity-100 bg-black/20"
-                : "opacity-0"
+              isBoothBlurred ? "opacity-100 bg-black/20" : "opacity-0"
             }`}
           />
 
