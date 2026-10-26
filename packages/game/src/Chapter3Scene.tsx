@@ -495,6 +495,13 @@ export default function Chapter3Scene({
     dialogueStateRef.current = dialogueState;
   }, [dialogueState]);
 
+  // Orientar al personaje hacia la cámara ("1") cada vez que se active el diálogo inicial
+  useEffect(() => {
+    if (dialogueState === "entering" || dialogueState === "visible") {
+      setLastDirection("1");
+    }
+  }, [dialogueState]);
+
   const playerPosRef = useRef(playerPos);
   useEffect(() => {
     playerPosRef.current = playerPos;
@@ -541,6 +548,18 @@ export default function Chapter3Scene({
   const postVotingPhaseRef = useRef(postVotingPhase);
   useEffect(() => {
     postVotingPhaseRef.current = postVotingPhase;
+  }, [postVotingPhase]);
+
+  // Orientar al personaje hacia la cámara ("1") cada vez que se inicie o active un diálogo o delay post-voto
+  useEffect(() => {
+    if (
+      postVotingPhase === "delay_before_urna_instruction" ||
+      postVotingPhase === "urna_instruction_dialogue" ||
+      postVotingPhase === "delay_before_ending_dialogue" ||
+      postVotingPhase === "ending_dialogue"
+    ) {
+      setLastDirection("1");
+    }
   }, [postVotingPhase]);
 
   const [isDismissingUrnaInstruction, setIsDismissingUrnaInstruction] =
@@ -690,6 +709,7 @@ export default function Chapter3Scene({
     setFoldingPhase("idle");
     setMarkedVoteBoxIds({});
     setReviewNotice(null);
+    setLastDirection("1");
 
     // Al concluir la votación en la mampara, iniciar la secuencia post-voto (2 segundos teclado bloqueado)
     if (
@@ -703,6 +723,7 @@ export default function Chapter3Scene({
   // Temporizador de 2 segundos tras cerrar el POV de la mampara antes del globo de instrucción de la urna
   useEffect(() => {
     if (postVotingPhase !== "delay_before_urna_instruction") return;
+    setLastDirection("1");
     const timer = setTimeout(() => {
       setPostVotingPhase("urna_instruction_dialogue");
     }, 2000);
@@ -712,6 +733,7 @@ export default function Chapter3Scene({
   // Temporizador de 2 segundos tras depositar en la urna antes del globo final
   useEffect(() => {
     if (postVotingPhase !== "delay_before_ending_dialogue") return;
+    setLastDirection("1");
     const timer = setTimeout(() => {
       setPostVotingPhase("ending_dialogue");
     }, 2000);
@@ -720,6 +742,7 @@ export default function Chapter3Scene({
 
   const handleUrnaDeposit = () => {
     if (postVotingPhaseRef.current !== "walking_to_urna") return;
+    setLastDirection("1");
     setPostVotingPhase("delay_before_ending_dialogue");
   };
   const handleUrnaDepositRef = useRef(handleUrnaDeposit);
@@ -1032,12 +1055,7 @@ export default function Chapter3Scene({
       // Teclado bloqueado mientras el diálogo inicial esté activo o en delay
       if (dialogueStateRef.current !== "dismissed") {
         stop();
-        if (
-          dialogueStateRef.current === "entering" ||
-          dialogueStateRef.current === "visible"
-        ) {
-          setLastDirection("1");
-        }
+        setLastDirection("1");
         animationFrameId = requestAnimationFrame(updateGameLoop);
         return;
       }
@@ -1048,6 +1066,7 @@ export default function Chapter3Scene({
         postVotingPhaseRef.current !== "walking_to_urna"
       ) {
         stop();
+        setLastDirection("1");
         animationFrameId = requestAnimationFrame(updateGameLoop);
         return;
       }
@@ -1592,6 +1611,27 @@ export default function Chapter3Scene({
             opacity: 0;
           }
         }
+        /* Eliminar contornos de enfoque por defecto en la vista POV (lista, boleta, botones y casillas) */
+        [data-testid="voting-booth-pov"],
+        [data-testid="voting-booth-pov"] * {
+          -webkit-tap-highlight-color: transparent !important;
+          -webkit-touch-callout: none !important;
+          user-select: none !important;
+          -webkit-user-select: none !important;
+        }
+        [data-testid="voting-booth-pov"] *:focus,
+        [data-testid="voting-booth-pov"] *:focus-visible,
+        [data-testid="voting-booth-pov"] *:focus-within,
+        [data-testid="voting-booth-pov"] *:active {
+          outline: none !important;
+          outline-style: none !important;
+          outline-color: transparent !important;
+          outline-width: 0 !important;
+        }
+        [data-testid="voting-booth-pov"] img {
+          -webkit-user-drag: none !important;
+          user-drag: none !important;
+        }
       `}</style>
 
 
@@ -1599,9 +1639,11 @@ export default function Chapter3Scene({
       {selectedMamparaIndex !== null && (
         <div
           data-testid="voting-booth-pov"
-          className="absolute inset-0 w-full h-full z-40 flex flex-col items-center justify-center overflow-hidden bg-black select-none"
+          className="absolute inset-0 w-full h-full z-40 flex flex-col items-center justify-center overflow-hidden bg-black select-none outline-none focus:outline-none"
           style={{
             containerType: "inline-size",
+            outline: "none",
+            WebkitTapHighlightColor: "transparent",
             animation:
               foldingPhase === "exiting"
                 ? `povExit ${POV_EXIT_DURATION_MS}ms ease-in forwards`
@@ -1640,6 +1682,7 @@ export default function Chapter3Scene({
           >
             <div
               onClick={handleBallotClick}
+              onMouseDown={(e) => e.preventDefault()}
               role="button"
               tabIndex={0}
               onKeyDown={(e) => {
@@ -1652,8 +1695,10 @@ export default function Chapter3Scene({
                   handleBallotClick();
                 }
               }}
-              className="px-6 sm:px-8 py-3 sm:py-3.5 bg-black/85 backdrop-blur-sm border-[3px] border-black rounded-lg shadow-[4px_4px_0px_0px_#000] cursor-pointer hover:bg-black/95 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2"
+              className="px-6 sm:px-8 py-3 sm:py-3.5 bg-black/85 backdrop-blur-sm border-[3px] border-black rounded-lg shadow-[4px_4px_0px_0px_#000] cursor-pointer hover:bg-black/95 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 outline-none focus:outline-none focus-visible:outline-none"
               style={{
+                outline: "none",
+                WebkitTapHighlightColor: "transparent",
                 animation: "floatBanner 2s ease-in-out infinite",
               }}
               title="Haz clic o presiona E / Espacio / Enter para agarrar la boleta"
@@ -1678,7 +1723,7 @@ export default function Chapter3Scene({
           {/* GUÍA DE INSPECCIÓN: "EXAMINA LA BOLETA" (SIN CONTENEDORES NI BORDES NEÓN, CON CASILLAS A LA IZQUIERDA) */}
           <div
             data-testid="ballot-inspection-panel"
-            className={`absolute top-1/2 -translate-y-1/2 z-40 transition-all duration-500 ease-out select-none flex flex-col ${
+            className={`absolute top-1/2 -translate-y-1/2 z-40 transition-all duration-500 ease-out select-none flex flex-col outline-none focus:outline-none ${
               ballotState === "inspecting" && activeExaminingZone === null
                 ? "opacity-100 translate-x-0 pointer-events-auto"
                 : "opacity-0 -translate-x-8 pointer-events-none"
@@ -1688,6 +1733,8 @@ export default function Chapter3Scene({
               width: "clamp(220px, 27cqw, 540px)",
               maxWidth: "28%",
               gap: "clamp(12px, 1.6cqw, 32px)",
+              outline: "none",
+              WebkitTapHighlightColor: "transparent",
             }}
           >
             {/* Título pixel art grande sin contenedores ni brillo neón */}
@@ -1706,8 +1753,8 @@ export default function Chapter3Scene({
 
             {/* Lista de partes a examinar con casillas cuadradas a la izquierda (sin fondos de tarjeta) */}
             <ul
-              className="flex flex-col list-none p-0 m-0"
-              style={{ gap: "clamp(10px, 1.35cqw, 28px)" }}
+              className="flex flex-col list-none p-0 m-0 outline-none"
+              style={{ gap: "clamp(10px, 1.35cqw, 28px)", outline: "none" }}
             >
               {BALLOT_INSPECTION_ZONES.map((zone) => {
                 const isChecked = examinedZones[zone.id];
@@ -1726,6 +1773,10 @@ export default function Chapter3Scene({
                     onMouseLeave={() =>
                       setHoveredZone((cur) => (cur === zone.id ? null : cur))
                     }
+                    onMouseDown={(e) => {
+                      // Evita el contorno blanco de foco en el navegador al hacer clic
+                      e.preventDefault();
+                    }}
                     onClick={() => {
                       handleSelectZoneToExamine(zone.id);
                     }}
@@ -1741,12 +1792,16 @@ export default function Chapter3Scene({
                         handleSelectZoneToExamine(zone.id);
                       }
                     }}
-                    className={`flex items-center select-none transition-all duration-200 ${
+                    className={`flex items-center select-none transition-all duration-200 outline-none focus:outline-none focus-visible:outline-none ${
                       isChecked
                         ? "cursor-default opacity-85"
                         : "cursor-pointer"
                     } ${isHovered ? "translate-x-1.5" : "translate-x-0"}`}
-                    style={{ gap: "clamp(8px, 1.05cqw, 22px)" }}
+                    style={{
+                      gap: "clamp(8px, 1.05cqw, 22px)",
+                      outline: "none",
+                      WebkitTapHighlightColor: "transparent",
+                    }}
                     title={
                       isChecked
                         ? `${zone.label} (Ya examinado)`
@@ -1815,10 +1870,13 @@ export default function Chapter3Scene({
               {/* Botón REVISAR (Azul Celeste) */}
               <button
                 onClick={handleRevisarVoto}
+                onMouseDown={(e) => e.preventDefault()}
                 type="button"
                 data-testid="btn-revisar-voto"
-                className="w-full bg-[#38bdf8] hover:bg-[#7dd3fc] active:bg-[#0284c7] text-white border-[2.5px] border-black rounded-md shadow-[3px_3px_0px_0px_#000] cursor-pointer transition-all flex items-center justify-center select-none active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] hover:scale-[1.02]"
+                className="w-full bg-[#38bdf8] hover:bg-[#7dd3fc] active:bg-[#0284c7] text-white border-[2.5px] border-black rounded-md shadow-[3px_3px_0px_0px_#000] cursor-pointer transition-all flex items-center justify-center select-none active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] hover:scale-[1.02] outline-none focus:outline-none focus-visible:outline-none"
                 style={{
+                  outline: "none",
+                  WebkitTapHighlightColor: "transparent",
                   padding: "clamp(8px, 0.9cqw, 16px) clamp(12px, 1.3cqw, 22px)",
                   fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
                   fontSize: "clamp(8px, 0.95cqw, 16px)",
@@ -1834,10 +1892,13 @@ export default function Chapter3Scene({
               {/* Botón TERMINAR (Rosa) */}
               <button
                 onClick={handleTerminarVoto}
+                onMouseDown={(e) => e.preventDefault()}
                 type="button"
                 data-testid="btn-terminar-voto"
-                className="w-full bg-[#ec4899] hover:bg-[#f472b6] active:bg-[#db2777] text-white border-[2.5px] border-black rounded-md shadow-[3px_3px_0px_0px_#000] cursor-pointer transition-all flex items-center justify-center select-none active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] hover:scale-[1.02]"
+                className="w-full bg-[#ec4899] hover:bg-[#f472b6] active:bg-[#db2777] text-white border-[2.5px] border-black rounded-md shadow-[3px_3px_0px_0px_#000] cursor-pointer transition-all flex items-center justify-center select-none active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] hover:scale-[1.02] outline-none focus:outline-none focus-visible:outline-none"
                 style={{
+                  outline: "none",
+                  WebkitTapHighlightColor: "transparent",
                   padding: "clamp(8px, 0.9cqw, 16px) clamp(12px, 1.3cqw, 22px)",
                   fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
                   fontSize: "clamp(8px, 0.95cqw, 16px)",
@@ -1855,7 +1916,8 @@ export default function Chapter3Scene({
           {/* CONTENEDOR DE LA BOLETA ELECTORAL INTERACTIVA */}
           <div
             data-testid="voting-booth-ballot-container"
-            className="absolute inset-0 w-full h-full pointer-events-none z-30"
+            className="absolute inset-0 w-full h-full pointer-events-none z-30 outline-none focus:outline-none"
+            style={{ outline: "none" }}
           >
             <div
               onClick={handleBallotClick}
@@ -1865,11 +1927,18 @@ export default function Chapter3Scene({
               onMouseLeave={() => {
                 if (ballotState === "on_table") setIsBallotHovered(false);
               }}
-              role="button"
-              tabIndex={0}
+              onMouseDown={(e) => {
+                // Previene contornos blancos de foco del navegador al hacer clic
+                e.preventDefault();
+              }}
+              role={ballotState === "on_table" ? "button" : undefined}
+              tabIndex={ballotState === "on_table" ? 0 : -1}
               aria-label="Boleta electoral para votar"
               onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
+                if (
+                  ballotState === "on_table" &&
+                  (e.key === "Enter" || e.key === " ")
+                ) {
                   e.preventDefault();
                   handleBallotClick();
                 }
@@ -1879,6 +1948,8 @@ export default function Chapter3Scene({
                 imageRendering: "pixelated",
                 cursor: ballotState === "on_table" ? "pointer" : "default",
                 pointerEvents: "auto",
+                outline: "none",
+                WebkitTapHighlightColor: "transparent",
                 left: "50%",
                 top:
                   ballotState === "on_table"
@@ -2063,6 +2134,9 @@ export default function Chapter3Scene({
                             cur === zone.id ? null : cur
                           )
                         }
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                        }}
                         onClick={(e) => {
                           e.stopPropagation();
                           handleSelectZoneToExamine(zone.id);
@@ -2085,7 +2159,7 @@ export default function Chapter3Scene({
                             ? `${zone.label} (Ya examinado)`
                             : `${zone.label} (Haz clic para examinar)`
                         }
-                        className={`absolute transition-all duration-300 select-none rounded-[3px] ${
+                        className={`absolute transition-all duration-300 select-none rounded-[3px] outline-none focus:outline-none focus-visible:outline-none ${
                           isChecked
                             ? "cursor-default pointer-events-none"
                             : activeExaminingZone !== null
@@ -2104,6 +2178,8 @@ export default function Chapter3Scene({
                           width: boxWidth,
                           height: boxHeight,
                           transformOrigin: "center center",
+                          outline: "none",
+                          WebkitTapHighlightColor: "transparent",
                         }}
                       />
                     );
@@ -2130,6 +2206,9 @@ export default function Chapter3Scene({
                       <div
                         key={`voting-box-${box.id}`}
                         data-testid={`voting-box-${box.id}`}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                        }}
                         onClick={(e) => {
                           e.stopPropagation();
                           handleToggleVoteBox(box.id);
@@ -2154,12 +2233,14 @@ export default function Chapter3Scene({
                             ? "Marcado con X (clic para desmarcar)"
                             : "Clic para marcar casilla"
                         })`}
-                        className="absolute cursor-pointer select-none rounded-[2px] transition-colors hover:bg-black/5 flex items-center justify-center"
+                        className="absolute cursor-pointer select-none rounded-[2px] transition-colors hover:bg-black/5 flex items-center justify-center outline-none focus:outline-none focus-visible:outline-none"
                         style={{
                           left: box.left,
                           top: box.top,
                           width: box.width,
                           height: box.height,
+                          outline: "none",
+                          WebkitTapHighlightColor: "transparent",
                         }}
                       >
                         {isMarked && <VoteXMark />}
@@ -2289,9 +2370,10 @@ export default function Chapter3Scene({
             >
               <button
                 onClick={handleDoblarBoletaClick}
+                onMouseDown={(e) => e.preventDefault()}
                 type="button"
                 data-testid="btn-doblar-boleta"
-                className="pointer-events-auto px-6 sm:px-8 py-3 sm:py-3.5 bg-[#940d57] hover:bg-[#b8156e] active:bg-[#780946] text-white border-[3px] border-black rounded-lg shadow-[4px_4px_0px_0px_#000] cursor-pointer hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 select-none"
+                className="pointer-events-auto px-6 sm:px-8 py-3 sm:py-3.5 bg-[#940d57] hover:bg-[#b8156e] active:bg-[#780946] text-white border-[3px] border-black rounded-lg shadow-[4px_4px_0px_0px_#000] cursor-pointer hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 select-none outline-none focus:outline-none focus-visible:outline-none"
                 style={{
                   fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
                   fontSize: isFullscreen
@@ -2301,6 +2383,8 @@ export default function Chapter3Scene({
                   textShadow:
                     "2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 2px 0 #000, 0 -2px 0 #000, 2px 0 0 #000, -2px 0 0 #000",
                   animation: "floatBanner 2s ease-in-out infinite",
+                  outline: "none",
+                  WebkitTapHighlightColor: "transparent",
                 }}
                 title="Doblar la boleta"
               >
