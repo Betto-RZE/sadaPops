@@ -1440,22 +1440,6 @@ export default function Chapter2Scene({
         </div>
       )}
 
-      {/* INDICADOR DE TRANSICIÓN ENTRE PERSONAJES (10 SEGUNDOS) */}
-      {narrativeQueue.status === "waiting_next_character" && (
-        <div className="absolute top-3 right-3 z-30 pointer-events-none flex items-center gap-2 bg-[#1b3a1a]/95 border-[2px] border-[#a3e635] px-3 py-1.5 rounded shadow-[2px_2px_0px_0px_#000]">
-          <span
-            className="text-white text-xs font-mono"
-            style={{
-              fontFamily: "'Press Start 2P', monospace",
-              fontSize: "8px",
-            }}
-          >
-            Próximo votante en:{" "}
-            {Math.ceil(narrativeQueue.remainingTransitionMs / 1000)}s
-          </span>
-        </div>
-      )}
-
       {/* DIÁLOGO DE LLEGADA DEL PERSONAJE A LA MESA */}
       {showArrivalDialogue && (
         <div className="absolute inset-0 z-40 pointer-events-none flex items-end justify-center pb-[1.8cqw] px-[2cqw] overflow-hidden select-none">
