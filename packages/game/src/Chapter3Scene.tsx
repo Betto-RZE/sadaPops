@@ -59,7 +59,7 @@ type DialogueState =
   | "exiting"
   | "dismissed";
 
-type BallotState = "on_table" | "picking_up" | "inspecting";
+type BallotState = "on_table" | "picking_up" | "inspecting" | "voting";
 
 export type BallotInspectionZoneId =
   | "encabezado"
@@ -260,6 +260,20 @@ export const INSPECTION_MESSAGES_NAH: Record<BallotInspectionZoneId, string[]> =
   ],
 };
 
+export const VOTING_INTRO_MESSAGES_ES: string[] = [
+  "¡Excelente! Ahora que ya conoces las partes de una boleta electoral, ¡es momento de poner en práctica lo aprendido!",
+  "Como puedes ver, tenemos varias opciones para elegir, pero recuerda que en esta simulación todos los partidos y candidaturas son ficticios.",
+  "¡Y lo más importante! Tú decides por quién votar. Nadie puede obligarte a elegir una opción ni decidir por ti.",
+  "¿Listo? ¡Vamos a marcar nuestra boleta!",
+];
+
+export const VOTING_INTRO_MESSAGES_NAH: string[] = [
+  "¡Kualtsin! Axkan pampa ya tikixmati in tlamantli ipan se boleta electoral, ¡axkan kuali ma tikchiwakan tlen otimomachtijkeh!",
+  "Ken tikita, tikpiah miak opciones pampa titlapejpenaseh, pero ilnamiki ipan inin tlamahuiltil nochi partidos wan candidaturas san tlaixkopinalmeh.",
+  "¡Wan tlen achi ueyi! Ta timotlatlalia akonewatitlan titlapejpenaltok. Ajakmo aka uelis mitztekiitis noso tlapejpenas mopampa.",
+  "¿Ya tiyektok? ¡Ma tikmachiyotilikan toboleta!",
+];
+
 // Zona caminable: explanada + casilla completa (mamparas, mesa y cartel 2)
 const isPlazaWalkable = (x: number, y: number): boolean => {
   if (y < PLAZA_BOUNDS.minY || y > PLAZA_BOUNDS.maxY) return false;
@@ -354,6 +368,13 @@ export default function Chapter3Scene({
   // Sub-paso dentro de la examinación de "opciones_politicas" (0: emblema, 1: nombres, 2: recuadro)
   const [opcionesSubStepIndex, setOpcionesSubStepIndex] = useState(0);
 
+  // Fase de transición al simulador de voto: "idle" | "waiting_delay" | "dialogue" | "voting"
+  const [votingPhase, setVotingPhase] = useState<
+    "idle" | "waiting_delay" | "dialogue" | "voting"
+  >("idle");
+
+  const [isDismissingVotingIntro, setIsDismissingVotingIntro] = useState(false);
+
   const [isDismissingExamDialogue, setIsDismissingExamDialogue] =
     useState(false);
 
@@ -382,9 +403,27 @@ export default function Chapter3Scene({
     opciones_politicas: false,
   });
 
+  // Temporizador de 2 segundos al completar todas las zonas antes de mostrar el diálogo del voto
+  useEffect(() => {
+    if (votingPhase !== "waiting_delay") return;
+    const timer = setTimeout(() => {
+      setVotingPhase("dialogue");
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [votingPhase]);
+
+  const handleDismissVotingIntroDialogue = () => {
+    setIsDismissingVotingIntro(true);
+    setTimeout(() => {
+      setVotingPhase("voting");
+      setBallotState("voting");
+      setIsDismissingVotingIntro(false);
+    }, 250);
+  };
+
   const handleSelectZoneToExamine = (zoneId: BallotInspectionZoneId) => {
-    // Si ya fue examinada, no se puede volver a examinar
-    if (examinedZones[zoneId]) return;
+    // Si ya fue examinada o ya no estamos en fase de inspección, no se puede examinar
+    if (examinedZones[zoneId] || votingPhase !== "idle") return;
     // Si ya estamos examinando una zona, no interrumpir
     if (activeExaminingZone !== null) return;
 
@@ -397,10 +436,18 @@ export default function Chapter3Scene({
   const handleFinishZoneExamination = (zoneId: BallotInspectionZoneId) => {
     setIsDismissingExamDialogue(true);
     setTimeout(() => {
-      setExaminedZones((prev) => ({
-        ...prev,
-        [zoneId]: true,
-      }));
+      setExaminedZones((prev) => {
+        const next = {
+          ...prev,
+          [zoneId]: true,
+        };
+        // Si todos los puntos quedaron examinados, activar espera de 2s para el simulador de voto
+        const allCompleted = Object.values(next).every(Boolean);
+        if (allCompleted) {
+          setVotingPhase("waiting_delay");
+        }
+        return next;
+      });
       setActiveExaminingZone(null);
       setOpcionesSubStepIndex(0);
       setIsDismissingExamDialogue(false);
@@ -534,6 +581,7 @@ export default function Chapter3Scene({
           setIsBallotHovered(false);
           setActiveExaminingZone(null);
           setOpcionesSubStepIndex(0);
+          setVotingPhase("idle");
         }
       }
     };
@@ -1291,26 +1339,32 @@ export default function Chapter3Scene({
                 aspectRatio: "819 / 1024",
                 maxHeight: ballotState === "on_table" ? "42%" : "95%",
                 transformOrigin:
-                  ballotState === "inspecting" &&
-                  (currentExaminingTarget || activeHoveredZone)
-                    ? `${(currentExaminingTarget || activeHoveredZone)!.originX}% ${(currentExaminingTarget || activeHoveredZone)!.originY}%`
-                    : "center center",
+                  ballotState === "voting"
+                    ? "50% 57%"
+                    : ballotState === "inspecting" &&
+                      (currentExaminingTarget || activeHoveredZone)
+                      ? `${(currentExaminingTarget || activeHoveredZone)!.originX}% ${(currentExaminingTarget || activeHoveredZone)!.originY}%`
+                      : "center center",
                 transform:
                   ballotState === "on_table"
                     ? isBallotHovered
                       ? "translate(-50%, -50%) perspective(650px) rotateX(42deg) rotateZ(-2.5deg) scale(1.04)"
                       : "translate(-50%, -50%) perspective(650px) rotateX(46deg) rotateZ(-3deg) scale(1.0)"
-                    : currentExaminingTarget
-                      ? `translate(${currentExaminingTarget.examiningTranslateX}, ${currentExaminingTarget.examiningTranslateY}) perspective(1000px) scale(${currentExaminingTarget.examiningScale})`
-                      : activeHoveredZone
-                        ? "translate(-50%, -50%) perspective(1000px) scale(1.08)"
-                        : "translate(-50%, -50%) perspective(1000px) scale(1)",
+                    : ballotState === "voting"
+                      ? "translate(-50%, -58%) perspective(1000px) scale(1.65)"
+                      : currentExaminingTarget
+                        ? `translate(${currentExaminingTarget.examiningTranslateX}, ${currentExaminingTarget.examiningTranslateY}) perspective(1000px) scale(${currentExaminingTarget.examiningScale})`
+                        : activeHoveredZone
+                          ? "translate(-50%, -50%) perspective(1000px) scale(1.08)"
+                          : "translate(-50%, -50%) perspective(1000px) scale(1)",
                 transition:
                   ballotState === "on_table"
                     ? "all 220ms cubic-bezier(0.2, 0.8, 0.2, 1)"
-                    : activeExaminingZone !== null
-                      ? "transform 600ms cubic-bezier(0.16, 1, 0.3, 1), transform-origin 600ms cubic-bezier(0.16, 1, 0.3, 1)"
-                      : "transform 260ms cubic-bezier(0.16, 1, 0.3, 1), transform-origin 260ms cubic-bezier(0.16, 1, 0.3, 1), filter 300ms ease-out",
+                    : ballotState === "voting"
+                      ? "transform 750ms cubic-bezier(0.16, 1, 0.3, 1), transform-origin 750ms cubic-bezier(0.16, 1, 0.3, 1)"
+                      : activeExaminingZone !== null
+                        ? "transform 600ms cubic-bezier(0.16, 1, 0.3, 1), transform-origin 600ms cubic-bezier(0.16, 1, 0.3, 1)"
+                        : "transform 260ms cubic-bezier(0.16, 1, 0.3, 1), transform-origin 260ms cubic-bezier(0.16, 1, 0.3, 1), filter 300ms ease-out",
                 filter:
                   ballotState === "on_table"
                     ? isBallotHovered
@@ -1444,6 +1498,29 @@ export default function Chapter3Scene({
                     }
                     handleFinishZoneExamination(activeExaminingZone);
                   }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* GLOBO DE TEXTO DE INTRODUCCIÓN AL SIMULADOR DE VOTO */}
+          {votingPhase === "dialogue" && (
+            <div
+              data-testid="voting-intro-dialogue"
+              className="absolute inset-0 z-50 pointer-events-none flex items-end justify-center pb-[1.8cqw] px-[2cqw] overflow-hidden select-none"
+            >
+              <div className="relative z-10 w-[96%] pointer-events-auto flex flex-col items-end">
+                <PixelSpeechBubble
+                  key="voting-intro-dialogue"
+                  speaker={language === "nah" ? "Inecito Cívica" : "Inecito"}
+                  messages={
+                    language === "nah"
+                      ? VOTING_INTRO_MESSAGES_NAH
+                      : VOTING_INTRO_MESSAGES_ES
+                  }
+                  actionKey="E"
+                  isDismissing={isDismissingVotingIntro}
+                  onDismiss={handleDismissVotingIntroDialogue}
                 />
               </div>
             </div>
