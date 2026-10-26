@@ -160,3 +160,50 @@ export function evaluateBallotReview(markedCount: number): VotingReviewNotice {
   if (markedCount > 1) return VOTING_REVIEW_NOTICES.multiple;
   return VOTING_REVIEW_NOTICES.valid;
 }
+
+export type PostVotingPhase =
+  | "not_started"
+  | "delay_before_urna_instruction"
+  | "urna_instruction_dialogue"
+  | "walking_to_urna"
+  | "delay_before_ending_dialogue"
+  | "ending_dialogue"
+  | "completed";
+
+export const URNA_POSITION = { x: 17.5, y: 56.0 };
+export const URNA_EXCLAMATION_POSITION = { x: 17.5, y: 49.0 };
+
+export const POST_VOTE_URNA_INSTRUCTION_MESSAGES_ES: string[] = [
+  "¡Perfecto! Ya tenemos nuestra boleta marcada y doblada. ¡Sólo falta un último paso!",
+  "Ahora debemos llevarla hasta la urna correspondiente y depositarla ahí.",
+  "¡Vamos! Ya casi terminamos nuestra misión.",
+];
+
+export const POST_VOTE_URNA_INSTRUCTION_MESSAGES_NAH: string[] = [
+  "¡Kualtsin! Axkan ya tikpiah toboleta tlamachiyotili wan tlaxololi. ¡San polihui se tlamantli!",
+  "Axkan moneki tikwikaseh ipan in urna tlen kinamiki wan ompa tikontlaliseh.",
+  "¡Tiyohkeh! Ya achi titlamih totekiyo.",
+];
+
+export const CHAPTER3_ENDING_MESSAGES_ES: string[] = [
+  "¡Y listo! Nuestra boleta ya está dentro de la urna.",
+  "¡Uffff! ¡Vaya día que tuvimos!",
+  "Pero ¿sabes qué es lo más importante de todo esto?",
+  "Que la democracia no sólo se trata de votar, sino también de informarnos, respetar las decisiones de los demás y participar en nuestra comunidad.",
+  "Cada persona tiene derecho a decidir libremente, y todas las voces merecen ser escuchadas.",
+  "¡Gracias por acompañarme en esta aventura!",
+  "Y recuerda...",
+  "¡Tu voz cuenta, tu voto también!",
+];
+
+export const CHAPTER3_ENDING_MESSAGES_NAH: string[] = [
+  "¡Wan yektok! Toboleta ya kaxtok ijtik in urna.",
+  "¡Uffff! ¡Senka ueyi tonali otikpixkeh!",
+  "¿Pero tikmati tlen achi ueyi ipan nochi inin?",
+  "In democracia amo san ye titlapejpenaseh, no moneki timomachiltiseh, tikintlakaitaseh in tlen kinekih oksekimeh wan titlapalewiseh ipan toaltepeuh.",
+  "Sejsen tlakatl kipia derecho ma tlapejpena ken kineki, wan nochi tlajtoli kinamiki ma mokakikan.",
+  "¡Tlazohkamati pampa otinechualikak ipan inin ojtli!",
+  "Wan ilnamiki...",
+  "¡Motlajtol kipia ipati, movoto no ijkia!",
+];
+

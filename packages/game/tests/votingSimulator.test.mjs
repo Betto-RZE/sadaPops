@@ -107,3 +107,66 @@ describe("Simulador de Voto - Evaluación de Boleta (Botón REVISAR)", () => {
     assert.ok(result.messageNah);
   });
 });
+
+import {
+  POST_VOTE_URNA_INSTRUCTION_MESSAGES_ES,
+  POST_VOTE_URNA_INSTRUCTION_MESSAGES_NAH,
+  CHAPTER3_ENDING_MESSAGES_ES,
+  CHAPTER3_ENDING_MESSAGES_NAH,
+  URNA_POSITION,
+  URNA_EXCLAMATION_POSITION,
+} from "../src/features/simulador-voto/votingBallotConfig.ts";
+
+describe("Simulador de Voto - Secuencia Post-Voto y Cierre de Capítulo", () => {
+  test("Diálogo de instrucción para llevar la boleta a la urna posee las 3 frases requeridas", () => {
+    assert.equal(POST_VOTE_URNA_INSTRUCTION_MESSAGES_ES.length, 3);
+    assert.equal(
+      POST_VOTE_URNA_INSTRUCTION_MESSAGES_ES[0],
+      "¡Perfecto! Ya tenemos nuestra boleta marcada y doblada. ¡Sólo falta un último paso!"
+    );
+    assert.equal(
+      POST_VOTE_URNA_INSTRUCTION_MESSAGES_ES[1],
+      "Ahora debemos llevarla hasta la urna correspondiente y depositarla ahí."
+    );
+    assert.equal(
+      POST_VOTE_URNA_INSTRUCTION_MESSAGES_ES[2],
+      "¡Vamos! Ya casi terminamos nuestra misión."
+    );
+    assert.equal(POST_VOTE_URNA_INSTRUCTION_MESSAGES_NAH.length, 3);
+  });
+
+  test("Diálogo final de cierre posee las 8 frases de conclusión cívica", () => {
+    assert.equal(CHAPTER3_ENDING_MESSAGES_ES.length, 8);
+    assert.equal(
+      CHAPTER3_ENDING_MESSAGES_ES[0],
+      "¡Y listo! Nuestra boleta ya está dentro de la urna."
+    );
+    assert.equal(CHAPTER3_ENDING_MESSAGES_ES[1], "¡Uffff! ¡Vaya día que tuvimos!");
+    assert.equal(
+      CHAPTER3_ENDING_MESSAGES_ES[2],
+      "Pero ¿sabes qué es lo más importante de todo esto?"
+    );
+    assert.equal(
+      CHAPTER3_ENDING_MESSAGES_ES[3],
+      "Que la democracia no sólo se trata de votar, sino también de informarnos, respetar las decisiones de los demás y participar en nuestra comunidad."
+    );
+    assert.equal(
+      CHAPTER3_ENDING_MESSAGES_ES[4],
+      "Cada persona tiene derecho a decidir libremente, y todas las voces merecen ser escuchadas."
+    );
+    assert.equal(
+      CHAPTER3_ENDING_MESSAGES_ES[5],
+      "¡Gracias por acompañarme en esta aventura!"
+    );
+    assert.equal(CHAPTER3_ENDING_MESSAGES_ES[6], "Y recuerda...");
+    assert.equal(CHAPTER3_ENDING_MESSAGES_ES[7], "¡Tu voz cuenta, tu voto también!");
+
+    assert.equal(CHAPTER3_ENDING_MESSAGES_NAH.length, 8);
+  });
+
+  test("Coordenadas de la urna blanca y su icono de exclamación están sobre la mesa", () => {
+    assert.ok(URNA_POSITION.x > 10 && URNA_POSITION.x < 30);
+    assert.ok(URNA_POSITION.y > 45 && URNA_POSITION.y < 65);
+    assert.ok(URNA_EXCLAMATION_POSITION.y < URNA_POSITION.y);
+  });
+});

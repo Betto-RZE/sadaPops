@@ -77,6 +77,18 @@ const BALLOT_SLIDE_DURATION_MS = 450;
 const POV_CLEARED_VIEW_DURATION_MS = 1500;
 const POV_EXIT_DURATION_MS = 350;
 
+export type PostVotingPhase =
+  | "not_started"
+  | "delay_before_urna_instruction"
+  | "urna_instruction_dialogue"
+  | "walking_to_urna"
+  | "delay_before_ending_dialogue"
+  | "ending_dialogue"
+  | "completed";
+
+export const URNA_POSITION = { x: 17.5, y: 56.0 };
+export const URNA_EXCLAMATION_POSITION = { x: 17.5, y: 49.0 };
+
 /** Márgenes del papel dentro de la imagen boleta-electoral.png */
 const BALLOT_PAPER_INSET_X = "2.8%";
 const BALLOT_PAPER_INSET_TOP = "2.2%";
@@ -387,6 +399,40 @@ export const FOLDING_INTRO_MESSAGES_NAH: string[] = [
   "Axkan pampa ya otitlamik otikmachiyotili moboleta, ¡ma tikxolokan in boleta pampa mo elección amo ma moita!",
 ];
 
+export const POST_VOTE_URNA_INSTRUCTION_MESSAGES_ES: string[] = [
+  "¡Perfecto! Ya tenemos nuestra boleta marcada y doblada. ¡Sólo falta un último paso!",
+  "Ahora debemos llevarla hasta la urna correspondiente y depositarla ahí.",
+  "¡Vamos! Ya casi terminamos nuestra misión.",
+];
+
+export const POST_VOTE_URNA_INSTRUCTION_MESSAGES_NAH: string[] = [
+  "¡Kualtsin! Axkan ya tikpiah toboleta tlamachiyotili wan tlaxololi. ¡San polihui se tlamantli!",
+  "Axkan moneki tikwikaseh ipan in urna tlen kinamiki wan ompa tikontlaliseh.",
+  "¡Tiyohkeh! Ya achi titlamih totekiyo.",
+];
+
+export const CHAPTER3_ENDING_MESSAGES_ES: string[] = [
+  "¡Y listo! Nuestra boleta ya está dentro de la urna.",
+  "¡Uffff! ¡Vaya día que tuvimos!",
+  "Pero ¿sabes qué es lo más importante de todo esto?",
+  "Que la democracia no sólo se trata de votar, sino también de informarnos, respetar las decisiones de los demás y participar en nuestra comunidad.",
+  "Cada persona tiene derecho a decidir libremente, y todas las voces merecen ser escuchadas.",
+  "¡Gracias por acompañarme en esta aventura!",
+  "Y recuerda...",
+  "¡Tu voz cuenta, tu voto también!",
+];
+
+export const CHAPTER3_ENDING_MESSAGES_NAH: string[] = [
+  "¡Wan yektok! Toboleta ya kaxtok ijtik in urna.",
+  "¡Uffff! ¡Senka ueyi tonali otikpixkeh!",
+  "¿Pero tikmati tlen achi ueyi ipan nochi inin?",
+  "In democracia amo san ye titlapejpenaseh, no moneki timomachiltiseh, tikintlakaitaseh in tlen kinekih oksekimeh wan titlapalewiseh ipan toaltepeuh.",
+  "Sejsen tlakatl kipia derecho ma tlapejpena ken kineki, wan nochi tlajtoli kinamiki ma mokakikan.",
+  "¡Tlazohkamati pampa otinechualikak ipan inin ojtli!",
+  "Wan ilnamiki...",
+  "¡Motlajtol kipia ipati, movoto no ijkia!",
+];
+
 import {
   BALLOT_VOTING_BOXES,
   VOTING_REVIEW_NOTICES,
@@ -485,6 +531,22 @@ export default function Chapter3Scene({
   useEffect(() => {
     hasSelectedMamparaToVoteRef.current = hasSelectedMamparaToVote;
   }, [hasSelectedMamparaToVote]);
+
+  // Fases posteriores a votar en la mampara:
+  // "not_started" → "delay_before_urna_instruction" (2s) → "urna_instruction_dialogue"
+  // → "walking_to_urna" (teclado desbloqueado, urna interactiva)
+  // → "delay_before_ending_dialogue" (2s) → "ending_dialogue" → "completed"
+  const [postVotingPhase, setPostVotingPhase] =
+    useState<PostVotingPhase>("not_started");
+  const postVotingPhaseRef = useRef(postVotingPhase);
+  useEffect(() => {
+    postVotingPhaseRef.current = postVotingPhase;
+  }, [postVotingPhase]);
+
+  const [isDismissingUrnaInstruction, setIsDismissingUrnaInstruction] =
+    useState(false);
+  const [isDismissingEndingDialogue, setIsDismissingEndingDialogue] =
+    useState(false);
 
   // Estado de la boleta electoral en la mesa / manos del jugador
   const [ballotState, setBallotState] = useState<BallotState>("on_table");
@@ -628,6 +690,58 @@ export default function Chapter3Scene({
     setFoldingPhase("idle");
     setMarkedVoteBoxIds({});
     setReviewNotice(null);
+
+    // Al concluir la votación en la mampara, iniciar la secuencia post-voto (2 segundos teclado bloqueado)
+    if (
+      hasSelectedMamparaToVoteRef.current &&
+      postVotingPhaseRef.current === "not_started"
+    ) {
+      setPostVotingPhase("delay_before_urna_instruction");
+    }
+  };
+
+  // Temporizador de 2 segundos tras cerrar el POV de la mampara antes del globo de instrucción de la urna
+  useEffect(() => {
+    if (postVotingPhase !== "delay_before_urna_instruction") return;
+    const timer = setTimeout(() => {
+      setPostVotingPhase("urna_instruction_dialogue");
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [postVotingPhase]);
+
+  // Temporizador de 2 segundos tras depositar en la urna antes del globo final
+  useEffect(() => {
+    if (postVotingPhase !== "delay_before_ending_dialogue") return;
+    const timer = setTimeout(() => {
+      setPostVotingPhase("ending_dialogue");
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [postVotingPhase]);
+
+  const handleUrnaDeposit = () => {
+    if (postVotingPhaseRef.current !== "walking_to_urna") return;
+    setPostVotingPhase("delay_before_ending_dialogue");
+  };
+  const handleUrnaDepositRef = useRef(handleUrnaDeposit);
+  useEffect(() => {
+    handleUrnaDepositRef.current = handleUrnaDeposit;
+  });
+
+  const handleDismissUrnaInstruction = () => {
+    setIsDismissingUrnaInstruction(true);
+    setTimeout(() => {
+      setPostVotingPhase("walking_to_urna");
+      setIsDismissingUrnaInstruction(false);
+    }, 250);
+  };
+
+  const handleDismissEndingDialogue = () => {
+    setIsDismissingEndingDialogue(true);
+    setTimeout(() => {
+      setPostVotingPhase("completed");
+      setIsDismissingEndingDialogue(false);
+      handleTriggerComplete();
+    }, 250);
   };
 
   // Línea de tiempo de la animación: doblez → deslizamiento → vista limpia (1.5s) → salida de la vista POV
@@ -811,6 +925,23 @@ export default function Chapter3Scene({
         }
       }
 
+      // Interactuar con la urna blanca en la mesa al presionar E, Espacio o Enter
+      if (
+        isMamparaSelectKey &&
+        postVotingPhaseRef.current === "walking_to_urna" &&
+        !isPausedRef.current
+      ) {
+        const distToUrna = Math.hypot(
+          playerPosRef.current.x - URNA_POSITION.x,
+          playerPosRef.current.y - URNA_POSITION.y,
+        );
+        if (distToUrna < 12.0) {
+          e.preventDefault();
+          handleUrnaDepositRef.current();
+          return;
+        }
+      }
+
       // Interactuar en la vista POV de la mampara: Agarrar la boleta con E, Espacio o Enter
       if (
         selectedMamparaIndexRef.current !== null &&
@@ -907,6 +1038,16 @@ export default function Chapter3Scene({
         ) {
           setLastDirection("1");
         }
+        animationFrameId = requestAnimationFrame(updateGameLoop);
+        return;
+      }
+
+      // Teclado bloqueado tras votar durante delays y diálogos (se desbloquea al caminar hacia la urna)
+      if (
+        postVotingPhaseRef.current !== "not_started" &&
+        postVotingPhaseRef.current !== "walking_to_urna"
+      ) {
+        stop();
         animationFrameId = requestAnimationFrame(updateGameLoop);
         return;
       }
@@ -1312,6 +1453,68 @@ export default function Chapter3Scene({
               </div>
             );
           })}
+
+        {/* ICONO DE EXCLAMACIÓN (!) EN LA URNA BLANCA DE LA MESA DE FUNCIONARIOS */}
+        {postVotingPhase === "walking_to_urna" &&
+          (() => {
+            const distToUrna = Math.hypot(
+              playerPos.x - URNA_POSITION.x,
+              playerPos.y - URNA_POSITION.y,
+            );
+            const isNearUrna = distToUrna < 12.0;
+
+            return (
+              <div
+                data-testid="urna-deposit-spot"
+                style={{
+                  left: `${URNA_EXCLAMATION_POSITION.x}%`,
+                  top: `${URNA_EXCLAMATION_POSITION.y}%`,
+                  width: EXCLAMATION_ICON_WIDTH,
+                  transform: "translate(-50%, -50%)",
+                  zIndex: 35,
+                }}
+                className="absolute pointer-events-auto flex flex-col items-center select-none cursor-pointer"
+                onClick={handleUrnaDeposit}
+              >
+                {/* Signo de exclamación flotante sobre la urna */}
+                <div
+                  className="relative w-full flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
+                  style={{
+                    animation: "floatExclamation 1.4s ease-in-out infinite",
+                  }}
+                  title="Depositar boleta en la urna"
+                >
+                  <img
+                    src="/assets/juego/exclamacion.png"
+                    alt="Depositar boleta en la urna"
+                    className="w-full h-auto object-contain drop-shadow-[0_2px_5px_rgba(0,0,0,0.6)]"
+                    style={{ imageRendering: "pixelated" }}
+                  />
+
+                  {/* Texto pixel art "presiona E" al acercarse a la urna */}
+                  {isNearUrna && (
+                    <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 z-40 pointer-events-none flex flex-col items-center select-none">
+                      <div
+                        className="whitespace-nowrap text-[#ff4da6] font-black tracking-wider flex items-center gap-1 select-none"
+                        style={{
+                          fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
+                          fontSize: isFullscreen
+                            ? "clamp(7px, 0.72cqw, 10.5px)"
+                            : "clamp(5px, 0.52cqw, 7px)",
+                          lineHeight: "1",
+                          textShadow:
+                            "1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 1px 0 #000, 0 -1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 2px 4px rgba(0,0,0,0.9)",
+                        }}
+                      >
+                        <span>presiona</span>
+                        <span className="text-[#ff99d6]">E</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
       </div>
 
       {/* ESTILOS DE ANIMACIÓN PIXEL ART */}
@@ -2144,6 +2347,54 @@ export default function Chapter3Scene({
                 setLastDirection("1");
               }}
               onDismiss={() => setDialogueState("exiting")}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* GLOBO DE TEXTO TRAS CERRAR POV: INSTRUCCIÓN PARA LLEVAR A LA URNA */}
+      {postVotingPhase === "urna_instruction_dialogue" && (
+        <div
+          data-testid="post-vote-urna-instruction-dialogue"
+          className="absolute inset-0 z-40 pointer-events-none flex items-end justify-center pb-[1.8cqw] px-[2cqw] overflow-hidden select-none"
+        >
+          <div className="relative z-10 w-[96%] pointer-events-auto flex flex-col items-end">
+            <PixelSpeechBubble
+              key="post-vote-urna-instruction-dialogue"
+              speaker={language === "nah" ? "Inecito Cívica" : "Inecito"}
+              messages={
+                language === "nah"
+                  ? POST_VOTE_URNA_INSTRUCTION_MESSAGES_NAH
+                  : POST_VOTE_URNA_INSTRUCTION_MESSAGES_ES
+              }
+              actionKey="E"
+              disabled={isPaused}
+              isDismissing={isDismissingUrnaInstruction}
+              onDismiss={handleDismissUrnaInstruction}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* GLOBO DE TEXTO FINAL TRAS DEPOSITAR EN LA URNA (CIERRE DEL JUEGO) */}
+      {postVotingPhase === "ending_dialogue" && (
+        <div
+          data-testid="chapter3-ending-dialogue"
+          className="absolute inset-0 z-40 pointer-events-none flex items-end justify-center pb-[1.8cqw] px-[2cqw] overflow-hidden select-none"
+        >
+          <div className="relative z-10 w-[96%] pointer-events-auto flex flex-col items-end">
+            <PixelSpeechBubble
+              key="chapter3-ending-dialogue"
+              speaker={language === "nah" ? "Inecito Cívica" : "Inecito"}
+              messages={
+                language === "nah"
+                  ? CHAPTER3_ENDING_MESSAGES_NAH
+                  : CHAPTER3_ENDING_MESSAGES_ES
+              }
+              actionKey="E"
+              disabled={isPaused}
+              isDismissing={isDismissingEndingDialogue}
+              onDismiss={handleDismissEndingDialogue}
             />
           </div>
         </div>
