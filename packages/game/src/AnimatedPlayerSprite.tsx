@@ -38,7 +38,7 @@ export function releasePlayerImages() {
 }
 
 // Animated Player Sprite Component (Plays high quality PNG frame animations from walking1-4 & static1-4)
-export function AnimatedPlayerSprite({
+export const AnimatedPlayerSprite = React.memo(function AnimatedPlayerSprite({
   isWalking,
   lastDirection,
 }: {
@@ -86,4 +86,4 @@ export function AnimatedPlayerSprite({
       />
     </div>
   );
-}
+});

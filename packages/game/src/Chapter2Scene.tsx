@@ -1113,15 +1113,11 @@ export default function Chapter2Scene({
 
       {/* MUNDO CON CAMARA DINAMICA */}
       <div
-        className="absolute inset-0 w-full h-full z-10 transition-[filter] duration-500 ease-out"
+        className="absolute inset-0 w-full h-full z-10"
         style={{
           transform: `scale(${zoomScale}) translate(${camX}%, ${camY}%)`,
           transformOrigin: "center center",
           willChange: "transform",
-          filter:
-            showConversation && npcConversationState !== "exiting"
-              ? "blur(5px)"
-              : "none",
         }}
       >
         <img
@@ -1483,20 +1479,22 @@ export default function Chapter2Scene({
       {/* CONVERSACIÓN CON EL PERSONAJE AL INTERACTUAR CON LA MESA */}
       {showConversation && (
         <div className="absolute inset-0 z-40 pointer-events-none flex items-end justify-center pb-[1.8cqw] px-[2cqw] overflow-hidden select-none">
-          {/* Capa de desenfoque y oscurecimiento cinematográfico de fondo (Backdrop Blur) */}
+          {/* Capa de desenfoque y oscurecimiento cinematográfico de fondo (Backdrop Blur optimizado) */}
           <div
             className={`absolute inset-0 pointer-events-none transition-[opacity,backdrop-filter,background-color] duration-500 ease-out ${
               npcConversationState === "exiting" ? "opacity-0" : "opacity-100"
             }`}
             style={{
               backdropFilter:
-                npcConversationState === "exiting" ? "blur(0px)" : "blur(6px)",
+                npcConversationState === "exiting" ? "blur(0px)" : "blur(5px)",
               WebkitBackdropFilter:
-                npcConversationState === "exiting" ? "blur(0px)" : "blur(6px)",
+                npcConversationState === "exiting" ? "blur(0px)" : "blur(5px)",
               backgroundColor:
                 npcConversationState === "exiting"
                   ? "rgba(0, 0, 0, 0)"
-                  : "rgba(0, 0, 0, 0.28)",
+                  : "rgba(0, 0, 0, 0.35)",
+              transform: "translateZ(0)",
+              willChange: "opacity, backdrop-filter",
             }}
           />
 

@@ -24,15 +24,16 @@ export interface PlazaAmbienceProps {
  * 3. Maripositas pixel art (Monarcas, Amarillas y Celestes) revoloteando sobre los arbustos y árboles.
  * 4. Pétalos de dalia cayendo suavemente con la brisa.
  */
-export const PlazaAmbience: React.FC<PlazaAmbienceProps> = ({
-  isPaused = false,
-  hidden = false,
-  showSunbeams = true,
-  showParticles = true,
-  showButterflies = true,
-  showPetals = true,
-}) => {
-  if (hidden) return null;
+export const PlazaAmbience: React.FC<PlazaAmbienceProps> = React.memo(
+  function PlazaAmbience({
+    isPaused = false,
+    hidden = false,
+    showSunbeams = true,
+    showParticles = true,
+    showButterflies = true,
+    showPetals = true,
+  }: PlazaAmbienceProps) {
+    if (hidden) return null;
 
   return (
     <div
@@ -296,4 +297,4 @@ export const PlazaAmbience: React.FC<PlazaAmbienceProps> = ({
       {showButterflies && <ButterfliesLayer isPaused={isPaused} />}
     </div>
   );
-};
+});
