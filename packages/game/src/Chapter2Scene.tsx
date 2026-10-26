@@ -1395,24 +1395,6 @@ export default function Chapter2Scene({
       {showBridgeDialogue && (
         <div className="absolute inset-0 z-40 pointer-events-none flex items-end justify-center pb-[1.8cqw] px-[2cqw] overflow-hidden select-none">
           <div className="relative z-10 w-[96%] pointer-events-auto flex flex-col items-end">
-            {/* Botón provisional para saltar todos los textos (Test) */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setBridgeDialogueState("exiting");
-              }}
-              type="button"
-              title="Saltar diálogo inicial (Test)"
-              className="mb-1.5 bg-[#940d57] hover:bg-[#ff2a85] active:bg-[#780946] text-white rounded border-[2px] border-black shadow-[2px_2px_0px_0px_#000] cursor-pointer transition-colors flex items-center gap-1.5 px-3 py-1 select-none active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
-              style={{
-                fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
-                fontSize: isFullscreen ? "10px" : "8px",
-              }}
-            >
-              <span>⏩</span>
-              <span>SALTAR TEXTOS (TEST)</span>
-            </button>
-
             <PixelSpeechBubble
               speaker={language === "nah" ? "Inecito Cívica" : "Inecito"}
               messages={bridgeMessages}
@@ -1433,24 +1415,6 @@ export default function Chapter2Scene({
       {showVoterDialogue && (
         <div className="absolute inset-0 z-40 pointer-events-none flex items-end justify-center pb-[1.8cqw] px-[2cqw] overflow-hidden select-none">
           <div className="relative z-10 w-[96%] pointer-events-auto flex flex-col items-end">
-            {/* Botón provisional para saltar todos los textos (Test) */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setVoterDialogueState("exiting");
-              }}
-              type="button"
-              title="Saltar diálogo de votantes (Test)"
-              className="mb-1.5 bg-[#940d57] hover:bg-[#ff2a85] active:bg-[#780946] text-white rounded border-[2px] border-black shadow-[2px_2px_0px_0px_#000] cursor-pointer transition-colors flex items-center gap-1.5 px-3 py-1 select-none active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
-              style={{
-                fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
-                fontSize: isFullscreen ? "10px" : "8px",
-              }}
-            >
-              <span>⏩</span>
-              <span>SALTAR TEXTOS (TEST)</span>
-            </button>
-
             <PixelSpeechBubble
               speaker={language === "nah" ? "Inecito Cívica" : "Inecito"}
               messages={voterMessages}
@@ -1469,7 +1433,7 @@ export default function Chapter2Scene({
 
       {/* INDICADOR DE TRANSICIÓN ENTRE PERSONAJES (10 SEGUNDOS) */}
       {narrativeQueue.status === "waiting_next_character" && (
-        <div className="absolute top-3 right-3 z-30 pointer-events-auto flex items-center gap-2 bg-[#1b3a1a]/95 border-[2px] border-[#a3e635] px-3 py-1.5 rounded shadow-[2px_2px_0px_0px_#000]">
+        <div className="absolute top-3 right-3 z-30 pointer-events-none flex items-center gap-2 bg-[#1b3a1a]/95 border-[2px] border-[#a3e635] px-3 py-1.5 rounded shadow-[2px_2px_0px_0px_#000]">
           <span
             className="text-white text-xs font-mono"
             style={{
@@ -1480,13 +1444,6 @@ export default function Chapter2Scene({
             Próximo votante en:{" "}
             {Math.ceil(narrativeQueue.remainingTransitionMs / 1000)}s
           </span>
-          <button
-            type="button"
-            onClick={() => narrativeQueue.skipToNextCharacter()}
-            className="bg-[#940d57] hover:bg-[#ff2a85] text-white text-[7px] px-2 py-0.5 rounded border border-white cursor-pointer font-mono font-bold"
-          >
-            ⏩ Omitir espera (Test)
-          </button>
         </div>
       )}
 
@@ -1494,24 +1451,6 @@ export default function Chapter2Scene({
       {showArrivalDialogue && (
         <div className="absolute inset-0 z-40 pointer-events-none flex items-end justify-center pb-[1.8cqw] px-[2cqw] overflow-hidden select-none">
           <div className="relative z-10 w-[96%] pointer-events-auto flex flex-col items-end">
-            {/* Botón provisional para saltar todos los textos (Test) */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setArrivalDialogueState("exiting");
-              }}
-              type="button"
-              title="Saltar todos los textos con un solo clic (Test)"
-              className="mb-1.5 bg-[#940d57] hover:bg-[#ff2a85] active:bg-[#780946] text-white rounded border-[2px] border-black shadow-[2px_2px_0px_0px_#000] cursor-pointer transition-colors flex items-center gap-1.5 px-3 py-1 select-none active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
-              style={{
-                fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
-                fontSize: isFullscreen ? "10px" : "8px",
-              }}
-            >
-              <span>⏩</span>
-              <span>SALTAR TEXTOS (TEST)</span>
-            </button>
-
             <PixelSpeechBubble
               speaker={language === "nah" ? "Inecito Cívica" : "Inecito"}
               messages={currentArrivalMessages}
@@ -1548,28 +1487,6 @@ export default function Chapter2Scene({
             }}
           />
 
-          {/* Botón provisional para saltar todos los textos (Test) en la esquina superior derecha */}
-          <div className="absolute top-[2cqw] right-[2cqw] pointer-events-auto z-50">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setNpcConversationState("exiting");
-                narrativeQueueRef.current.dismissConversation();
-                setArrivalDialogueState("idle");
-              }}
-              type="button"
-              title="Saltar todos los textos con un solo clic (Test)"
-              className="bg-[#940d57] hover:bg-[#ff2a85] active:bg-[#780946] text-white rounded border-[2px] border-black shadow-[2px_2px_0px_0px_#000] cursor-pointer transition-colors flex items-center gap-1.5 px-3 py-1 select-none active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
-              style={{
-                fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
-                fontSize: isFullscreen ? "10px" : "8px",
-              }}
-            >
-              <span>⏩</span>
-              <span>SALTAR TEXTOS (TEST)</span>
-            </button>
-          </div>
-
           <div className="relative z-10 w-[96%] pointer-events-auto flex flex-col items-end">
             <PixelSpeechBubble
               speaker={
@@ -1600,23 +1517,6 @@ export default function Chapter2Scene({
       {showOutroDialogue && (
         <div className="absolute inset-0 z-40 pointer-events-none flex items-end justify-center pb-[1.8cqw] px-[2cqw] overflow-hidden select-none">
           <div className="relative z-10 w-[96%] pointer-events-auto flex flex-col items-end">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setOutroDialogueState("exiting");
-              }}
-              type="button"
-              title="Saltar diálogo de cierre (Test)"
-              className="mb-1.5 bg-[#940d57] hover:bg-[#ff2a85] active:bg-[#780946] text-white rounded border-[2px] border-black shadow-[2px_2px_0px_0px_#000] cursor-pointer transition-colors flex items-center gap-1.5 px-3 py-1 select-none active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
-              style={{
-                fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
-                fontSize: isFullscreen ? "10px" : "8px",
-              }}
-            >
-              <span>⏩</span>
-              <span>SALTAR TEXTOS (TEST)</span>
-            </button>
-
             <PixelSpeechBubble
               speaker={language === "nah" ? "Inecito Cívica" : "Inecito"}
               messages={

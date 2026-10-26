@@ -126,7 +126,6 @@ El videojuego está estructurado en tres capítulos complementarios e interconec
 | **Salir de la Mampara (POV)** | Tecla <kbd>Escape</kbd> |
 | **Pantalla Completa** | Botón de Fullscreen en la esquina superior derecha |
 | **Menú / Regresar** | Botón de retorno en la esquina superior izquierda |
-| **Saltar Textos (Modo Pruebas)** | Botón <kbd>⏩ SALTAR TEXTOS</kbd> en la esquina superior derecha |
 
 ---
 

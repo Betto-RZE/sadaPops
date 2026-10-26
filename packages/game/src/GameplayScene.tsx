@@ -777,16 +777,6 @@ export default function GameplayScene({
     }
   };
 
-  // Botón provisional de testeo: permite skipear todos los textos con un solo clic
-  const handleSkipAllDialogue = () => {
-    if (dialogueDelayTimerRef.current) {
-      clearTimeout(dialogueDelayTimerRef.current);
-      dialogueDelayTimerRef.current = null;
-    }
-    setDialogueState("dismissed");
-    dialogueStateRef.current = "dismissed";
-    setActiveDialogue(null);
-  };
 
   // Dialogue delay & animation state transitions (Triggers exactly 2s after iris aperture fully opens)
   useEffect(() => {
@@ -1531,30 +1521,6 @@ export default function GameplayScene({
         </button>
       </div>
 
-      {/* BOTÓN PROVISIONAL DE TESTEO: SALTAR TODOS LOS DIÁLOGOS CON UN SOLO CLIC */}
-      {dialogueState !== "dismissed" && (
-        <div className="absolute top-3 right-3 z-50 pointer-events-auto">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleSkipAllDialogue();
-            }}
-            type="button"
-            title="Botón provisional para pruebas: saltar todos los textos con un solo clic"
-            className={`bg-[#ff2a85] hover:bg-[#ff4da6] active:bg-[#d61b6b] text-white font-black rounded-md border-[3px] border-black shadow-[3px_3px_0px_0px_#000] cursor-pointer transition-colors flex items-center gap-1.5 select-none active:translate-x-[1px] active:translate-y-[1px] active:shadow-none ${
-              isFullscreen
-                ? "text-[11px] py-2 px-3.5 tracking-wider"
-                : "text-[9px] py-1.5 px-2.5 tracking-wider"
-            }`}
-            style={{
-              fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
-            }}
-          >
-            <span>⏩</span>
-            <span>SALTAR TEXTOS (TEST)</span>
-          </button>
-        </div>
-      )}
 
       {/* OFF-SCREEN WAYPOINT ARROW (Flecha pixel art con movimiento fluido en 60 FPS) */}
       <OffscreenWaypointArrow
@@ -2219,23 +2185,6 @@ export default function GameplayScene({
         dialogueState !== "dismissed" && (
           <div className="absolute inset-0 z-40 pointer-events-none flex items-end justify-center pb-[1.8cqw] px-[2cqw] overflow-hidden select-none">
             <div className="relative z-10 w-[96%] pointer-events-auto flex flex-col items-end">
-              {/* Botón provisional para saltar todos los textos (Test) */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleSkipAllDialogue();
-                }}
-                type="button"
-                title="Saltar todos los textos con un solo clic (Test)"
-                className="mb-1.5 bg-[#940d57] hover:bg-[#ff2a85] active:bg-[#780946] text-white rounded border-[2px] border-black shadow-[2px_2px_0px_0px_#000] cursor-pointer transition-colors flex items-center gap-1.5 px-3 py-1 select-none active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
-                style={{
-                  fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
-                  fontSize: isFullscreen ? "10px" : "8px",
-                }}
-              >
-                <span>⏩</span>
-                <span>SALTAR TEXTOS (TEST)</span>
-              </button>
 
               <PixelSpeechBubble
                 speaker={language === "nah" ? "Inecito Cívica" : "Inecito"}

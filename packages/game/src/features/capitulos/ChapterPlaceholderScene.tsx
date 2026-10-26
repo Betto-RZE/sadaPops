@@ -122,7 +122,7 @@ export default function ChapterPlaceholderScene({
               textShadow: "1px 1px 0 #000",
             }}
           >
-            ✔ Terminar capítulo (test)
+            ✔ Terminar capítulo
           </button>
         </div>
       </div>
@@ -131,23 +131,6 @@ export default function ChapterPlaceholderScene({
       {chapter.id === 3 && dialogueState !== "dismissed" && (
         <div className="absolute inset-0 z-40 pointer-events-none flex items-end justify-center pb-[1.8cqw] px-[2cqw] overflow-hidden select-none">
           <div className="relative z-10 w-[96%] pointer-events-auto flex flex-col items-end">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setDialogueState("exiting");
-              }}
-              type="button"
-              title="Saltar diálogo inicial (Test)"
-              className="mb-1.5 bg-[#940d57] hover:bg-[#ff2a85] active:bg-[#780946] text-white rounded border-[2px] border-black shadow-[2px_2px_0px_0px_#000] cursor-pointer transition-colors flex items-center gap-1.5 px-3 py-1 select-none active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
-              style={{
-                fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
-                fontSize: isFullscreen ? "10px" : "8px",
-              }}
-            >
-              <span>⏩</span>
-              <span>SALTAR TEXTOS (TEST)</span>
-            </button>
-
             <PixelSpeechBubble
               speaker={language === "nah" ? "Inecito Cívica" : "Inecito"}
               messages={
