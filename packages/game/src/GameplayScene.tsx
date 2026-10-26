@@ -777,7 +777,6 @@ export default function GameplayScene({
     }
   };
 
-
   // Dialogue delay & animation state transitions (Triggers exactly 2s after iris aperture fully opens)
   useEffect(() => {
     // Wait until retro iris wipe has fully completed and screen is open
@@ -1492,7 +1491,6 @@ export default function GameplayScene({
     minigamePhase !== "phase_1_done" &&
     minigamePhase !== "phase_2_mesa";
 
-
   return (
     <div className="absolute inset-0 w-full h-full z-20 overflow-hidden bg-[#2d572c] select-none">
       {/* Micro-animations Styles */}
@@ -1529,7 +1527,6 @@ export default function GameplayScene({
           <span>◀</span>
         </button>
       </div>
-
 
       {/* OFF-SCREEN WAYPOINT ARROW (Flecha pixel art con movimiento fluido en 60 FPS) */}
       <OffscreenWaypointArrow
@@ -2194,7 +2191,6 @@ export default function GameplayScene({
         dialogueState !== "dismissed" && (
           <div className="absolute inset-0 z-40 pointer-events-none flex items-end justify-center pb-[1.8cqw] px-[2cqw] overflow-hidden select-none">
             <div className="relative z-10 w-[96%] pointer-events-auto flex flex-col items-end">
-
               <PixelSpeechBubble
                 speaker={language === "nah" ? "Inecito Cívica" : "Inecito"}
                 messages={
