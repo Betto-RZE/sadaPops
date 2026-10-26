@@ -33,13 +33,12 @@ export function FloatingPetals({
 }: FloatingPetalsProps) {
   const [hasStarted, setHasStarted] = useState(false);
 
-  // El mapa termina su construcción en: MAP_INTRO_DELAY_MS + MAP_INTRO_STAGGER_MS + MAP_STATE_ANIM_MS (~3.25s).
-  // Los pétalos entran exactamente 2 segundos después (~5.25s).
+  // El mapa inicia su caída en ~1.10s y termina con el último estado y dalia hacia ~2.75s.
+  // Los pétalos inician su planeo suave hacia el final de este florecimiento (~2.75s).
   const petalsStartDelayMs =
     MAP_INTRO_DELAY_MS +
     MAP_INTRO_STAGGER_MS +
-    MAP_STATE_ANIM_MS +
-    2000;
+    MAP_STATE_ANIM_MS;
 
   useEffect(() => {
     if (
@@ -66,29 +65,30 @@ export function FloatingPetals({
       )}
     >
       <style>{`
-        @keyframes petal-settle-in {
+        @keyframes petal-sway-settle {
           0% {
             opacity: 0;
-            transform: translate3d(var(--start-x, -18px), -85px, 0);
+            transform: translate3d(var(--start-x, -28px), -75px, 0) rotate(var(--sway-rot-start, -12deg));
           }
-          25% {
+          30% {
             opacity: 1;
+            transform: translate3d(calc(var(--start-x, -28px) * 0.4), -32px, 0) rotate(var(--sway-rot-mid, 8deg));
           }
-          65% {
+          70% {
             opacity: 1;
-            transform: translate3d(calc(var(--start-x, -18px) * -0.35), 6px, 0);
+            transform: translate3d(calc(var(--start-x, -28px) * -0.15), 5px, 0) rotate(var(--sway-rot-end, -3deg));
           }
           100% {
             opacity: 1;
-            transform: translate3d(0, 0, 0);
+            transform: translate3d(0, 0, 0) rotate(0deg);
           }
         }
 
         .petal-settle-once {
           opacity: 0;
-          animation-name: petal-settle-in;
+          animation-name: petal-sway-settle;
           animation-iteration-count: 1;
-          animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+          animation-timing-function: cubic-bezier(0.25, 0.9, 0.35, 1);
           animation-fill-mode: forwards;
           will-change: transform, opacity;
         }
@@ -104,12 +104,15 @@ export function FloatingPetals({
 
       {petals.map((petal, idx) => {
         const spriteSrc = `/petals/petal-${petal.shape}-r${petal.rot}.png`;
-        // Desplazamiento horizontal inicial desde el cual planea hasta posarse en (x, y)
-        const startOffsetX = (idx % 2 === 0 ? -1 : 1) * (14 + ((idx * 7) % 16));
-        // Duración de aterrizaje suave (1.1s a 1.5s)
-        const settleDuration = (1.15 + ((petal.id * 0.11) % 0.45)).toFixed(2);
-        // Pequeño escalonamiento entre pétalos (0.0s a 0.65s)
-        const individualDelay = ((idx * 0.07) % 0.65).toFixed(2);
+        // Desplazamiento horizontal inicial y ángulo de planeo según su índice
+        const dir = idx % 2 === 0 ? -1 : 1;
+        const startOffsetX = dir * (20 + ((idx * 6) % 18));
+        const rotStart = dir * (10 + (idx % 6) * 2);
+        const rotMid = -dir * (6 + (idx % 4) * 2);
+        const rotEnd = dir * 2;
+
+        const settleDuration = petal.durationSec.toFixed(2);
+        const individualDelay = petal.delaySec.toFixed(2);
 
         return (
           <div
@@ -131,6 +134,9 @@ export function FloatingPetals({
               style={
                 {
                   '--start-x': `${startOffsetX}px`,
+                  '--sway-rot-start': `${rotStart}deg`,
+                  '--sway-rot-mid': `${rotMid}deg`,
+                  '--sway-rot-end': `${rotEnd}deg`,
                   animationDuration: `${settleDuration}s`,
                   animationDelay: `${individualDelay}s`,
                 } as React.CSSProperties
@@ -141,7 +147,7 @@ export function FloatingPetals({
                 alt=""
                 loading="eager"
                 decoding="async"
-                className="select-none pointer-events-none block drop-shadow-[0_3px_5px_rgba(30,21,84,0.18)]"
+                className="select-none pointer-events-none block drop-shadow-[0_2px_4px_rgba(28,37,65,0.16)]"
                 style={{
                   imageRendering: 'pixelated',
                 }}
