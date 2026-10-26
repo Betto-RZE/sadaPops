@@ -59,7 +59,7 @@ type DialogueState =
   | "exiting"
   | "dismissed";
 
-type BallotState = "on_table" | "picking_up" | "inspecting" | "voting";
+type BallotState = "on_table" | "picking_up" | "inspecting" | "voting" | "folding";
 
 export type BallotInspectionZoneId =
   | "encabezado"
@@ -274,6 +274,18 @@ export const VOTING_INTRO_MESSAGES_NAH: string[] = [
   "¿Ya tiyektok? ¡Ma tikmachiyotilikan toboleta!",
 ];
 
+export const FOLDING_INTRO_MESSAGES_ES: string[] = [
+  "¡Perfecto! Ya has aprendido cómo marcar una boleta electoral.",
+  "Recuerda que tu voto es libre y secreto. Nadie tiene derecho a exigirte que reveles por quién votaste.",
+  "Ahora que has terminado de marcar tu boleta, ¡vamos a doblar la boleta para mantener tu elección en privado!",
+];
+
+export const FOLDING_INTRO_MESSAGES_NAH: string[] = [
+  "¡Kualtsin! Axkan ya otikmomachti ken motlalia se machiyotl ipan se boleta electoral.",
+  "Ilnamiki mo voto yetos tlatlatsinketl wan ichtaka. Ajakmo aka kipia derecho mitztekiitis ma tiknexti akonewatitlan otitlapejpenaltok.",
+  "Axkan pampa ya otitlamik otikmachiyotili moboleta, ¡ma tikxolokan in boleta pampa mo elección amo ma moita!",
+];
+
 import {
   BALLOT_VOTING_BOXES,
   VOTING_REVIEW_NOTICES,
@@ -404,6 +416,13 @@ export default function Chapter3Scene({
   );
   const [reviewNoticeKey, setReviewNoticeKey] = useState(0);
 
+  // Fase de doblado de boleta: "idle" | "dialogue" | "ready_to_fold"
+  const [foldingPhase, setFoldingPhase] = useState<
+    "idle" | "dialogue" | "ready_to_fold"
+  >("idle");
+  const [isDismissingFoldingIntro, setIsDismissingFoldingIntro] =
+    useState(false);
+
   const [isDismissingExamDialogue, setIsDismissingExamDialogue] =
     useState(false);
 
@@ -468,7 +487,21 @@ export default function Chapter3Scene({
   };
 
   const handleTerminarVoto = () => {
-    // Listo para las siguientes instrucciones del usuario
+    setReviewNotice(null);
+    setBallotState("folding");
+    setFoldingPhase("dialogue");
+  };
+
+  const handleDismissFoldingIntroDialogue = () => {
+    setIsDismissingFoldingIntro(true);
+    setTimeout(() => {
+      setFoldingPhase("ready_to_fold");
+      setIsDismissingFoldingIntro(false);
+    }, 250);
+  };
+
+  const handleDoblarBoletaClick = () => {
+    // Aún no hace ninguna acción, listo para las siguientes instrucciones
   };
 
   const handleSelectZoneToExamine = (zoneId: BallotInspectionZoneId) => {
@@ -632,6 +665,7 @@ export default function Chapter3Scene({
           setActiveExaminingZone(null);
           setOpcionesSubStepIndex(0);
           setVotingPhase("idle");
+          setFoldingPhase("idle");
           setMarkedVoteBoxIds({});
           setReviewNotice(null);
         }
@@ -1370,22 +1404,22 @@ export default function Chapter3Scene({
               className="absolute top-1/2 -translate-y-1/2 z-40 select-none flex flex-col"
               style={{
                 left: "clamp(16px, 2.5cqw, 54px)",
-                gap: "clamp(14px, 1.8cqw, 30px)",
-                width: "clamp(190px, 22cqw, 380px)",
-                maxWidth: "26%",
+                gap: "clamp(10px, 1.2cqw, 20px)",
+                width: "clamp(140px, 15cqw, 260px)",
+                maxWidth: "22%",
                 animation: "fadeSlideInLeft 0.35s ease-out forwards",
               }}
             >
-              {/* Botón REVISAR */}
+              {/* Botón REVISAR (Azul Celeste) */}
               <button
                 onClick={handleRevisarVoto}
                 type="button"
                 data-testid="btn-revisar-voto"
-                className="w-full bg-[#1e40af] hover:bg-[#2563eb] active:bg-[#1d4ed8] text-white border-[3px] border-black rounded-lg shadow-[4px_4px_0px_0px_#000] cursor-pointer transition-all flex items-center justify-center select-none active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0px_0px_#000] hover:scale-[1.02]"
+                className="w-full bg-[#38bdf8] hover:bg-[#7dd3fc] active:bg-[#0284c7] text-white border-[2.5px] border-black rounded-md shadow-[3px_3px_0px_0px_#000] cursor-pointer transition-all flex items-center justify-center select-none active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] hover:scale-[1.02]"
                 style={{
-                  padding: "clamp(12px, 1.4cqw, 24px) clamp(16px, 2cqw, 32px)",
+                  padding: "clamp(8px, 0.9cqw, 16px) clamp(12px, 1.3cqw, 22px)",
                   fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
-                  fontSize: "clamp(10px, 1.25cqw, 22px)",
+                  fontSize: "clamp(8px, 0.95cqw, 16px)",
                   lineHeight: "1.3",
                   textShadow:
                     "2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 2px 0 #000, 0 -2px 0 #000, 2px 0 0 #000, -2px 0 0 #000",
@@ -1395,16 +1429,16 @@ export default function Chapter3Scene({
                 REVISAR
               </button>
 
-              {/* Botón TERMINAR */}
+              {/* Botón TERMINAR (Rosa) */}
               <button
                 onClick={handleTerminarVoto}
                 type="button"
                 data-testid="btn-terminar-voto"
-                className="w-full bg-[#15803d] hover:bg-[#16a34a] active:bg-[#166534] text-white border-[3px] border-black rounded-lg shadow-[4px_4px_0px_0px_#000] cursor-pointer transition-all flex items-center justify-center select-none active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0px_0px_#000] hover:scale-[1.02]"
+                className="w-full bg-[#ec4899] hover:bg-[#f472b6] active:bg-[#db2777] text-white border-[2.5px] border-black rounded-md shadow-[3px_3px_0px_0px_#000] cursor-pointer transition-all flex items-center justify-center select-none active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] hover:scale-[1.02]"
                 style={{
-                  padding: "clamp(12px, 1.4cqw, 24px) clamp(16px, 2cqw, 32px)",
+                  padding: "clamp(8px, 0.9cqw, 16px) clamp(12px, 1.3cqw, 22px)",
                   fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
-                  fontSize: "clamp(10px, 1.25cqw, 22px)",
+                  fontSize: "clamp(8px, 0.95cqw, 16px)",
                   lineHeight: "1.3",
                   textShadow:
                     "2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 2px 0 #000, 0 -2px 0 #000, 2px 0 0 #000, -2px 0 0 #000",
@@ -1582,10 +1616,14 @@ export default function Chapter3Scene({
               )}
 
               {/* CAPA DE CASILLAS PARA MARCAR EL VOTO (SIMULADOR DE VOTACIÓN) */}
-              {ballotState === "voting" && (
+              {(ballotState === "voting" || ballotState === "folding") && (
                 <div
                   data-testid="ballot-voting-boxes-layer"
-                  className="absolute inset-0 w-full h-full pointer-events-auto z-40"
+                  className={`absolute inset-0 w-full h-full z-40 ${
+                    ballotState === "voting"
+                      ? "pointer-events-auto"
+                      : "pointer-events-none"
+                  }`}
                 >
                   {BALLOT_VOTING_BOXES.map((box) => {
                     const isMarked = Boolean(markedVoteBoxIds[box.id]);
@@ -1740,6 +1778,60 @@ export default function Chapter3Scene({
                   onDismiss={() => setReviewNotice(null)}
                 />
               </div>
+            </div>
+          )}
+
+          {/* GLOBO DE TEXTO TRAS TERMINAR EL VOTO: INSTRUCCIÓN PARA DOBLAR */}
+          {ballotState === "folding" && foldingPhase === "dialogue" && (
+            <div
+              data-testid="voting-folding-intro-dialogue"
+              className="absolute inset-0 z-50 pointer-events-none flex items-end justify-center pb-[1.8cqw] px-[2cqw] overflow-hidden select-none"
+            >
+              <div className="relative z-10 w-[96%] pointer-events-auto flex flex-col items-end">
+                <PixelSpeechBubble
+                  key="voting-folding-intro-dialogue"
+                  speaker={language === "nah" ? "Inecito Cívica" : "Inecito"}
+                  messages={
+                    language === "nah"
+                      ? FOLDING_INTRO_MESSAGES_NAH
+                      : FOLDING_INTRO_MESSAGES_ES
+                  }
+                  actionKey="E"
+                  isDismissing={isDismissingFoldingIntro}
+                  onDismiss={handleDismissFoldingIntroDialogue}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* BOTÓN INFERIOR: "DOBLAR BOLETA" (CENTRADO ABAJO) */}
+          {ballotState === "folding" && foldingPhase === "ready_to_fold" && (
+            <div
+              data-testid="fold-ballot-action-container"
+              className="absolute left-0 right-0 z-50 flex justify-center pointer-events-none select-none"
+              style={{
+                bottom: "clamp(24px, 4cqw, 56px)",
+              }}
+            >
+              <button
+                onClick={handleDoblarBoletaClick}
+                type="button"
+                data-testid="btn-doblar-boleta"
+                className="pointer-events-auto px-6 sm:px-8 py-3 sm:py-3.5 bg-[#940d57] hover:bg-[#b8156e] active:bg-[#780946] text-white border-[3px] border-black rounded-lg shadow-[4px_4px_0px_0px_#000] cursor-pointer hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 select-none"
+                style={{
+                  fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
+                  fontSize: isFullscreen
+                    ? "clamp(12px, 1.4cqw, 20px)"
+                    : "clamp(10px, 1.15cqw, 16px)",
+                  lineHeight: "1.25",
+                  textShadow:
+                    "2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 2px 0 #000, 0 -2px 0 #000, 2px 0 0 #000, -2px 0 0 #000",
+                  animation: "floatBanner 2s ease-in-out infinite",
+                }}
+                title="Doblar la boleta"
+              >
+                <span>DOBLAR BOLETA</span>
+              </button>
             </div>
           )}
         </div>
