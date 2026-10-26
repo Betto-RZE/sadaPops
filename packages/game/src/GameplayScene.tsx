@@ -848,6 +848,19 @@ export default function GameplayScene({
       const k = e.key.toLowerCase();
       keysPressed[k] = true;
 
+      // Prevenir el scroll nativo de la página web con flechas direccionales o espacio
+      if (
+        k === "arrowup" ||
+        k === "arrowdown" ||
+        k === "arrowleft" ||
+        k === "arrowright" ||
+        k === " " ||
+        k === "spacebar" ||
+        e.code === "Space"
+      ) {
+        e.preventDefault();
+      }
+
       // Interacción con tecla 'E', ENTER o ESPACIO en la explanada cuando no hay diálogo activo
       const isInteractionKey =
         k === "e" ||
@@ -855,10 +868,6 @@ export default function GameplayScene({
         k === " " ||
         e.code === "Enter" ||
         e.code === "Space";
-
-      if (isInteractionKey && (k === " " || e.code === "Space")) {
-        e.preventDefault();
-      }
 
       if (
         isInteractionKey &&

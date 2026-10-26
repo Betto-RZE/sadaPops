@@ -905,6 +905,19 @@ export default function Chapter3Scene({
       const key = e.key.toLowerCase();
       keysPressed[key] = true;
 
+      // Prevenir el scroll nativo de la página web con flechas direccionales o espacio
+      if (
+        key === "arrowup" ||
+        key === "arrowdown" ||
+        key === "arrowleft" ||
+        key === "arrowright" ||
+        key === " " ||
+        key === "spacebar" ||
+        e.code === "Space"
+      ) {
+        e.preventDefault();
+      }
+
       // Presionar E, Espacio o Enter cerca de una mampara para entrar a votar (iniciar vista POV)
       const isMamparaSelectKey =
         key === "e" ||

@@ -388,7 +388,7 @@ export function PixiGameCanvas({
     }
   }, []);
 
-  // Atajo de teclado: Tecla 'F' / 'f' para entrar y salir de pantalla completa
+  // Atajo de teclado: Tecla 'F' para pantalla completa y prevención de scroll nativo al jugar
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ignorar si el usuario está interactuando con un campo de texto
@@ -405,6 +405,21 @@ export function PixiGameCanvas({
       if (e.key === "f" || e.key === "F" || e.code === "KeyF") {
         e.preventDefault();
         toggleFullscreen();
+        return;
+      }
+
+      // Prevenir que las flechas de dirección y barra espaciadora hagan scroll en la página web
+      const key = e.key.toLowerCase();
+      if (
+        key === "arrowup" ||
+        key === "arrowdown" ||
+        key === "arrowleft" ||
+        key === "arrowright" ||
+        key === " " ||
+        key === "spacebar" ||
+        e.code === "Space"
+      ) {
+        e.preventDefault();
       }
     };
 

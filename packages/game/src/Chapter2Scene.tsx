@@ -567,6 +567,19 @@ export default function Chapter2Scene({
       const key = e.key.toLowerCase();
       keysPressed[key] = true;
 
+      // Prevenir el scroll nativo de la página web con flechas direccionales o espacio
+      if (
+        key === "arrowup" ||
+        key === "arrowdown" ||
+        key === "arrowleft" ||
+        key === "arrowright" ||
+        key === " " ||
+        key === "spacebar" ||
+        e.code === "Space"
+      ) {
+        e.preventDefault();
+      }
+
       // Al presionar E cerca del lado izquierdo de la mesa con la exclamación activa,
       // se inicia la conversación con el personaje, alineando al protagonista en Y y mirando hacia la derecha
       if (key === "e") {
