@@ -1533,7 +1533,7 @@ export default function Chapter2Scene({
         <div className="absolute inset-0 z-40 pointer-events-none flex items-end justify-center pb-[1.8cqw] px-[2cqw] overflow-hidden select-none">
           {/* Capa de desenfoque y oscurecimiento cinematográfico de fondo (Backdrop Blur) */}
           <div
-            className={`absolute inset-0 pointer-events-none transition-all duration-500 ease-out ${
+            className={`absolute inset-0 pointer-events-none transition-[opacity,backdrop-filter,background-color] duration-500 ease-out ${
               npcConversationState === "exiting" ? "opacity-0" : "opacity-100"
             }`}
             style={{

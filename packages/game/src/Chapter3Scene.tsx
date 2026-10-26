@@ -1708,7 +1708,7 @@ export default function Chapter3Scene({
           <img
             src="/assets/juego/simulador-voto/mampara-pov.png"
             alt={`Mampara electoral ${selectedMamparaIndex + 1} - Vista POV`}
-            className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none transition-all duration-700 ease-out"
+            className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none transition-[filter,transform] duration-700 ease-out"
             style={{
               imageRendering: "pixelated",
               filter: isBoothBlurred
@@ -1728,7 +1728,7 @@ export default function Chapter3Scene({
           {/* TEXTO DE INSTRUCCIÓN SUPERIOR: "AGARRA LA BOLETA" */}
           <div
             data-testid="voting-booth-instruction"
-            className={`absolute top-6 sm:top-8 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 ease-out flex flex-col items-center select-none ${
+            className={`absolute top-6 sm:top-8 left-1/2 -translate-x-1/2 z-50 transition-[opacity,transform] duration-300 ease-out flex flex-col items-center select-none ${
               ballotState === "on_table"
                 ? "opacity-100 translate-y-0 pointer-events-auto"
                 : "opacity-0 -translate-y-4 pointer-events-none"
@@ -1749,7 +1749,7 @@ export default function Chapter3Scene({
                   handleBallotClick();
                 }
               }}
-              className="px-6 sm:px-8 py-3 sm:py-3.5 bg-black/85 backdrop-blur-sm border-[3px] border-black rounded-lg shadow-[4px_4px_0px_0px_#000] cursor-pointer hover:bg-black/95 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 outline-none focus:outline-none focus-visible:outline-none"
+              className="px-6 sm:px-8 py-3 sm:py-3.5 bg-black/85 backdrop-blur-sm border-[3px] border-black rounded-lg shadow-[4px_4px_0px_0px_#000] cursor-pointer hover:bg-black/95 active:scale-95 transition-colors flex items-center justify-center gap-2 outline-none focus:outline-none focus-visible:outline-none"
               style={{
                 outline: "none",
                 WebkitTapHighlightColor: "transparent",
@@ -1777,7 +1777,7 @@ export default function Chapter3Scene({
           {/* GUÍA DE INSPECCIÓN: "EXAMINA LA BOLETA" (SIN CONTENEDORES NI BORDES NEÓN, CON CASILLAS A LA IZQUIERDA) */}
           <div
             data-testid="ballot-inspection-panel"
-            className={`absolute top-1/2 -translate-y-1/2 z-40 transition-all duration-500 ease-out select-none flex flex-col outline-none focus:outline-none ${
+            className={`absolute top-1/2 -translate-y-1/2 z-40 transition-[opacity,transform] duration-300 ease-out select-none flex flex-col outline-none focus:outline-none ${
               ballotState === "inspecting" && activeExaminingZone === null
                 ? "opacity-100 translate-x-0 pointer-events-auto"
                 : "opacity-0 -translate-x-8 pointer-events-none"
@@ -1846,7 +1846,7 @@ export default function Chapter3Scene({
                         handleSelectZoneToExamine(zone.id);
                       }
                     }}
-                    className={`flex items-center select-none transition-all duration-200 outline-none focus:outline-none focus-visible:outline-none ${
+                    className={`flex items-center select-none transition-[transform] duration-150 outline-none focus:outline-none focus-visible:outline-none ${
                       isChecked
                         ? "cursor-default opacity-85"
                         : "cursor-pointer"
@@ -1864,7 +1864,7 @@ export default function Chapter3Scene({
                   >
                     {/* Casilla cuadrada a la izquierda (se marca con palomita al examinarse) */}
                     <div
-                      className={`shrink-0 rounded-[2px] flex items-center justify-center transition-all ${
+                      className={`shrink-0 rounded-[2px] flex items-center justify-center transition-colors ${
                         isChecked
                           ? "border-black bg-[#10b981] text-black shadow-[clamp(2px,0.22cqw,4px)_clamp(2px,0.22cqw,4px)_0px_0px_#000]"
                           : isHovered
@@ -1885,7 +1885,7 @@ export default function Chapter3Scene({
 
                     {/* Texto del punto a examinar (sin contenedores que lo encierren) */}
                     <span
-                      className={`font-black tracking-wide select-none transition-all ${
+                      className={`font-black tracking-wide select-none transition-colors ${
                         isChecked
                           ? "text-[#a7f3d0] line-through decoration-black decoration-[clamp(2px,0.22cqw,4px)]"
                           : isHovered
@@ -1927,7 +1927,7 @@ export default function Chapter3Scene({
                 onMouseDown={(e) => e.preventDefault()}
                 type="button"
                 data-testid="btn-revisar-voto"
-                className="w-full bg-[#38bdf8] hover:bg-[#7dd3fc] active:bg-[#0284c7] text-white border-[2.5px] border-black rounded-md shadow-[3px_3px_0px_0px_#000] cursor-pointer transition-all flex items-center justify-center select-none active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] hover:scale-[1.02] outline-none focus:outline-none focus-visible:outline-none"
+                className="w-full bg-[#38bdf8] hover:bg-[#7dd3fc] active:bg-[#0284c7] text-white border-[2.5px] border-black rounded-md shadow-[3px_3px_0px_0px_#000] cursor-pointer transition-colors flex items-center justify-center select-none active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] outline-none focus:outline-none focus-visible:outline-none"
                 style={{
                   outline: "none",
                   WebkitTapHighlightColor: "transparent",
@@ -1949,7 +1949,7 @@ export default function Chapter3Scene({
                 onMouseDown={(e) => e.preventDefault()}
                 type="button"
                 data-testid="btn-terminar-voto"
-                className="w-full bg-[#ec4899] hover:bg-[#f472b6] active:bg-[#db2777] text-white border-[2.5px] border-black rounded-md shadow-[3px_3px_0px_0px_#000] cursor-pointer transition-all flex items-center justify-center select-none active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] hover:scale-[1.02] outline-none focus:outline-none focus-visible:outline-none"
+                className="w-full bg-[#ec4899] hover:bg-[#f472b6] active:bg-[#db2777] text-white border-[2.5px] border-black rounded-md shadow-[3px_3px_0px_0px_#000] cursor-pointer transition-colors flex items-center justify-center select-none active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_0px_#000] outline-none focus:outline-none focus-visible:outline-none"
                 style={{
                   outline: "none",
                   WebkitTapHighlightColor: "transparent",
@@ -2041,7 +2041,7 @@ export default function Chapter3Scene({
                             : "translate(-50%, -50%) perspective(1000px) scale(1)",
                 transition:
                   ballotState === "on_table"
-                    ? "all 220ms cubic-bezier(0.2, 0.8, 0.2, 1)"
+                    ? "transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1), filter 220ms ease-out"
                     : isBallotFolded
                       ? foldingPhase === "folding"
                         ? `transform ${BALLOT_FOLD_DURATION_MS}ms cubic-bezier(0.65, 0, 0.35, 1)`
@@ -2213,7 +2213,7 @@ export default function Chapter3Scene({
                             ? `${zone.label} (Ya examinado)`
                             : `${zone.label} (Haz clic para examinar)`
                         }
-                        className={`absolute transition-all duration-300 select-none rounded-[3px] outline-none focus:outline-none focus-visible:outline-none ${
+                        className={`absolute transition-[border-color,background-color,box-shadow] duration-150 select-none rounded-[3px] outline-none focus:outline-none focus-visible:outline-none ${
                           isChecked
                             ? "cursor-default pointer-events-none"
                             : activeExaminingZone !== null
@@ -2427,7 +2427,7 @@ export default function Chapter3Scene({
                 onMouseDown={(e) => e.preventDefault()}
                 type="button"
                 data-testid="btn-doblar-boleta"
-                className="pointer-events-auto px-6 sm:px-8 py-3 sm:py-3.5 bg-[#940d57] hover:bg-[#b8156e] active:bg-[#780946] text-white border-[3px] border-black rounded-lg shadow-[4px_4px_0px_0px_#000] cursor-pointer hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 select-none outline-none focus:outline-none focus-visible:outline-none"
+                className="pointer-events-auto px-6 sm:px-8 py-3 sm:py-3.5 bg-[#940d57] hover:bg-[#b8156e] active:bg-[#780946] text-white border-[3px] border-black rounded-lg shadow-[4px_4px_0px_0px_#000] cursor-pointer active:scale-95 transition-colors flex items-center justify-center gap-2 select-none outline-none focus:outline-none focus-visible:outline-none"
                 style={{
                   fontFamily: "'Press Start 2P', 'Silkscreen', monospace",
                   fontSize: isFullscreen

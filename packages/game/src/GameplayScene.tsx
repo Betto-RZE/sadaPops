@@ -1541,7 +1541,7 @@ export default function GameplayScene({
             }}
             type="button"
             title="Botón provisional para pruebas: saltar todos los textos con un solo clic"
-            className={`bg-[#ff2a85] hover:bg-[#ff4da6] active:bg-[#d61b6b] text-white font-black rounded-md border-[3px] border-black shadow-[3px_3px_0px_0px_#000] cursor-pointer transition-all flex items-center gap-1.5 select-none active:translate-x-[1px] active:translate-y-[1px] active:shadow-none ${
+            className={`bg-[#ff2a85] hover:bg-[#ff4da6] active:bg-[#d61b6b] text-white font-black rounded-md border-[3px] border-black shadow-[3px_3px_0px_0px_#000] cursor-pointer transition-colors flex items-center gap-1.5 select-none active:translate-x-[1px] active:translate-y-[1px] active:shadow-none ${
               isFullscreen
                 ? "text-[11px] py-2 px-3.5 tracking-wider"
                 : "text-[9px] py-1.5 px-2.5 tracking-wider"
