@@ -840,7 +840,10 @@ export function PixelMap({
           onPointerMove={handlePointerMove}
           onPointerDown={handlePointerDown}
           onPointerLeave={handlePointerLeave}
-          className="absolute inset-0 w-full h-full object-contain [image-rendering:pixelated] cursor-pointer touch-manipulation z-10"
+          className={cn(
+            'absolute inset-0 w-full h-full object-contain [image-rendering:pixelated] touch-manipulation z-10',
+            currentHoveredId ? 'cursor-pointer' : 'cursor-default'
+          )}
         />
 
         {/* Capa 4: Ranura para overlays y dalias (Hito H4) */}

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { PixelMap, DahliaLayer, FloatingPetals } from '@/features/mapa-dalias';
+import { PixelMap, DahliaLayer } from '@/features/mapa-dalias';
 
 export function Hero() {
   // Inicialización neutral: ningún estado seleccionado al cargar la landing
@@ -11,9 +11,6 @@ export function Hero() {
   return (
     <section className="relative w-full bg-transparent overflow-hidden pt-0 pb-6 sm:pb-8 select-none">
       
-      {/* Capa de Pétalos concentrados en los bordes */}
-      <FloatingPetals />
-
       <div className="mx-auto max-w-[1440px] px-3 sm:px-6 lg:px-10 relative z-10">
         
         {/* Contenedor compacto que aprovecha el espacio vertical sin scroll */}
