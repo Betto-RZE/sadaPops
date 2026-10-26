@@ -31,6 +31,7 @@ import {
   getBaseRightBoundaryX,
   EXCLAMATION_ICON_WIDTH,
 } from "./GameplayScene";
+import { OffscreenWaypointArrow } from "./OffscreenWaypointArrow";
 import type { ChapterSceneProps } from "./features/capitulos/ChapterSceneRouter";
 import {
   getChapterHandoff,
@@ -1044,6 +1045,11 @@ export default function Chapter2Scene({
     npcs,
   ]);
 
+  // Objetivo activo con signo de exclamación flotante (!) para la flecha indicadora
+  const activeExclamationTarget = showMesaExclamation
+    ? MESA_INTERACTION_LEFT_POS
+    : null;
+
   return (
     <div
       data-testid="chapter-scene-2"
@@ -1051,6 +1057,10 @@ export default function Chapter2Scene({
     >
       {/* Microanimaciones para el icono flotante de exclamación y texto pixel art */}
       <style>{`
+        @keyframes pixelArrowPulse {
+          0%, 100% { transform: translateX(0px); }
+          50% { transform: translateX(clamp(3px, 0.4cqw, 8px)); }
+        }
         @keyframes floatExclamation {
           0%, 100% { transform: translateY(0px); }
           50% { transform: translateY(-5px); }
@@ -1079,6 +1089,14 @@ export default function Chapter2Scene({
           <span>◀</span>
         </button>
       </div>
+
+      {/* OFF-SCREEN WAYPOINT ARROW (Flecha pixel art con movimiento fluido en 60 FPS) */}
+      <OffscreenWaypointArrow
+        target={activeExclamationTarget}
+        camX={camX}
+        camY={camY}
+        zoomScale={zoomScale}
+      />
 
       {/* MUNDO CON CAMARA DINAMICA */}
       <div

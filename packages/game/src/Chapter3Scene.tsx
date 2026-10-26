@@ -39,6 +39,7 @@ import {
 } from "./features/npcs";
 import { CastShadow, DECORATION_SHADOWS } from "./features/sombras";
 import { PlazaAmbience } from "./features/ambientacion";
+import { OffscreenWaypointArrow } from "./OffscreenWaypointArrow";
 
 /**
  * Capítulo 3: "Aprende a votar".
@@ -1230,6 +1231,31 @@ export default function Chapter3Scene({
   const camX = Math.min(maxCamShift, Math.max(-maxCamShift, rawCamX));
   const camY = Math.min(maxCamShift, Math.max(-maxCamShift, rawCamY));
 
+  // Objetivo activo con signo de exclamación flotante (!) para la flecha indicadora
+  const activeExclamationTarget: { x: number; y: number } | null = (() => {
+    if (
+      dialogueState === "dismissed" &&
+      selectedMamparaIndex === null &&
+      !hasSelectedMamparaToVote
+    ) {
+      let closestIcon: { x: number; y: number } | null = null;
+      let minD = Infinity;
+      CASILLA_POSITIONS.forEach((_, idx) => {
+        const iconPos = EXCLAMATION_ICON_POSITIONS.casillas[idx];
+        const d = Math.hypot(playerPos.x - iconPos.x, playerPos.y - iconPos.y);
+        if (d < minD) {
+          minD = d;
+          closestIcon = iconPos;
+        }
+      });
+      return closestIcon;
+    }
+    if (postVotingPhase === "walking_to_urna") {
+      return URNA_EXCLAMATION_POSITION;
+    }
+    return null;
+  })();
+
   return (
     <div
       data-testid="chapter-scene-3"
@@ -1253,6 +1279,14 @@ export default function Chapter3Scene({
           <span>◀</span>
         </button>
       </div>
+
+      {/* OFF-SCREEN WAYPOINT ARROW (Flecha pixel art con movimiento fluido en 60 FPS) */}
+      <OffscreenWaypointArrow
+        target={activeExclamationTarget}
+        camX={camX}
+        camY={camY}
+        zoomScale={zoomScale}
+      />
 
       {/* MUNDO CON CÁMARA DINÁMICA (ZOOM 2.0x Y SEGUIMIENTO A INECITO) */}
       <div
@@ -1554,6 +1588,10 @@ export default function Chapter3Scene({
 
       {/* ESTILOS DE ANIMACIÓN PIXEL ART */}
       <style>{`
+        @keyframes pixelArrowPulse {
+          0%, 100% { transform: translateX(0px); }
+          50% { transform: translateX(clamp(3px, 0.4cqw, 8px)); }
+        }
         @keyframes floatExclamation {
           0%, 100% {
             transform: translateY(0px);

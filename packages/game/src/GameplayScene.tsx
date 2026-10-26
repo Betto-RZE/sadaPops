@@ -23,6 +23,7 @@ import {
 } from "./AnimatedPlayerSprite";
 import { CastShadow, DECORATION_SHADOWS } from "./features/sombras";
 import { PlazaAmbience } from "./features/ambientacion";
+import { OffscreenWaypointArrow } from "./OffscreenWaypointArrow";
 
 // Centralized Plaza Collision Bounds (Edit these 9 numbers to dynamically adjust boundaries in real-time!)
 export const PLAZA_BOUNDS = {
@@ -141,10 +142,10 @@ export const PLACEMENT_SPOTS = {
 export const EXCLAMATION_ICON_POSITIONS = {
   caja: { x: 19.5, y: 37.0 }, // 0.5 hacia la izquierda (20.0 -> 19.5) y 1.5 hacia arriba (38.5 -> 37.0)
   casillas: [
-    { x: 32.0, y: 29.0 }, // Mampara 1 (2 puntos más arriba)
-    { x: 42.0, y: 29.0 }, // Mampara 2 (2 puntos más arriba)
-    { x: 52.0, y: 29.0 }, // Mampara 3 (2 puntos más arriba)
-    { x: 62.0, y: 29.0 }, // Mampara 4 (2 puntos más arriba)
+    { x: 32.0, y: 33.0 }, // Mampara 1
+    { x: 42.0, y: 33.0 }, // Mampara 2
+    { x: 52.0, y: 33.0 }, // Mampara 3
+    { x: 62.0, y: 33.0 }, // Mampara 4
   ],
   mesa: { x: 19.0, y: 65.0 }, // Centro visible de la mesa de votación
   mesaFinal: { x: 15.0, y: 58.0 },
@@ -1492,36 +1493,6 @@ export default function GameplayScene({
     minigamePhase !== "phase_1_done" &&
     minigamePhase !== "phase_2_mesa";
 
-  // Proyección de la posición del objetivo en pantalla (0% a 100% del viewport)
-  const targetScreenX = activeExclamationTarget
-    ? 50 + (activeExclamationTarget.x + camX - 50) * zoomScale
-    : 50;
-  const targetScreenY = activeExclamationTarget
-    ? 50 + (activeExclamationTarget.y + camY - 50) * zoomScale
-    : 50;
-
-  // ¿El signo de exclamación se encuentra dentro del encuadre visible de la cámara?
-  const isTargetInView =
-    targetScreenX >= 4 &&
-    targetScreenX <= 96 &&
-    targetScreenY >= 5 &&
-    targetScreenY <= 95;
-
-  const showOffscreenArrow = Boolean(
-    activeExclamationTarget && !isTargetInView,
-  );
-
-  // Vector de dirección desde el centro de la pantalla hacia el objetivo fuera de cámara
-  const dirX = targetScreenX - 50;
-  const dirY = targetScreenY - 50;
-  const arrowAngleRad = Math.atan2(dirY, dirX);
-  const arrowAngleDeg = (arrowAngleRad * 180) / Math.PI;
-
-  // Perímetro elíptico pegado a los bordes de la cámara (HUD ultra-fluido en 60 FPS):
-  // X varía suavemente en [3.5%, 96.5%] (radio = 46.5%)
-  // Y varía suavemente en [5.5%, 94.5%] (radio = 44.5%)
-  const arrowScreenX = 50 + 46.5 * Math.cos(arrowAngleRad);
-  const arrowScreenY = 50 + 44.5 * Math.sin(arrowAngleRad);
 
   return (
     <div className="absolute inset-0 w-full h-full z-20 overflow-hidden bg-[#2d572c] select-none">
@@ -1586,31 +1557,12 @@ export default function GameplayScene({
       )}
 
       {/* OFF-SCREEN WAYPOINT ARROW (Flecha pixel art con movimiento fluido en 60 FPS) */}
-      {showOffscreenArrow && (
-        <div
-          className="absolute pointer-events-none z-30 select-none"
-          style={{
-            left: `${arrowScreenX}%`,
-            top: `${arrowScreenY}%`,
-            transform: `translate(-50%, -50%) rotate(${arrowAngleDeg}deg)`,
-            willChange: "left, top, transform",
-          }}
-        >
-          <div
-            style={{
-              animation: "pixelArrowPulse 0.9s ease-in-out infinite",
-            }}
-            className="flex items-center justify-center filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.7)]"
-          >
-            <img
-              src="/assets/juego/flecha-rosa.png"
-              alt="Flecha indicadora de objetivo"
-              className="w-[clamp(28px,4.2cqw,96px)] h-[clamp(28px,4.2cqw,96px)] object-contain select-none pointer-events-none"
-              style={{ imageRendering: "pixelated" }}
-            />
-          </div>
-        </div>
-      )}
+      <OffscreenWaypointArrow
+        target={activeExclamationTarget}
+        camX={camX}
+        camY={camY}
+        zoomScale={zoomScale}
+      />
 
       {/* DYNAMIC CAMERA WORLD CONTAINER (Enlarges 1.75x and smoothly tracks avatar) */}
       <div
