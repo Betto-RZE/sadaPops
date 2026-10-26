@@ -19,6 +19,7 @@ import {
   isInsideBox,
   isInsidePolygon,
   tryPolygonWallSlide,
+  applyMesaSlidingDeltas,
   getLeftBoundaryX,
   getRightBoundaryX,
   getBaseRightBoundaryX,
@@ -1130,6 +1131,15 @@ export default function Chapter3Scene({
               effectiveDy += Math.abs(voluntaryDx) * 0.75;
             }
           }
+
+          // Deslizamiento suave sobre la mesa directiva (idéntico a los límites de la explanada)
+          const mesaDeltas = applyMesaSlidingDeltas(
+            prev,
+            effectiveDx,
+            effectiveDy,
+          );
+          effectiveDx = mesaDeltas.dx;
+          effectiveDy = mesaDeltas.dy;
 
           const rawTargetX = prev.x + effectiveDx;
           const rawTargetY = prev.y + effectiveDy;

@@ -243,106 +243,11 @@ export const isInsidePolygon = (
   return inside;
 };
 
-// Diagonal Wall Sliding helper for polygon obstacles (caja & mesa)
-export const tryPolygonWallSlide = (
-  currentPos: Point2D,
-  dx: number,
-  dy: number,
-  polygon: Point2D[],
-  isWalkable: (x: number, y: number) => boolean,
-): Point2D | null => {
-  if (!polygon || polygon.length < 3) return null;
-
-  const targetX = currentPos.x + dx;
-  const targetY = currentPos.y + dy;
-  const moveMag = Math.hypot(dx, dy);
-  if (moveMag < 0.0001) return null;
-
-  const cx = polygon.reduce((acc, p) => acc + p.x, 0) / polygon.length;
-  const cy = polygon.reduce((acc, p) => acc + p.y, 0) / polygon.length;
-
-  let closestEdge: { a: Point2D; b: Point2D; distSq: number } | null = null;
-
-  for (let i = 0; i < polygon.length; i++) {
-    const a = polygon[i];
-    const b = polygon[(i + 1) % polygon.length];
-
-    const len2 = (b.x - a.x) ** 2 + (b.y - a.y) ** 2;
-    if (len2 === 0) continue;
-
-    let t =
-      ((targetX - a.x) * (b.x - a.x) + (targetY - a.y) * (b.y - a.y)) / len2;
-    t = Math.max(0, Math.min(1, t));
-    const px = a.x + t * (b.x - a.x);
-    const py = a.y + t * (b.y - a.y);
-    const distSq = (targetX - px) ** 2 + (targetY - py) ** 2;
-
-    if (!closestEdge || distSq < closestEdge.distSq) {
-      closestEdge = { a, b, distSq };
-    }
-  }
-
-  if (!closestEdge || closestEdge.distSq > 2.5) {
-    return null;
-  }
-
-  const { a, b } = closestEdge;
-  const edx = b.x - a.x;
-  const edy = b.y - a.y;
-  const edgeLen = Math.hypot(edx, edy);
-  if (edgeLen === 0) return null;
-
-  const tx = edx / edgeLen;
-  const ty = edy / edgeLen;
-
-  let nx = -ty;
-  let ny = tx;
-  const midX = (a.x + b.x) / 2;
-  const midY = (a.y + b.y) / 2;
-  if (
-    Math.hypot(midX + nx - cx, midY + ny - cy) <
-    Math.hypot(midX - nx - cx, midY - ny - cy)
-  ) {
-    nx = -nx;
-    ny = -ny;
-  }
-
-  const dot = dx * tx + dy * ty;
-
-  let slideDir = 0;
-  if (Math.abs(dot) > 0.05) {
-    slideDir = Math.sign(dot);
-  } else {
-    const distA = Math.hypot(currentPos.x - a.x, currentPos.y - a.y);
-    const distB = Math.hypot(currentPos.x - b.x, currentPos.y - b.y);
-    slideDir = distA < distB ? -1 : 1;
-  }
-
-  const slideSpeed = Math.max(Math.abs(dot), moveMag * 0.85) * slideDir;
-  const stepX = tx * slideSpeed;
-  const stepY = ty * slideSpeed;
-
-  const candidates = [
-    {
-      x: currentPos.x + stepX + nx * 0.1,
-      y: currentPos.y + stepY + ny * 0.1,
-    },
-    { x: currentPos.x + stepX, y: currentPos.y + stepY },
-    {
-      x: currentPos.x + stepX * 0.6 + nx * 0.1,
-      y: currentPos.y + stepY * 0.6 + ny * 0.1,
-    },
-    { x: currentPos.x + stepX * 0.6, y: currentPos.y + stepY * 0.6 },
-  ];
-
-  for (const cand of candidates) {
-    if (isWalkable(cand.x, cand.y)) {
-      return cand;
-    }
-  }
-
-  return null;
-};
+import {
+  applyMesaSlidingDeltas,
+  tryPolygonWallSlide,
+} from "./features/colisiones";
+export { applyMesaSlidingDeltas, tryPolygonWallSlide };
 
 // Sistema de Despenetración: si el personaje queda dentro de un obstáculo al colocarlo, calcula el vector de empuje a una zona segura
 const getSafePushVector = (
@@ -1385,6 +1290,23 @@ export default function GameplayScene({
             }
           }
 
+          // Deslizamiento suave sobre la mesa directiva (idéntico a los límites de la explanada)
+          const curPhase = minigamePhaseRef.current;
+          const isMesaActive =
+            curPhase !== "phase_0_ready" &&
+            curPhase !== "phase_1_casillas" &&
+            curPhase !== "phase_1_done" &&
+            curPhase !== "phase_2_mesa";
+          if (isMesaActive) {
+            const mesaDeltas = applyMesaSlidingDeltas(
+              prev,
+              effectiveDx,
+              effectiveDy,
+            );
+            effectiveDx = mesaDeltas.dx;
+            effectiveDy = mesaDeltas.dy;
+          }
+
           const rawTargetX = prev.x + effectiveDx;
           const rawTargetY = prev.y + effectiveDy;
 
@@ -1394,7 +1316,6 @@ export default function GameplayScene({
           }
 
           // 2b. Diagonal Wall Sliding sobre la Caja de Suministros
-          const curPhase = minigamePhaseRef.current;
           if (curPhase !== "phase_complete") {
             const cajaSlide = tryPolygonWallSlide(
               prev,
@@ -1409,11 +1330,6 @@ export default function GameplayScene({
           }
 
           // 2c. Diagonal Wall Sliding sobre la Mesa Directiva de Votación
-          const isMesaActive =
-            curPhase !== "phase_0_ready" &&
-            curPhase !== "phase_1_casillas" &&
-            curPhase !== "phase_1_done" &&
-            curPhase !== "phase_2_mesa";
           if (isMesaActive) {
             const mesaSlide = tryPolygonWallSlide(
               prev,

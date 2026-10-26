@@ -25,6 +25,7 @@ import {
   isInsideBox,
   isInsidePolygon,
   tryPolygonWallSlide,
+  applyMesaSlidingDeltas,
   getLeftBoundaryX,
   getRightBoundaryX,
   getBaseRightBoundaryX,
@@ -862,6 +863,15 @@ export default function Chapter2Scene({
               effectiveDy += Math.abs(totalDx) * 0.75;
             }
           }
+
+          // Deslizamiento suave sobre la mesa directiva (idéntico a los límites de la explanada)
+          const mesaDeltas = applyMesaSlidingDeltas(
+            prev,
+            effectiveDx,
+            effectiveDy,
+          );
+          effectiveDx = mesaDeltas.dx;
+          effectiveDy = mesaDeltas.dy;
 
           const isTargetWalkable = (tx: number, ty: number): boolean => {
             return (
