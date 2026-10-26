@@ -61,6 +61,105 @@ type DialogueState =
 
 type BallotState = "on_table" | "picking_up" | "inspecting" | "voting" | "folding";
 
+type FoldingPhase =
+  | "idle"
+  | "dialogue"
+  | "ready_to_fold"
+  | "folding"
+  | "sliding"
+  | "exiting";
+
+/** Duraciones de la animación de doblado de la boleta (ms) */
+const BALLOT_FOLD_DURATION_MS = 900;
+const BALLOT_FOLD_PAUSE_MS = 250;
+const BALLOT_SLIDE_DURATION_MS = 450;
+const POV_EXIT_DURATION_MS = 350;
+
+/** Márgenes del papel dentro de la imagen boleta-electoral.png */
+const BALLOT_PAPER_INSET_X = "2.8%";
+const BALLOT_PAPER_INSET_TOP = "2.2%";
+const BALLOT_PAPER_INSET_BOTTOM = "2.1%";
+
+/** Marca de voto X pixel art reutilizable */
+function VoteXMark() {
+  return (
+    <svg
+      viewBox="0 0 40 40"
+      className="w-full h-full p-[10%] pointer-events-none select-none"
+      style={{ imageRendering: "pixelated" }}
+    >
+      <line
+        x1="8"
+        y1="8"
+        x2="32"
+        y2="32"
+        stroke="#1e293b"
+        strokeWidth="5"
+        strokeLinecap="square"
+      />
+      <line
+        x1="32"
+        y1="8"
+        x2="8"
+        y2="32"
+        stroke="#1e293b"
+        strokeWidth="5"
+        strokeLinecap="square"
+      />
+    </svg>
+  );
+}
+
+/** Reverso de la boleta electoral doblada (papel de seguridad con sello oficial del INE) */
+function BallotBlankBack() {
+  return (
+    <div
+      className="absolute flex flex-col items-center justify-center overflow-hidden rounded-sm"
+      style={{
+        left: BALLOT_PAPER_INSET_X,
+        right: BALLOT_PAPER_INSET_X,
+        top: BALLOT_PAPER_INSET_TOP,
+        bottom: 0,
+        backgroundColor: "#f4f3f7",
+        boxShadow: "inset 0 0 16px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.12)",
+        border: "1px solid #cfcbd8",
+      }}
+    >
+      {/* Patrón sutil de papel de seguridad oficial */}
+      <div
+        className="absolute inset-0 opacity-[0.07] pointer-events-none"
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(45deg, #1e293b 0, #1e293b 2px, transparent 0, transparent 8px)",
+        }}
+      />
+      {/* Sello o marca de agua sutil en el reverso de la boleta */}
+      <div className="relative flex flex-col items-center justify-center opacity-35 select-none text-center px-4">
+        <svg
+          viewBox="0 0 48 48"
+          className="w-12 h-12 mb-1 text-slate-700"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <circle cx="24" cy="24" r="20" strokeDasharray="3 3" />
+          <path d="M24 8v32M8 24h32" opacity="0.4" />
+          <polygon points="24,12 28,20 36,24 28,28 24,36 20,28 12,24 20,20" />
+        </svg>
+        <span
+          className="text-[9px] font-bold tracking-widest text-slate-700 uppercase"
+          style={{ fontFamily: "'Press Start 2P', monospace" }}
+        >
+          INE
+        </span>
+        <span className="text-[7px] text-slate-600 tracking-wider mt-0.5">
+          BOLETA ELECTORAL
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export type BallotInspectionZoneId =
   | "encabezado"
   | "anio_electoral"
@@ -416,10 +515,9 @@ export default function Chapter3Scene({
   );
   const [reviewNoticeKey, setReviewNoticeKey] = useState(0);
 
-  // Fase de doblado de boleta: "idle" | "dialogue" | "ready_to_fold"
-  const [foldingPhase, setFoldingPhase] = useState<
-    "idle" | "dialogue" | "ready_to_fold"
-  >("idle");
+  // Fase de doblado de boleta:
+  // "idle" → "dialogue" → "ready_to_fold" → "folding" (doblez) → "sliding" (sale hacia arriba) → "exiting" (fade de la vista POV)
+  const [foldingPhase, setFoldingPhase] = useState<FoldingPhase>("idle");
   const [isDismissingFoldingIntro, setIsDismissingFoldingIntro] =
     useState(false);
 
@@ -501,8 +599,54 @@ export default function Chapter3Scene({
   };
 
   const handleDoblarBoletaClick = () => {
-    // Aún no hace ninguna acción, listo para las siguientes instrucciones
+    if (foldingPhase !== "ready_to_fold") return;
+    setFoldingPhase("folding");
   };
+
+  /**
+   * Sale de la vista POV de la mampara y regresa al escenario principal.
+   * Compartido por la tecla Escape y el final de la animación de doblado.
+   * Solo usa setters estables, por lo que es seguro invocarla desde closures de efectos.
+   */
+  const exitVotingBooth = () => {
+    setSelectedMamparaIndex(null);
+    setBallotState("on_table");
+    setIsBallotHovered(false);
+    setActiveExaminingZone(null);
+    setOpcionesSubStepIndex(0);
+    setVotingPhase("idle");
+    setFoldingPhase("idle");
+    setMarkedVoteBoxIds({});
+    setReviewNotice(null);
+  };
+
+  // Línea de tiempo de la animación: doblez → deslizamiento → salida de la vista POV
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    if (foldingPhase === "folding") {
+      timer = setTimeout(
+        () => setFoldingPhase("sliding"),
+        BALLOT_FOLD_DURATION_MS + BALLOT_FOLD_PAUSE_MS,
+      );
+    } else if (foldingPhase === "sliding") {
+      timer = setTimeout(
+        () => setFoldingPhase("exiting"),
+        BALLOT_SLIDE_DURATION_MS,
+      );
+    } else if (foldingPhase === "exiting") {
+      timer = setTimeout(() => exitVotingBooth(), POV_EXIT_DURATION_MS);
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [foldingPhase]);
+
+  const isBallotFolded =
+    ballotState === "folding" &&
+    (foldingPhase === "folding" ||
+      foldingPhase === "sliding" ||
+      foldingPhase === "exiting");
 
   const handleSelectZoneToExamine = (zoneId: BallotInspectionZoneId) => {
     // Si ya fue examinada o ya no estamos en fase de inspección, no se puede examinar
@@ -659,15 +803,7 @@ export default function Chapter3Scene({
       if (key === "escape") {
         if (selectedMamparaIndexRef.current !== null && !isPausedRef.current) {
           e.preventDefault();
-          setSelectedMamparaIndex(null);
-          setBallotState("on_table");
-          setIsBallotHovered(false);
-          setActiveExaminingZone(null);
-          setOpcionesSubStepIndex(0);
-          setVotingPhase("idle");
-          setFoldingPhase("idle");
-          setMarkedVoteBoxIds({});
-          setReviewNotice(null);
+          exitVotingBooth();
         }
       }
     };
@@ -1189,6 +1325,35 @@ export default function Chapter3Scene({
             transform: translate(0, -50%);
           }
         }
+        @keyframes povExit {
+          0% {
+            opacity: 1;
+          }
+          100% {
+            opacity: 0;
+          }
+        }
+        /* Solapa superior de la boleta: gira sobre la línea central hacia el frente */
+        @keyframes ballotFoldFlap {
+          0% {
+            transform: perspective(1600px) rotateX(0deg);
+          }
+          100% {
+            transform: perspective(1600px) rotateX(-180deg);
+          }
+        }
+        /* Sombra que cae sobre la mitad inferior mientras la solapa se acerca */
+        @keyframes ballotFoldShade {
+          0% {
+            opacity: 0;
+          }
+          55% {
+            opacity: 0.45;
+          }
+          100% {
+            opacity: 0;
+          }
+        }
       `}</style>
 
 
@@ -1199,7 +1364,10 @@ export default function Chapter3Scene({
           className="absolute inset-0 w-full h-full z-40 flex flex-col items-center justify-center overflow-hidden bg-black select-none"
           style={{
             containerType: "inline-size",
-            animation: "povEntrance 0.35s ease-out forwards",
+            animation:
+              foldingPhase === "exiting"
+                ? `povExit ${POV_EXIT_DURATION_MS}ms ease-in forwards`
+                : "povEntrance 0.35s ease-out forwards",
           }}
         >
           {/* IMAGEN POV DE LA MAMPARA CON TRANSICIÓN DE DESENFOQUE (BLUR) */}
@@ -1501,15 +1669,25 @@ export default function Chapter3Scene({
                       : "translate(-50%, -50%) perspective(650px) rotateX(46deg) rotateZ(-3deg) scale(1.0)"
                     : ballotState === "voting"
                       ? "translate(-50%, -58%) perspective(1000px) scale(1.65)"
-                      : currentExaminingTarget
-                        ? `translate(${currentExaminingTarget.examiningTranslateX}, ${currentExaminingTarget.examiningTranslateY}) perspective(1000px) scale(${currentExaminingTarget.examiningScale})`
-                        : activeHoveredZone
-                          ? "translate(-50%, -50%) perspective(1000px) scale(1.08)"
-                          : "translate(-50%, -50%) perspective(1000px) scale(1)",
+                      : isBallotFolded
+                        ? foldingPhase === "folding"
+                          ? // Doblada: sube 25% de su altura para que la mitad visible quede centrada
+                            "translate(-50%, -75%) perspective(1000px) scale(1)"
+                          : // Deslizamiento rápido hacia arriba fuera de la pantalla
+                            "translate(-50%, -300%) perspective(1000px) scale(1)"
+                        : currentExaminingTarget
+                          ? `translate(${currentExaminingTarget.examiningTranslateX}, ${currentExaminingTarget.examiningTranslateY}) perspective(1000px) scale(${currentExaminingTarget.examiningScale})`
+                          : activeHoveredZone
+                            ? "translate(-50%, -50%) perspective(1000px) scale(1.08)"
+                            : "translate(-50%, -50%) perspective(1000px) scale(1)",
                 transition:
                   ballotState === "on_table"
                     ? "all 220ms cubic-bezier(0.2, 0.8, 0.2, 1)"
-                    : ballotState === "voting"
+                    : isBallotFolded
+                      ? foldingPhase === "folding"
+                        ? `transform ${BALLOT_FOLD_DURATION_MS}ms cubic-bezier(0.65, 0, 0.35, 1)`
+                        : `transform ${BALLOT_SLIDE_DURATION_MS}ms cubic-bezier(0.55, 0, 1, 0.45)`
+                      : ballotState === "voting"
                       ? "transform 750ms cubic-bezier(0.16, 1, 0.3, 1), transform-origin 750ms cubic-bezier(0.16, 1, 0.3, 1)"
                       : activeExaminingZone !== null
                         ? "transform 600ms cubic-bezier(0.16, 1, 0.3, 1), transform-origin 600ms cubic-bezier(0.16, 1, 0.3, 1)"
@@ -1527,8 +1705,92 @@ export default function Chapter3Scene({
                 src="/assets/juego/simulador-voto/boleta-electoral.png"
                 alt="Boleta Electoral 2024"
                 className="w-full h-full object-contain pointer-events-none select-none"
-                style={{ imageRendering: "pixelated" }}
+                style={{
+                  imageRendering: "pixelated",
+                  // Al doblar, la mitad superior la dibuja la solapa animada
+                  clipPath: isBallotFolded ? "inset(50% 0 0 0)" : undefined,
+                }}
               />
+
+              {/* ANIMACIÓN DE DOBLADO: SOMBRA SOBRE LA MITAD INFERIOR */}
+              {isBallotFolded && (
+                <div
+                  aria-hidden
+                  className="absolute pointer-events-none z-[45] bg-black"
+                  style={{
+                    left: BALLOT_PAPER_INSET_X,
+                    right: BALLOT_PAPER_INSET_X,
+                    top: "50%",
+                    bottom: BALLOT_PAPER_INSET_BOTTOM,
+                    opacity: 0,
+                    animation: `ballotFoldShade ${BALLOT_FOLD_DURATION_MS}ms ease-in-out forwards`,
+                  }}
+                />
+              )}
+
+              {/* ANIMACIÓN DE DOBLADO: SOLAPA SUPERIOR (FRENTE = BOLETA, REVERSO = PAPEL EN BLANCO) */}
+              {isBallotFolded && (
+                <div
+                  data-testid="ballot-fold-flap"
+                  aria-hidden
+                  className="absolute left-0 top-0 w-full pointer-events-none z-50"
+                  style={{
+                    height: "50%",
+                    transformOrigin: "50% 100%",
+                    transformStyle: "preserve-3d",
+                    animation: `ballotFoldFlap ${BALLOT_FOLD_DURATION_MS}ms cubic-bezier(0.65, 0, 0.35, 1) forwards`,
+                  }}
+                >
+                  {/* Frente: mitad superior de la boleta con las marcas del votante */}
+                  <div
+                    className="absolute inset-0 overflow-hidden"
+                    style={{
+                      backfaceVisibility: "hidden",
+                      WebkitBackfaceVisibility: "hidden",
+                    }}
+                  >
+                    <div
+                      className="absolute left-0 top-0 w-full"
+                      style={{ height: "200%" }}
+                    >
+                      <img
+                        src="/assets/juego/simulador-voto/boleta-electoral.png"
+                        alt=""
+                        className="w-full h-full object-contain pointer-events-none select-none"
+                        style={{ imageRendering: "pixelated" }}
+                      />
+                      {BALLOT_VOTING_BOXES.filter(
+                        (box) => markedVoteBoxIds[box.id],
+                      ).map((box) => (
+                        <div
+                          key={`fold-mark-${box.id}`}
+                          className="absolute flex items-center justify-center"
+                          style={{
+                            left: box.left,
+                            top: box.top,
+                            width: box.width,
+                            height: box.height,
+                          }}
+                        >
+                          <VoteXMark />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Reverso: papel en blanco (oculta la información al quedar doblada) */}
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      backfaceVisibility: "hidden",
+                      WebkitBackfaceVisibility: "hidden",
+                      transform: "rotateX(180deg)",
+                    }}
+                  >
+                    <BallotBlankBack />
+                  </div>
+                </div>
+              )}
 
               {/* CAPA DE ZONAS INTERACTIVAS PARA EXAMINAR LA BOLETA */}
               {ballotState === "inspecting" && (
@@ -1624,6 +1886,9 @@ export default function Chapter3Scene({
                       ? "pointer-events-auto"
                       : "pointer-events-none"
                   }`}
+                  style={{
+                    clipPath: isBallotFolded ? "inset(50% 0 0 0)" : undefined,
+                  }}
                 >
                   {BALLOT_VOTING_BOXES.map((box) => {
                     const isMarked = Boolean(markedVoteBoxIds[box.id]);
@@ -1663,32 +1928,7 @@ export default function Chapter3Scene({
                           height: box.height,
                         }}
                       >
-                        {isMarked && (
-                          <svg
-                            viewBox="0 0 40 40"
-                            className="w-full h-full p-[10%] pointer-events-none select-none"
-                            style={{ imageRendering: "pixelated" }}
-                          >
-                            <line
-                              x1="8"
-                              y1="8"
-                              x2="32"
-                              y2="32"
-                              stroke="#1e293b"
-                              strokeWidth="5"
-                              strokeLinecap="square"
-                            />
-                            <line
-                              x1="32"
-                              y1="8"
-                              x2="8"
-                              y2="32"
-                              stroke="#1e293b"
-                              strokeWidth="5"
-                              strokeLinecap="square"
-                            />
-                          </svg>
-                        )}
+                        {isMarked && <VoteXMark />}
                       </div>
                     );
                   })}
