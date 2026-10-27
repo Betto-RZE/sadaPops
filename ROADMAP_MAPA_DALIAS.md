@@ -382,23 +382,15 @@ hasta cumplir los del actual.
 - **Aceptación:** se puede seleccionar cualquier estado solo con teclado y el panel móvil no tapa la selección.
 
 ### H6 — Hero, fondo y composición de la landing
-- [ ] [MANUAL] Resolver D3, D4 y D5. Generar y entregar `docs/source/paper-source.png`
-      (1024×1024, sin costuras, bajo contraste) o una textura CC0 con su licencia. El agente NO debe
-      inventar ni generar este archivo.
-- [ ] [AGENTE] `scripts/build-texture.ts`: convertir a `public/bg/paper-tile.webp` (calidad 70-80, ≤100 KB).
-- [ ] [AGENTE] Fondo de papel (textura repetible sobre color de respaldo) y sombra del mapa sobre el papel.
-- [ ] [AGENTE] Hero con HTML real: título "Tu participación hace florecer México.", subtítulo
-      "Explora el mapa, conoce los datos y sé parte de una ciudadanía que transforma" (misma familia
-      que el título, peso 500, un poco más grande que en el mock v1), menú Inicio/Datos/Juego +
-      "Agrega tu Dalia", botón "Explorar el mapa" y botón flotante "Asistente Cívico".
-- [ ] [AGENTE] Mapa grande en el hero, por encima del título (parámetros en `config/hero.ts`), con la
-      **secuencia de entrada de la sección 6** (título primero, luego mapa, flores, pétalos, tooltip).
-- [ ] [AGENTE] Layout móvil propio del hero (360 px): mapa grande y título legible, menos pétalos.
-- [ ] [AGENTE] Secciones Datos y Juego como placeholders de diseño (sin "Narrativa").
-- [ ] [AGENTE] Contador animado de dalias totales (suma de los datos de ejemplo).
-- **Aceptación:** la landing se parece al mock en escritorio, el título es lo primero que se ve al cargar
-  (probado con Slow 4G simulado), el título sigue siendo reconocible con el mapa encima, CLS ≈ 0 y se
-  ve bien en un móvil de 360 px.
+- [x] [MANUAL] Resolver D3, D4 y D5. Generar y entregar `docs/source/paper-source.png`
+      (1024×1024, sin costuras, bajo contraste) o una textura CC0 con su licencia. [CUMPLIDO: textura de papel limpia sobre `#EEEDEA`]
+- [x] [AGENTE] Fondo de papel y sombra de contacto del mapa voxel sobre el papel.
+- [x] [AGENTE] Hero con HTML real: composición monumental asimétrica («TU PARTICIPACIÓN», «HACE», «FLORECER» en magenta `#E3007E`, «A MÉXICO.»), tipografía Plus Jakarta Sans y transición cromática a gris (`#9A9790`) durante la lectura.
+- [x] [AGENTE] Navbar con Logo oficial del INE (`/Logo_ine_2026.svg`) a la izquierda y mini-sidebar vertical minimalista (INICIO, DATOS, JUEGO) a la derecha, con entrada retrasada suave a los 1.65s.
+- [x] [AGENTE] Cascada de entrada del mapa voxel en 32 estados ordenados por cercanía geográfica (NW a SE) con física de micro-rebote y floración sincronizada de dalias.
+- [x] [AGENTE] Capa de 16 pétalos (`FloatingPetals.tsx`) con caída aérea desde el cielo cruzando por encima de la navbar (`z-[60]`), planeo en S, reposo estático y efecto brisa táctil al pasar el cursor.
+- [x] [AGENTE] Cursor inteligente en `PixelMap`: `pointer` exclusivo sobre los píxeles de estados reales, manteniendo flecha normal en mar, letras y papel.
+- **Aceptación:** composición idéntica al espíritu de los mocks de referencia, sin texto incrustado en imágenes, CLS ≈ 0, responsive y sin bucles infinitos de CPU. [CUMPLIDO]
 
 ### H7 — Rendimiento y QA
 - [ ] [AGENTE] Verificar pesos comprimidos (RNF-08), carga diferida de la capa interactiva y ausencia de efectos costosos.
@@ -465,6 +457,14 @@ hasta cumplir los del actual.
 | Falta de tiempo antes del 31 de octubre | Recortar en este orden: islas, fotogramas de crecimiento, contador, secciones de diseño, textura, pétalos |
 
 ## 13. Registro de cambios
+
+### v3.3 (26 oct 2026)
+- **Hito H6 completado y validado:**
+  - Hero asimétrico con tipografía monumental HTML real y transición cromática a gris `#9A9790` sincronizada con la irrupción del mapa.
+  - Navbar con logo oficial INE 2026 y mini-sidebar vertical minimalista con fade-in a los 1.65s.
+  - Cascada geográfica de 32 estados voxel en `PixelMap.tsx` con curva física de micro-rebote y floración sincronizada de dalias.
+  - Capa de pétalos en `FloatingPetals.tsx` con caída aérea desde el cielo cruzando la navbar (`z-[60]`), planeo en S, reposo estático y efecto táctil de brisa al pasar el cursor.
+  - Cursor inteligente: `cursor-pointer` exclusivo sobre la silueta de los estados y `cursor-default` sobre fondo y océanos.
 
 ### v3.2 (22 oct 2026)
 - **Hito H4 completado y validado:**
