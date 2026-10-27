@@ -176,10 +176,20 @@ function buildSingleStateHolo(st: StateGeo): { rgba: Buffer; OW: number; OH: num
 
   const spanX = Math.max(1e-6, maxX - minX);
   const spanY = Math.max(1e-6, maxY - minY);
-  const scale = TARGET_VOXEL_SPAN / Math.max(spanX, spanY);
+  const rawAspect = spanX / spanY;
 
-  const voxW = Math.max(24, Math.ceil(spanX * scale));
-  const voxH = Math.max(24, Math.ceil(spanY * scale));
+  // Estrategia A: Estandarización de proporción para zona de lectura (~260x230 px)
+  // Ensanchar la proporción horizontal de estados angostos (BC, BCS, Veracruz, Sinaloa, QRoo)
+  // garantizando un ancho mínimo cómodo sin perder la silueta icónica
+  const targetAspect = Math.max(0.82, Math.min(1.28, rawAspect));
+  const aspectBoostX = targetAspect / rawAspect;
+
+  const baseScale = TARGET_VOXEL_SPAN / Math.max(spanX * aspectBoostX, spanY);
+  const scaleX = baseScale * aspectBoostX;
+  const scaleY = baseScale;
+
+  const voxW = Math.max(66, Math.ceil(spanX * scaleX));
+  const voxH = Math.max(54, Math.ceil(spanY * scaleY));
   const W = voxW + PAD_VOXELS * 2;
   const H = voxH + PAD_VOXELS * 2 + EXT;
 
@@ -187,8 +197,8 @@ function buildSingleStateHolo(st: StateGeo): { rgba: Buffer; OW: number; OH: num
   const inGrid = (x: number, y: number) => x >= 0 && y >= 0 && x < W && y < H;
 
   const toGrid = ([x, y]: Pt): Pt => [
-    (x - minX) * scale + PAD_VOXELS,
-    (y - minY) * scale + PAD_VOXELS,
+    (x - minX) * scaleX + PAD_VOXELS,
+    (y - minY) * scaleY + PAD_VOXELS,
   ];
 
   const gridPolys = activePolys.map((poly) => poly.map((ring) => ring.map(toGrid)));

@@ -80,12 +80,12 @@ function computeHoloLayout(
   const stateSpanW = Math.max(14, (bMaxX - bMinX) * sx);
   const stateSpanH = Math.max(10, (bMaxY - bMinY) * sy);
 
-  const ax = state.anchor.x * sx;
-  const ay = (state.anchor.y - liftLogicalPx) * sy;
+  const rawAx = state.anchor.x * sx;
+  const rawAy = (state.anchor.y - liftLogicalPx) * sy;
 
-  // Escala de la isla voxel ampliada (~26-28% del ancho del mapa, respetando su proporción)
+  // Escala estandarizada de la isla voxel ampliada (~25-28% del mapa para ancho uniforme de lectura)
   const aspect = meta.height / meta.width;
-  const targetMaxDim = Math.min(295, Math.max(185, cw * 0.265));
+  const targetMaxDim = Math.min(290, Math.max(190, cw * 0.26));
   let w: number;
   let h: number;
   if (aspect >= 1) {
@@ -96,40 +96,45 @@ function computeHoloLayout(
     h = w * aspect;
   }
 
-  // Zona segura dentro del contenedor del mapa (evita logo INE arriba-izquierda y menú arriba-derecha)
-  const padX = Math.max(16, cw * 0.03);
-  const safeTopMin = Math.max(16, ch * 0.04);
-  const safeTopMax = Math.max(safeTopMin, ch - h - 12);
-  const beamGap = Math.max(46, ch * 0.115);
+  // Zona segura dentro del contenedor del mapa
+  const padX = Math.max(18, cw * 0.03);
+  const safeTopMin = Math.max(18, ch * 0.035);
+  const safeTopMax = Math.max(safeTopMin, ch - h - 14);
+  const beamGap = Math.max(44, ch * 0.11);
 
   let left: number;
   let top: number;
+  let ax = rawAx;
+  let ay = rawAy;
 
-  // Si el estado está en la mitad superior (ej. BC, Sonora, Chihuahua, Coahuila, NL, Sinaloa),
-  // proyectar lateralmente hacia el interior del mapa dentro de la franja vertical segura
-  const canFitAbove = ay - h - beamGap >= safeTopMin;
+  const canFitAbove = rawAy - h - beamGap >= safeTopMin;
 
   if (canFitAbove) {
+    // Caso estándar: la isla flota directamente arriba con el cono vertical
     const shiftX =
-      ax < cw * 0.36
-        ? w * 0.34
-        : ax > cw * 0.68
-        ? -w * 0.34
-        : w * 0.22;
-    left = Math.min(Math.max(padX, ax - w / 2 + shiftX), cw - w - padX);
-    top = Math.min(safeTopMax, Math.max(safeTopMin, ay - h - beamGap));
+      rawAx < cw * 0.36
+        ? w * 0.32
+        : rawAx > cw * 0.68
+        ? -w * 0.32
+        : w * 0.18;
+    left = Math.min(Math.max(padX, rawAx - w / 2 + shiftX), cw - w - padX);
+    top = Math.min(safeTopMax, Math.max(safeTopMin, rawAy - h - beamGap));
   } else {
-    const goRight = ax < cw * 0.52;
-    const horizGap = Math.max(54, cw * 0.065);
-    left = goRight
-      ? Math.min(cw - w - padX, ax + stateSpanW * 0.45 + horizGap)
-      : Math.max(padX, ax - stateSpanW * 0.45 - horizGap - w);
-    // Para estados muy arriba (BC, Sonora), bajar ligeramente la tarjeta hacia el centro
-    const idealTop = ay < ch * 0.28 ? ay + ch * 0.02 : ay - h * 0.42;
-    top = Math.min(safeTopMax, Math.max(safeTopMin, idealTop));
+    // Estados del norte (BC, Sonora, Chihuahua, Coahuila):
+    // 1) Anclar la base del haz en la mitad/tercio inferior del estado en el mapa para que el haz SIEMPRE suba
+    ay = Math.max(rawAy, ((bMinY + bMaxY * 2) / 3 - liftLogicalPx) * sy);
+    // 2) Colocar la isla en la zona segura superior, desplazada al interior (evita el logo INE a la izquierda)
+    const goRight = rawAx < cw * 0.52;
+    const horizGap = Math.max(35, cw * 0.045);
+    left = Math.round(
+      goRight
+        ? Math.min(cw - w - padX, rawAx + stateSpanW * 0.45 + horizGap)
+        : Math.max(padX, rawAx - stateSpanW * 0.45 - horizGap - w)
+    );
+    top = Math.round(safeTopMin + 4);
   }
 
-  // Eje central desde el ancla del estado en el mapa (A) hasta el polo visual de la pieza ampliada (C)
+  // Eje central desde la base del estado en el mapa (A) hasta el polo visual de la pieza ampliada (C)
   const cx = left + meta.visualCenter[0] * w;
   const cy = top + meta.visualCenter[1] * h;
 
@@ -143,14 +148,14 @@ function computeHoloLayout(
   const ny = ux;
 
   // Ancho en la base (proporcional al estado en el mapa, acotado para simetría limpia)
-  const rBase = Math.min(Math.max(12, Math.min(stateSpanW, stateSpanH) * 0.34), 24);
+  const rBase = Math.min(Math.max(12, Math.min(stateSpanW, stateSpanH) * 0.34), 22);
   // Ancho en el destino (dentro de la silueta sólida de la pieza ampliada)
   const radiusRatio = meta.coneRadiusRatio ?? 0.32;
   const rTop = Math.min(w, h) * radiusRatio;
 
   // Detener el eje ligeramente antes del centro visual para que el cono quede cubierto por la silueta
-  const tx = cx - ux * (rTop * 0.12);
-  const ty = cy - uy * (rTop * 0.12);
+  const tx = cx - ux * (rTop * 0.14);
+  const ty = cy - uy * (rTop * 0.14);
 
   const baseLeft: [number, number] = [ax - nx * rBase, ay - ny * rBase];
   const baseRight: [number, number] = [ax + nx * rBase, ay + ny * rBase];
@@ -180,9 +185,9 @@ export interface StateHologramCardProps {
 }
 
 export function StateHologramCard({ children, className }: StateHologramCardProps) {
-  const { data, selectedStateId, hoveredStateId } = usePixelMapContext();
-  const activeId = hoveredStateId || selectedStateId;
-  const state = data && activeId ? data.stateById.get(activeId) ?? null : null;
+  const { data, selectedStateId } = usePixelMapContext();
+  // El cono de luz y la proyección holográfica se activan ÚNICAMENTE al hacer clic (seleccionar un estado)
+  const state = data && selectedStateId ? data.stateById.get(selectedStateId) ?? null : null;
 
   const rootRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });

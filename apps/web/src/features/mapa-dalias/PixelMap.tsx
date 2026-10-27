@@ -585,8 +585,8 @@ export function PixelMap({
           setPixel(ly * width + x, topColor);
         }
 
-        // Contorno luminoso lavanda de 2px alrededor de la silueta activa en el mapa (como en mockup-hover-estado.jpg)
-        if (mode === 'hover' || mode === 'select') {
+        // Contorno luminoso lavanda de 2px alrededor de la silueta activa en el mapa ÚNICAMENTE al seleccionar (clic)
+        if (mode === 'select') {
           const glowInner = hexToU32('#F4F2FF', 235);
           const glowOuter = hexToU32('#B4B2FF', 135);
           for (let i = 0; i < touchedMaskIndices.length; i++) {
