@@ -160,7 +160,7 @@ const BASE_SHADOW_2 = hexToU32('#1A1638', 40); // 2do pixel debajo (~15% alfa)
 const PAPER_SHADOW = hexToU32('#C3C1C8', 255);
 
 /** Elevación vertical en vóxeles al hacer hover o seleccionar (2 vóxeles = 6px a escala 3x) */
-const ELEVATION_VOXELS = 2;
+export const ELEVATION_VOXELS = 2;
 
 /**
  * Curva física para el aterrizaje de cada pieza:

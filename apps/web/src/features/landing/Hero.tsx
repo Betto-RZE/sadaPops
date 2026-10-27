@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { PixelMap, DahliaLayer, DahliaStoreProvider } from '@/features/mapa-dalias';
+import { PixelMap, DahliaLayer, DahliaStoreProvider, StateHologramCard } from '@/features/mapa-dalias';
 
 export function Hero() {
   // Inicialización neutral: ningún estado seleccionado al cargar la landing
@@ -84,6 +84,8 @@ export function Hero() {
             >
               {/* Capa de Dalias Voxel sobre los estados */}
               <DahliaLayer />
+              {/* Proyección holográfica del estado activo (H5) */}
+              <StateHologramCard />
             </PixelMap>
             </DahliaStoreProvider>
           </div>

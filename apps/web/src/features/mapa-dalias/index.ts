@@ -1,5 +1,7 @@
 export { PixelMap, PixelMapAnchor, usePixelMapContext, default } from './PixelMap';
 export { DahliaLayer } from './DahliaLayer';
+export { StateHologramCard } from './StateHologramCard';
+export type { StateHologramCardProps } from './StateHologramCard';
 export {
   DahliaStoreProvider,
   useDahliaStore,
