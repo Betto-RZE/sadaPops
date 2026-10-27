@@ -3,204 +3,165 @@
 /**
  * StateHologramCard — Proyección holográfica del estado activo (Hito H5, Fase 2).
  *
- * Capas:
- *   1. Cono de luz lavanda (SVG) que nace en el ancla del estado en el mapa.
- *   2. Silueta voxel 3D ampliada del estado (canvas pixelado) con borde lavanda.
- *   3. Ranura `children` centrada sobre la silueta (contenido de la Fase 3).
- *
- * Geometría: la silueta se reconstruye en runtime desde `map-ids.bin` (ya cargado por
- * `useMapData`), a resolución de vóxel. Sin GeoJSON en el cliente ni cálculo por frame:
- * se rasteriza una sola vez por estado y se escala con CSS (`image-rendering: pixelated`).
- *
- * Debe montarse como hijo de <PixelMap> (usa su contexto).
+ * Basado en la composición de `docs/referencias/mockup-hover-estado.jpg` con la
+ * paleta acordada (Maqueta Índigo Profundo + Luz Lavanda Clara del mapa):
+ *   1. Haz/cono de luz volumétrico lavanda que nace de todo el ancho del estado
+ *      iluminado en el mapa (con halo en la base, cuerpo difuminado, rayos laterales
+ *      definidos y destellos en el origen) y entra por debajo de los acantilados 3D.
+ *   2. Isla voxel 3D de alta resolución (`/data/holo/state-XX.png`) horneada desde
+ *      `mexico-estados.geojson` con el mismo shader isométrico de `build-map.ts`.
+ *   3. Ranura `children` centrada en el polo visual del estado (para la Fase 3).
  */
 
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { usePixelMapContext, ELEVATION_VOXELS } from './PixelMap';
-import type { MapIndexData, StateMetadata } from './types';
+import type { StateMetadata } from './types';
 import { cn } from '../../shared/utils';
 
-// ───────────────────────────── Paleta (Opción A ajustada) ─────────────────────────────
-const HOLO = {
-  top: ['#35328F', '#322F89', '#383594', '#302D84'],
-  innerBevel: '#2A2775',
-  rimLight: '#F0EEFF', // borde N/O (luz)
-  rimLip: '#B4B2FF', // borde S/E
-  wallLight: '#2A1F7A',
-  wallDark: '#1C1358',
-  coneNear: '#B4B2FF',
-  coneFar: '#F0EEFF',
-} as const;
-
-/** Altura de la extrusión de la pieza ampliada, en celdas */
-const HOLO_EXTRUSION = 3;
-/** Resolución objetivo del lado mayor de la silueta, en celdas */
-const TARGET_CELLS = 56;
-
-// ───────────────────────────── Rasterizado de silueta ─────────────────────────────
-
-interface Silhouette {
-  cols: number;
-  rows: number; // incluye extrusión
-  canvas: HTMLCanvasElement;
+export interface HoloStateMeta {
+  id: string;
+  width: number;
+  height: number;
+  flankLeft: [number, number];
+  flankRight: [number, number];
+  visualCenter: [number, number];
 }
 
-function hash2(x: number, y: number): number {
-  let n = (x * 374761393 + y * 668265263) ^ 0x5bf03635;
-  n = (n ^ (n >> 13)) * 1274126177;
-  return ((n ^ (n >> 16)) >>> 0) / 4294967295;
+type HoloMetaMap = Record<string, HoloStateMeta>;
+
+let cachedHoloMeta: HoloMetaMap | null = null;
+let holoMetaPromise: Promise<HoloMetaMap> | null = null;
+
+function fetchHoloMeta(): Promise<HoloMetaMap> {
+  if (cachedHoloMeta) return Promise.resolve(cachedHoloMeta);
+  if (!holoMetaPromise) {
+    holoMetaPromise = fetch('/data/holo/holo-meta.json')
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json() as Promise<HoloMetaMap>;
+      })
+      .then((json) => {
+        cachedHoloMeta = json;
+        return json;
+      });
+  }
+  return holoMetaPromise;
 }
 
-/** Máscara a resolución de vóxel de la cara superior del estado */
-function buildVoxelMask(data: MapIndexData, state: StateMetadata) {
-  const S = data.pixelScale;
-  const [minX, minY, maxX, maxY] = state.bbox;
-  const vx0 = Math.floor(minX / S);
-  const vy0 = Math.floor(minY / S);
-  const vw = Math.floor(maxX / S) - vx0 + 1;
-  const vh = Math.floor(maxY / S) - vy0 + 1;
-  const mask = new Uint8Array(vw * vh);
-  const top = data.pixelsByNumId.get(state.numId)?.topPixels;
-  if (top) {
-    for (let i = 0; i < top.length; i++) {
-      const idx = top[i];
-      const x = Math.floor((idx % data.width) / S) - vx0;
-      const y = Math.floor(Math.floor(idx / data.width) / S) - vy0;
-      if (x >= 0 && y >= 0 && x < vw && y < vh) mask[y * vw + x] = 1;
-    }
-  }
-  return { mask, vw, vh };
-}
-
-function rasterizeSilhouette(data: MapIndexData, state: StateMetadata): Silhouette | null {
-  const { mask, vw, vh } = buildVoxelMask(data, state);
-  if (vw <= 0 || vh <= 0) return null;
-
-  // Factor entero de subdivisión para que estados pequeños ganen detalle de borde
-  const k = Math.max(1, Math.floor(TARGET_CELLS / Math.max(vw, vh)));
-  const cols = vw * k + 2; // margen de 1 celda para el borde
-  const topRows = vh * k + 2;
-  const rows = topRows + HOLO_EXTRUSION;
-
-  // Máscara ampliada (vecino más cercano)
-  const m = new Uint8Array(cols * topRows);
-  for (let y = 1; y < topRows - 1; y++) {
-    const sy = Math.floor((y - 1) / k);
-    for (let x = 1; x < cols - 1; x++) {
-      const sx = Math.floor((x - 1) / k);
-      m[y * cols + x] = mask[sy * vw + sx];
-    }
-  }
-  const at = (x: number, y: number) =>
-    x >= 0 && y >= 0 && x < cols && y < topRows ? m[y * cols + x] : 0;
-
-  const canvas = document.createElement('canvas');
-  canvas.width = cols;
-  canvas.height = rows;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return null;
-
-  // 1. Paredes extruidas (debajo de cada celda cuyo vecino inferior está vacío)
-  for (let y = 0; y < topRows; y++) {
-    for (let x = 0; x < cols; x++) {
-      if (!at(x, y) || at(x, y + 1)) continue;
-      for (let d = 1; d <= HOLO_EXTRUSION; d++) {
-        ctx.fillStyle = (x + d) % 2 === 0 ? HOLO.wallLight : HOLO.wallDark;
-        if (!at(x + 1, y)) ctx.fillStyle = HOLO.wallDark;
-        ctx.fillRect(x, y + d, 1, 1);
-      }
-    }
-  }
-
-  // 2. Cara superior con biseles
-  for (let y = 0; y < topRows; y++) {
-    for (let x = 0; x < cols; x++) {
-      if (!at(x, y)) continue;
-      const nw = !at(x, y - 1) || !at(x - 1, y);
-      const se = !at(x, y + 1) || !at(x + 1, y);
-      const nearEdge =
-        !at(x, y - 2) || !at(x - 2, y) || !at(x, y + 2) || !at(x + 2, y);
-      let c: string;
-      if (nw) c = HOLO.rimLight;
-      else if (se) c = HOLO.rimLip;
-      else if (nearEdge) c = HOLO.innerBevel;
-      else c = HOLO.top[Math.floor(hash2(Math.floor(x / 2), Math.floor(y / 2)) * HOLO.top.length)];
-      ctx.fillStyle = c;
-      ctx.fillRect(x, y, 1, 1);
-    }
-  }
-
-  return { cols, rows, canvas };
-}
-
-// ───────────────────────────── Posicionamiento ─────────────────────────────
-
-type Placement = 'above' | 'right' | 'left';
-
-interface Layout {
-  placement: Placement;
+interface HoloLayout {
+  /** Posición y dimensiones de la pieza voxel ampliada en px del contenedor */
   left: number;
   top: number;
   w: number;
   h: number;
-  ax: number;
-  ay: number;
+  /** Puntos de origen izquierdo y derecho sobre el estado en el mapa base */
+  baseLeft: [number, number];
+  baseRight: [number, number];
+  baseCenter: [number, number];
+  baseRadiusX: number;
+  baseRadiusY: number;
+  /** Puntos de tangencia izquierdo y derecho en la pieza voxel ampliada */
+  targetLeft: [number, number];
+  targetRight: [number, number];
+  targetCenter: [number, number];
 }
 
-function computeLayout(
+function computeHoloLayout(
   cw: number,
   ch: number,
-  ax: number,
-  ay: number,
-  aspect: number // h / w
-): Layout {
-  // Ancho base de la tarjeta según el ancho del mapa
-  let w = Math.min(340, Math.max(200, cw * 0.27));
-  let h = w * aspect;
-  const maxH = Math.max(220, ch * 0.62);
-  if (h > maxH) {
-    h = maxH;
-    w = h / aspect;
-  }
-  const gap = Math.max(28, ch * 0.08);
-  const pad = 8;
-  const clampX = (x: number) => Math.min(Math.max(pad, x), cw - w - pad);
-  const clampY = (y: number) => Math.min(Math.max(-ch * 0.12, y), ch - h);
+  mapW: number,
+  mapH: number,
+  liftLogicalPx: number,
+  state: StateMetadata,
+  meta: HoloStateMeta
+): HoloLayout {
+  const sx = cw / mapW;
+  const sy = ch / mapH;
 
-  const aboveTop = ay - gap - h;
-  if (aboveTop >= -ch * 0.12) {
-    return { placement: 'above', left: clampX(ax - w / 2), top: aboveTop, w, h, ax, ay };
+  // Coordenadas del estado en el mapa base (ya elevado)
+  const [bMinX, bMinY, bMaxX, bMaxY] = state.bbox;
+  const stateSpanW = Math.max(14, (bMaxX - bMinX) * sx);
+  const stateSpanH = Math.max(10, (bMaxY - bMinY) * sy);
+
+  const ax = state.anchor.x * sx;
+  const ay = (state.anchor.y - liftLogicalPx) * sy;
+
+  // El haz nace abrazando los flancos reales del estado en el mapa (como en mockup-hover-estado.jpg)
+  const halfBaseW = Math.min(Math.max(16, stateSpanW * 0.42), cw * 0.085);
+  const baseLeft: [number, number] = [ax - halfBaseW, ay + stateSpanH * 0.05];
+  const baseRight: [number, number] = [ax + halfBaseW, ay - stateSpanH * 0.04];
+  const baseCenter: [number, number] = [ax, ay];
+
+  // Escala de la isla voxel ampliada (~28-31% del ancho del mapa, respetando su proporción)
+  const aspect = meta.height / meta.width;
+  const targetMaxDim = Math.min(320, Math.max(195, cw * 0.285));
+  let w: number;
+  let h: number;
+  if (aspect >= 1) {
+    h = Math.min(targetMaxDim, ch * 0.45);
+    w = h / aspect;
+  } else {
+    w = targetMaxDim;
+    h = w * aspect;
   }
-  const placement: Placement = ax < cw * 0.55 ? 'right' : 'left';
-  const left = placement === 'right' ? ax + gap : ax - gap - w;
+
+  // Espacio libre obligatorio (`beamGap`) entre el estado en el mapa y la base de la pieza ampliada
+  // para que el cono de luz se aprecie en toda su longitud como en mockup-hover-estado.jpg
+  const beamGap = Math.max(48, ch * 0.125);
+  const pad = 10;
+
+  let left: number;
+  let top: number;
+
+  if (ay - h - beamGap >= -ch * 0.06) {
+    // Caso general (centro y sur): la isla flota claramente arriba y ligeramente desplazada
+    const horizontalShift =
+      ax < cw * 0.35
+        ? w * 0.32
+        : ax > cw * 0.72
+        ? -w * 0.32
+        : w * 0.24;
+    left = Math.min(Math.max(pad, ax - w / 2 + horizontalShift), cw - w - pad);
+    top = ay - h - beamGap;
+  } else {
+    // Estados del extremo norte (BC, Sonora, Chihuahua, Coahuila): proyectar en diagonal hacia el interior
+    const goRight = ax < cw * 0.52;
+    const horizGap = Math.max(52, cw * 0.065);
+    left = goRight
+      ? Math.min(cw - w - pad, ax + stateSpanW * 0.45 + horizGap)
+      : Math.max(pad, ax - stateSpanW * 0.45 - horizGap - w);
+    top = Math.max(-ch * 0.04, Math.min(ch - h - pad, ay - h * 0.65));
+  }
+
+  // Puntos de tangencia exactos en los flancos de la pieza ampliada
+  const targetLeft: [number, number] = [
+    left + meta.flankLeft[0] * w,
+    top + meta.flankLeft[1] * h,
+  ];
+  const targetRight: [number, number] = [
+    left + meta.flankRight[0] * w,
+    top + meta.flankRight[1] * h,
+  ];
+  const targetCenter: [number, number] = [
+    (targetLeft[0] + targetRight[0]) / 2,
+    (targetLeft[1] + targetRight[1]) / 2,
+  ];
+
   return {
-    placement,
-    left: Math.min(Math.max(pad, left), cw - w - pad),
-    top: clampY(ay - h * 0.6),
+    left,
+    top,
     w,
     h,
-    ax,
-    ay,
+    baseLeft,
+    baseRight,
+    baseCenter,
+    baseRadiusX: halfBaseW * 1.35,
+    baseRadiusY: Math.max(12, halfBaseW * 0.68),
+    targetLeft,
+    targetRight,
+    targetCenter,
   };
 }
-
-function conePoints(l: Layout): string {
-  const { left, top, w, h, ax, ay, placement } = l;
-  let p1: [number, number];
-  let p2: [number, number];
-  if (placement === 'above') {
-    const y = top + h * 0.82;
-    p1 = [left + w * 0.18, y];
-    p2 = [left + w * 0.82, y];
-  } else {
-    const x = placement === 'right' ? left + w * 0.12 : left + w * 0.88;
-    p1 = [x, top + h * 0.2];
-    p2 = [x, top + h * 0.8];
-  }
-  return `${ax},${ay} ${p1[0]},${p1[1]} ${p2[0]},${p2[1]}`;
-}
-
-// ───────────────────────────── Componente ─────────────────────────────
 
 export interface StateHologramCardProps {
   /** Contenido centrado sobre la silueta (Fase 3). Recibe el estado activo. */
@@ -214,10 +175,21 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
   const state = data && activeId ? data.stateById.get(activeId) ?? null : null;
 
   const rootRef = useRef<HTMLDivElement>(null);
-  const canvasHostRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
+  const [metaMap, setMetaMap] = useState<HoloMetaMap | null>(cachedHoloMeta);
 
-  // Tamaño del contenedor del mapa (para convertir coordenadas lógicas a px)
+  useEffect(() => {
+    let mounted = true;
+    fetchHoloMeta()
+      .then((m) => {
+        if (mounted) setMetaMap(m);
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   useLayoutEffect(() => {
     const el = rootRef.current;
     if (!el) return;
@@ -228,96 +200,246 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
     return () => ro.disconnect();
   }, []);
 
-  // Caché de siluetas rasterizadas por estado (una sola vez por estado)
-  const cacheRef = useRef(new Map<string, Silhouette | null>());
-  const silhouette = useMemo(() => {
-    if (!data || !state || typeof document === 'undefined') return null;
-    const cache = cacheRef.current;
-    if (!cache.has(state.id)) cache.set(state.id, rasterizeSilhouette(data, state));
-    return cache.get(state.id) ?? null;
-  }, [data, state]);
-
-  // Montar el canvas cacheado en el host (el host existe solo cuando hay layout)
-  const hasLayout = Boolean(state && silhouette && size.w > 0);
-  useEffect(() => {
-    const host = canvasHostRef.current;
-    if (!host) return;
-    host.replaceChildren();
-    if (silhouette) {
-      const c = silhouette.canvas;
-      c.className = 'block w-full h-full [image-rendering:pixelated]';
-      c.setAttribute('aria-hidden', 'true');
-      host.appendChild(c);
-    }
-  }, [silhouette, hasLayout, state?.id]);
+  const stateMeta = state && metaMap ? metaMap[state.id] ?? null : null;
 
   const layout = useMemo(() => {
-    if (!data || !state || !silhouette || size.w === 0) return null;
-    const sx = size.w / data.width;
-    const ax = state.anchor.x * sx;
-    const ay = (state.anchor.y - ELEVATION_VOXELS * data.pixelScale) * (size.h / data.height);
-    return computeLayout(size.w, size.h, ax, ay, silhouette.rows / silhouette.cols);
-  }, [data, state, silhouette, size]);
+    if (!data || !state || !stateMeta || size.w === 0) return null;
+    const liftLogicalPx = ELEVATION_VOXELS * data.pixelScale;
+    return computeHoloLayout(
+      size.w,
+      size.h,
+      data.width,
+      data.height,
+      liftLogicalPx,
+      state,
+      stateMeta
+    );
+  }, [data, state, stateMeta, size]);
+
+  // Pre-calcular puntos del polígono del haz y rayos internos
+  const beamGeometry = useMemo(() => {
+    if (!layout) return null;
+    const { baseLeft, baseRight, targetLeft, targetRight, baseCenter, targetCenter } = layout;
+    const mainPolygon = `${baseLeft[0]},${baseLeft[1]} ${targetLeft[0]},${targetLeft[1]} ${targetRight[0]},${targetRight[1]} ${baseRight[0]},${baseRight[1]}`;
+
+    const lerpPt = (a: [number, number], b: [number, number], t: number): [number, number] => [
+      a[0] + (b[0] - a[0]) * t,
+      a[1] + (b[1] - a[1]) * t,
+    ];
+
+    // Rayos secundarios internos del proyector
+    const ray1Base = lerpPt(baseLeft, baseRight, 0.26);
+    const ray1Top = lerpPt(targetLeft, targetRight, 0.28);
+    const ray2Base = lerpPt(baseLeft, baseRight, 0.74);
+    const ray2Top = lerpPt(targetLeft, targetRight, 0.72);
+
+    // Partículas/destellos sutiles en la base del haz (deterministas, sin Math.random)
+    const sparkles = [
+      { u: 0.28, v: 0.14, r: 2.0, o: 0.85 },
+      { u: 0.52, v: 0.10, r: 2.4, o: 0.92 },
+      { u: 0.68, v: 0.18, r: 1.8, o: 0.78 },
+      { u: 0.38, v: 0.26, r: 1.6, o: 0.70 },
+      { u: 0.60, v: 0.30, r: 2.1, o: 0.75 },
+      { u: 0.46, v: 0.40, r: 1.5, o: 0.55 },
+    ].map((s) => {
+      const bPt = lerpPt(baseLeft, baseRight, s.u);
+      const tPt = lerpPt(targetLeft, targetRight, s.u);
+      const pt = lerpPt(bPt, tPt, s.v);
+      return { cx: pt[0], cy: pt[1], r: s.r, o: s.o };
+    });
+
+    return {
+      mainPolygon,
+      ray1Base,
+      ray1Top,
+      ray2Base,
+      ray2Top,
+      baseCenter,
+      targetCenter,
+      sparkles,
+    };
+  }, [layout]);
 
   return (
     <div ref={rootRef} className={cn('absolute inset-0 pointer-events-none z-40', className)}>
       <style>{`
-        @keyframes holo-in {
-          0% { opacity: 0; transform: translateY(10px) scale(0.94); }
-          100% { opacity: 1; transform: translateY(0) scale(1); }
+        @keyframes holo-island-in {
+          0% {
+            opacity: 0;
+            transform: translate3d(0, 14px, 0) scale(0.92);
+          }
+          100% {
+            opacity: 1;
+            transform: translate3d(0, 0, 0) scale(1);
+          }
         }
-        @keyframes holo-cone-in { 0% { opacity: 0; } 100% { opacity: 1; } }
-        .holo-card { animation: holo-in 220ms cubic-bezier(0.2, 0.8, 0.25, 1) both; }
-        .holo-cone { animation: holo-cone-in 260ms ease-out both; }
+        @keyframes holo-beam-in {
+          0% { opacity: 0; }
+          100% { opacity: 1; }
+        }
+        .holo-island-enter {
+          animation: holo-island-in 210ms cubic-bezier(0.2, 0.85, 0.25, 1) both;
+        }
+        .holo-beam-enter {
+          animation: holo-beam-in 220ms ease-out both;
+        }
         @media (prefers-reduced-motion: reduce) {
-          .holo-card, .holo-cone { animation: none !important; }
+          .holo-island-enter, .holo-beam-enter {
+            animation: none !important;
+          }
         }
       `}</style>
 
-      {state && layout && (
+      {state && stateMeta && layout && beamGeometry && (
         <>
-          {/* Cono de luz lavanda */}
+          {/* CAPA 1 (z-10): CONO DE LUZ VOLUMÉTRICO (detrás de la isla ampliada) */}
           <svg
-            key={`cone-${state.id}`}
-            className="holo-cone absolute inset-0 w-full h-full overflow-visible"
+            key={`beam-${state.id}`}
+            className="holo-beam-enter absolute inset-0 w-full h-full overflow-visible z-10"
             width={size.w}
             height={size.h}
             aria-hidden="true"
           >
             <defs>
+              {/* Degradado principal del cuerpo del cono (intenso en el mapa -> se funde bajo la isla) */}
               <linearGradient
-                id="holo-cone-grad"
+                id={`beam-body-${state.id}`}
                 gradientUnits="userSpaceOnUse"
-                x1={layout.ax}
-                y1={layout.ay}
-                x2={layout.left + layout.w / 2}
-                y2={layout.top + layout.h / 2}
+                x1={beamGeometry.baseCenter[0]}
+                y1={beamGeometry.baseCenter[1]}
+                x2={beamGeometry.targetCenter[0]}
+                y2={beamGeometry.targetCenter[1]}
               >
-                <stop offset="0%" stopColor={HOLO.coneNear} stopOpacity="0.75" />
-                <stop offset="60%" stopColor={HOLO.coneFar} stopOpacity="0.35" />
-                <stop offset="100%" stopColor={HOLO.coneFar} stopOpacity="0.08" />
+                <stop offset="0%" stopColor="#F4F2FF" stopOpacity="0.90" />
+                <stop offset="28%" stopColor="#D6D3FF" stopOpacity="0.65" />
+                <stop offset="68%" stopColor="#B4B2FF" stopOpacity="0.34" />
+                <stop offset="92%" stopColor="#9A96FF" stopOpacity="0.12" />
+                <stop offset="100%" stopColor="#9A96FF" stopOpacity="0.0" />
               </linearGradient>
+
+              {/* Degradado para los dos rayos laterales definidos del cono */}
+              <linearGradient
+                id={`beam-edge-${state.id}`}
+                gradientUnits="userSpaceOnUse"
+                x1={beamGeometry.baseCenter[0]}
+                y1={beamGeometry.baseCenter[1]}
+                x2={beamGeometry.targetCenter[0]}
+                y2={beamGeometry.targetCenter[1]}
+              >
+                <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.96" />
+                <stop offset="45%" stopColor="#EAE6FF" stopOpacity="0.80" />
+                <stop offset="85%" stopColor="#B4B2FF" stopOpacity="0.35" />
+                <stop offset="100%" stopColor="#B4B2FF" stopOpacity="0.0" />
+              </linearGradient>
+
+              {/* Resplandor radial en la base del estado en el mapa */}
+              <radialGradient id={`beam-base-glow-${state.id}`} cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.92" />
+                <stop offset="45%" stopColor="#DCD4FF" stopOpacity="0.65" />
+                <stop offset="100%" stopColor="#8A89FA" stopOpacity="0.0" />
+              </radialGradient>
             </defs>
-            <polygon points={conePoints(layout)} fill="url(#holo-cone-grad)" />
-            {/* Punto de origen luminoso sobre el estado */}
-            <circle cx={layout.ax} cy={layout.ay} r={4} fill={HOLO.coneFar} opacity="0.9" />
+
+            {/* Halo luminoso elíptico sobre el estado en el mapa */}
+            <ellipse
+              cx={layout.baseCenter[0]}
+              cy={layout.baseCenter[1]}
+              rx={layout.baseRadiusX}
+              ry={layout.baseRadiusY}
+              fill={`url(#beam-base-glow-${state.id})`}
+            />
+
+            {/* Cuerpo principal del cono de luz */}
+            <polygon
+              points={beamGeometry.mainPolygon}
+              fill={`url(#beam-body-${state.id})`}
+            />
+
+            {/* Haces internos sutiles de proyección */}
+            <line
+              x1={beamGeometry.ray1Base[0]}
+              y1={beamGeometry.ray1Base[1]}
+              x2={beamGeometry.ray1Top[0]}
+              y2={beamGeometry.ray1Top[1]}
+              stroke={`url(#beam-edge-${state.id})`}
+              strokeWidth="1.5"
+              strokeOpacity="0.45"
+            />
+            <line
+              x1={beamGeometry.ray2Base[0]}
+              y1={beamGeometry.ray2Base[1]}
+              x2={beamGeometry.ray2Top[0]}
+              y2={beamGeometry.ray2Top[1]}
+              stroke={`url(#beam-edge-${state.id})`}
+              strokeWidth="1.5"
+              strokeOpacity="0.45"
+            />
+
+            {/* Rayos laterales brillantes (bordes izquierdo y derecho del cono como en el mock) */}
+            <line
+              x1={layout.baseLeft[0]}
+              y1={layout.baseLeft[1]}
+              x2={layout.targetLeft[0]}
+              y2={layout.targetLeft[1]}
+              stroke={`url(#beam-edge-${state.id})`}
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            />
+            <line
+              x1={layout.baseRight[0]}
+              y1={layout.baseRight[1]}
+              x2={layout.targetRight[0]}
+              y2={layout.targetRight[1]}
+              stroke={`url(#beam-edge-${state.id})`}
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            />
+
+            {/* Destellos de luz ascendentes en la base del haz */}
+            {beamGeometry.sparkles.map((sp, i) => (
+              <circle
+                key={i}
+                cx={sp.cx}
+                cy={sp.cy}
+                r={sp.r}
+                fill="#FFFFFF"
+                opacity={sp.o}
+              />
+            ))}
           </svg>
 
-          {/* Silueta voxel ampliada */}
+          {/* CAPA 2 (z-20): ISLA VOXEL 3D AMPLIADA DEL ESTADO */}
           <div
-            key={`card-${state.id}`}
-            className="holo-card absolute"
+            key={`island-${state.id}`}
+            className="holo-island-enter absolute z-20"
             style={{
               left: layout.left,
               top: layout.top,
               width: layout.w,
               height: layout.h,
-              filter: 'drop-shadow(0 0 6px rgba(180,178,255,0.55)) drop-shadow(0 10px 14px rgba(28,23,74,0.35))',
+              filter:
+                'drop-shadow(0 0 10px rgba(190, 185, 255, 0.72)) drop-shadow(0 14px 22px rgba(24, 18, 68, 0.38))',
             }}
           >
-            <div ref={canvasHostRef} className="absolute inset-0" />
+            <img
+              src={`/data/holo/state-${state.id}.png`}
+              alt={`Silueta voxel 3D ampliada de ${state.nombre}`}
+              width={stateMeta.width}
+              height={stateMeta.height}
+              decoding="async"
+              className="block w-full h-full object-contain [image-rendering:pixelated] select-none pointer-events-none"
+            />
+
+            {/* Ranura centrada en el polo visual del estado para el contenido de la Fase 3 */}
             {children && (
-              <div className="absolute inset-0 flex items-center justify-center">
+              <div
+                className="absolute flex items-center justify-center"
+                style={{
+                  left: `${stateMeta.visualCenter[0] * 100}%`,
+                  top: `${stateMeta.visualCenter[1] * 100}%`,
+                  transform: 'translate(-50%, -50%)',
+                }}
+              >
                 {children(state)}
               </div>
             )}

@@ -386,10 +386,10 @@ export function PixelMap({
             : INTRO_CLIFF;
         const [bboxMinX, bboxMinY, bboxMaxX, bboxMaxY] = state.bbox;
 
-        const expandedMinX = Math.max(0, bboxMinX - pixelScale);
-        const expandedMaxX = Math.min(width - 1, bboxMaxX + pixelScale);
-        const expandedMinY = Math.max(0, bboxMinY - customLiftPx - 1);
-        const expandedMaxY = Math.min(height - 1, bboxMaxY + 3);
+        const expandedMinX = Math.max(0, bboxMinX - pixelScale - 2);
+        const expandedMaxX = Math.min(width - 1, bboxMaxX + pixelScale + 2);
+        const expandedMinY = Math.max(0, bboxMinY - customLiftPx - 3);
+        const expandedMaxY = Math.min(height - 1, bboxMaxY + 4);
 
         if (expandedMinX < minDirtyX) minDirtyX = expandedMinX;
         if (expandedMaxX > maxDirtyX) maxDirtyX = expandedMaxX;
@@ -583,6 +583,41 @@ export function PixelMap({
           }
 
           setPixel(ly * width + x, topColor);
+        }
+
+        // Contorno luminoso lavanda de 2px alrededor de la silueta activa en el mapa (como en mockup-hover-estado.jpg)
+        if (mode === 'hover' || mode === 'select') {
+          const glowInner = hexToU32('#F4F2FF', 235);
+          const glowOuter = hexToU32('#B4B2FF', 135);
+          for (let i = 0; i < touchedMaskIndices.length; i++) {
+            const tIdx = touchedMaskIndices[i];
+            const tx = tIdx % width;
+            const ty = Math.floor(tIdx / width);
+            const neighbors = [
+              [tx - 1, ty],
+              [tx + 1, ty],
+              [tx, ty - 1],
+              [tx, ty + 1],
+            ];
+            for (let n = 0; n < 4; n++) {
+              const nx = neighbors[n][0];
+              const ny = neighbors[n][1];
+              if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+                const nIdx = ny * width + nx;
+                if (!liftedMask[nIdx]) {
+                  setPixel(nIdx, glowInner);
+                  const nx2 = nx + (nx - tx);
+                  const ny2 = ny + (ny - ty);
+                  if (nx2 >= 0 && nx2 < width && ny2 >= 0 && ny2 < height) {
+                    const nIdx2 = ny2 * width + nx2;
+                    if (!liftedMask[nIdx2] && u32[nIdx2] !== glowInner) {
+                      setPixel(nIdx2, glowOuter);
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
 
         for (let i = 0; i < touchedMaskIndices.length; i++) {

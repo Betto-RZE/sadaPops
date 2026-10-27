@@ -7,6 +7,7 @@
     "build": "pnpm --filter web build",
     "lint": "pnpm --filter web lint",
     "build-map": "tsx scripts/build-map.ts",
+    "build-holos": "tsx scripts/build-holos.ts",
     "build-flowers": "tsx scripts/build-flowers.ts",
     "build-petals": "tsx scripts/build-petals.ts",
     "compare-map": "tsx scripts/compare-map.ts"
