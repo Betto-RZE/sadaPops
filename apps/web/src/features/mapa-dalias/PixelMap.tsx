@@ -830,6 +830,8 @@ export function PixelMap({
       if (resolved) {
         const nextSelected = resolved === selectedStateId ? null : resolved;
         onSelectState?.(nextSelected);
+      } else if (selectedStateId) {
+        onSelectState?.(null);
       }
     },
     [data, introDone, width, height, selectedStateId, activeState, getLogicalCoords, onSelectState]

@@ -83,23 +83,23 @@ function computeHoloLayout(
   const rawAx = state.anchor.x * sx;
   const rawAy = (state.anchor.y - liftLogicalPx) * sy;
 
-  // Escala estandarizada y compacta de la isla voxel (ancho uniforme ~220px para lectura óptima)
+  // Dimensiones escaladas de la silueta voxel 3D manteniendo su proporción original
   const aspect = meta.height / meta.width;
-  const targetMaxDim = Math.min(235, Math.max(190, cw * 0.22));
+  const targetMaxDim = Math.min(290, Math.max(230, cw * 0.26));
   let w: number;
   let h: number;
   if (aspect >= 1) {
     h = targetMaxDim;
-    w = Math.max(185, Math.round(h / aspect));
+    w = Math.round(h / aspect);
   } else {
     w = targetMaxDim;
     h = Math.round(w * aspect);
   }
 
-  // Margen lateral seguro respecto al borde del lienzo
+  // Margen lateral seguro y cota superior en el espacio de papel del Hero
+  // (safeTopMin = -115px permite que estados del norte suban al cielo de papel y dejen su haz visible)
   const padX = Math.max(16, cw * 0.02);
-  const safeTopMin = 18;
-  const beamGap = Math.max(34, ch * 0.08);
+  const safeTopMin = -115;
 
   let left: number;
   let top: number;
@@ -109,17 +109,17 @@ function computeHoloLayout(
   if (state.id === '02') {
     // Baja California: Proyección diagonal suave hacia el Golfo de California (Opción 1)
     // El ancla en la dalia (ax, ay) se mantiene 100% fija en su posición geográfica
-    left = Math.round(Math.min(cw - w - padX, rawAx + 92));
-    top = Math.round(Math.max(safeTopMin + 6, rawAy - h * 0.25));
+    left = Math.round(Math.min(cw - w - padX, rawAx + 85));
+    top = -75;
   } else {
-    // Mayoría de estados (Puebla, etc.): Proyección vertical directa
-    // Si es un estado del norte fronterizo sin espacio vertical, top se acota a la zona segura superior
-    const idealTop = rawAy - h - beamGap;
-    top = Math.round(Math.max(safeTopMin, idealTop));
+    // Estados estándar y frontera norte (Sonora, Chihuahua, Coahuila, Puebla, etc.):
+    // Se garantiza un haz de luz vertical despejado de al menos 55px debajo de la pieza 3D
+    const targetTop = rawAy - h - 55;
+    top = Math.round(Math.max(safeTopMin, targetTop));
     left = Math.round(Math.min(cw - w - padX, Math.max(padX, rawAx - w / 2)));
   }
 
-  // Eje central desde la base del estado en el mapa (A) hasta el polo visual de la pieza ampliada (C)
+  // Eje central desde la base del estado en el mapa (A) hasta el centro visual de la silueta voxel (C)
   const cx = left + meta.visualCenter[0] * w;
   const cy = top + meta.visualCenter[1] * h;
 
@@ -135,9 +135,9 @@ function computeHoloLayout(
   // Ancho en la base (proporcional al estado en el mapa, acotado para haz sutil)
   const rBase = Math.min(Math.max(12, Math.min(stateSpanW, stateSpanH) * 0.30), 16);
   // Ancho en el destino: apertura estrecha y controlada (elimina por completo el efecto "pirámide rara")
-  const rTop = Math.min(36, Math.max(22, Math.min(w, h) * 0.16));
+  const rTop = 38;
 
-  // Detener el eje en la base visual de la silueta
+  // El haz de luz llega a la base de la silueta voxel 3D
   const tx = cx - ux * 8;
   const ty = cy - uy * 8;
 
@@ -169,9 +169,22 @@ export interface StateHologramCardProps {
 }
 
 export function StateHologramCard({ children, className }: StateHologramCardProps) {
-  const { data, selectedStateId } = usePixelMapContext();
+  const { data, selectedStateId, selectState } = usePixelMapContext();
+
   // El cono de luz y la proyección holográfica se activan ÚNICAMENTE al hacer clic (seleccionar un estado)
   const state = data && selectedStateId ? data.stateById.get(selectedStateId) ?? null : null;
+
+  // Cierre accesible con tecla Escape
+  useEffect(() => {
+    if (!selectedStateId) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        selectState(null);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [selectedStateId, selectState]);
 
   const rootRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
@@ -411,7 +424,7 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
           {/* CAPA 2 (z-20): ISLA VOXEL 3D AMPLIADA DEL ESTADO */}
           <div
             key={`island-${state.id}`}
-            className="holo-island-enter absolute z-20"
+            className="holo-island-enter absolute z-20 pointer-events-auto"
             style={{
               left: layout.left,
               top: layout.top,
