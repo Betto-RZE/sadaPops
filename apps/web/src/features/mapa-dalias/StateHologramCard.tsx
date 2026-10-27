@@ -83,36 +83,41 @@ function computeHoloLayout(
   const rawAx = state.anchor.x * sx;
   const rawAy = (state.anchor.y - liftLogicalPx) * sy;
 
-  // Escala estandarizada de la isla voxel ampliada (~25-28% del mapa para ancho uniforme de lectura)
+  // Escala estandarizada y compacta de la isla voxel (ancho uniforme ~220px para lectura óptima)
   const aspect = meta.height / meta.width;
-  const targetMaxDim = Math.min(290, Math.max(190, cw * 0.26));
+  const targetMaxDim = Math.min(235, Math.max(190, cw * 0.22));
   let w: number;
   let h: number;
   if (aspect >= 1) {
-    h = Math.min(targetMaxDim, ch * 0.42);
-    w = h / aspect;
+    h = targetMaxDim;
+    w = Math.max(185, Math.round(h / aspect));
   } else {
     w = targetMaxDim;
-    h = w * aspect;
+    h = Math.round(w * aspect);
   }
 
   // Margen lateral seguro respecto al borde del lienzo
-  const padX = Math.max(14, cw * 0.02);
-  const beamGap = Math.max(46, ch * 0.115);
+  const padX = Math.max(16, cw * 0.02);
+  const safeTopMin = 18;
+  const beamGap = Math.max(34, ch * 0.08);
 
-  // Proyección universal directa hacia arriba para los 32 estados (idéntico a Puebla):
-  // La pieza ampliada siempre flota arriba de su estado, invadiendo libremente el espacio superior si es necesario.
-  const shiftX =
-    rawAx < cw * 0.32
-      ? w * 0.14
-      : rawAx > cw * 0.68
-      ? -w * 0.14
-      : 0;
-
-  const left = Math.min(cw - w - padX, Math.max(padX, rawAx - w / 2 + shiftX));
-  const top = rawAy - h - beamGap;
+  let left: number;
+  let top: number;
   const ax = rawAx;
   const ay = rawAy;
+
+  if (state.id === '02') {
+    // Baja California: Proyección diagonal suave hacia el Golfo de California (Opción 1)
+    // El ancla en la dalia (ax, ay) se mantiene 100% fija en su posición geográfica
+    left = Math.round(Math.min(cw - w - padX, rawAx + 92));
+    top = Math.round(Math.max(safeTopMin + 6, rawAy - h * 0.25));
+  } else {
+    // Mayoría de estados (Puebla, etc.): Proyección vertical directa
+    // Si es un estado del norte fronterizo sin espacio vertical, top se acota a la zona segura superior
+    const idealTop = rawAy - h - beamGap;
+    top = Math.round(Math.max(safeTopMin, idealTop));
+    left = Math.round(Math.min(cw - w - padX, Math.max(padX, rawAx - w / 2)));
+  }
 
   // Eje central desde la base del estado en el mapa (A) hasta el polo visual de la pieza ampliada (C)
   const cx = left + meta.visualCenter[0] * w;
@@ -127,15 +132,14 @@ function computeHoloLayout(
   const nx = -uy;
   const ny = ux;
 
-  // Ancho en la base (proporcional al estado en el mapa, acotado para simetría limpia)
-  const rBase = Math.min(Math.max(12, Math.min(stateSpanW, stateSpanH) * 0.34), 22);
-  // Ancho en el destino (dentro de la silueta sólida de la pieza ampliada)
-  const radiusRatio = meta.coneRadiusRatio ?? 0.32;
-  const rTop = Math.min(w, h) * radiusRatio;
+  // Ancho en la base (proporcional al estado en el mapa, acotado para haz sutil)
+  const rBase = Math.min(Math.max(12, Math.min(stateSpanW, stateSpanH) * 0.30), 16);
+  // Ancho en el destino: apertura estrecha y controlada (elimina por completo el efecto "pirámide rara")
+  const rTop = Math.min(36, Math.max(22, Math.min(w, h) * 0.16));
 
-  // Detener el eje ligeramente antes del centro visual para que el cono quede cubierto por la silueta
-  const tx = cx - ux * (rTop * 0.14);
-  const ty = cy - uy * (rTop * 0.14);
+  // Detener el eje en la base visual de la silueta
+  const tx = cx - ux * 8;
+  const ty = cy - uy * 8;
 
   const baseLeft: [number, number] = [ax - nx * rBase, ay - ny * rBase];
   const baseRight: [number, number] = [ax + nx * rBase, ay + ny * rBase];
@@ -329,6 +333,7 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
               </radialGradient>
             </defs>
 
+            {/* Resplandor y punto de anclaje en la dalia oficial */}
             <ellipse
               cx={layout.baseCenter[0]}
               cy={layout.baseCenter[1]}
@@ -336,20 +341,50 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
               ry={layout.baseRadiusY}
               fill={`url(#beam-base-glow-${state.id})`}
             />
+            <circle
+              cx={layout.baseCenter[0]}
+              cy={layout.baseCenter[1]}
+              r={3.5}
+              fill="#FFFFFF"
+            />
 
+            {/* Haz suave sin líneas de contorno duras (cero efecto "pirámide rara") */}
             <polygon
               points={beamGeometry.mainPolygon}
               fill={`url(#beam-body-${state.id})`}
             />
 
+            {/* Núcleo difuso de luz central */}
+            <line
+              x1={beamGeometry.baseCenter[0]}
+              y1={beamGeometry.baseCenter[1]}
+              x2={beamGeometry.targetCenter[0]}
+              y2={beamGeometry.targetCenter[1]}
+              stroke="#E8E5FF"
+              strokeWidth="6"
+              strokeOpacity="0.25"
+              strokeLinecap="round"
+            />
+            <line
+              x1={beamGeometry.baseCenter[0]}
+              y1={beamGeometry.baseCenter[1]}
+              x2={beamGeometry.targetCenter[0]}
+              y2={beamGeometry.targetCenter[1]}
+              stroke="#FFFFFF"
+              strokeWidth="2.2"
+              strokeOpacity="0.75"
+              strokeLinecap="round"
+            />
+
+            {/* Rayos internos sutiles */}
             <line
               x1={beamGeometry.ray1Base[0]}
               y1={beamGeometry.ray1Base[1]}
               x2={beamGeometry.ray1Top[0]}
               y2={beamGeometry.ray1Top[1]}
               stroke={`url(#beam-edge-${state.id})`}
-              strokeWidth="1.5"
-              strokeOpacity="0.45"
+              strokeWidth="1.2"
+              strokeOpacity="0.25"
             />
             <line
               x1={beamGeometry.ray2Base[0]}
@@ -357,27 +392,8 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
               x2={beamGeometry.ray2Top[0]}
               y2={beamGeometry.ray2Top[1]}
               stroke={`url(#beam-edge-${state.id})`}
-              strokeWidth="1.5"
-              strokeOpacity="0.45"
-            />
-
-            <line
-              x1={layout.baseLeft[0]}
-              y1={layout.baseLeft[1]}
-              x2={layout.targetLeft[0]}
-              y2={layout.targetLeft[1]}
-              stroke={`url(#beam-edge-${state.id})`}
-              strokeWidth="2.2"
-              strokeLinecap="round"
-            />
-            <line
-              x1={layout.baseRight[0]}
-              y1={layout.baseRight[1]}
-              x2={layout.targetRight[0]}
-              y2={layout.targetRight[1]}
-              stroke={`url(#beam-edge-${state.id})`}
-              strokeWidth="2.2"
-              strokeLinecap="round"
+              strokeWidth="1.2"
+              strokeOpacity="0.25"
             />
 
             {beamGeometry.sparkles.map((sp, i) => (
