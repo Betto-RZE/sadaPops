@@ -9,7 +9,7 @@ export function Hero() {
   const [hoveredStateId, setHoveredStateId] = useState<string | null>(null);
 
   return (
-    <section className="relative w-full bg-transparent overflow-hidden pt-0 pb-6 sm:pb-8 select-none">
+    <section className="relative w-full bg-transparent overflow-x-clip overflow-y-visible pt-0 pb-6 sm:pb-8 select-none">
       
       <div className="mx-auto max-w-[1440px] px-3 sm:px-6 lg:px-10 relative z-10">
         

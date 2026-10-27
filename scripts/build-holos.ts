@@ -38,8 +38,10 @@ export interface HoloStateMeta {
   flankLeft: [number, number];
   /** Punto derecho de anclaje del cono de luz en coordenadas normalizadas [0..1] de la imagen */
   flankRight: [number, number];
-  /** Centro visual óptimo para el bloque de texto en coordenadas normalizadas [0..1] */
+  /** Centro visual óptimo para el bloque de texto y eje del cono en coordenadas normalizadas [0..1] */
   visualCenter: [number, number];
+  /** Radio medio de la silueta desde `visualCenter` en fracción del menor lado [0.22..0.42] */
+  coneRadiusRatio: number;
 }
 
 const ROOT = path.resolve(__dirname, '..');
@@ -53,19 +55,18 @@ const S = 3;                  // 3x3 px por voxel (mismo grano nítido del mapa 
 const EXT = 6;                // 6 vóxeles de altura de acantilado 3D (18 px)
 const PAD_VOXELS = 4;         // Margen para el halo/borde exterior
 
-// Paleta Opción A ajustada (Maqueta Índigo Profundo + Luz Lavanda Clara del mapa)
+// Paleta idéntica al mapa base (`config/iso.ts`) con halo perimetral lavanda luminoso
 const PALETTE = {
-  topBase: '#353194',         // Índigo profundo rico (contraste AAA con texto blanco)
-  topCenterShade: '#272378',  // Sombreado suave hacia el centro para máxima legibilidad
-  coastalRimVoxel: '#9896FF', // Anillo perimetral de 1 voxel en lavanda luminoso
-  coastalRimHi: '#F4F2FF',    // Arista especular exterior (1px blanco-lavanda brillante)
-  coastalInnerBevel: '#4B47B5',
-  cliffLight: '#4E3FB8',      // Pared iluminada SO
-  cliffMid: '#3D2F9E',        // Pared frontal S
-  cliffDark: '#2A1E7A',       // Pared en sombra SE
-  cliffDeep: '#1B1259',       // Sombra profunda Este / pliegues
-  outerGlow1: [215, 210, 255, 195] as [number, number, number, number], // 1px halo neón lavanda
-  outerGlow2: [180, 175, 255, 95] as [number, number, number, number],  // 2px halo suave
+  topVariants: CFG.palette.topVariants,
+  coastalRimVoxel: CFG.palette.coastalRimVoxel,       // #8A89FA
+  coastalRimHi: '#F0EEFF',                            // Arista especular luminosa
+  coastalInnerBevel: CFG.palette.coastalInnerBevel,   // #5554D4
+  cliffLight: CFG.palette.cliffLight,                 // #5B49C6
+  cliffMid: CFG.palette.cliffMid,                     // #4C3AB2
+  cliffDark: CFG.palette.cliffDark,                   // #33248B
+  cliffDeep: CFG.palette.cliffDeepShadow,             // #23176E
+  outerGlow1: [240, 238, 255, 220] as [number, number, number, number], // 1px borde lavanda-blanco
+  outerGlow2: [180, 178, 255, 110] as [number, number, number, number], // 2px halo suave
 };
 
 const hex = (h: string): RGB => {
@@ -340,8 +341,9 @@ function buildSingleStateHolo(st: StateGeo): { rgba: Buffer; OW: number; OH: num
   const OH = H * S;
   const rgba = Buffer.alloc(OW * OH * 4);
 
-  const baseTop = hex(PALETTE.topBase);
-  const centerTop = hex(PALETTE.topCenterShade);
+  const variantHex = PALETTE.topVariants[(st.numId * 7) % PALETTE.topVariants.length];
+  const baseTop = hex(variantHex);
+  const centerTop = shiftRgb(baseTop, -6);
   const coastalVoxel = hex(PALETTE.coastalRimVoxel);
   const coastalHi = hex(PALETTE.coastalRimHi);
   const coastalBevel = hex(PALETTE.coastalInnerBevel);
@@ -536,6 +538,15 @@ function buildSingleStateHolo(st: StateGeo): { rgba: Buffer; OW: number; OH: num
   const cxNorm = Math.min(0.65, Math.max(0.35, (pole[0] * S) / OW));
   const cyNorm = Math.min(0.62, Math.max(0.36, (pole[1] * S) / OH));
 
+  // Radio efectivo para el cono perpendicular basado en la cobertura sólida del estado
+  let solidCount = 0;
+  for (let i = 0; i < OW * OH; i++) if (alphaSnapshot[i] === 1) solidCount++;
+  const eqRadiusPx = Math.sqrt(solidCount / Math.PI);
+  const minSide = Math.min(OW, OH);
+  const coneRadiusRatio = Number(
+    Math.min(0.40, Math.max(0.24, (eqRadiusPx * 0.78) / minSide)).toFixed(3)
+  );
+
   return {
     rgba,
     OW,
@@ -547,6 +558,7 @@ function buildSingleStateHolo(st: StateGeo): { rgba: Buffer; OW: number; OH: num
       flankLeft: [Number((leftX / OW).toFixed(3)), Number((leftY / OH).toFixed(3))],
       flankRight: [Number((rightX / OW).toFixed(3)), Number((rightY / OH).toFixed(3))],
       visualCenter: [Number(cxNorm.toFixed(3)), Number(cyNorm.toFixed(3))],
+      coneRadiusRatio,
     },
   };
 }
