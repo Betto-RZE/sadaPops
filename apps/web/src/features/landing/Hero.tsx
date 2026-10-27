@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { PixelMap, DahliaLayer } from '@/features/mapa-dalias';
+import { PixelMap, DahliaLayer, DahliaStoreProvider } from '@/features/mapa-dalias';
 
 export function Hero() {
   // Inicialización neutral: ningún estado seleccionado al cargar la landing
@@ -74,6 +74,7 @@ export function Hero() {
             id="mapa-interactivo" 
             className="hero-map-delayed-enter relative z-10 w-full max-w-[780px] sm:max-w-[920px] md:max-w-[1040px] lg:max-w-[1140px] xl:max-w-[1220px] map-isometric-shadow -mt-3 sm:-mt-5"
           >
+            <DahliaStoreProvider>
             <PixelMap
               selectedStateId={selectedStateId}
               hoveredStateId={hoveredStateId}
@@ -84,6 +85,7 @@ export function Hero() {
               {/* Capa de Dalias Voxel sobre los estados */}
               <DahliaLayer />
             </PixelMap>
+            </DahliaStoreProvider>
           </div>
 
         </div>

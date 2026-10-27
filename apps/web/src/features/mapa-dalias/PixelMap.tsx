@@ -107,15 +107,18 @@ function brightenU32(u32: number, delta: number): number {
   return (((255 << 24) | (b << 16) | (g << 8) | r) >>> 0);
 }
 
-/** Entinta un pixel Uint32 hacia la paleta rosa/magenta de selección preservando sus biseles */
+/**
+ * Entinta un pixel Uint32 hacia la luz lavanda/índigo claro de selección (Hito H5)
+ * preservando sus biseles. Es el mismo tono del cono de luz que proyecta el estado ampliado.
+ */
 function tintSelectU32(u32: number): number {
   const r0 = u32 & 0xff;
   const g0 = (u32 >> 8) & 0xff;
   const b0 = (u32 >> 16) & 0xff;
   const lumDelta = Math.round((r0 - 105) * 0.45 + (g0 - 103) * 0.45 + (b0 - 234) * 0.2);
-  const r = Math.min(255, Math.max(0, 232 + lumDelta));
-  const g = Math.min(255, Math.max(0, 56 + Math.round(lumDelta * 0.85)));
-  const b = Math.min(255, Math.max(0, 130 + Math.round(lumDelta * 0.9)));
+  const r = Math.min(255, Math.max(0, 168 + lumDelta));
+  const g = Math.min(255, Math.max(0, 166 + Math.round(lumDelta * 0.95)));
+  const b = Math.min(255, Math.max(0, 255 + Math.round(lumDelta * 0.5)));
   return (((255 << 24) | (b << 16) | (g << 8) | r) >>> 0);
 }
 
@@ -138,13 +141,15 @@ const HOVER_CLIFF = {
   rimHighlight: hexToU32('#EBE6FF'),
 };
 
+// Selección (Hito H5): luz lavanda, un tono más claro que el mapa base (sin rosa;
+// la dalia queda como única protagonista magenta)
 const SELECT_CLIFF = {
-  light: hexToU32('#BD1E62'),
-  mid: hexToU32('#9E1650'),
-  dark: hexToU32('#780E3B'),
-  deep: hexToU32('#520726'),
-  rimLip: hexToU32('#FF75AE'),
-  rimHighlight: hexToU32('#FFC2DC'),
+  light: hexToU32('#7A74F0'),
+  mid: hexToU32('#5F57D6'),
+  dark: hexToU32('#4A40B8'),
+  deep: hexToU32('#33288F'),
+  rimLip: hexToU32('#B4B2FF'),
+  rimHighlight: hexToU32('#F0EEFF'),
 };
 
 // Micro-sombra de oclusión y contacto bajo el bloque elevado
@@ -274,7 +279,8 @@ export function PixelMap({
   hoveredStateId: controlledHoveredId,
   onSelectState,
   onHoverState,
-  showTooltip = true,
+  // `showTooltip` se conserva por compatibilidad de API; el tooltip de debug se retiró en H5.
+  showTooltip: _showTooltip = false,
   className,
   children,
 }: PixelMapProps) {
@@ -557,7 +563,7 @@ export function PixelMap({
             } else if (isSouthOrEastEdge) {
               topColor = cliffPalette.rimLip;
             } else {
-              topColor = orig !== 0 ? tintSelectU32(orig) : hexToU32('#E83882');
+              topColor = orig !== 0 ? tintSelectU32(orig) : hexToU32('#A8A6FF');
             }
           } else if (mode === 'hover') {
             if (isNorthOrWestEdge) {
@@ -853,27 +859,8 @@ export function PixelMap({
           </div>
         )}
 
-        {/* Tooltip informativo discreto del estado activo */}
-        {showTooltip && activeState && (
-          <div className="absolute top-3 left-3 z-30 pointer-events-none flex items-center gap-2 rounded-lg bg-white/90 px-3 py-1.5 shadow-md backdrop-blur-md border border-stone-200/80 animate-in fade-in zoom-in-95 duration-150">
-            <span
-              className={cn(
-                'inline-block h-2.5 w-2.5 rounded-full',
-                activeState.id === selectedStateId
-                  ? 'bg-pink-600 ring-2 ring-pink-300'
-                  : 'bg-violet-600 ring-2 ring-violet-300'
-              )}
-            />
-            <div className="flex flex-col">
-              <span className="text-xs font-bold text-stone-800 leading-tight">
-                {activeState.nombre}
-              </span>
-              <span className="text-[10px] text-stone-500 font-mono">
-                Estado {activeState.id}
-              </span>
-            </div>
-          </div>
-        )}
+        {/* El tooltip provisional de depuración se retiró en H5 (Fase 1).
+            El detalle por estado lo dibuja la tarjeta holográfica (Fase 2/3). */}
 
         {/* Indicador sutil de carga si aún no se han indexado los datos */}
         {loading && (

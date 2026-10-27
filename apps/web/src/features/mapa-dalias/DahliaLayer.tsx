@@ -9,10 +9,14 @@ import {
   MAP_STATE_ANIM_MS,
 } from './PixelMap';
 import { computeLevels, DAHLIA_SPRITE_META, type StateCountItem } from './computeLevels';
+import { useOptionalDahliaStore } from './DahliaStore';
 import { cn } from '../../shared/utils';
 
 export interface DahliaLayerProps {
-  /** Conteo opcional de usuarios por estado. Si no se provee, se usa el dataset demo del mock */
+  /**
+   * Conteo opcional de usuarios por estado. Si no se provee, se lee del `DahliaStoreProvider`
+   * (fuente reactiva, 1 dalia = 1 registro); sin Provider, se usa el dataset demo.
+   */
   userCounts?: StateCountItem[];
   /** Clases CSS adicionales para el contenedor de la capa */
   className?: string;
@@ -50,16 +54,21 @@ const DEFAULT_DEMO_COUNTS: StateCountItem[] = [
  *   - Secuencia exacta: Caída -> Impacto -> Rebote -> Brote de la dalia.
  */
 export function DahliaLayer({
-  userCounts = DEFAULT_DEMO_COUNTS,
+  userCounts,
   className,
   onBloomComplete,
 }: DahliaLayerProps) {
   const { data } = usePixelMapContext();
+  const store = useOptionalDahliaStore();
   const [hasBloomed, setHasBloomed] = useState(false);
   const layerRef = useRef<HTMLDivElement>(null);
 
-  // 1. Calcular mapa de niveles (0..3)
-  const levelsMap = useMemo(() => computeLevels(userCounts), [userCounts]);
+  // 1. Calcular mapa de niveles (0..3): prop explícito > store reactivo > demo
+  const levelsMap = useMemo(() => {
+    if (userCounts) return computeLevels(userCounts);
+    if (store) return store.levels;
+    return computeLevels(DEFAULT_DEMO_COUNTS);
+  }, [userCounts, store]);
 
   // 2. Disparar florecimiento en sincronía con la secuencia de entrada del mapa
   useEffect(() => {
