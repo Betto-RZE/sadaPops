@@ -96,43 +96,23 @@ function computeHoloLayout(
     h = w * aspect;
   }
 
-  // Zona segura dentro del contenedor del mapa
-  const padX = Math.max(18, cw * 0.03);
-  const safeTopMin = Math.max(18, ch * 0.035);
-  const safeTopMax = Math.max(safeTopMin, ch - h - 14);
-  const beamGap = Math.max(44, ch * 0.11);
+  // Margen lateral seguro respecto al borde del lienzo
+  const padX = Math.max(14, cw * 0.02);
+  const beamGap = Math.max(46, ch * 0.115);
 
-  let left: number;
-  let top: number;
-  let ax = rawAx;
-  let ay = rawAy;
+  // Proyección universal directa hacia arriba para los 32 estados (idéntico a Puebla):
+  // La pieza ampliada siempre flota arriba de su estado, invadiendo libremente el espacio superior si es necesario.
+  const shiftX =
+    rawAx < cw * 0.32
+      ? w * 0.14
+      : rawAx > cw * 0.68
+      ? -w * 0.14
+      : 0;
 
-  const canFitAbove = rawAy - h - beamGap >= safeTopMin;
-
-  if (canFitAbove) {
-    // Caso estándar: la isla flota directamente arriba con el cono vertical
-    const shiftX =
-      rawAx < cw * 0.36
-        ? w * 0.32
-        : rawAx > cw * 0.68
-        ? -w * 0.32
-        : w * 0.18;
-    left = Math.min(Math.max(padX, rawAx - w / 2 + shiftX), cw - w - padX);
-    top = Math.min(safeTopMax, Math.max(safeTopMin, rawAy - h - beamGap));
-  } else {
-    // Estados del norte (BC, Sonora, Chihuahua, Coahuila):
-    // 1) Anclar la base del haz en la mitad/tercio inferior del estado en el mapa para que el haz SIEMPRE suba
-    ay = Math.max(rawAy, ((bMinY + bMaxY * 2) / 3 - liftLogicalPx) * sy);
-    // 2) Colocar la isla en la zona segura superior, desplazada al interior (evita el logo INE a la izquierda)
-    const goRight = rawAx < cw * 0.52;
-    const horizGap = Math.max(35, cw * 0.045);
-    left = Math.round(
-      goRight
-        ? Math.min(cw - w - padX, rawAx + stateSpanW * 0.45 + horizGap)
-        : Math.max(padX, rawAx - stateSpanW * 0.45 - horizGap - w)
-    );
-    top = Math.round(safeTopMin + 4);
-  }
+  const left = Math.min(cw - w - padX, Math.max(padX, rawAx - w / 2 + shiftX));
+  const top = rawAy - h - beamGap;
+  const ax = rawAx;
+  const ay = rawAy;
 
   // Eje central desde la base del estado en el mapa (A) hasta el polo visual de la pieza ampliada (C)
   const cx = left + meta.visualCenter[0] * w;
@@ -273,7 +253,7 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
   }, [layout]);
 
   return (
-    <div ref={rootRef} className={cn('absolute inset-0 pointer-events-none z-40', className)}>
+    <div ref={rootRef} className={cn('absolute inset-0 pointer-events-none z-[70]', className)}>
       <style>{`
         @keyframes holo-island-in {
           0% {

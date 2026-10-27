@@ -9,9 +9,9 @@ export function Hero() {
   const [hoveredStateId, setHoveredStateId] = useState<string | null>(null);
 
   return (
-    <section className="relative w-full bg-transparent overflow-x-clip overflow-y-visible pt-0 pb-6 sm:pb-8 select-none">
+    <section className="relative w-full bg-transparent overflow-visible pt-0 pb-6 sm:pb-8 select-none">
       
-      <div className="mx-auto max-w-[1440px] px-3 sm:px-6 lg:px-10 relative z-10">
+      <div className="mx-auto max-w-[1440px] px-3 sm:px-6 lg:px-10 relative z-10 overflow-visible">
         
         {/* Contenedor compacto que aprovecha el espacio vertical sin scroll */}
         <div className="relative flex flex-col items-center justify-center min-h-[500px] sm:min-h-[560px] lg:min-h-[620px]">
@@ -72,7 +72,7 @@ export function Hero() {
           {/* ========================================================================= */}
           <div 
             id="mapa-interactivo" 
-            className="hero-map-delayed-enter relative z-10 w-full max-w-[780px] sm:max-w-[920px] md:max-w-[1040px] lg:max-w-[1140px] xl:max-w-[1220px] map-isometric-shadow -mt-3 sm:-mt-5"
+            className="hero-map-delayed-enter relative z-20 w-full max-w-[780px] sm:max-w-[920px] md:max-w-[1040px] lg:max-w-[1140px] xl:max-w-[1220px] map-isometric-shadow -mt-3 sm:-mt-5"
           >
             <DahliaStoreProvider>
             <PixelMap

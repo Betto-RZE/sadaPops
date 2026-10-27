@@ -286,6 +286,7 @@ export function PixelMap({
 }: PixelMapProps) {
   const { data, loading, error } = useMapData();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const cursorPillRef = useRef<HTMLDivElement | null>(null);
 
   // Buffer persistente para renderizado de alta velocidad sin recolección de basura
   const bufferRef = useRef<{
@@ -309,6 +310,12 @@ export function PixelMap({
   // Estado activo prioritario (hover tiene prioridad inmediata visual; si no hay hover, muestra el seleccionado)
   const activeStateId = currentHoveredId || selectedStateId;
   const activeState = (data && activeStateId) ? data.stateById.get(activeStateId) : null;
+
+  // Estado en hover (Opción B: se muestra junto al cursor, se oculta si el estado ya está abierto por clic)
+  const hoveredState =
+    data && currentHoveredId && currentHoveredId !== selectedStateId
+      ? data.stateById.get(currentHoveredId) ?? null
+      : null;
 
   // Función que pinta un conjunto de estados en el canvas con su elevación `liftPx` (incluso liftPx === 0 durante la intro)
   const renderStatesFrame = useCallback(
@@ -785,6 +792,14 @@ export function PixelMap({
   const handlePointerMove = useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {
       if (!data || !introDone) return;
+
+      if (cursorPillRef.current && canvasRef.current) {
+        const rect = canvasRef.current.getBoundingClientRect();
+        const relX = e.clientX - rect.left;
+        const relY = e.clientY - rect.top;
+        cursorPillRef.current.style.transform = `translate3d(${relX + 16}px, ${relY - 18}px, 0)`;
+      }
+
       const coords = getLogicalCoords(e);
       const isTouch = e.pointerType === 'touch';
       const activeNumId = activeState ? activeState.numId : null;
@@ -821,6 +836,9 @@ export function PixelMap({
   );
 
   const handlePointerLeave = useCallback(() => {
+    if (cursorPillRef.current) {
+      cursorPillRef.current.style.transform = 'translate3d(-9999px, -9999px, 0)';
+    }
     if (currentHoveredId !== null) {
       setInternalHoveredId(null);
       onHoverState?.(null);
@@ -894,8 +912,21 @@ export function PixelMap({
           </div>
         )}
 
-        {/* El tooltip provisional de depuración se retiró en H5 (Fase 1).
-            El detalle por estado lo dibuja la tarjeta holográfica (Fase 2/3). */}
+        {/* Indicador de cursor en hover (Opción B: cápsula compacta seguidora del puntero) */}
+        <div
+          ref={cursorPillRef}
+          aria-hidden="true"
+          className={cn(
+            'absolute top-0 left-0 z-30 pointer-events-none select-none transition-opacity duration-150 ease-out will-change-transform',
+            hoveredState ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+          )}
+          style={{ transform: 'translate3d(-9999px, -9999px, 0)' }}
+        >
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1C184A]/92 text-white text-[11px] font-bold tracking-wider uppercase shadow-[0_4px_12px_rgba(24,18,68,0.35)] border border-[#B4B2FF]/80 backdrop-blur-sm whitespace-nowrap">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#B4B2FF] shadow-[0_0_6px_#B4B2FF]" />
+            <span>{hoveredState?.nombre}</span>
+          </div>
+        </div>
 
         {/* Indicador sutil de carga si aún no se han indexado los datos */}
         {loading && (
