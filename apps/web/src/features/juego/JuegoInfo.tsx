@@ -379,10 +379,12 @@ function Controles() {
           </Keycap>
         </Accion>
         <Accion
-          titulo="SALIR / CERRAR"
-          detalle="Esc cierra paneles y ventanas emergentes cuando el juego lo permite."
+          titulo="PANTALLA COMPLETA"
+          detalle="Presiona F o haz clic en el botón superior derecho para expandir la experiencia."
         >
-          <Keycap wide>ESC</Keycap>
+          <Keycap wide tone="bg-indigo-600 text-white">
+            F
+          </Keycap>
         </Accion>
       </ul>
 
