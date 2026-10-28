@@ -60,8 +60,13 @@ function fetchHoloMeta(): Promise<HoloMetaMap> {
 export const OPTICAL_CENTER_OVERRIDES: Record<string, [number, number]> = {
   '02': [0.50, 0.48], // Baja California (centro armónico peninsular)
   '03': [0.48, 0.50], // Baja California Sur (centro del gancho)
+  '05': [0.50, 0.50], // Coahuila (centrado armónico)
+  '08': [0.50, 0.50], // Chihuahua (centrado armónico)
+  '19': [0.50, 0.50], // Nuevo León (centrado armónico)
   '21': [0.50, 0.52], // Puebla (centro de masa)
   '25': [0.48, 0.48], // Sinaloa (franja central)
+  '26': [0.50, 0.50], // Sonora (centrado armónico)
+  '28': [0.50, 0.50], // Tamaulipas (centrado armónico)
   '30': [0.50, 0.50], // Veracruz (centro de la media luna)
 };
 
@@ -106,9 +111,10 @@ function computeHoloLayout(
   const rawAx = state.anchor.x * sx;
   const rawAy = (state.anchor.y - liftLogicalPx) * sy;
 
-  // Dimensiones escaladas de la silueta voxel 3D manteniendo su proporción original
+  // Dimensiones escaladas de la silueta voxel 3D manteniendo su proporción original.
+  // Se mantiene amplia (~275px a 325px) para que enmarque generosamente a la tarjeta de 168px.
   const aspect = meta.height / meta.width;
-  const targetMaxDim = Math.min(330, Math.max(260, Math.round(cw * 0.30)));
+  const targetMaxDim = Math.min(325, Math.max(275, Math.round(cw * 0.28)));
   let w: number;
   let h: number;
   if (aspect >= 1) {
@@ -119,46 +125,74 @@ function computeHoloLayout(
     h = Math.round(w * aspect);
   }
 
-  // Margen lateral seguro y cota superior en el espacio de papel del Hero
-  // (safeTopMin = -115px permite que estados del norte suban al cielo de papel y dejen su haz visible)
-  const padX = Math.max(16, cw * 0.02);
-  const safeTopMin = -115;
+  // Dimensiones de la tarjeta compacta (168px ancho x ~185px alto)
+  const CARD_HALF_W = 84;
+  const CARD_HALF_H = 92;
+  const SAFE_CARD_TOP = -18; // Techo seguro: la tarjeta nunca sube de -18px en el Hero
+  const MIN_BEAM_DIST = 145; // Longitud mínima de proyección para haz de luz siempre visible y despejado
 
-  let left: number;
-  let top: number;
+  const opticalCenter = OPTICAL_CENTER_OVERRIDES[state.id] ?? meta.visualCenter;
+
+  // Cota mínima para cy: garantiza que cardTop = cy - CARD_HALF_H >= SAFE_CARD_TOP
+  const minCenterY = SAFE_CARD_TOP + CARD_HALF_H; // ~ 74px
+
   const ax = rawAx;
   const ay = rawAy;
 
-  if (state.id === '02') {
-    // Baja California: Proyección diagonal suave hacia el Golfo de California (Opción 1)
-    // El ancla en la dalia (ax, ay) se mantiene 100% fija en su posición geográfica
-    left = Math.round(Math.min(cw - w - padX, rawAx + 85));
-    top = -75;
+  // Altura tentativa estándar para proyección vertical
+  const standardCy = ay - h * opticalCenter[1] - 50;
+
+  let cy: number;
+  let cx: number;
+
+  if (standardCy >= minCenterY && Math.abs(standardCy - ay) >= MIN_BEAM_DIST) {
+    // Proyección vertical estándar sin desbordamiento (estados centrales y del sur)
+    cy = standardCy;
+    cx = ax;
   } else {
-    // Estados estándar y frontera norte (Sonora, Chihuahua, Coahuila, Puebla, etc.):
-    // Se garantiza un haz de luz vertical despejado de al menos 55px debajo de la pieza 3D
-    const targetTop = rawAy - h - 55;
-    top = Math.round(Math.max(safeTopMin, targetTop));
-    left = Math.round(Math.min(cw - w - padX, Math.max(padX, rawAx - w / 2)));
+    // Estado cercano a la frontera norte (BC, Sonora, Chihuahua, Coahuila, Nuevo León, etc.):
+    // Fijamos cy en la posición segura más alta dentro del viewport
+    cy = Math.max(minCenterY, standardCy);
+    const dy = cy - ay;
+    const dyAbs = Math.abs(dy);
+
+    // Si la distancia vertical es corta, se abre un desplazamiento diagonal lateral dx
+    // para garantizar un haz de luz largo y visible sin aplastar la tarjeta sobre el estado.
+    let dx = 0;
+    if (dyAbs < MIN_BEAM_DIST) {
+      dx = Math.round(Math.sqrt(Math.max(0, MIN_BEAM_DIST * MIN_BEAM_DIST - dy * dy)));
+    }
+
+    // Dirección hacia la zona más abierta del mapa
+    const spaceRight = cw - ax;
+    const spaceLeft = ax;
+    const goRight = state.id === '02' ? true : spaceRight >= spaceLeft;
+    cx = goRight ? ax + dx : ax - dx;
   }
 
-  // Eje central desde la base del estado en el mapa (A) hasta el centro óptico de la silueta voxel (C)
-  const opticalCenter = OPTICAL_CENTER_OVERRIDES[state.id] ?? meta.visualCenter;
-  const cx = left + opticalCenter[0] * w;
-  const cy = top + opticalCenter[1] * h;
+  // Clamping horizontal seguro para la tarjeta dentro del contenedor
+  const padX = Math.max(16, cw * 0.02);
+  const minCenterX = padX + CARD_HALF_W;
+  const maxCenterX = cw - padX - CARD_HALF_W;
+  cx = Math.round(Math.min(maxCenterX, Math.max(minCenterX, cx)));
+  cy = Math.round(cy);
 
-  const dx = cx - ax;
-  const dy = cy - ay;
-  const dist = Math.hypot(dx, dy) || 1;
-  const ux = dx / dist;
-  const uy = dy / dist;
+  // Derivar las coordenadas de la silueta voxel 3D a partir del centro calibrado
+  const left = Math.round(cx - opticalCenter[0] * w);
+  const top = Math.round(cy - opticalCenter[1] * h);
+
+  const dxFinal = cx - ax;
+  const dyFinal = cy - ay;
+  const dist = Math.hypot(dxFinal, dyFinal) || 1;
+  const ux = dxFinal / dist;
+  const uy = dyFinal / dist;
   // Vector unitario perpendicular al eje del cono
   const nx = -uy;
   const ny = ux;
 
   // Ancho en la base (proporcional al estado en el mapa, acotado para haz sutil)
   const rBase = Math.min(Math.max(12, Math.min(stateSpanW, stateSpanH) * 0.30), 16);
-  // Ancho en el destino: apertura estrecha y controlada (elimina por completo el efecto "pirámide rara")
+  // Ancho en el destino: apertura estrecha y controlada
   const rTop = 38;
 
   // El haz de luz llega a la base de la silueta voxel 3D
@@ -493,21 +527,21 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
               className="block w-full h-full object-contain [image-rendering:pixelated] select-none pointer-events-none"
             />
 
-            {/* Chasis Pixel-Art 3D (Fidelidad 1:1 a mock-card.jpg) */}
+            {/* Chasis Pixel-Art 3D (Proporción compacta 168px, silueta 3D visible) */}
             <div
               className="absolute z-20 flex flex-col items-center select-none pointer-events-auto transition-all"
               style={{
                 left: `${opticalCenter[0] * 100}%`,
                 top: `${opticalCenter[1] * 100}%`,
                 transform: 'translate(-50%, -50%)',
-                width: '230px',
+                width: '168px',
                 filter:
-                  'drop-shadow(0 20px 40px rgba(10, 6, 32, 0.75)) drop-shadow(0 0 16px rgba(139, 122, 235, 0.3))',
+                  'drop-shadow(0 14px 28px rgba(10, 6, 32, 0.70)) drop-shadow(0 0 12px rgba(139, 122, 235, 0.25))',
               }}
             >
               {/* Borde exterior biselado pixel-art (Layered Pixel Border) */}
               <div
-                className="relative w-full p-[2.5px]"
+                className="relative w-full p-[2px]"
                 style={{
                   background:
                     'linear-gradient(135deg, #8B7AEB 0%, #6857C4 35%, #3D2D82 70%, #201550 100%)',
@@ -516,7 +550,7 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
               >
                 {/* Cuerpo interior con fondo índigo medianoche (#151038) */}
                 <div
-                  className="relative w-full px-3.5 pt-3.5 pb-4 flex flex-col items-center justify-center text-center"
+                  className="relative w-full px-2.5 pt-2 pb-2.5 flex flex-col items-center justify-center text-center"
                   style={{
                     background: '#151038',
                     clipPath: CHASSIS_CLIP_PATH,
@@ -524,97 +558,97 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
                 >
                   {/* Línea interior fina (1px Inset Border) */}
                   <div
-                    className="absolute inset-[3px] pointer-events-none border border-[#342678]/80"
+                    className="absolute inset-[2.5px] pointer-events-none border border-[#342678]/80"
                     style={{
                       clipPath: CHASSIS_CLIP_PATH,
                     }}
                   />
 
                   {/* Píldora / Handle superior centrado */}
-                  <span className="w-8 h-1 bg-[#AEA3F8]/80 rounded-full mb-1.5 shadow-[0_0_6px_#AEA3F8] inline-block [image-rendering:pixelated]" />
+                  <span className="w-6 h-0.5 bg-[#AEA3F8]/80 rounded-full mb-1 shadow-[0_0_5px_#AEA3F8] inline-block [image-rendering:pixelated]" />
 
                   {children ? (
                     children(state)
                   ) : (
                     <>
                       {/* Línea 1: Título con nombre común INE */}
-                      <h3 className="font-pixel font-bold text-sm tracking-[0.16em] text-white uppercase drop-shadow-[0_2px_0_rgba(0,0,0,0.8)] leading-tight mt-0.5">
+                      <h3 className="font-pixel font-bold text-xs tracking-[0.14em] text-white uppercase drop-shadow-[0_2px_0_rgba(0,0,0,0.8)] leading-tight mt-0.5">
                         {displayName.toUpperCase()}
                       </h3>
 
                       {/* Línea 2: Bloque Oficial INE 2024 (Participación 18-29 años + Benchmark) */}
                       {youthBenchmark && (
                         <div
-                          className="mt-2 flex flex-col items-center justify-center select-none"
+                          className="mt-1 flex flex-col items-center justify-center select-none"
                           title={`Participación 18-29 años en la Elección Federal 2024: ${youthBenchmark.turnoutYouthPercent}% (${youthBenchmark.source})`}
                           aria-label={`En 2024, el ${youthBenchmark.turnoutYouthPercent}% de jóvenes entre 18 y 29 años votaron en ${displayName}, ${youthBenchmark.diffLabel}, según datos del INE`}
                         >
                           <div className="flex items-center gap-1.5 leading-none">
-                            <span className="w-2.5 h-2.5 bg-[#00E5FF] shadow-[0_0_6px_#00E5FF] inline-block shrink-0 [image-rendering:pixelated]" />
-                            <span className="text-[12.5px] font-bold text-white tracking-tight">
+                            <span className="w-2 h-2 bg-[#00E5FF] shadow-[0_0_5px_#00E5FF] inline-block shrink-0 [image-rendering:pixelated]" />
+                            <span className="text-[10.5px] font-bold text-white tracking-tight">
                               {youthBenchmark.turnoutYouthPercent}% votó en 2024
                             </span>
                           </div>
-                          <span className="text-[9.5px] font-medium text-[#C5BEFF] tracking-tight mt-1 leading-tight">
+                          <span className="text-[8px] font-medium text-[#C5BEFF] tracking-tight mt-0.5 leading-tight">
                             18–29 años · {youthBenchmark.diffLabel}
                           </span>
-                          <span className="text-[8px] font-semibold text-[#8F85C7] tracking-[0.2em] uppercase mt-0.5 leading-none">
+                          <span className="text-[7px] font-semibold text-[#8F85C7] tracking-[0.16em] uppercase mt-0.5 leading-none">
                             · INE ·
                           </span>
                         </div>
                       )}
 
                       {/* Divisor 1: Línea discontinua con micro-flor pixelada central ✤ */}
-                      <div className="flex items-center justify-center w-full my-2.5 px-2 opacity-85">
+                      <div className="flex items-center justify-center w-full my-1.5 px-1 opacity-80">
                         <div className="flex-1 border-t border-dashed border-[#5A4B9E]" />
-                        <div className="mx-2 flex items-center justify-center shrink-0">
-                          <div className="relative w-2 h-2 flex items-center justify-center">
-                            <span className="absolute w-1.5 h-1.5 bg-[#AEA3F8] rotate-45 shadow-[0_0_4px_#AEA3F8]" />
-                            <span className="absolute w-2 h-0.5 bg-[#AEA3F8]" />
-                            <span className="absolute w-0.5 h-2 bg-[#AEA3F8]" />
+                        <div className="mx-1.5 flex items-center justify-center shrink-0">
+                          <div className="relative w-1.5 h-1.5 flex items-center justify-center">
+                            <span className="absolute w-1 h-1 bg-[#AEA3F8] rotate-45 shadow-[0_0_3px_#AEA3F8]" />
+                            <span className="absolute w-1.5 h-0.5 bg-[#AEA3F8]" />
+                            <span className="absolute w-0.5 h-1.5 bg-[#AEA3F8]" />
                           </div>
                         </div>
                         <div className="flex-1 border-t border-dashed border-[#5A4B9E]" />
                       </div>
 
                       {/* Bloque Cívico de Plataforma (Dalia Voxel + Cifra 3D Rosa) */}
-                      <div className="flex items-center justify-center gap-3">
+                      <div className="flex items-center justify-center gap-2">
                         <img
                           src={`/flowers/dahlia-${flowerLevel}.png`}
                           alt=""
                           aria-hidden="true"
-                          width={36}
-                          height={36}
-                          className="w-9 h-9 object-contain [image-rendering:pixelated] drop-shadow shrink-0"
+                          width={28}
+                          height={28}
+                          className="w-7 h-7 object-contain [image-rendering:pixelated] drop-shadow shrink-0"
                         />
-                        <span className="font-pixel text-[28px] font-black tracking-wider text-voxel-3d leading-none select-none">
+                        <span className="font-pixel text-[22px] font-black tracking-wide text-voxel-3d leading-none select-none">
                           {count.toLocaleString('es-MX')}
                         </span>
                       </div>
 
-                      <p className="text-[#E5E0FF] text-[11px] font-bold leading-tight text-center mt-1.5 drop-shadow">
+                      <p className="text-[#E5E0FF] text-[9.5px] font-bold leading-tight text-center mt-1 drop-shadow">
                         personas que se informaron
                       </p>
 
-                      <p className="text-[#9A92D0] text-[8.5px] italic leading-none text-center mt-0.5 drop-shadow">
+                      <p className="text-[#9A92D0] text-[7.5px] italic leading-none text-center mt-0.5 drop-shadow">
                         Registro en plataforma · No mide votos
                       </p>
 
                       {/* Divisor 2: Línea discontinua con micro-flor pixelada central ✤ */}
-                      <div className="flex items-center justify-center w-full my-2.5 px-2 opacity-85">
+                      <div className="flex items-center justify-center w-full my-1.5 px-1 opacity-80">
                         <div className="flex-1 border-t border-dashed border-[#5A4B9E]" />
-                        <div className="mx-2 flex items-center justify-center shrink-0">
-                          <div className="relative w-2 h-2 flex items-center justify-center">
-                            <span className="absolute w-1.5 h-1.5 bg-[#AEA3F8] rotate-45 shadow-[0_0_4px_#AEA3F8]" />
-                            <span className="absolute w-2 h-0.5 bg-[#AEA3F8]" />
-                            <span className="absolute w-0.5 h-2 bg-[#AEA3F8]" />
+                        <div className="mx-1.5 flex items-center justify-center shrink-0">
+                          <div className="relative w-1.5 h-1.5 flex items-center justify-center">
+                            <span className="absolute w-1 h-1 bg-[#AEA3F8] rotate-45 shadow-[0_0_3px_#AEA3F8]" />
+                            <span className="absolute w-1.5 h-0.5 bg-[#AEA3F8]" />
+                            <span className="absolute w-0.5 h-1.5 bg-[#AEA3F8]" />
                           </div>
                         </div>
                         <div className="flex-1 border-t border-dashed border-[#5A4B9E]" />
                       </div>
 
                       {/* Pregunta */}
-                      <p className="text-white font-pixel font-bold text-[11px] tracking-[0.14em] uppercase drop-shadow-[0_2px_0_rgba(0,0,0,0.8)] leading-tight">
+                      <p className="text-white font-pixel font-bold text-[9.5px] tracking-[0.12em] uppercase drop-shadow-[0_2px_0_rgba(0,0,0,0.8)] leading-tight">
                         {question}
                       </p>
 
@@ -628,7 +662,7 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
                             el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                           }
                         }}
-                        className="mt-2.5 w-[90%] max-w-[200px] py-1.5 px-3 bg-[#E5007E] hover:bg-[#FF1988] text-white font-heading font-bold text-[10.5px] tracking-wide rounded-full border-t border-white/40 border-b-[4px] border-b-[#8A004C] border-x border-x-[#A00052] shadow-[0_4px_14px_rgba(229,0,126,0.35)] active:border-b-0 active:translate-y-[4px] active:shadow-none transition-all cursor-pointer inline-flex items-center justify-center gap-1.5 select-none whitespace-nowrap"
+                        className="mt-1.5 w-[88%] max-w-[145px] py-1 px-2.5 bg-[#E5007E] hover:bg-[#FF1988] text-white font-heading font-bold text-[9px] tracking-wide rounded-full border-t border-white/40 border-b-[3px] border-b-[#8A004C] border-x border-x-[#A00052] shadow-[0_3px_10px_rgba(229,0,126,0.35)] active:border-b-0 active:translate-y-[3px] active:shadow-none transition-all cursor-pointer inline-flex items-center justify-center gap-1 select-none whitespace-nowrap"
                       >
                         <span>Infórmate y participa →</span>
                       </button>
