@@ -76,7 +76,7 @@ function Titulo({
         {children}
       </h2>
       {sub && (
-        <p className="font-press-start text-[10px] leading-relaxed text-brand-navy/70">
+        <p className="font-press-start text-[10px] leading-relaxed text-pink-600 font-bold [text-shadow:1px_1px_0_rgba(255,255,255,0.7)]">
           {sub}
         </p>
       )}
@@ -265,7 +265,7 @@ function Accion({
 }) {
   return (
     <li
-      className={`bg-white border-4 border-brand-navy ${PX_SM} p-5 flex flex-col gap-4`}
+      className={`bg-white border-4 border-brand-navy ${PX_SM} p-5 flex flex-col justify-between gap-4`}
     >
       <div className="flex items-center gap-3 flex-wrap">{children}</div>
       <div className="flex flex-col gap-2">
@@ -281,97 +281,161 @@ function Accion({
 function Controles() {
   return (
     <div className="flex flex-col gap-8">
-      {/* Mando visual con rótulos */}
+      {/* Mando visual pixel art con chasis oficial */}
       <div
-        className={`bg-gradient-to-b from-slate-200 to-slate-400 border-4 border-brand-navy ${PX} rounded-[2.5rem] px-6 md:px-14 py-10 grid gap-10 md:grid-cols-[1fr_auto_1fr] items-center`}
+        style={{ containerType: "inline-size" }}
+        className="w-full max-w-5xl xl:max-w-6xl mx-auto relative select-none"
       >
-        <div className="flex flex-col items-center gap-4">
-          <span className="px-3 py-1 bg-brand-navy text-white font-press-start text-[9px]">
-            ① CAMINAR
-          </span>
-          <DPad labels={["W", "A", "S", "D"]} />
-          <p className="font-press-start text-[9px] text-brand-navy text-center leading-relaxed">
-            ARRIBA · IZQ · ABAJO · DER
-          </p>
-        </div>
+        <div className="relative w-full aspect-[1024/342] overflow-hidden drop-shadow-[0_16px_32px_rgba(30,27,75,0.3)]">
+          {/* Chasis base en pixel art */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/assets/juego/mando-base.png"
+            alt="Control retro pixel art Inecito-Boy"
+            className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+            style={{ imageRendering: "pixelated" }}
+          />
 
-        <div className="flex flex-col items-center gap-3" aria-hidden="true">
-          <span className="font-press-start text-[10px] text-brand-navy/60">
-            INECITO-BOY
-          </span>
-          <div className="flex gap-4 -rotate-12">
-            <span className="w-12 h-3 rounded-full bg-slate-600 border-2 border-brand-navy" />
-            <span className="w-12 h-3 rounded-full bg-slate-600 border-2 border-brand-navy" />
+          {/* ─── LADO IZQUIERDO: D-PAD CAMINAR (WASD + FLECHAS) ─── */}
+          <div className="absolute left-[18.5%] top-[44.5%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+            <span className="font-press-start text-[0.95cqw] text-brand-navy font-bold uppercase mb-[0.5cqw] drop-shadow-[0_1px_0_rgba(255,255,255,0.8)]">
+              ① CAMINAR
+            </span>
+            <div className="grid grid-cols-3 grid-rows-3 w-[12.5cqw] h-[12.5cqw]">
+              {/* UP */}
+              <div className="col-start-2 row-start-1 bg-amber-300 border-[0.2cqw] border-brand-navy border-b-[0.4cqw] flex flex-col items-center justify-center font-press-start text-brand-navy shadow-[0_2px_0_#1e1b4b]">
+                <span className="text-[1.05cqw] font-black leading-none">W</span>
+                <span className="text-[0.7cqw] opacity-75 leading-none">↑</span>
+              </div>
+              {/* LEFT */}
+              <div className="col-start-1 row-start-2 bg-amber-300 border-[0.2cqw] border-brand-navy border-b-[0.4cqw] flex flex-col items-center justify-center font-press-start text-brand-navy shadow-[0_2px_0_#1e1b4b]">
+                <span className="text-[1.05cqw] font-black leading-none">A</span>
+                <span className="text-[0.7cqw] opacity-75 leading-none">←</span>
+              </div>
+              {/* CENTER PIVOT */}
+              <div className="col-start-2 row-start-2 bg-slate-700 border-[0.2cqw] border-brand-navy flex items-center justify-center">
+                <span className="w-[1.1cqw] h-[1.1cqw] rounded-full bg-slate-500" />
+              </div>
+              {/* RIGHT */}
+              <div className="col-start-3 row-start-2 bg-amber-300 border-[0.2cqw] border-brand-navy border-b-[0.4cqw] flex flex-col items-center justify-center font-press-start text-brand-navy shadow-[0_2px_0_#1e1b4b]">
+                <span className="text-[1.05cqw] font-black leading-none">D</span>
+                <span className="text-[0.7cqw] opacity-75 leading-none">→</span>
+              </div>
+              {/* DOWN */}
+              <div className="col-start-2 row-start-3 bg-amber-300 border-[0.2cqw] border-brand-navy border-b-[0.4cqw] flex flex-col items-center justify-center font-press-start text-brand-navy shadow-[0_2px_0_#1e1b4b]">
+                <span className="text-[1.05cqw] font-black leading-none">S</span>
+                <span className="text-[0.7cqw] opacity-75 leading-none">↓</span>
+              </div>
+            </div>
+            <span className="font-press-start text-[0.7cqw] text-brand-navy/70 mt-[0.5cqw]">
+              WASD · FLECHAS
+            </span>
           </div>
-          <span className="font-press-start text-[9px] text-pink-600 text-center">
-            DEMOCRACIA
-            <br />
-            QUE FLORECE
-          </span>
-        </div>
 
-        <div className="flex flex-col items-center gap-4">
-          <span className="px-3 py-1 bg-brand-navy text-white font-press-start text-[9px]">
-            ② ACTUAR
-          </span>
-          <div className="flex gap-4 items-end">
-            <div className="flex flex-col items-center gap-2">
-              <span className="w-14 h-14 rounded-full bg-amber-500 border-4 border-brand-navy flex items-center justify-center font-press-start text-xs text-white shadow-[0_4px_0_0_#1e1b4b]">
-                E
-              </span>
-              <span className="font-press-start text-[8px] text-brand-navy">
-                INTERACTUAR
-              </span>
+          {/* ─── CENTRO: INECITO-BOY & BOTONES SECUNDARIOS ─── */}
+          <div className="absolute left-[50%] top-[44.5%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-between h-[15cqw]">
+            <span className="font-press-start text-[1.2cqw] text-brand-navy font-black tracking-widest uppercase">
+              INECITO-BOY
+            </span>
+
+            {/* Botones estilo Select / Start */}
+            <div className="flex items-center gap-[2cqw]">
+              {/* Botón Espacio */}
+              <div className="flex flex-col items-center gap-[0.35cqw]">
+                <div className="px-[1.6cqw] py-[0.4cqw] bg-pink-600 border-[0.2cqw] border-brand-navy border-b-[0.35cqw] rounded-full flex items-center justify-center text-white font-press-start text-[0.8cqw] shadow-[0_2px_0_#1e1b4b]">
+                  ESPACIO
+                </div>
+                <span className="font-press-start text-[0.6cqw] text-brand-navy/70 uppercase">
+                  CONTINUAR
+                </span>
+              </div>
+
+              {/* Botón Pantalla Completa (F) */}
+              <div className="flex flex-col items-center gap-[0.35cqw]">
+                <div className="w-[4.6cqw] h-[2.2cqw] bg-indigo-600 border-[0.2cqw] border-brand-navy border-b-[0.35cqw] rounded-full flex items-center justify-center text-white font-press-start text-[0.85cqw] font-bold shadow-[0_2px_0_#1e1b4b]">
+                  F
+                </div>
+                <span className="font-press-start text-[0.6cqw] text-brand-navy/70 uppercase">
+                  PANTALLA
+                </span>
+              </div>
             </div>
-            <div className="flex flex-col items-center gap-2 pb-6">
-              <span className="w-14 h-14 rounded-full bg-pink-600 border-4 border-brand-navy flex items-center justify-center font-press-start text-[9px] text-white shadow-[0_4px_0_0_#1e1b4b]">
-                ESP
-              </span>
-              <span className="font-press-start text-[8px] text-brand-navy">
-                CONTINUAR
-              </span>
+
+            <span className="font-press-start text-[0.85cqw] text-pink-600 font-bold uppercase tracking-wider text-center">
+              DEMOCRACIA QUE FLORECE
+            </span>
+          </div>
+
+          {/* ─── LADO DERECHO: BOTONES DE INTERACTUAR (E + ENTER) ─── */}
+          <div className="absolute left-[81.5%] top-[44.5%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+            <span className="font-press-start text-[0.95cqw] text-brand-navy font-bold uppercase mb-[0.5cqw] drop-shadow-[0_1px_0_rgba(255,255,255,0.8)]">
+              ② ACTUAR
+            </span>
+
+            <div className="flex items-center gap-[1.8cqw] items-end">
+              {/* Botón E */}
+              <div className="flex flex-col items-center gap-[0.4cqw]">
+                <div className="w-[5.4cqw] h-[5.4cqw] rounded-full bg-amber-400 border-[0.25cqw] border-brand-navy border-b-[0.45cqw] flex items-center justify-center font-press-start text-[1.4cqw] text-brand-navy font-black shadow-[0_3px_0_#1e1b4b]">
+                  E
+                </div>
+                <span className="font-press-start text-[0.7cqw] text-brand-navy font-bold">
+                  INTERACTUAR
+                </span>
+              </div>
+
+              {/* Botón ENTER */}
+              <div className="flex flex-col items-center gap-[0.4cqw] pb-[0.6cqw]">
+                <div className="w-[5.4cqw] h-[5.4cqw] rounded-full bg-pink-600 border-[0.25cqw] border-brand-navy border-b-[0.45cqw] flex items-center justify-center font-press-start text-[0.8cqw] text-white font-black shadow-[0_3px_0_#1e1b4b]">
+                  ENTER
+                </div>
+                <span className="font-press-start text-[0.7cqw] text-brand-navy font-bold">
+                  AVANZAR
+                </span>
+              </div>
             </div>
+
+            <span className="font-press-start text-[0.7cqw] text-brand-navy/70 mt-[0.4cqw]">
+              E · ESPACIO · ENTER
+            </span>
           </div>
         </div>
       </div>
 
       {/* Guía detallada */}
-      <ul className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <ul className="grid gap-6 md:grid-cols-3">
         <Accion
           titulo="CAMINAR"
-          detalle="Mueve a Inecito por la plaza. Mantén presionada la tecla para avanzar sin parar."
+          detalle="Mueve a Inecito por la plaza con WASD o con las flechas de dirección (ambas funcionan igual). Mantén presionada la tecla para avanzar sin parar."
         >
           <DPad labels={["W", "A", "S", "D"]} />
-        </Accion>
-        <Accion
-          titulo="CAMINAR (FLECHAS)"
-          detalle="Las flechas del teclado hacen lo mismo que WASD: usa las que te acomoden."
-        >
-          <DPad labels={["↑", "←", "↓", "→"]} />
         </Accion>
         <Accion
           titulo="INTERACTUAR"
           detalle="Acércate a una persona, objeto o diálogo y presiona E, Espacio o Enter para hablar, avanzar mensaje, recoger o colocar."
         >
-          <Keycap tone="bg-amber-500 text-white">E</Keycap>
-          <Keycap wide tone="bg-pink-600 text-white">
-            ESPACIO
-          </Keycap>
-          <Keycap wide tone="bg-pink-600 text-white">
-            ENTER
-          </Keycap>
+          <div className="flex items-center gap-3 flex-wrap">
+            <Keycap tone="bg-amber-500 text-white">E</Keycap>
+            <Keycap wide tone="bg-pink-600 text-white">
+              ESPACIO
+            </Keycap>
+            <Keycap wide tone="bg-pink-600 text-white">
+              ENTER
+            </Keycap>
+          </div>
         </Accion>
         <Accion
           titulo="PANTALLA COMPLETA"
           detalle="Presiona F o haz clic en el botón superior derecho para expandir la experiencia."
         >
-          <Keycap wide tone="bg-indigo-600 text-white">
-            F
-          </Keycap>
+          <div className="flex items-center gap-3 flex-wrap">
+            <Keycap wide tone="bg-indigo-600 text-white">
+              F
+            </Keycap>
+          </div>
         </Accion>
       </ul>
 
-      <p className="font-press-start text-[9px] leading-relaxed text-brand-navy/70">
+      <p className="font-press-start text-[9px] leading-relaxed text-pink-600 font-bold [text-shadow:1px_1px_0_rgba(255,255,255,0.7)]">
         TIP: USA EL BOTÓN DE PANTALLA COMPLETA PARA JUGAR MEJOR.
       </p>
     </div>
