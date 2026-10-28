@@ -912,7 +912,7 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
                     </div>
 
                     <p className="text-[#E5E0FF] text-[9.5px] font-bold leading-tight text-center mt-1 drop-shadow">
-                      personas que se informaron
+                      personas que ya dieron el primer paso
                     </p>
 
                     <p className="text-[#9A92D0] text-[7.5px] italic leading-none text-center mt-0.5 drop-shadow">

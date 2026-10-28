@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { HERO_PETALS, type PetalConfig } from './config/petals';
 import {
   MAP_INTRO_DELAY_MS,
@@ -49,6 +49,18 @@ export function FloatingPetals({
     MAP_INTRO_STAGGER_MS +
     MAP_STATE_ANIM_MS;
 
+  // Tiempo máximo calculado para sincronizar el timer de asentamiento cuando todos los pétalos hayan aterrizado
+  const maxAnimationTotalMs = useMemo(() => {
+    let maxMs = 0;
+    petals.forEach((p, idx) => {
+      const dur = 2.4 + ((p.id * 7) % 5) * 0.15;
+      const del = 0.05 + ((idx * 0.11) % 0.7);
+      const total = Math.round((dur + del) * 1000);
+      if (total > maxMs) maxMs = total;
+    });
+    return maxMs + 120;
+  }, [petals]);
+
   useEffect(() => {
     if (
       typeof window !== 'undefined' &&
@@ -63,16 +75,16 @@ export function FloatingPetals({
       setHasStarted(true);
     }, petalsStartDelayMs);
 
-    // Tras iniciar la caída, todos terminan de posarse en ~3.4s
+    // Tras iniciar la caída, todos terminan de posarse de forma sincronizada con su animación real
     const settleTimer = window.setTimeout(() => {
       setIsSettled(true);
-    }, petalsStartDelayMs + 3400);
+    }, petalsStartDelayMs + maxAnimationTotalMs);
 
     return () => {
       window.clearTimeout(startTimer);
       window.clearTimeout(settleTimer);
     };
-  }, [petalsStartDelayMs]);
+  }, [petalsStartDelayMs, maxAnimationTotalMs]);
 
   // Efecto Brisa: escucha pasiva del mouse para empujar los pétalos cuando ya están posados
   useEffect(() => {
@@ -140,18 +152,16 @@ export function FloatingPetals({
         @keyframes petal-sky-glide {
           0% {
             opacity: 0;
-            transform: translate3d(var(--start-x, -35px), var(--start-y, -120px), 0) rotate(var(--sway-rot-start, -18deg));
+            transform: translate3d(var(--start-x, -40px), var(--start-y, -200px), 0) rotate(var(--sway-rot-start, -18deg));
           }
-          15% {
+          18% {
             opacity: 1;
           }
-          35% {
-            opacity: 1;
-            transform: translate3d(calc(var(--start-x, -35px) * -0.55), calc(var(--start-y, -120px) * 0.55), 0) rotate(var(--sway-rot-mid, 12deg));
+          45% {
+            transform: translate3d(calc(var(--start-x, -40px) * -0.45), calc(var(--start-y, -200px) * 0.48), 0) rotate(var(--sway-rot-mid, 12deg));
           }
-          70% {
-            opacity: 1;
-            transform: translate3d(calc(var(--start-x, -35px) * 0.25), calc(var(--start-y, -120px) * 0.18), 0) rotate(var(--sway-rot-end, -6deg));
+          75% {
+            transform: translate3d(calc(var(--start-x, -40px) * 0.18), calc(var(--start-y, -200px) * 0.14), 0) rotate(var(--sway-rot-end, -4deg));
           }
           100% {
             opacity: 1;
@@ -163,7 +173,7 @@ export function FloatingPetals({
           opacity: 0;
           animation-name: petal-sky-glide;
           animation-iteration-count: 1;
-          animation-timing-function: cubic-bezier(0.25, 0.85, 0.35, 1);
+          animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
           animation-fill-mode: forwards;
           will-change: transform, opacity;
         }
@@ -179,16 +189,17 @@ export function FloatingPetals({
 
       {petals.map((petal, idx) => {
         const spriteSrc = `/petals/petal-${petal.shape}-r${petal.rot}.png`;
-        const startY = `calc(-${petal.y}vh - 120px)`;
-        
-        const dir = idx % 2 === 0 ? -1 : 1;
-        const startX = dir * (28 + ((idx * 7) % 24));
-        const rotStart = dir * (16 + (idx % 5) * 3);
-        const rotMid = -dir * (12 + (idx % 4) * 2);
-        const rotEnd = dir * 4;
+        const startYPx = 170 + (petal.shape * 22) + ((petal.id * 13) % 40);
+        const startY = `-${startYPx}px`;
 
-        const glideDuration = (1.8 + (petal.y * 0.015) + ((petal.id * 0.08) % 0.4)).toFixed(2);
-        const individualDelay = ((idx * 0.08) % 0.6).toFixed(2);
+        const dir = idx % 2 === 0 ? -1 : 1;
+        const startX = dir * (36 + ((idx * 8) % 28));
+        const rotStart = dir * (18 + (idx % 4) * 3);
+        const rotMid = -dir * (12 + (idx % 3) * 3);
+        const rotEnd = dir * 3;
+
+        const glideDuration = (2.4 + ((petal.id * 7) % 5) * 0.15).toFixed(2);
+        const individualDelay = (0.05 + ((idx * 0.11) % 0.7)).toFixed(2);
 
         const currentOffset = offsets[petal.id] || { x: 0, y: 0, rot: 0 };
 
