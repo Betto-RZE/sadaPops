@@ -502,7 +502,7 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
                 className="w-full p-[1px] bg-[#B4B2FF]/60"
                 style={{
                   clipPath:
-                    'polygon(0 4px, 4px 0, calc(100% - 4px) 0, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 0 calc(100% - 4px))',
+                    'polygon(0 4px, 2px 4px, 2px 2px, 4px 2px, 4px 0, calc(100% - 4px) 0, calc(100% - 4px) 2px, calc(100% - 2px) 2px, calc(100% - 2px) 4px, 100% 4px, 100% calc(100% - 4px), calc(100% - 2px) calc(100% - 4px), calc(100% - 2px) calc(100% - 2px), calc(100% - 4px) calc(100% - 2px), calc(100% - 4px) 100%, 4px 100%, 4px calc(100% - 2px), 2px calc(100% - 2px), 2px calc(100% - 4px), 0 calc(100% - 4px))',
                 }}
               >
                 {/* Cuerpo de la tarjeta con esquinas facetadas y fondo índigo profundo */}
@@ -513,7 +513,7 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
                     backdropFilter: 'blur(8px)',
                     WebkitBackdropFilter: 'blur(8px)',
                     clipPath:
-                      'polygon(0 4px, 4px 0, calc(100% - 4px) 0, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 0 calc(100% - 4px))',
+                      'polygon(0 4px, 2px 4px, 2px 2px, 4px 2px, 4px 0, calc(100% - 4px) 0, calc(100% - 4px) 2px, calc(100% - 2px) 2px, calc(100% - 2px) 4px, 100% 4px, 100% calc(100% - 4px), calc(100% - 2px) calc(100% - 4px), calc(100% - 2px) calc(100% - 2px), calc(100% - 4px) calc(100% - 2px), calc(100% - 4px) 100%, 4px 100%, 4px calc(100% - 2px), 2px calc(100% - 2px), 2px calc(100% - 4px), 0 calc(100% - 4px))',
                   }}
                 >
                   {children ? (
@@ -581,7 +581,7 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
                         {question}
                       </p>
 
-                      {/* Botón CTA Pixel Art Facetado */}
+                      {/* Botón CTA Voxel 3D Extruido con Micro-interacción Táctil */}
                       <button
                         type="button"
                         onClick={(e) => {
@@ -591,10 +591,10 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
                             el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                           }
                         }}
-                        className="bg-[#E3007E] hover:bg-[#C2006B] active:scale-95 text-white font-bold text-[9.5px] py-1 px-3.5 shadow-md cursor-pointer transition-transform mt-1.5 inline-flex items-center gap-1 select-none whitespace-nowrap [image-rendering:pixelated]"
+                        className="mt-2 inline-flex items-center justify-center gap-1.5 px-3.5 py-1 bg-[#E3007E] hover:bg-[#FF1988] text-white font-bold text-[9.5px] tracking-wide select-none cursor-pointer [image-rendering:pixelated] border-t border-white/40 border-b-[3px] border-b-[#8A0047] border-x border-x-[#A00052] active:border-b-0 active:translate-y-[3px] transition-all shadow-md leading-tight whitespace-nowrap"
                         style={{
                           clipPath:
-                            'polygon(0 2px, 2px 0, calc(100% - 2px) 0, 100% 2px, 100% calc(100% - 2px), calc(100% - 2px) 100%, 2px 100%, 0 calc(100% - 2px))',
+                            'polygon(0 2px, 2px 2px, 2px 0, calc(100% - 2px) 0, calc(100% - 2px) 2px, 100% 2px, 100% calc(100% - 2px), calc(100% - 2px) calc(100% - 2px), calc(100% - 2px) 100%, 2px 100%, 2px calc(100% - 2px), 0 calc(100% - 2px))',
                         }}
                       >
                         <span>Infórmate y participa →</span>

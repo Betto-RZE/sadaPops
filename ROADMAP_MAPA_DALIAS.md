@@ -467,6 +467,13 @@ hasta cumplir los del actual.
 
 ## 13. Registro de cambios
 
+### v3.7 (28 oct 2026)
+- **Hito H5 (Tarjeta Pixel-Box 90° y Botón Voxel 3D Extruido):**
+  - `apps/web/src/features/mapa-dalias/StateHologramCard.tsx`:
+    - Sustitución de cortes diagonales por esquinas en **escalón ortogonal puro de 90°** (2×2 px en `clip-path`) en borde exterior y cuerpo índigo, logrando la estética auténtica de cuadro de diálogo RPG 16-bit.
+    - Rediseño del botón CTA a **bloque voxel extruido en 3D**: cara superior en magenta `#E3007E` con borde especular superior `border-t border-white/40`, acantilado 3D inferior de 3px (`border-b-[3px] border-b-[#8A0047]`) y respuesta física de hundimiento mecánico al presionar (`active:border-b-0 active:translate-y-[3px]`).
+  - Validación completa con `npx tsc --noEmit` (0 errores) y compilación estática de producción de Next.js (`npm run build`, 9/9 rutas estáticas).
+
 ### v3.6 (28 oct 2026)
 - **Hito H5/H3 (Rediseño Pixel Art HUD con Glow y Benchmark Oficial INE):**
   - `apps/web/src/features/mapa-dalias/StateHologramCard.tsx`: Rediseño completo del contenedor a marco **Pixel Art facetado a 90°** (`clip-path` de 4px) con borde lavanda de 1px y doble resplandor exterior `drop-shadow` holográfico neón (`rgba(180, 178, 255, 0.45)`).
