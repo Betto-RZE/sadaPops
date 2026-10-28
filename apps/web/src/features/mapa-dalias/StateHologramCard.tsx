@@ -335,188 +335,46 @@ function CyanVoxelCube() {
   );
 }
 
-interface VoxelGlyph {
-  w: number;
-  face: string;
-  fillRule?: 'nonzero' | 'evenodd';
-  shelf: string; // Repisa de extrusión inferior (#450C54)
-  wall: string;  // Pared de extrusión lateral (#7B1E8C)
-  hl: string;    // Ribete de luz especular superior-izquierda (#FFFFFF)
-}
-
 /**
- * Glifos vectoriales voxel 3D macizos con extrusión inferior y lateral (fidelidad 1:1 con mock-card.jpg).
- */
-const VOXEL_GLYPHS: Record<string, VoxelGlyph> = {
-  '0': {
-    w: 15,
-    face: 'M 2 0 L 13 0 L 15 2 L 15 18 L 13 20 L 2 20 L 0 18 L 0 2 Z M 4.5 4.5 L 10.5 4.5 L 10.5 15.5 L 4.5 15.5 Z',
-    fillRule: 'evenodd',
-    shelf: 'M 2 20 L 13 20 L 14 24.5 L 3 24.5 Z M 4.5 4.5 L 10.5 4.5 L 11 6.5 L 5 6.5 Z',
-    wall: 'M 15 2 L 16.5 4 L 16.5 22 L 15 18 Z',
-    hl: 'M 2 0.5 L 13 0.5 M 0.5 2 L 0.5 18 M 10.5 4.5 L 10.5 15.5',
-  },
-  '1': {
-    w: 10,
-    face: 'M 1 4.5 L 5 0 L 9 0 L 9 20 L 4.5 20 L 4.5 4.5 Z M 0 16 L 10 16 L 10 20 L 0 20 Z',
-    shelf: 'M 0 20 L 10 20 L 11 24.5 L 1 24.5 Z',
-    wall: 'M 9 0 L 10.5 2.5 L 10.5 16 L 9 16 Z M 10 16 L 11.5 18 L 11.5 24.5 L 10 20 Z',
-    hl: 'M 1 4.5 L 5 0.5 L 9 0.5 M 1 4.5 L 4.5 4.5 L 4.5 20 M 0 16.5 L 10 16.5',
-  },
-  '2': {
-    w: 15,
-    face: 'M 0 0 L 15 0 L 15 12.5 L 4.5 12.5 L 4.5 15.5 L 15 15.5 L 15 20 L 0 20 L 0 8 L 10.5 8 L 10.5 4.5 L 0 4.5 Z',
-    shelf: 'M 0 20 L 15 20 L 16 24.5 L 1 24.5 Z M 4.5 12.5 L 15 12.5 L 16 14.5 L 5.5 14.5 Z M 0 4.5 L 10.5 4.5 L 11.5 6.5 L 1 6.5 Z',
-    wall: 'M 15 0 L 16.5 2 L 16.5 14.5 L 15 12.5 Z M 15 15.5 L 16.5 17.5 L 16.5 24.5 L 15 20 Z',
-    hl: 'M 0 0.5 L 15 0.5 M 0.5 0 L 0.5 4.5 M 10.5 4.5 L 10.5 8 M 0 8.5 L 10.5 8.5 M 0.5 8 L 0.5 20 M 4.5 15.5 L 15 15.5',
-  },
-  '3': {
-    w: 15,
-    face: 'M 0 0 L 15 0 L 15 20 L 0 20 L 0 15.5 L 10.5 15.5 L 10.5 12.5 L 4.5 12.5 L 4.5 8 L 10.5 8 L 10.5 4.5 L 0 4.5 Z',
-    shelf: 'M 0 20 L 15 20 L 16 24.5 L 1 24.5 Z M 4.5 8 L 10.5 8 L 11.5 10 L 5.5 10 Z M 0 4.5 L 10.5 4.5 L 11.5 6.5 L 1 6.5 Z',
-    wall: 'M 15 0 L 16.5 2 L 16.5 24.5 L 15 20 Z',
-    hl: 'M 0 0.5 L 15 0.5 M 0.5 0 L 0.5 4.5 M 10.5 4.5 L 10.5 8 M 4.5 8.5 L 10.5 8.5 M 10.5 12.5 L 10.5 15.5 M 0 15.5 L 0 20',
-  },
-  '4': {
-    w: 15,
-    face: 'M 0 0 L 4.5 0 L 4.5 8.5 L 10.5 8.5 L 10.5 0 L 15 0 L 15 20 L 10.5 20 L 10.5 13 L 0 13 Z M 4.5 4.5 L 10.5 4.5 L 10.5 8.5 L 4.5 8.5 Z',
-    fillRule: 'evenodd',
-    shelf: 'M 10.5 20 L 15 20 L 16 24.5 L 11.5 24.5 Z M 0 13 L 10.5 13 L 11.5 15 L 1 15 Z M 4.5 4.5 L 10.5 4.5 L 11 6.5 L 5 6.5 Z',
-    wall: 'M 15 0 L 16.5 2 L 16.5 24.5 L 15 20 Z',
-    hl: 'M 0 0.5 L 4.5 0.5 M 0.5 0 L 0.5 13 M 10.5 0.5 L 15 0.5 M 4.5 8.5 L 10.5 8.5',
-  },
-  '5': {
-    w: 15,
-    face: 'M 0 0 L 15 0 L 15 4.5 L 4.5 4.5 L 4.5 8 L 15 8 L 15 20 L 0 20 L 0 15.5 L 10.5 15.5 L 10.5 12.5 L 0 12.5 Z',
-    shelf: 'M 0 20 L 15 20 L 16 24.5 L 1 24.5 Z M 4.5 4.5 L 15 4.5 L 16 6.5 L 5.5 6.5 Z M 0 12.5 L 10.5 12.5 L 11.5 14.5 L 1 14.5 Z',
-    wall: 'M 15 0 L 16.5 2 L 16.5 6.5 L 15 4.5 Z M 15 8 L 16.5 10 L 16.5 24.5 L 15 20 Z',
-    hl: 'M 0 0.5 L 15 0.5 M 0.5 0 L 0.5 12.5 M 4.5 8.5 L 15 8.5 M 10.5 12.5 L 10.5 15.5 M 0 15.5 L 0 20',
-  },
-  '6': {
-    w: 15,
-    face: 'M 0 0 L 15 0 L 15 4.5 L 4.5 4.5 L 4.5 8 L 15 8 L 15 20 L 0 20 Z M 4.5 12.5 L 10.5 12.5 L 10.5 15.5 L 4.5 15.5 Z',
-    fillRule: 'evenodd',
-    shelf: 'M 0 20 L 15 20 L 16 24.5 L 1 24.5 Z M 4.5 4.5 L 15 4.5 L 16 6.5 L 5.5 6.5 Z M 4.5 12.5 L 10.5 12.5 L 11 14.5 L 5 14.5 Z',
-    wall: 'M 15 0 L 16.5 2 L 16.5 6.5 L 15 4.5 Z M 15 8 L 16.5 10 L 16.5 24.5 L 15 20 Z',
-    hl: 'M 0 0.5 L 15 0.5 M 0.5 0 L 0.5 20 M 4.5 8.5 L 15 8.5 M 4.5 12.5 L 10.5 12.5',
-  },
-  '7': {
-    w: 15,
-    face: 'M 0 0 L 15 0 L 15 9 L 10 20 L 5.5 20 L 10.5 9 L 10.5 4.5 L 0 4.5 Z',
-    shelf: 'M 5.5 20 L 10 20 L 11 24.5 L 6.5 24.5 Z M 0 4.5 L 10.5 4.5 L 11.5 6.5 L 1 6.5 Z',
-    wall: 'M 15 0 L 16.5 2 L 16.5 10.5 L 15 9 Z',
-    hl: 'M 0 0.5 L 15 0.5 M 0.5 0 L 0.5 4.5 M 10.5 9 L 5.5 20',
-  },
-  '8': {
-    w: 15,
-    face: 'M 0 0 L 15 0 L 15 20 L 0 20 Z M 4.5 4.5 L 10.5 4.5 L 10.5 8 L 4.5 8 Z M 4.5 12 L 10.5 12 L 10.5 15.5 L 4.5 15.5 Z',
-    fillRule: 'evenodd',
-    shelf: 'M 0 20 L 15 20 L 16 24.5 L 1 24.5 Z M 4.5 4.5 L 10.5 4.5 L 11 6.5 L 5 6.5 Z M 4.5 12 L 10.5 12 L 11 14 L 5 14 Z',
-    wall: 'M 15 0 L 16.5 2 L 16.5 24.5 L 15 20 Z',
-    hl: 'M 0 0.5 L 15 0.5 M 0.5 0 L 0.5 20 M 4.5 4.5 L 10.5 4.5 M 4.5 12 L 10.5 12',
-  },
-  '9': {
-    w: 15,
-    face: 'M 0 0 L 15 0 L 15 20 L 0 20 L 0 15.5 L 10.5 15.5 L 10.5 12 L 0 12 Z M 4.5 4.5 L 10.5 4.5 L 10.5 8 L 4.5 8 Z',
-    fillRule: 'evenodd',
-    shelf: 'M 0 20 L 15 20 L 16 24.5 L 1 24.5 Z M 0 12 L 10.5 12 L 11.5 14 L 1 14 Z M 4.5 4.5 L 10.5 4.5 L 11 6.5 L 5 6.5 Z',
-    wall: 'M 15 0 L 16.5 2 L 16.5 24.5 L 15 20 Z',
-    hl: 'M 0 0.5 L 15 0.5 M 0.5 0 L 0.5 12 M 10.5 12 L 10.5 15.5 M 0 15.5 L 0 20',
-  },
-  ',': {
-    w: 6,
-    face: 'M 1 14 L 5.5 14 L 5.5 18.5 L 1 18.5 Z M 1 18.5 L 4.5 18.5 L 1 23 Z',
-    shelf: 'M 1 23 L 3 23 L 3.5 25 L 1.5 25 Z',
-    wall: 'M 5.5 14 L 7 15.5 L 7 19.5 L 5.5 18.5 Z',
-    hl: 'M 1 14.5 L 5.5 14.5 M 1 14.5 L 1 23',
-  },
-  '.': {
-    w: 6,
-    face: 'M 1 16 L 5 16 L 5 20 L 1 20 Z',
-    shelf: 'M 1 20 L 5 20 L 6 24 L 2 24 Z',
-    wall: 'M 5 16 L 6 18 L 6 24 L 5 20 Z',
-    hl: 'M 1 16.5 L 5 16.5 M 1 16.5 L 1 20',
-  },
-};
-
-/**
- * Contador numérico voxel 3D macizo de alta fidelidad con mock-card.jpg.
+ * Contador numérico voxel 3D con sprites PNG originales recortados (fidelidad 1:1 absoluta con mock-card.jpg).
  */
 function VoxelCounter3D({ value }: { value: number }) {
   const str = value.toLocaleString('es-MX');
-  const GAP = 3;
-
-  let totalW = 0;
-  for (let i = 0; i < str.length; i++) {
-    const ch = str[i];
-    const glyph = VOXEL_GLYPHS[ch] ?? VOXEL_GLYPHS['0'];
-    totalW += glyph.w + (i < str.length - 1 ? GAP : 0);
-  }
-  const svgW = totalW + 3;
-  const svgH = 26;
-
-  let curX = 0;
-  const glyphElements: React.ReactNode[] = [];
-
-  for (let idx = 0; idx < str.length; idx++) {
-    const ch = str[idx];
-    const glyph = VOXEL_GLYPHS[ch] ?? VOXEL_GLYPHS['0'];
-    const key = `glyph-${idx}`;
-
-    glyphElements.push(
-      <g key={key} transform={`translate(${curX}, 0)`}>
-        {/* Capa 1: Sombra exterior profunda */}
-        <path
-          d={`${glyph.shelf} ${glyph.wall}`}
-          fill="#240530"
-          stroke="#240530"
-          strokeWidth="1.2"
-          strokeLinejoin="round"
-        />
-        {/* Capa 2: Repisa inferior 3D en púrpura oscuro */}
-        <path d={glyph.shelf} fill="#450C54" />
-        {/* Capa 3: Pared lateral 3D en magenta-púrpura */}
-        <path d={glyph.wall} fill="#7B1E8C" />
-        {/* Capa 4: Cara frontal en degradado rosa pastel con fino ribete */}
-        <path
-          d={glyph.face}
-          fill="url(#voxelFaceGrad)"
-          fillRule={glyph.fillRule ?? 'nonzero'}
-          stroke="#380848"
-          strokeWidth="0.8"
-        />
-        {/* Capa 5: Ribete de luz especular superior-izquierda blanco */}
-        <path
-          d={glyph.hl}
-          fill="none"
-          stroke="#FFFFFF"
-          strokeWidth="1.2"
-          strokeLinecap="square"
-          opacity={0.88}
-        />
-      </g>
-    );
-
-    curX += glyph.w + GAP;
-  }
 
   return (
-    <svg
-      width={svgW}
-      height={svgH}
-      viewBox={`0 0 ${svgW} ${svgH}`}
-      className="shrink-0 select-none drop-shadow-[0_2px_4px_rgba(20,4,30,0.85)]"
+    <div
+      className="inline-flex items-end justify-center select-none"
       role="img"
       aria-label={str}
+      style={{ height: '26px' }}
     >
-      <defs>
-        <linearGradient id="voxelFaceGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#F8C2FF" />
-          <stop offset="100%" stopColor="#EAA0F5" />
-        </linearGradient>
-      </defs>
-      {glyphElements}
-    </svg>
+      {Array.from(str).map((char, index) => {
+        if (char === ',' || char === '.') {
+          return (
+            <img
+              key={`c-${index}`}
+              src="/numbers/digit-comma.png"
+              alt=","
+              aria-hidden="true"
+              width={11}
+              height={14}
+              className="h-[14px] w-auto object-contain [image-rendering:pixelated] -ml-[2px] -mr-[1px] mb-[1px]"
+            />
+          );
+        }
+        return (
+          <img
+            key={`d-${index}`}
+            src={`/numbers/digit-${char}.png`}
+            alt={char}
+            aria-hidden="true"
+            width={20}
+            height={26}
+            className="h-[26px] w-auto object-contain [image-rendering:pixelated] -mx-[1.5px]"
+          />
+        );
+      })}
+    </div>
   );
 }
 
