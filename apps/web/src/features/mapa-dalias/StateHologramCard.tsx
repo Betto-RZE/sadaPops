@@ -89,6 +89,12 @@ const CHASSIS_CANAL_CLIP =
 const CHASSIS_PANEL_CLIP =
   'polygon(0 3px, 1px 3px, 1px 1px, 3px 1px, 3px 0, calc(100% - 3px) 0, calc(100% - 3px) 1px, calc(100% - 1px) 1px, calc(100% - 1px) 3px, 100% 3px, 100% calc(100% - 3px), calc(100% - 1px) calc(100% - 3px), calc(100% - 1px) calc(100% - 1px), calc(100% - 3px) calc(100% - 1px), calc(100% - 3px) 100%, 3px 100%, 3px calc(100% - 1px), 1px calc(100% - 1px), 1px calc(100% - 3px), 0 calc(100% - 3px))';
 
+/**
+ * Silueta escalonada de la cápsula del botón voxel 3D (3 peldaños de 2px por esquina, fidelidad 1:1 con mock-card.jpg).
+ */
+const BUTTON_CLIP_PATH =
+  'polygon(0 6px, 2px 6px, 2px 4px, 4px 4px, 4px 2px, 6px 2px, 6px 0, calc(100% - 6px) 0, calc(100% - 6px) 2px, calc(100% - 4px) 2px, calc(100% - 4px) 4px, calc(100% - 2px) 4px, calc(100% - 2px) 6px, 100% 6px, 100% calc(100% - 6px), calc(100% - 2px) calc(100% - 6px), calc(100% - 2px) calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) calc(100% - 2px), calc(100% - 6px) calc(100% - 2px), calc(100% - 6px) 100%, 6px 100%, 6px calc(100% - 2px), 4px calc(100% - 2px), 4px calc(100% - 4px), 2px calc(100% - 4px), 2px calc(100% - 6px), 0 calc(100% - 6px))';
+
 interface HoloLayout {
   left: number;
   top: number;
@@ -444,6 +450,51 @@ function PixelCardChassis({ children }: PixelCardChassisProps) {
         </div>
       </div>
     </div>
+  );
+}
+
+interface VoxelCapsuleButtonProps {
+  onClick: (e: React.MouseEvent) => void;
+  children: React.ReactNode;
+  className?: string;
+}
+
+/**
+ * Botón Cápsula Voxel 3D Escalonado con Extrusión Inferior y Tacto Mecánico (Fidelidad 1:1 con mock-card.jpg).
+ */
+function VoxelCapsuleButton({ onClick, children, className }: VoxelCapsuleButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'group relative w-[92%] max-w-[146px] h-[27px] mt-2 select-none cursor-pointer transition-all active:translate-y-[2px]',
+        className
+      )}
+    >
+      {/* CAPA 1: Sombra y Extrusión 3D Inferior en Bloques Voxel (#6B0A42) */}
+      <div
+        className="absolute inset-0 translate-y-[3.5px] bg-[#6B0A42] transition-all group-active:translate-y-[1px]"
+        style={{ clipPath: BUTTON_CLIP_PATH }}
+      />
+
+      {/* CAPA 2: Bisel Exterior Rosa Voxel (#FFA8DC a #E6007E) */}
+      <div
+        className="relative w-full h-full p-[1.5px] bg-gradient-to-b from-[#FFA8DC] to-[#E6007E]"
+        style={{ clipPath: BUTTON_CLIP_PATH }}
+      >
+        {/* CAPA 3: Cara Frontal Magenta (#FF1493 a #E6007E) */}
+        <div
+          className="w-full h-full flex items-center justify-center bg-gradient-to-b from-[#FF1493] to-[#E6007E] group-hover:brightness-110 transition-all px-2"
+          style={{ clipPath: BUTTON_CLIP_PATH }}
+        >
+          {/* Texto blanco con sutil sombra */}
+          <span className="font-heading font-bold text-[9px] tracking-wide text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)] whitespace-nowrap">
+            {children}
+          </span>
+        </div>
+      </div>
+    </button>
   );
 }
 
@@ -813,9 +864,8 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
                       {question}
                     </p>
 
-                    {/* Botón CTA Cápsula 3D Magenta */}
-                    <button
-                      type="button"
+                    {/* Botón CTA Cápsula Voxel 3D Escalonado (Fidelidad 1:1 con mock-card.jpg) */}
+                    <VoxelCapsuleButton
                       onClick={(e) => {
                         e.stopPropagation();
                         const el = document.getElementById('modulos');
@@ -823,10 +873,9 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
                           el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                         }
                       }}
-                      className="mt-1.5 w-[88%] max-w-[145px] py-1 px-2.5 bg-[#E5007E] hover:bg-[#FF1988] text-white font-heading font-bold text-[9px] tracking-wide rounded-full border-t border-white/40 border-b-[3px] border-b-[#8A004C] border-x border-x-[#A00052] shadow-[0_3px_10px_rgba(229,0,126,0.35)] active:border-b-0 active:translate-y-[3px] active:shadow-none transition-all cursor-pointer inline-flex items-center justify-center gap-1 select-none whitespace-nowrap"
                     >
-                      <span>Infórmate y participa →</span>
-                    </button>
+                      Infórmate y participa →
+                    </VoxelCapsuleButton>
                   </>
                 )}
               </PixelCardChassis>
