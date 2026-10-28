@@ -336,7 +336,7 @@ function Controles() {
       </div>
 
       {/* Guía detallada */}
-      <ul className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <ul className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Accion
           titulo="CAMINAR"
           detalle="Mueve a Inecito por la plaza. Mantén presionada la tecla para avanzar sin parar."
@@ -351,29 +351,12 @@ function Controles() {
         </Accion>
         <Accion
           titulo="INTERACTUAR"
-          detalle="Acércate a una persona, objeto o decoración y presiona E para hablar, recoger o colocar."
+          detalle="Acércate a una persona, objeto o diálogo y presiona E, Espacio o Enter para hablar, avanzar mensaje, recoger o colocar."
         >
           <Keycap tone="bg-amber-500 text-white">E</Keycap>
-        </Accion>
-        <Accion
-          titulo="AVANZAR DIÁLOGO"
-          detalle="Con un texto en pantalla, Espacio o Enter pasan al siguiente mensaje."
-        >
           <Keycap wide tone="bg-pink-600 text-white">
             ESPACIO
           </Keycap>
-          <span className="font-press-start text-[9px] text-brand-navy">/</span>
-          <Keycap wide tone="bg-pink-600 text-white">
-            ENTER
-          </Keycap>
-        </Accion>
-        <Accion
-          titulo="ELEGIR RESPUESTA"
-          detalle="En preguntas y menús, haz click sobre la opción que quieras o confirma con Enter."
-        >
-          <span className="px-3 py-2 bg-violet-500 text-white border-2 border-brand-navy border-b-[5px] font-press-start text-[9px]">
-            🖱 CLICK
-          </span>
           <Keycap wide tone="bg-pink-600 text-white">
             ENTER
           </Keycap>
