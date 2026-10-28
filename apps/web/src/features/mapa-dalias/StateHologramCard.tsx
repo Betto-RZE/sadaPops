@@ -14,6 +14,7 @@
  */
 
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { BarChart } from 'lucide-react';
 import { usePixelMapContext, ELEVATION_VOXELS } from './PixelMap';
 import { useOptionalDahliaStore } from './DahliaStore';
 import type { StateMetadata } from './types';
@@ -316,29 +317,88 @@ function PixelDivider() {
   );
 }
 
+interface StateTitleComposition {
+  antetitulo?: string;
+  titulo: string;
+  sizeClass: string;
+}
+
 /**
- * Cubo cian voxel 3D con luz especular y extrusión (fidelidad 1:1 con mock-card.jpg).
+ * Descomposición tipográfica armónica del nombre del estado en 2 niveles (antetítulo + título principal).
+ * Adapta el tamaño de fuente dinámicamente según la longitud del texto para evitar cualquier desborde.
  */
-function CyanVoxelCube() {
-  return (
-    <svg
-      width="10"
-      height="10"
-      viewBox="0 0 10 10"
-      fill="none"
-      className="shrink-0 [image-rendering:pixelated] drop-shadow-[0_0_4px_#00E5FF]"
-      aria-hidden="true"
-    >
-      {/* Sombra 3D inferior-derecha */}
-      <rect x="2" y="4" width="7" height="5" fill="#005B73" />
-      <rect x="4" y="2" width="5" height="7" fill="#007A99" />
-      {/* Cara frontal cian */}
-      <rect x="1" y="1" width="7" height="7" fill="#00E5FF" />
-      {/* Arista de luz especular superior-izquierda */}
-      <rect x="1" y="1" width="7" height="1.5" fill="#A6F7FF" />
-      <rect x="1" y="1" width="1.5" height="7" fill="#A6F7FF" />
-    </svg>
-  );
+function formatStateTitle(stateId: string, displayName: string): StateTitleComposition {
+  const norm = displayName.trim().toLowerCase();
+
+  // Entidades federativas con prefijo institucional o geográfico
+  if (stateId === '09' || norm.includes('ciudad de méxico') || norm.includes('cdmx')) {
+    return {
+      antetitulo: 'CIUDAD DE',
+      titulo: 'MÉXICO',
+      sizeClass: 'text-[20px]',
+    };
+  }
+  if (stateId === '15' || norm.includes('estado de méxico') || norm === 'méxico') {
+    return {
+      antetitulo: 'ESTADO DE',
+      titulo: 'MÉXICO',
+      sizeClass: 'text-[20px]',
+    };
+  }
+  if (stateId === '03' || norm.includes('baja california sur')) {
+    return {
+      antetitulo: 'BAJA CALIFORNIA',
+      titulo: 'SUR',
+      sizeClass: 'text-[20px]',
+    };
+  }
+  if (stateId === '02' || norm.includes('baja california')) {
+    return {
+      antetitulo: 'BAJA',
+      titulo: 'CALIFORNIA',
+      sizeClass: 'text-[17px]',
+    };
+  }
+  if (stateId === '19' || norm.includes('nuevo león')) {
+    return {
+      antetitulo: 'NUEVO',
+      titulo: 'LEÓN',
+      sizeClass: 'text-[20px]',
+    };
+  }
+  if (stateId === '23' || norm.includes('quintana roo')) {
+    return {
+      antetitulo: 'QUINTANA',
+      titulo: 'ROO',
+      sizeClass: 'text-[20px]',
+    };
+  }
+  if (stateId === '24' || norm.includes('san luis potosí')) {
+    return {
+      antetitulo: 'SAN LUIS',
+      titulo: 'POTOSÍ',
+      sizeClass: 'text-[18px]',
+    };
+  }
+
+  // Estados sin prefijo / término único
+  const upper = displayName.toUpperCase().trim();
+  let sizeClass = 'text-[19px]';
+  if (upper.length <= 6) {
+    sizeClass = 'text-[21px]';
+  } else if (upper.length <= 8) {
+    sizeClass = 'text-[18.5px]';
+  } else if (upper.length <= 10) {
+    sizeClass = 'text-[16.5px]';
+  } else {
+    // Caso de nombres largos como AGUASCALIENTES (14 caracteres)
+    sizeClass = 'text-[13.5px] tracking-normal';
+  }
+
+  return {
+    titulo: upper,
+    sizeClass,
+  };
 }
 
 /**
@@ -510,6 +570,7 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
   const flowerLevel = level > 0 ? level : 1;
   const question = count === 0 ? '¿QUIERES SER LA PRIMERA?' : '¿YA ERES PARTE?';
   const displayName = state ? (COMMON_STATE_NAMES[state.id] ?? state.nombre) : '';
+  const titleComp = state ? formatStateTitle(state.id, displayName) : null;
   const youthBenchmark = state ? getYouthTurnoutBenchmark(state.id) : null;
 
   // Cierre accesible con tecla Escape
@@ -805,20 +866,38 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
                   children(state)
                 ) : (
                   <>
-                    {/* Línea 1: Título con nombre común INE */}
-                    <h3 className="font-pixel font-bold text-xs tracking-[0.14em] text-white uppercase drop-shadow-[0_2px_0_rgba(0,0,0,0.8)] leading-tight mt-0.5">
-                      {displayName.toUpperCase()}
-                    </h3>
+                    {/* Línea 1: Título sans-serif en dos niveles (Antetítulo + Título Principal) */}
+                    {titleComp && (
+                      <div className="flex flex-col items-center justify-center text-center mt-0.5 select-none leading-none">
+                        {titleComp.antetitulo && (
+                          <span className="font-heading text-[9.5px] font-semibold text-[#C5BEFF] uppercase tracking-[0.24em] leading-tight select-none mb-0.5">
+                            {titleComp.antetitulo}
+                          </span>
+                        )}
+                        <h3
+                          className={cn(
+                            'font-heading font-black text-white uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] leading-none select-none',
+                            titleComp.sizeClass
+                          )}
+                        >
+                          {titleComp.titulo}
+                        </h3>
+                      </div>
+                    )}
 
                     {/* Línea 2: Bloque Oficial INE 2024 (Participación 18-29 años + Benchmark) */}
                     {youthBenchmark && (
                       <div
-                        className="mt-1 flex flex-col items-center justify-center select-none"
+                        className="mt-1.5 flex flex-col items-center justify-center select-none"
                         title={`Participación 18-29 años en la Elección Federal 2024: ${youthBenchmark.turnoutYouthPercent}% (${youthBenchmark.source})`}
                         aria-label={`En 2024, el ${youthBenchmark.turnoutYouthPercent}% de jóvenes entre 18 y 29 años votaron en ${displayName}, ${youthBenchmark.diffLabel}, según datos del INE`}
                       >
                         <div className="flex items-center gap-1.5 leading-none">
-                          <CyanVoxelCube />
+                          <BarChart
+                            className="w-4 h-4 text-[#00E5FF] shrink-0 drop-shadow-[0_0_6px_rgba(0,229,255,0.7)]"
+                            strokeWidth={2.2}
+                            aria-hidden="true"
+                          />
                           <span className="text-[10.5px] font-bold text-white tracking-tight">
                             {youthBenchmark.turnoutYouthPercent}% votó en 2024
                           </span>
