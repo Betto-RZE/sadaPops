@@ -50,6 +50,20 @@ function fetchHoloMeta(): Promise<HoloMetaMap> {
   return holoMetaPromise;
 }
 
+/**
+ * Centros ópticos calibrados para siluetas irregulares o asimétricas.
+ * En estados con curvatura o forma de gancho (Veracruz, BC, BCS, Sinaloa, Puebla),
+ * polylabel tiende a escorarse a un extremo. Estos overrides aseguran que el medallón
+ * y el eje del haz de luz se ubiquen en el centro armónico y visual de la silueta.
+ */
+export const OPTICAL_CENTER_OVERRIDES: Record<string, [number, number]> = {
+  '02': [0.50, 0.48], // Baja California (centro armónico peninsular)
+  '03': [0.48, 0.50], // Baja California Sur (centro del gancho)
+  '21': [0.50, 0.52], // Puebla (centro de masa)
+  '25': [0.48, 0.48], // Sinaloa (franja central)
+  '30': [0.50, 0.50], // Veracruz (centro de la media luna)
+};
+
 interface HoloLayout {
   left: number;
   top: number;
@@ -120,9 +134,10 @@ function computeHoloLayout(
     left = Math.round(Math.min(cw - w - padX, Math.max(padX, rawAx - w / 2)));
   }
 
-  // Eje central desde la base del estado en el mapa (A) hasta el centro visual de la silueta voxel (C)
-  const cx = left + meta.visualCenter[0] * w;
-  const cy = top + meta.visualCenter[1] * h;
+  // Eje central desde la base del estado en el mapa (A) hasta el centro óptico de la silueta voxel (C)
+  const opticalCenter = OPTICAL_CENTER_OVERRIDES[state.id] ?? meta.visualCenter;
+  const cx = left + opticalCenter[0] * w;
+  const cy = top + opticalCenter[1] * h;
 
   const dx = cx - ax;
   const dy = cy - ay;
@@ -232,6 +247,7 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
   }, []);
 
   const stateMeta = state && metaMap ? metaMap[state.id] ?? null : null;
+  const opticalCenter = (state && OPTICAL_CENTER_OVERRIDES[state.id]) ?? (stateMeta ? stateMeta.visualCenter : [0.5, 0.5]);
 
   const layout = useMemo(() => {
     if (!data || !state || !stateMeta || size.w === 0) return null;
@@ -464,23 +480,31 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
               className="block w-full h-full object-contain [image-rendering:pixelated] select-none pointer-events-none"
             />
 
-            {/* Contenido editorial ceñido grabado directamente sobre la meseta sólida de la isla */}
+            {/* Medallón Holográfico Índigo Glassmorphism (Enfoque C) */}
             <div
-              className="absolute z-20 flex flex-col items-center justify-center text-center select-none pointer-events-auto"
+              className="absolute z-20 flex flex-col items-center justify-center text-center select-none pointer-events-auto rounded-2xl px-3.5 py-3 transition-all"
               style={{
-                left: `${stateMeta.visualCenter[0] * 100}%`,
-                top: `${stateMeta.visualCenter[1] * 100}%`,
+                left: `${opticalCenter[0] * 100}%`,
+                top: `${opticalCenter[1] * 100}%`,
                 transform: 'translate(-50%, -50%)',
                 width: 'max-content',
                 maxWidth: '155px',
+                background: 'rgba(22, 15, 68, 0.84)',
+                backdropFilter: 'blur(10px)',
+                WebkitBackdropFilter: 'blur(10px)',
+                border: '1px solid rgba(180, 178, 255, 0.45)',
+                boxShadow: '0 12px 32px rgba(15, 10, 48, 0.65), 0 0 14px rgba(180, 178, 255, 0.25)',
               }}
             >
+              {/* Baliza luminosa superior conectada con el haz de luz */}
+              <span className="w-2 h-0.5 rounded-full bg-[#B4B2FF] mb-1.5 shadow-[0_0_6px_#B4B2FF] inline-block" />
+
               {children ? (
                 children(state)
               ) : (
                 <>
                   {/* Línea 1: Título con nombre común INE */}
-                  <h3 className="font-heading font-black text-xs tracking-wider text-white uppercase drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)] leading-tight">
+                  <h3 className="font-heading font-black text-xs tracking-wider text-white uppercase drop-shadow leading-tight">
                     {displayName.toUpperCase()}
                   </h3>
 
@@ -492,15 +516,15 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
                       aria-hidden="true"
                       width={28}
                       height={28}
-                      className="w-7 h-7 object-contain [image-rendering:pixelated] drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)] shrink-0"
+                      className="w-7 h-7 object-contain [image-rendering:pixelated] drop-shadow shrink-0"
                     />
-                    <span className="text-2xl font-black text-white font-heading tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)] leading-none">
+                    <span className="text-2xl font-black text-white font-heading tracking-tight drop-shadow leading-none">
                       {count.toLocaleString('es-MX')}
                     </span>
                   </div>
 
                   {/* Línea 3: Bajada en 2 líneas compactas */}
-                  <p className="text-[#D8D4FF] text-[9.5px] font-semibold leading-tight text-center mt-0.5 drop-shadow-sm">
+                  <p className="text-[#D8D4FF] text-[9.5px] font-semibold leading-tight text-center mt-1 drop-shadow">
                     Personas que ya<br />dieron el primer paso
                   </p>
 
@@ -508,7 +532,7 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
                   <div className="w-14 h-px bg-[#B4B2FF]/40 my-1.5" />
 
                   {/* Línea 5: Pregunta */}
-                  <p className="text-white font-bold text-[9.5px] tracking-wide uppercase font-heading drop-shadow-sm leading-tight">
+                  <p className="text-white font-bold text-[9.5px] tracking-wide uppercase font-heading drop-shadow leading-tight">
                     {question}
                   </p>
 
@@ -522,7 +546,7 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
                         el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                       }
                     }}
-                    className="bg-dalia-600 hover:bg-dalia-700 active:scale-95 text-white font-bold text-[9.5px] py-1 px-3 shadow-md cursor-pointer rounded-full transition-transform mt-1 inline-flex items-center gap-1 select-none whitespace-nowrap"
+                    className="bg-[#E3007E] hover:bg-[#C2006B] active:scale-95 text-white font-bold text-[9.5px] py-1 px-3 shadow-md cursor-pointer rounded-full transition-transform mt-1.5 inline-flex items-center gap-1 select-none whitespace-nowrap"
                   >
                     <span>Infórmate y participa →</span>
                   </button>
