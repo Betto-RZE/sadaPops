@@ -17,6 +17,7 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 're
 import { usePixelMapContext, ELEVATION_VOXELS } from './PixelMap';
 import { useOptionalDahliaStore } from './DahliaStore';
 import type { StateMetadata } from './types';
+import { getYouthTurnoutBenchmark } from './data/ineYouthTurnout2024';
 import { cn } from '../../shared/utils';
 
 export interface HoloStateMeta {
@@ -207,6 +208,7 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
   const flowerLevel = level > 0 ? level : 1;
   const question = count === 0 ? '¿QUIERES SER LA PRIMERA?' : '¿YA ERES PARTE?';
   const displayName = state ? (COMMON_STATE_NAMES[state.id] ?? state.nombre) : '';
+  const youthBenchmark = state ? getYouthTurnoutBenchmark(state.id) : null;
 
   // Cierre accesible con tecla Escape
   useEffect(() => {
@@ -480,78 +482,127 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
               className="block w-full h-full object-contain [image-rendering:pixelated] select-none pointer-events-none"
             />
 
-            {/* Medallón Holográfico Índigo Glassmorphism (Enfoque C) */}
+            {/* Tarjeta Holográfica Pixel Art HUD con Glow */}
             <div
-              className="absolute z-20 flex flex-col items-center justify-center text-center select-none pointer-events-auto rounded-2xl px-3.5 py-3 transition-all"
+              className="absolute z-20 flex flex-col items-center select-none pointer-events-auto transition-all"
               style={{
                 left: `${opticalCenter[0] * 100}%`,
                 top: `${opticalCenter[1] * 100}%`,
                 transform: 'translate(-50%, -50%)',
-                width: 'max-content',
-                maxWidth: '155px',
-                background: 'rgba(22, 15, 68, 0.84)',
-                backdropFilter: 'blur(10px)',
-                WebkitBackdropFilter: 'blur(10px)',
-                border: '1px solid rgba(180, 178, 255, 0.45)',
-                boxShadow: '0 12px 32px rgba(15, 10, 48, 0.65), 0 0 14px rgba(180, 178, 255, 0.25)',
+                width: '195px',
+                filter:
+                  'drop-shadow(0 0 10px rgba(180, 178, 255, 0.45)) drop-shadow(0 14px 28px rgba(15, 10, 48, 0.85))',
               }}
             >
-              {/* Baliza luminosa superior conectada con el haz de luz */}
-              <span className="w-2 h-0.5 rounded-full bg-[#B4B2FF] mb-1.5 shadow-[0_0_6px_#B4B2FF] inline-block" />
+              {/* Baliza luminosa superior conectada con el haz */}
+              <span className="w-2.5 h-1 bg-[#B4B2FF] mb-1.5 shadow-[0_0_8px_#B4B2FF] inline-block [image-rendering:pixelated]" />
 
-              {children ? (
-                children(state)
-              ) : (
-                <>
-                  {/* Línea 1: Título con nombre común INE */}
-                  <h3 className="font-heading font-black text-xs tracking-wider text-white uppercase drop-shadow leading-tight">
-                    {displayName.toUpperCase()}
-                  </h3>
+              {/* Borde exterior Pixel Art (1px con esquinas facetadas) */}
+              <div
+                className="w-full p-[1px] bg-[#B4B2FF]/60"
+                style={{
+                  clipPath:
+                    'polygon(0 4px, 4px 0, calc(100% - 4px) 0, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 0 calc(100% - 4px))',
+                }}
+              >
+                {/* Cuerpo de la tarjeta con esquinas facetadas y fondo índigo profundo */}
+                <div
+                  className="w-full px-3 py-2.5 flex flex-col items-center justify-center text-center"
+                  style={{
+                    background: 'rgba(20, 14, 60, 0.94)',
+                    backdropFilter: 'blur(8px)',
+                    WebkitBackdropFilter: 'blur(8px)',
+                    clipPath:
+                      'polygon(0 4px, 4px 0, calc(100% - 4px) 0, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 0 calc(100% - 4px))',
+                  }}
+                >
+                  {children ? (
+                    children(state)
+                  ) : (
+                    <>
+                      {/* Línea 1: Título con nombre común INE */}
+                      <h3 className="font-heading font-black text-xs tracking-wider text-white uppercase drop-shadow leading-tight">
+                        {displayName.toUpperCase()}
+                      </h3>
 
-                  {/* Línea 2: Dalia + Conteo */}
-                  <div className="flex items-center justify-center gap-1.5 mt-0.5">
-                    <img
-                      src={`/flowers/dahlia-${flowerLevel}.png`}
-                      alt=""
-                      aria-hidden="true"
-                      width={28}
-                      height={28}
-                      className="w-7 h-7 object-contain [image-rendering:pixelated] drop-shadow shrink-0"
-                    />
-                    <span className="text-2xl font-black text-white font-heading tracking-tight drop-shadow leading-none">
-                      {count.toLocaleString('es-MX')}
-                    </span>
-                  </div>
+                      {/* Línea 2: Bloque Oficial INE 2024 (Participación 18-29 años + Benchmark) */}
+                      {youthBenchmark && (
+                        <div
+                          className="mt-1.5 flex flex-col items-center justify-center select-none"
+                          title={`Participación 18-29 años en la Elección Federal 2024: ${youthBenchmark.turnoutYouthPercent}% (${youthBenchmark.source})`}
+                          aria-label={`En 2024, el ${youthBenchmark.turnoutYouthPercent}% de jóvenes entre 18 y 29 años votaron en ${displayName}, ${youthBenchmark.diffLabel}, según datos del INE`}
+                        >
+                          <div className="flex items-center gap-1.5 leading-none">
+                            <span className="w-1.5 h-1.5 bg-[#00E5FF] shadow-[0_0_5px_#00E5FF] inline-block shrink-0 [image-rendering:pixelated]" />
+                            <span className="text-[10px] font-bold text-white tracking-tight">
+                              {youthBenchmark.turnoutYouthPercent}% votó en 2024
+                            </span>
+                          </div>
+                          <span className="text-[8px] font-medium text-[#C8C5FF] tracking-tight mt-0.5 leading-tight">
+                            18-29 años · {youthBenchmark.diffLabel}
+                          </span>
+                          <span className="text-[7px] font-semibold text-[#8E8BB8] tracking-widest uppercase mt-0.5 leading-none">
+                            · INE ·
+                          </span>
+                        </div>
+                      )}
 
-                  {/* Línea 3: Bajada en 2 líneas compactas */}
-                  <p className="text-[#D8D4FF] text-[9.5px] font-semibold leading-tight text-center mt-1 drop-shadow">
-                    Personas que ya<br />dieron el primer paso
-                  </p>
+                      {/* Micro-separador de píxeles discontinuo */}
+                      <div className="w-24 border-t border-dashed border-[#B4B2FF]/30 my-1.5" />
 
-                  {/* Línea 4: Separador sutil ceñido */}
-                  <div className="w-14 h-px bg-[#B4B2FF]/40 my-1.5" />
+                      {/* Bloque Cívico de Plataforma (Separado e Independiente) */}
+                      <div className="flex items-center justify-center gap-1.5">
+                        <img
+                          src={`/flowers/dahlia-${flowerLevel}.png`}
+                          alt=""
+                          aria-hidden="true"
+                          width={26}
+                          height={26}
+                          className="w-6.5 h-6.5 object-contain [image-rendering:pixelated] drop-shadow shrink-0"
+                        />
+                        <span className="text-2xl font-black text-white font-heading tracking-tight drop-shadow leading-none">
+                          {count.toLocaleString('es-MX')}
+                        </span>
+                      </div>
 
-                  {/* Línea 5: Pregunta */}
-                  <p className="text-white font-bold text-[9.5px] tracking-wide uppercase font-heading drop-shadow leading-tight">
-                    {question}
-                  </p>
+                      <p className="text-[#E0DEFF] text-[9.5px] font-semibold leading-tight text-center mt-1 drop-shadow">
+                        personas que se informaron
+                      </p>
 
-                  {/* Botón CTA Ceñido */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const el = document.getElementById('modulos');
-                      if (el) {
-                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                      }
-                    }}
-                    className="bg-[#E3007E] hover:bg-[#C2006B] active:scale-95 text-white font-bold text-[9.5px] py-1 px-3 shadow-md cursor-pointer rounded-full transition-transform mt-1.5 inline-flex items-center gap-1 select-none whitespace-nowrap"
-                  >
-                    <span>Infórmate y participa →</span>
-                  </button>
-                </>
-              )}
+                      <p className="text-[#9A96D6] text-[7.5px] font-normal italic leading-none text-center mt-0.5 drop-shadow">
+                        Registro en plataforma · No mide votos
+                      </p>
+
+                      {/* Separador pixel sólido */}
+                      <div className="w-20 h-px bg-[#B4B2FF]/40 my-1.5" />
+
+                      {/* Pregunta */}
+                      <p className="text-white font-bold text-[9.5px] tracking-wide uppercase font-heading drop-shadow leading-tight">
+                        {question}
+                      </p>
+
+                      {/* Botón CTA Pixel Art Facetado */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const el = document.getElementById('modulos');
+                          if (el) {
+                            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }
+                        }}
+                        className="bg-[#E3007E] hover:bg-[#C2006B] active:scale-95 text-white font-bold text-[9.5px] py-1 px-3.5 shadow-md cursor-pointer transition-transform mt-1.5 inline-flex items-center gap-1 select-none whitespace-nowrap [image-rendering:pixelated]"
+                        style={{
+                          clipPath:
+                            'polygon(0 2px, 2px 0, calc(100% - 2px) 0, 100% 2px, 100% calc(100% - 2px), calc(100% - 2px) 100%, 2px 100%, 0 calc(100% - 2px))',
+                        }}
+                      >
+                        <span>Infórmate y participa →</span>
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </>

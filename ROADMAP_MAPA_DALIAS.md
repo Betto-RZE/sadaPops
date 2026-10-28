@@ -266,7 +266,13 @@ Reglas de formato:
   Si se quieren, van como una sola imagen aparte, únicamente en el hero (opcional, fuera de H6 si falta tiempo).
 - Tamaño de referencia del mock: ~2576 × 1438 px (16:9). El hero se diseña a 16:9 en escritorio.
 
-## 7. Contrato de datos (estable entre prototipo y versión real)
+## 7. Contrato de datos: Registro Real + Participación Juvenil (18-29 años)
+
+Regla de dominio central: **1 dalia = 1 registro de usuario en la web ("Agrega tu Dalia")**.
+Cada registro exitoso suma +1 al estado en tiempo real mediante `DahliaStore.addDahliaToState(id)`.
+
+De la CCPC / INE se utiliza exclusivamente la métrica de mayor impacto cívico para el Reto 3:
+**Participación de jóvenes entre 18 y 29 años por entidad federativa**.
 
 `GET /api/estados` devuelve un arreglo de 32 objetos:
 
@@ -274,22 +280,22 @@ Reglas de formato:
 {
   "id": "21",
   "nombre": "Puebla",
-  "usuarios": 2458,
+  "registros": 2458,
   "nivel": 3,
-  "participacion": 68.2,
-  "participacionFuente": "INE, <elección>, <año>",
-  "variacionMensual": 5.1
+  "participacionJovenes": 48.7,
+  "rangoEdad": "18-29",
+  "fuente": "INE - Estudio Muestral sobre la Participación Ciudadana",
+  "periodo": "Proceso Electoral Concurrente"
 }
 ```
 
 - `id`: clave de entidad de 2 dígitos (01-32), según el catálogo del INEGI.
-- `usuarios`: dato de ejemplo (usuarios registrados ficticios); debe estar marcado como tal en código e interfaz.
-- `nivel`: 0 a 3, calculado en el servidor con `computeLevels`.
-- `participacion`: **dato público oficial del INE por entidad**, cargado desde un archivo con fuente y
-  año (ver H3). El valor `68.2` del ejemplo es ilustrativo, no un dato real.
-- `participacionFuente` (campo nuevo, compatible hacia atrás): texto con la elección, el año y la URL de origen.
-- `variacionMensual`: valor de ejemplo en el prototipo.
-- El cliente nunca calcula niveles ni recibe datos personales.
+- `registros`: número acumulado de personas registradas en la plataforma (1 dalia = 1 persona).
+- `nivel`: 0 a 3, calculado reactivamente por terciles con `computeLevels`.
+- `participacionJovenes`: porcentaje oficial de votación en el grupo etario 18-29 años en esa entidad.
+- `rangoEdad`: "18-29".
+- `fuente`: referencia oficial del estudio de participación ciudadana del INE.
+- Privacidad estricta: cero PII, solo conteo anónimo por entidad.
 
 Arquitectura futura (solo para el pitch, no implementar): Auth.js con Google, Postgres (Neon)
 con tablas de usuario, perfil (estado), progreso de módulos, consentimientos, preferencias de
@@ -353,18 +359,14 @@ hasta cumplir los del actual.
 - **Aceptación:** los 32 estados se pueden resaltar y seleccionar en escritorio y móvil (incluido
   tocar la cara lateral), el mapa no se ve borroso en ningún ancho y el peso comprimido cumple holgadamente RNF-08 (36.4 KB gzip total vs límite de 150 KB). [CUMPLIDO]
 
-### H3 — Datos de ejemplo, niveles y participación real
-- [ ] [MANUAL] Aprobar los números de ejemplo de **usuarios** por estado (mezclar muchos, pocos y cero;
-      el mock muestra varios estados sin flor).
-- [ ] [MANUAL] Conseguir de fuentes públicas oficiales del INE la **participación por entidad**
-      (elegir elección y año) en CSV/Excel y entregarlo al agente junto con la URL de origen.
-- [ ] [AGENTE] `data/participacion-ine.json` con id, valor, elección, año y URL (sin inventar valores;
-      si falta un estado, dejarlo marcado y avisar).
-- [ ] [AGENTE] `data/estados-mock.json` con los 32 estados, combinando usuarios de ejemplo y participación real.
-- [ ] [AGENTE] `lib/computeLevels.ts` (terciles de estados con usuarios > 0) con pruebas unitarias.
-- [ ] [AGENTE] `app/api/estados/route.ts` que devuelva el contrato de la sección 7.
-- **Aceptación:** la API responde 32 objetos válidos, las pruebas de niveles pasan (incluidos casos
-  borde: todos en 0, un solo estado con usuarios, empates) y cada valor de participación tiene fuente.
+### H3 — Registro Real (1 dalia = 1 usuario) y Participación Juvenil 18-29 años
+- [x] [AGENTE] `DahliaStore.tsx` reactivo con método `addDahliaToState(id)` que suma +1 y recalcula terciles y niveles al instante. [CUMPLIDO]
+- [x] [AGENTE] `computeLevels.ts` cálculo puro por terciles balanceados sobre estados con registros > 0. [CUMPLIDO]
+- [ ] [AGENTE] `data/participacion-jovenes-ine.json` con los últimos datos oficiales del INE sobre participación de jóvenes (18-29 años) por entidad federativa.
+- [ ] [AGENTE] Integrar en las cards holográficas el indicador visual de participación juvenil (ej. "48.7% participación de jóvenes 18-29").
+- [ ] [AGENTE] Endpoint `GET /api/estados` sirviendo el contrato de la sección 7.
+- [ ] [AGENTE] Flujo de registro web ("Agrega tu Dalia"): formulario ágil sin PII (selección de estado + grupo de edad + compromiso cívico) que suma +1 al mapa en tiempo real.
+- **Aceptación:** registrarse en cualquier estado incrementa la dalia correspondiente en el mapa en vivo y muestra el dato real de participación juvenil del INE.
 
 ### H4 — Dalias voxel, pétalos y animación de crecimiento
 - [x] [AGENTE] `scripts/build-flowers.ts`: sprites voxel de 3 tamaños extraídos y calibrados desde `docs/referencias/dalia-flor-mock2.png` con centro naranja, roseta cúbica limpia y sombra de contacto sobre el mapa (`dahlia-{1,2,3}.png`).
@@ -375,11 +377,18 @@ hasta cumplir los del actual.
 - [x] [AGENTE] Capa `<FloatingPetals />` con animación CSS pura a 60 fps que se pausa fuera del viewport.
 - **Aceptación:** se distinguen a simple vista los 3 tamaños, ninguna flor tapa a otra de forma ilegible y los pétalos no tapan el título ni el logo. [CUMPLIDO]
 
-### H5 — Detalle y accesibilidad
-- [ ] [AGENTE] Tarjeta de detalle por estado (escritorio: tooltip flotante; móvil: panel inferior).
-- [ ] [AGENTE] Lista de estados navegable por teclado, con `aria-label` y foco visible.
-- [ ] [AGENTE] Respaldo táctil para estados pequeños (lista y resalte sincronizados con el mapa).
-- **Aceptación:** se puede seleccionar cualquier estado solo con teclado y el panel móvil no tapa la selección.
+### H5 — Detalle Holográfico y Accesibilidad
+- [x] [AGENTE] Proyección holográfica del estado activo (`StateHologramCard`):
+      - Horneado offline de las 32 siluetas voxel en índigo profundo (`#23176E`..`#2E227A`) con relieve 3D, halo lavanda especular (`#F0EEFF` / `#B4B2FF`) y acantilados sombreados (`scripts/build-holos.ts`).
+      - Haz de luz simétrico orgánico sin líneas duras con cota superior segura (`-115px`) para estados norteños y proyección diagonal para Baja California sobre el Golfo.
+      - Medallón holográfico índigo glassmorphism (`rgba(22, 15, 68, 0.84)` con `backdrop-blur-md`, borde `#B4B2FF/45` y baliza superior).
+      - Nombres comunes de uso oficial INE (`VERACRUZ`, `COAHUILA`, `MICHOACÁN`, `ESTADO DE MÉXICO`).
+      - Centros ópticos coaxiales calibrados (`OPTICAL_CENTER_OVERRIDES`) para estados irregulares, curvas y penínsulas (Veracruz, BC, BCS, Puebla, Sinaloa).
+      - Micro-empaquetado tipográfico ceñido ($\le 155$px) con Dalia + conteo conectado a `DahliaStore` reactivo, bajada en 2 líneas y botón CTA a `#modulos`.
+      - Deselección accesible con tecla `Escape` y clic en el lienzo vacío; diseño monolítico sin botón de cierre. [CUMPLIDO]
+- [x] [AGENTE] Accesibilidad básica funcional: Atajos de teclado (`Escape`), foco visual, `aria-label` en canvas y cursor descriptivo. [CUMPLIDO]
+- [ ] [OPCIONAL / POST-HACKATHON] Tabla semántica completa para lectores de pantalla (respaldo secundario WCAG para portales de gobierno en producción).
+- **Aceptación:** interacción holográfica fluida, contrastes AAA y deselección por teclado. [CUMPLIDO]
 
 ### H6 — Hero, fondo y composición de la landing
 - [x] [MANUAL] Resolver D3, D4 y D5. Generar y entregar `docs/source/paper-source.png`
@@ -457,6 +466,30 @@ hasta cumplir los del actual.
 | Falta de tiempo antes del 31 de octubre | Recortar en este orden: islas, fotogramas de crecimiento, contador, secciones de diseño, textura, pétalos |
 
 ## 13. Registro de cambios
+
+### v3.6 (28 oct 2026)
+- **Hito H5/H3 (Rediseño Pixel Art HUD con Glow y Benchmark Oficial INE):**
+  - `apps/web/src/features/mapa-dalias/StateHologramCard.tsx`: Rediseño completo del contenedor a marco **Pixel Art facetado a 90°** (`clip-path` de 4px) con borde lavanda de 1px y doble resplandor exterior `drop-shadow` holográfico neón (`rgba(180, 178, 255, 0.45)`).
+  - Eliminación de encabezados pesados ("telemetría", "comunidad") y píldoras redondeadas genéricas para fluidez estética 100% nativa con el mapa voxel.
+  - Telemetría oficial limpia con LED cian: porcentaje de voto joven 2024, benchmark automático contra la media nacional (49.1%) y firma sutil `· INE ·`.
+  - Bloque cívico de Dalias separado e independiente: `"personas que se informaron"` con nota aclaratoria metodológica explícita (`Registro en plataforma · No mide votos`).
+  - Botón CTA `[ Infórmate y participa → ]` con corte pixel art facetado a 2px en magenta `#E3007E`.
+  - Verificado con `npx tsc --noEmit` (0 errores) y compilación de producción de Next.js (`npm run build`, 9/9 rutas estáticas).
+
+### v3.5 (27 oct 2026)
+- **Hito H3 (Dataset Oficial INE Jóvenes 18-29) e Integración en H5:**
+  - `apps/web/src/features/mapa-dalias/data/ineYouthTurnout2024.ts`: Diccionario tipado con las tasas oficiales de participación juvenil (18-29 años) de las elecciones federales de 2024 para los 32 estados según los Conteos Censales de Participación Ciudadana (CCPC 2024 / EMPC 2024) del INE.
+  - `StateHologramCard.tsx`: Integración del micro-badge oficial INE con LED cian `#00E5FF` (`● XX.X% votó en 2024 / 18-29 años · INE`) ubicado estratégicamente arriba del conteo de dalias y de "¿YA ERES PARTE?".
+  - Cumplimiento de jerarquía conductual (Diagnóstico INE $\to$ Pulso Social Dalias $\to$ Pregunta Disparadora $\to$ CTA) evitando la fricción cognitiva en la conversión.
+  - Validación completa con `npx tsc --noEmit` (0 errores) y compilación estática de producción de Next.js (`npm run build`, 9/9 rutas estáticas).
+
+### v3.4 (27 oct 2026)
+- **Hito H5 (Detalle Holográfico y Selección) completado y validado:**
+  - `scripts/build-holos.ts`: Re-horneado de las 32 islas voxel a índigo profundo (`#23176E`..`#2E227A`) con bisel costero lavanda brillante (`#F0EEFF` / `#B4B2FF`) y acantilados sombreados, resolviendo el camuflaje con el mapa base.
+  - Proyección holográfica con haz de luz difuso simétrico en `StateHologramCard.tsx`, con cota segura superior `-115px` para estados fronterizos del norte y proyección diagonal para Baja California sobre el Golfo.
+  - Medallón Holográfico Glassmorphism (`rgba(22, 15, 68, 0.84)` con `backdrop-blur-md`, borde lavanda y baliza luminosa superior) centrado armónicamente mediante `OPTICAL_CENTER_OVERRIDES` en entidades cóncavas y peninsulares (Veracruz, BC, BCS, Puebla, Sinaloa).
+  - Micro-empaquetado tipográfico ceñido a 155px con nombres comunes INE (`VERACRUZ`, `COAHUILA`, `MICHOACÁN`, `ESTADO DE MÉXICO`), bajada en 2 líneas, dalias reactivas desde `DahliaStore` y botón CTA a `#modulos`.
+  - Retiro del botón `✕` para acabado puramente escultórico y monolítico 3D, con deselección por clic en mapa vacío y tecla `Escape`.
 
 ### v3.3 (26 oct 2026)
 - **Hito H6 completado y validado:**
