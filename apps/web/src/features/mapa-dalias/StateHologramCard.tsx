@@ -72,10 +72,22 @@ export const OPTICAL_CENTER_OVERRIDES: Record<string, [number, number]> = {
 
 /**
  * Silueta Pixel-Art del chasis exterior (fidelidad 1:1 con mock-card.jpg).
- * Escalonado de 3 peldaños en esquinas (chamfer) y muescas laterales a media altura.
+ * Chamfer escalonado de 8px en esquinas y muescas laterales a media altura.
  */
-const CHASSIS_CLIP_PATH =
-  'polygon(0 8px, 2px 8px, 2px 6px, 4px 6px, 4px 4px, 6px 4px, 6px 2px, 8px 2px, 8px 0, calc(100% - 8px) 0, calc(100% - 8px) 2px, calc(100% - 6px) 2px, calc(100% - 6px) 4px, calc(100% - 4px) 4px, calc(100% - 4px) 6px, calc(100% - 2px) 6px, calc(100% - 2px) 8px, 100% 8px, 100% calc(50% - 8px), calc(100% - 3px) calc(50% - 6px), calc(100% - 3px) calc(50% + 6px), 100% calc(50% + 8px), 100% calc(100% - 8px), calc(100% - 2px) calc(100% - 8px), calc(100% - 2px) calc(100% - 6px), calc(100% - 4px) calc(100% - 6px), calc(100% - 4px) calc(100% - 4px), calc(100% - 6px) calc(100% - 4px), calc(100% - 6px) calc(100% - 2px), calc(100% - 8px) calc(100% - 2px), calc(100% - 8px) 100%, 8px 100%, 8px calc(100% - 2px), 6px calc(100% - 2px), 6px calc(100% - 4px), 4px calc(100% - 4px), 4px calc(100% - 6px), 2px calc(100% - 6px), 2px calc(100% - 8px), 0 calc(100% - 8px), 0 calc(50% + 8px), 3px calc(50% + 6px), 3px calc(50% - 6px), 0 calc(50% - 8px))';
+const CHASSIS_OUTER_CLIP =
+  'polygon(0 8px, 2px 8px, 2px 6px, 4px 6px, 4px 4px, 6px 4px, 6px 2px, 8px 2px, 8px 0, calc(100% - 8px) 0, calc(100% - 8px) 2px, calc(100% - 6px) 2px, calc(100% - 6px) 4px, calc(100% - 4px) 4px, calc(100% - 4px) 6px, calc(100% - 2px) 6px, calc(100% - 2px) 8px, 100% 8px, 100% calc(50% - 6px), calc(100% - 3px) calc(50% - 4px), calc(100% - 3px) calc(50% + 4px), 100% calc(50% + 6px), 100% calc(100% - 8px), calc(100% - 2px) calc(100% - 8px), calc(100% - 2px) calc(100% - 6px), calc(100% - 4px) calc(100% - 6px), calc(100% - 4px) calc(100% - 4px), calc(100% - 6px) calc(100% - 4px), calc(100% - 6px) calc(100% - 2px), calc(100% - 8px) calc(100% - 2px), calc(100% - 8px) 100%, 8px 100%, 8px calc(100% - 2px), 6px calc(100% - 2px), 6px calc(100% - 4px), 4px calc(100% - 4px), 4px calc(100% - 6px), 2px calc(100% - 6px), 2px calc(100% - 8px), 0 calc(100% - 8px), 0 calc(50% + 6px), 3px calc(50% + 4px), 3px calc(50% - 4px), 0 calc(50% - 6px))';
+
+/**
+ * Canal oscuro hundido (inset 3px, chamfer de 5px).
+ */
+const CHASSIS_CANAL_CLIP =
+  'polygon(0 5px, 2px 5px, 2px 3px, 3px 3px, 3px 2px, 5px 2px, 5px 0, calc(100% - 5px) 0, calc(100% - 5px) 2px, calc(100% - 3px) 2px, calc(100% - 3px) 3px, calc(100% - 2px) 3px, calc(100% - 2px) 5px, 100% 5px, 100% calc(50% - 4px), calc(100% - 2px) calc(50% - 3px), calc(100% - 2px) calc(50% + 3px), 100% calc(50% + 4px), 100% calc(100% - 5px), calc(100% - 2px) calc(100% - 5px), calc(100% - 2px) calc(100% - 3px), calc(100% - 3px) calc(100% - 3px), calc(100% - 3px) calc(100% - 2px), calc(100% - 5px) calc(100% - 2px), calc(100% - 5px) 100%, 5px 100%, 5px calc(100% - 2px), 3px calc(100% - 2px), 3px calc(100% - 3px), 2px calc(100% - 3px), 2px calc(100% - 5px), 0 calc(100% - 5px), 0 calc(50% + 4px), 2px calc(50% + 3px), 2px calc(50% - 3px), 0 calc(50% - 4px))';
+
+/**
+ * Panel interior medianoche (inset 5px, chamfer de 3px).
+ */
+const CHASSIS_PANEL_CLIP =
+  'polygon(0 3px, 1px 3px, 1px 1px, 3px 1px, 3px 0, calc(100% - 3px) 0, calc(100% - 3px) 1px, calc(100% - 1px) 1px, calc(100% - 1px) 3px, 100% 3px, 100% calc(100% - 3px), calc(100% - 1px) calc(100% - 3px), calc(100% - 1px) calc(100% - 1px), calc(100% - 3px) calc(100% - 1px), calc(100% - 3px) 100%, 3px 100%, 3px calc(100% - 1px), 1px calc(100% - 1px), 1px calc(100% - 3px), 0 calc(100% - 3px))';
 
 interface HoloLayout {
   left: number;
@@ -236,6 +248,133 @@ const COMMON_STATE_NAMES: Record<string, string> = {
   '16': 'Michoacán',
   '30': 'Veracruz',
 };
+
+/**
+ * Divisor decorativo con micro-flor pixelada central (fidelidad 1:1 con mock-card.jpg).
+ */
+function PixelDivider() {
+  return (
+    <div className="flex items-center justify-center w-full my-1.5 px-1 opacity-90 select-none">
+      <div className="flex-1 border-t border-dashed border-[#5A4B9E]/80" />
+      <div className="mx-2 flex items-center justify-center shrink-0">
+        <svg
+          width="9"
+          height="9"
+          viewBox="0 0 9 9"
+          fill="none"
+          className="[image-rendering:pixelated]"
+          aria-hidden="true"
+        >
+          {/* 4 pétalos cardinales */}
+          <rect x="3" y="1" width="3" height="7" fill="#AEA3F8" />
+          <rect x="1" y="3" width="7" height="3" fill="#AEA3F8" />
+          {/* Núcleo central brillante */}
+          <rect x="3" y="3" width="3" height="3" fill="#FFFFFF" />
+          {/* Esquinas oscuras de encuadre */}
+          <rect x="2" y="2" width="1" height="1" fill="#4B3B8E" />
+          <rect x="6" y="2" width="1" height="1" fill="#4B3B8E" />
+          <rect x="2" y="6" width="1" height="1" fill="#4B3B8E" />
+          <rect x="6" y="6" width="1" height="1" fill="#4B3B8E" />
+        </svg>
+      </div>
+      <div className="flex-1 border-t border-dashed border-[#5A4B9E]/80" />
+    </div>
+  );
+}
+
+/**
+ * Cubo cian voxel 3D con luz especular y extrusión (fidelidad 1:1 con mock-card.jpg).
+ */
+function CyanVoxelCube() {
+  return (
+    <svg
+      width="10"
+      height="10"
+      viewBox="0 0 10 10"
+      fill="none"
+      className="shrink-0 [image-rendering:pixelated] drop-shadow-[0_0_4px_#00E5FF]"
+      aria-hidden="true"
+    >
+      {/* Sombra 3D inferior-derecha */}
+      <rect x="2" y="4" width="7" height="5" fill="#005B73" />
+      <rect x="4" y="2" width="5" height="7" fill="#007A99" />
+      {/* Cara frontal cian */}
+      <rect x="1" y="1" width="7" height="7" fill="#00E5FF" />
+      {/* Arista de luz especular superior-izquierda */}
+      <rect x="1" y="1" width="7" height="1.5" fill="#A6F7FF" />
+      <rect x="1" y="1" width="1.5" height="7" fill="#A6F7FF" />
+    </svg>
+  );
+}
+
+interface PixelCardChassisProps {
+  children: React.ReactNode;
+}
+
+/**
+ * Chasis Voxel 3D con Bisel Escalonado, Canal Hundido y Extrusión Inferior (Fidelidad 1:1 con mock-card.jpg).
+ */
+function PixelCardChassis({ children }: PixelCardChassisProps) {
+  return (
+    <div
+      className="relative w-[168px] select-none pointer-events-auto"
+      style={{
+        filter:
+          'drop-shadow(0 16px 32px rgba(10, 6, 32, 0.75)) drop-shadow(0 0 14px rgba(139, 122, 235, 0.25))',
+      }}
+    >
+      {/* CAPA 1: Extrusión 3D Inferior en Bloques Voxel (#1B0E44) */}
+      <div
+        className="absolute inset-0 translate-y-[3.5px] pointer-events-none"
+        style={{
+          background: '#1B0E44',
+          clipPath: CHASSIS_OUTER_CLIP,
+        }}
+      />
+
+      {/* CAPA 2: Bisel Voxel Superior con degradado de luz y sombra */}
+      <div
+        className="relative w-full p-[3px]"
+        style={{
+          background:
+            'linear-gradient(135deg, #C4B7FF 0%, #8574E8 25%, #5945BC 65%, #2F1E78 100%)',
+          clipPath: CHASSIS_OUTER_CLIP,
+        }}
+      >
+        {/* CAPA 3: Canal Oscuro Hundido (#090518) */}
+        <div
+          className="w-full p-[2px]"
+          style={{
+            background: '#090518',
+            clipPath: CHASSIS_CANAL_CLIP,
+          }}
+        >
+          {/* CAPA 4: Marco Interior de 1px (#3C2E7E) y Panel Medianoche (#130D32) */}
+          <div
+            className="relative w-full px-2.5 pt-2 pb-2.5 flex flex-col items-center justify-center text-center"
+            style={{
+              background: '#130D32',
+              clipPath: CHASSIS_PANEL_CLIP,
+            }}
+          >
+            {/* Marco fino interior escalonado */}
+            <div
+              className="absolute inset-[1px] pointer-events-none border border-[#3C2E7E]/80"
+              style={{ clipPath: CHASSIS_PANEL_CLIP }}
+            />
+
+            {/* Ranura Superior Hundida (Top Handle Slot) con Barra Luminosa */}
+            <div className="w-8 h-2 bg-[#090518] border border-[#3C2E7E] rounded-full mb-1 flex items-center justify-center px-0.5 shadow-inner">
+              <span className="w-4.5 h-0.5 bg-[#B5A8FF] rounded-full shadow-[0_0_5px_#B5A8FF] inline-block" />
+            </div>
+
+            {children}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function StateHologramCard({ children, className }: StateHologramCardProps) {
   const { data, selectedStateId, selectState } = usePixelMapContext();
@@ -527,149 +666,98 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
               className="block w-full h-full object-contain [image-rendering:pixelated] select-none pointer-events-none"
             />
 
-            {/* Chasis Pixel-Art 3D (Proporción compacta 168px, silueta 3D visible) */}
+            {/* Chasis Pixel-Art 3D con Profundidad Real (Fidelidad 1:1 a mock-card.jpg) */}
             <div
               className="absolute z-20 flex flex-col items-center select-none pointer-events-auto transition-all"
               style={{
                 left: `${opticalCenter[0] * 100}%`,
                 top: `${opticalCenter[1] * 100}%`,
                 transform: 'translate(-50%, -50%)',
-                width: '168px',
-                filter:
-                  'drop-shadow(0 14px 28px rgba(10, 6, 32, 0.70)) drop-shadow(0 0 12px rgba(139, 122, 235, 0.25))',
               }}
             >
-              {/* Borde exterior biselado pixel-art (Layered Pixel Border) */}
-              <div
-                className="relative w-full p-[2px]"
-                style={{
-                  background:
-                    'linear-gradient(135deg, #8B7AEB 0%, #6857C4 35%, #3D2D82 70%, #201550 100%)',
-                  clipPath: CHASSIS_CLIP_PATH,
-                }}
-              >
-                {/* Cuerpo interior con fondo índigo medianoche (#151038) */}
-                <div
-                  className="relative w-full px-2.5 pt-2 pb-2.5 flex flex-col items-center justify-center text-center"
-                  style={{
-                    background: '#151038',
-                    clipPath: CHASSIS_CLIP_PATH,
-                  }}
-                >
-                  {/* Línea interior fina (1px Inset Border) */}
-                  <div
-                    className="absolute inset-[2.5px] pointer-events-none border border-[#342678]/80"
-                    style={{
-                      clipPath: CHASSIS_CLIP_PATH,
-                    }}
-                  />
+              <PixelCardChassis>
+                {children ? (
+                  children(state)
+                ) : (
+                  <>
+                    {/* Línea 1: Título con nombre común INE */}
+                    <h3 className="font-pixel font-bold text-xs tracking-[0.14em] text-white uppercase drop-shadow-[0_2px_0_rgba(0,0,0,0.8)] leading-tight mt-0.5">
+                      {displayName.toUpperCase()}
+                    </h3>
 
-                  {/* Píldora / Handle superior centrado */}
-                  <span className="w-6 h-0.5 bg-[#AEA3F8]/80 rounded-full mb-1 shadow-[0_0_5px_#AEA3F8] inline-block [image-rendering:pixelated]" />
-
-                  {children ? (
-                    children(state)
-                  ) : (
-                    <>
-                      {/* Línea 1: Título con nombre común INE */}
-                      <h3 className="font-pixel font-bold text-xs tracking-[0.14em] text-white uppercase drop-shadow-[0_2px_0_rgba(0,0,0,0.8)] leading-tight mt-0.5">
-                        {displayName.toUpperCase()}
-                      </h3>
-
-                      {/* Línea 2: Bloque Oficial INE 2024 (Participación 18-29 años + Benchmark) */}
-                      {youthBenchmark && (
-                        <div
-                          className="mt-1 flex flex-col items-center justify-center select-none"
-                          title={`Participación 18-29 años en la Elección Federal 2024: ${youthBenchmark.turnoutYouthPercent}% (${youthBenchmark.source})`}
-                          aria-label={`En 2024, el ${youthBenchmark.turnoutYouthPercent}% de jóvenes entre 18 y 29 años votaron en ${displayName}, ${youthBenchmark.diffLabel}, según datos del INE`}
-                        >
-                          <div className="flex items-center gap-1.5 leading-none">
-                            <span className="w-2 h-2 bg-[#00E5FF] shadow-[0_0_5px_#00E5FF] inline-block shrink-0 [image-rendering:pixelated]" />
-                            <span className="text-[10.5px] font-bold text-white tracking-tight">
-                              {youthBenchmark.turnoutYouthPercent}% votó en 2024
-                            </span>
-                          </div>
-                          <span className="text-[8px] font-medium text-[#C5BEFF] tracking-tight mt-0.5 leading-tight">
-                            18–29 años · {youthBenchmark.diffLabel}
-                          </span>
-                          <span className="text-[7px] font-semibold text-[#8F85C7] tracking-[0.16em] uppercase mt-0.5 leading-none">
-                            · INE ·
+                    {/* Línea 2: Bloque Oficial INE 2024 (Participación 18-29 años + Benchmark) */}
+                    {youthBenchmark && (
+                      <div
+                        className="mt-1 flex flex-col items-center justify-center select-none"
+                        title={`Participación 18-29 años en la Elección Federal 2024: ${youthBenchmark.turnoutYouthPercent}% (${youthBenchmark.source})`}
+                        aria-label={`En 2024, el ${youthBenchmark.turnoutYouthPercent}% de jóvenes entre 18 y 29 años votaron en ${displayName}, ${youthBenchmark.diffLabel}, según datos del INE`}
+                      >
+                        <div className="flex items-center gap-1.5 leading-none">
+                          <CyanVoxelCube />
+                          <span className="text-[10.5px] font-bold text-white tracking-tight">
+                            {youthBenchmark.turnoutYouthPercent}% votó en 2024
                           </span>
                         </div>
-                      )}
-
-                      {/* Divisor 1: Línea discontinua con micro-flor pixelada central ✤ */}
-                      <div className="flex items-center justify-center w-full my-1.5 px-1 opacity-80">
-                        <div className="flex-1 border-t border-dashed border-[#5A4B9E]" />
-                        <div className="mx-1.5 flex items-center justify-center shrink-0">
-                          <div className="relative w-1.5 h-1.5 flex items-center justify-center">
-                            <span className="absolute w-1 h-1 bg-[#AEA3F8] rotate-45 shadow-[0_0_3px_#AEA3F8]" />
-                            <span className="absolute w-1.5 h-0.5 bg-[#AEA3F8]" />
-                            <span className="absolute w-0.5 h-1.5 bg-[#AEA3F8]" />
-                          </div>
-                        </div>
-                        <div className="flex-1 border-t border-dashed border-[#5A4B9E]" />
-                      </div>
-
-                      {/* Bloque Cívico de Plataforma (Dalia Voxel + Cifra 3D Rosa) */}
-                      <div className="flex items-center justify-center gap-2">
-                        <img
-                          src={`/flowers/dahlia-${flowerLevel}.png`}
-                          alt=""
-                          aria-hidden="true"
-                          width={28}
-                          height={28}
-                          className="w-7 h-7 object-contain [image-rendering:pixelated] drop-shadow shrink-0"
-                        />
-                        <span className="font-pixel text-[22px] font-black tracking-wide text-voxel-3d leading-none select-none">
-                          {count.toLocaleString('es-MX')}
+                        <span className="text-[8px] font-medium text-[#C5BEFF] tracking-tight mt-0.5 leading-tight">
+                          18–29 años · {youthBenchmark.diffLabel}
+                        </span>
+                        <span className="text-[7px] font-semibold text-[#8F85C7] tracking-[0.16em] uppercase mt-0.5 leading-none">
+                          · INE ·
                         </span>
                       </div>
+                    )}
 
-                      <p className="text-[#E5E0FF] text-[9.5px] font-bold leading-tight text-center mt-1 drop-shadow">
-                        personas que se informaron
-                      </p>
+                    {/* Divisor 1: Línea discontinua con micro-flor pixelada central ✤ */}
+                    <PixelDivider />
 
-                      <p className="text-[#9A92D0] text-[7.5px] italic leading-none text-center mt-0.5 drop-shadow">
-                        Registro en plataforma · No mide votos
-                      </p>
+                    {/* Bloque Cívico de Plataforma (Dalia Voxel + Cifra 3D Rosa) */}
+                    <div className="flex items-center justify-center gap-2">
+                      <img
+                        src={`/flowers/dahlia-${flowerLevel}.png`}
+                        alt=""
+                        aria-hidden="true"
+                        width={28}
+                        height={28}
+                        className="w-7 h-7 object-contain [image-rendering:pixelated] drop-shadow shrink-0"
+                      />
+                      <span className="font-pixel text-[22px] font-black tracking-wide text-voxel-3d leading-none select-none">
+                        {count.toLocaleString('es-MX')}
+                      </span>
+                    </div>
 
-                      {/* Divisor 2: Línea discontinua con micro-flor pixelada central ✤ */}
-                      <div className="flex items-center justify-center w-full my-1.5 px-1 opacity-80">
-                        <div className="flex-1 border-t border-dashed border-[#5A4B9E]" />
-                        <div className="mx-1.5 flex items-center justify-center shrink-0">
-                          <div className="relative w-1.5 h-1.5 flex items-center justify-center">
-                            <span className="absolute w-1 h-1 bg-[#AEA3F8] rotate-45 shadow-[0_0_3px_#AEA3F8]" />
-                            <span className="absolute w-1.5 h-0.5 bg-[#AEA3F8]" />
-                            <span className="absolute w-0.5 h-1.5 bg-[#AEA3F8]" />
-                          </div>
-                        </div>
-                        <div className="flex-1 border-t border-dashed border-[#5A4B9E]" />
-                      </div>
+                    <p className="text-[#E5E0FF] text-[9.5px] font-bold leading-tight text-center mt-1 drop-shadow">
+                      personas que se informaron
+                    </p>
 
-                      {/* Pregunta */}
-                      <p className="text-white font-pixel font-bold text-[9.5px] tracking-[0.12em] uppercase drop-shadow-[0_2px_0_rgba(0,0,0,0.8)] leading-tight">
-                        {question}
-                      </p>
+                    <p className="text-[#9A92D0] text-[7.5px] italic leading-none text-center mt-0.5 drop-shadow">
+                      Registro en plataforma · No mide votos
+                    </p>
 
-                      {/* Botón CTA Cápsula 3D Magenta */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const el = document.getElementById('modulos');
-                          if (el) {
-                            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                          }
-                        }}
-                        className="mt-1.5 w-[88%] max-w-[145px] py-1 px-2.5 bg-[#E5007E] hover:bg-[#FF1988] text-white font-heading font-bold text-[9px] tracking-wide rounded-full border-t border-white/40 border-b-[3px] border-b-[#8A004C] border-x border-x-[#A00052] shadow-[0_3px_10px_rgba(229,0,126,0.35)] active:border-b-0 active:translate-y-[3px] active:shadow-none transition-all cursor-pointer inline-flex items-center justify-center gap-1 select-none whitespace-nowrap"
-                      >
-                        <span>Infórmate y participa →</span>
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
+                    {/* Divisor 2: Línea discontinua con micro-flor pixelada central ✤ */}
+                    <PixelDivider />
+
+                    {/* Pregunta */}
+                    <p className="text-white font-pixel font-bold text-[9.5px] tracking-[0.12em] uppercase drop-shadow-[0_2px_0_rgba(0,0,0,0.8)] leading-tight">
+                      {question}
+                    </p>
+
+                    {/* Botón CTA Cápsula 3D Magenta */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const el = document.getElementById('modulos');
+                        if (el) {
+                          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                      }}
+                      className="mt-1.5 w-[88%] max-w-[145px] py-1 px-2.5 bg-[#E5007E] hover:bg-[#FF1988] text-white font-heading font-bold text-[9px] tracking-wide rounded-full border-t border-white/40 border-b-[3px] border-b-[#8A004C] border-x border-x-[#A00052] shadow-[0_3px_10px_rgba(229,0,126,0.35)] active:border-b-0 active:translate-y-[3px] active:shadow-none transition-all cursor-pointer inline-flex items-center justify-center gap-1 select-none whitespace-nowrap"
+                    >
+                      <span>Infórmate y participa →</span>
+                    </button>
+                  </>
+                )}
+              </PixelCardChassis>
             </div>
           </div>
         </>
