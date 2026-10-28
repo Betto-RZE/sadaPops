@@ -210,5 +210,8 @@ export const ISO_MAP_CONFIG: IsoMapConfig = {
     ],
   },
 
-  anchorOverrides: {},
+  anchorOverrides: {
+    '13': { dx: 2, dy: -1 }, // Hidalgo: hacia Huasteca/Veracruz
+    '21': { dx: 4, dy: -2 }, // Puebla: hacia Veracruz
+  },
 };

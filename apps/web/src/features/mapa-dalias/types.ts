@@ -94,6 +94,18 @@ export const COMMON_STATE_NAMES: Record<string, string> = {
 };
 
 /**
+ * Calibración óptica de anclas para dalias en estados irregulares o congestionados.
+ * - Puebla ('21'): desplazado +12px al este (hacia el cuerpo oriental y Veracruz) para salir
+ *   de la congestión directa con Tlaxcala ('29'), Morelos ('17') y CDMX ('09').
+ * - Hidalgo ('13'): desplazado +7px al este (hacia la Huasteca/Veracruz) para romper el eje
+ *   vertical directo con CDMX y Edomex.
+ */
+export const STATE_ANCHOR_OVERRIDES: Record<string, { x: number; y: number }> = {
+  '13': { x: 401, y: 274 },
+  '21': { x: 424, y: 308 },
+};
+
+/**
  * Obtiene el nombre común estandarizado para un estado a partir de su ID o metadatos.
  */
 export function getCommonStateName(state: { id: string; nombre: string } | null | undefined): string {

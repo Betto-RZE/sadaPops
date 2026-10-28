@@ -18,7 +18,14 @@ export {
   getStateScaleFactor,
 } from './computeLevels';
 export type { DahliaLevel, StateCountItem } from './computeLevels';
-export { useMapData } from './useMapData';
+export {
+  useMapData,
+} from './useMapData';
+export {
+  COMMON_STATE_NAMES,
+  STATE_ANCHOR_OVERRIDES,
+  getCommonStateName,
+} from './types';
 export type {
   PixelMapProps,
   PixelMapAnchorProps,

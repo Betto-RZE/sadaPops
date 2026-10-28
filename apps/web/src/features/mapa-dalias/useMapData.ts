@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type {
-  StatesMetadataFile,
-  MapIndexData,
-  StateMetadata,
-  StatePixelIndex,
+import {
+  type StatesMetadataFile,
+  type MapIndexData,
+  type StateMetadata,
+  type StatePixelIndex,
+  STATE_ANCHOR_OVERRIDES,
 } from './types';
 
 // Caché en memoria a nivel de módulo para evitar re-descargas e indexaciones repetidas
@@ -62,7 +63,12 @@ function buildMapIndex(
   const topPointers = new Map<number, number>();
   const sidePointers = new Map<number, number>();
 
-  for (const s of metadata.states) {
+  const statesWithOverrides = metadata.states.map((s) => {
+    const override = STATE_ANCHOR_OVERRIDES[s.id];
+    return override ? { ...s, anchor: { ...override } } : s;
+  });
+
+  for (const s of statesWithOverrides) {
     stateById.set(s.id, s);
     stateByNumId.set(s.numId, s);
 
@@ -114,7 +120,7 @@ function buildMapIndex(
     height: metadata.height,
     pixelScale: metadata.pixelScale,
     extrusionPx: metadata.extrusionPx,
-    states: metadata.states,
+    states: statesWithOverrides,
     stateById,
     stateByNumId,
     mapIds,
