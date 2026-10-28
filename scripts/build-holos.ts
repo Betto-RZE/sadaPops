@@ -55,16 +55,23 @@ const S = 3;                  // 3x3 px por voxel (mismo grano nítido del mapa 
 const EXT = 6;                // 6 vóxeles de altura de acantilado 3D (18 px)
 const PAD_VOXELS = 4;         // Margen para el halo/borde exterior
 
-// Paleta idéntica al mapa base (`config/iso.ts`) con halo perimetral lavanda luminoso
+// Paleta Prototipo A (Cara Índigo Profundo #23176E a #2E227A + Arista Costera Lavanda Brillante #F0EEFF / #B4B2FF)
 const PALETTE = {
-  topVariants: CFG.palette.topVariants,
-  coastalRimVoxel: CFG.palette.coastalRimVoxel,       // #8A89FA
-  coastalRimHi: '#F0EEFF',                            // Arista especular luminosa
-  coastalInnerBevel: CFG.palette.coastalInnerBevel,   // #5554D4
-  cliffLight: CFG.palette.cliffLight,                 // #5B49C6
-  cliffMid: CFG.palette.cliffMid,                     // #4C3AB2
-  cliffDark: CFG.palette.cliffDark,                   // #33248B
-  cliffDeep: CFG.palette.cliffDeepShadow,             // #23176E
+  topVariants: [
+    '#23176E',
+    '#261B72',
+    '#281D76',
+    '#2B2078',
+    '#2E227A',
+    '#251A71',
+  ],
+  coastalRimVoxel: '#B4B2FF',                         // Anillo perimetral lavanda brillante
+  coastalRimHi: '#F0EEFF',                            // Arista especular luminosa exterior
+  coastalInnerBevel: '#3D2F9E',                       // Bisel interior suave
+  cliffLight: '#4E3FB8',                              // Pared iluminada SO
+  cliffMid: '#3D2F9E',                                // Pared frontal S
+  cliffDark: '#2A1E7A',                               // Pared en sombra SE
+  cliffDeep: '#1B1259',                               // Sombra profunda Este / pliegues
   outerGlow1: [240, 238, 255, 220] as [number, number, number, number], // 1px borde lavanda-blanco
   outerGlow2: [180, 178, 255, 110] as [number, number, number, number], // 2px halo suave
 };

@@ -15,6 +15,7 @@
 
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { usePixelMapContext, ELEVATION_VOXELS } from './PixelMap';
+import { useOptionalDahliaStore } from './DahliaStore';
 import type { StateMetadata } from './types';
 import { cn } from '../../shared/utils';
 
@@ -85,7 +86,7 @@ function computeHoloLayout(
 
   // Dimensiones escaladas de la silueta voxel 3D manteniendo su proporción original
   const aspect = meta.height / meta.width;
-  const targetMaxDim = Math.min(290, Math.max(230, cw * 0.26));
+  const targetMaxDim = Math.min(330, Math.max(260, Math.round(cw * 0.30)));
   let w: number;
   let h: number;
   if (aspect >= 1) {
@@ -170,9 +171,15 @@ export interface StateHologramCardProps {
 
 export function StateHologramCard({ children, className }: StateHologramCardProps) {
   const { data, selectedStateId, selectState } = usePixelMapContext();
+  const dahliaStore = useOptionalDahliaStore();
 
   // El cono de luz y la proyección holográfica se activan ÚNICAMENTE al hacer clic (seleccionar un estado)
   const state = data && selectedStateId ? data.stateById.get(selectedStateId) ?? null : null;
+
+  const count = state && dahliaStore ? dahliaStore.getCount(state.id) : 0;
+  const level = state && dahliaStore ? dahliaStore.getLevel(state.id) : 0;
+  const flowerLevel = level > 0 ? level : 1;
+  const question = count === 0 ? '¿QUIERES SER LA PRIMERA?' : '¿YA ERES PARTE?';
 
   // Cierre accesible con tecla Escape
   useEffect(() => {
@@ -421,10 +428,12 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
             ))}
           </svg>
 
-          {/* CAPA 2 (z-20): ISLA VOXEL 3D AMPLIADA DEL ESTADO */}
+          {/* CAPA 2 (z-20): ISLA VOXEL 3D AMPLIADA DEL ESTADO (PROTOTIPO A) */}
           <div
             key={`island-${state.id}`}
             className="holo-island-enter absolute z-20 pointer-events-auto"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
             style={{
               left: layout.left,
               top: layout.top,
@@ -443,18 +452,85 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
               className="block w-full h-full object-contain [image-rendering:pixelated] select-none pointer-events-none"
             />
 
-            {children && (
-              <div
-                className="absolute flex items-center justify-center"
-                style={{
-                  left: `${stateMeta.visualCenter[0] * 100}%`,
-                  top: `${stateMeta.visualCenter[1] * 100}%`,
-                  transform: 'translate(-50%, -50%)',
-                }}
-              >
-                {children(state)}
-              </div>
-            )}
+            {/* Botón de cierre discreto ✕ */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                selectState(null);
+              }}
+              aria-label={`Cerrar detalle de ${state.nombre}`}
+              title="Cerrar (Esc)"
+              className="absolute top-2 right-2 z-30 w-6 h-6 rounded-full flex items-center justify-center text-white/70 hover:text-white bg-black/25 hover:bg-black/50 transition-colors cursor-pointer text-xs font-bold leading-none select-none"
+            >
+              ✕
+            </button>
+
+            {/* Contenido editorial grabado directamente sobre la cara superior de la isla */}
+            <div
+              className="absolute flex flex-col items-center justify-center text-center select-none pointer-events-auto"
+              style={{
+                left: `${stateMeta.visualCenter[0] * 100}%`,
+                top: `${stateMeta.visualCenter[1] * 100}%`,
+                transform: 'translate(-50%, -50%)',
+                width: 'max-content',
+                maxWidth: `${Math.round(layout.w * 0.90)}px`,
+              }}
+            >
+              {children ? (
+                children(state)
+              ) : (
+                <>
+                  {/* Línea 1: Título */}
+                  <h3 className="font-heading font-black text-sm tracking-widest text-white uppercase drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)] leading-tight">
+                    {state.nombre.toUpperCase()}
+                  </h3>
+
+                  {/* Línea 2: Dalia + Conteo */}
+                  <div className="flex items-center justify-center gap-2 mt-0.5">
+                    <img
+                      src={`/flowers/dahlia-${flowerLevel}.png`}
+                      alt=""
+                      aria-hidden="true"
+                      width={32}
+                      height={32}
+                      className="w-8 h-8 object-contain [image-rendering:pixelated] drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)] shrink-0"
+                    />
+                    <span className="text-3xl font-black text-white font-heading tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)] leading-none">
+                      {count.toLocaleString('es-MX')}
+                    </span>
+                  </div>
+
+                  {/* Línea 3: Bajada */}
+                  <p className="text-[#D8D4FF] text-[10.5px] font-semibold tracking-normal mt-0.5 whitespace-nowrap drop-shadow-sm leading-tight">
+                    Personas que ya dieron el primer paso
+                  </p>
+
+                  {/* Línea 4: Separador sutil */}
+                  <div className="w-28 h-px bg-[#B4B2FF]/40 my-1.5" />
+
+                  {/* Línea 5: Pregunta */}
+                  <p className="text-white font-bold text-[11px] tracking-wider uppercase font-heading drop-shadow-sm leading-tight">
+                    {question}
+                  </p>
+
+                  {/* Botón CTA */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const el = document.getElementById('modulos');
+                      if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }
+                    }}
+                    className="bg-dalia-600 hover:bg-dalia-700 active:scale-95 text-white font-bold text-[10px] py-1.5 px-3.5 shadow-md cursor-pointer rounded-full transition-transform mt-1 inline-flex items-center gap-1 select-none"
+                  >
+                    <span>Infórmate y prepárate para participar →</span>
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </>
       )}
