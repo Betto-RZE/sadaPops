@@ -80,3 +80,23 @@ export interface PixelMapProps {
   /** Ranura para montar capas secundarias y anclas (ej. Dalias en Hito H4) */
   children?: React.ReactNode;
 }
+
+/**
+ * Nombres comunes estandarizados para visualización ciudadana en mapas (convención INE).
+ * Sustituye títulos constitucionales solemnes (ej. "Veracruz de Ignacio de la Llave",
+ * "Coahuila de Zaragoza", "Michoacán de Ocampo") por nombres comunes directos y oficiales.
+ */
+export const COMMON_STATE_NAMES: Record<string, string> = {
+  '05': 'Coahuila',
+  '15': 'Estado de México',
+  '16': 'Michoacán',
+  '30': 'Veracruz',
+};
+
+/**
+ * Obtiene el nombre común estandarizado para un estado a partir de su ID o metadatos.
+ */
+export function getCommonStateName(state: { id: string; nombre: string } | null | undefined): string {
+  if (!state) return '';
+  return COMMON_STATE_NAMES[state.id] ?? state.nombre;
+}

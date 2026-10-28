@@ -9,10 +9,11 @@ import React, {
   useContext,
 } from 'react';
 import { useMapData } from './useMapData';
-import type {
-  PixelMapProps,
-  PixelMapAnchorProps,
-  PixelMapContextValue,
+import {
+  type PixelMapProps,
+  type PixelMapAnchorProps,
+  type PixelMapContextValue,
+  getCommonStateName,
 } from './types';
 import { cn } from '../../shared/utils';
 
@@ -926,7 +927,7 @@ export function PixelMap({
         >
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1C184A]/92 text-white text-[11px] font-bold tracking-wider uppercase shadow-[0_4px_12px_rgba(24,18,68,0.35)] border border-[#B4B2FF]/80 backdrop-blur-sm whitespace-nowrap">
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#B4B2FF] shadow-[0_0_6px_#B4B2FF]" />
-            <span>{hoveredState?.nombre}</span>
+            <span>{getCommonStateName(hoveredState)}</span>
           </div>
         </div>
 

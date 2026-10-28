@@ -10,6 +10,7 @@ import {
 } from './PixelMap';
 import { computeLevels, DAHLIA_SPRITE_META, type StateCountItem } from './computeLevels';
 import { useOptionalDahliaStore } from './DahliaStore';
+import { getCommonStateName } from './types';
 import { cn } from '../../shared/utils';
 
 export interface DahliaLayerProps {
@@ -195,7 +196,7 @@ export function DahliaLayer({
               {/* Sprite voxel de dalia prehorneado */}
               <img
                 src={meta.src}
-                alt={`Dalia nivel ${level} en ${st.nombre}`}
+                alt={`Dalia nivel ${level} en ${getCommonStateName(st)}`}
                 width={meta.width}
                 height={meta.height}
                 loading="eager"

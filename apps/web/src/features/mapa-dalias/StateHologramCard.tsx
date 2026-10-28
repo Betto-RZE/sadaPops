@@ -17,7 +17,7 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 're
 import { BarChart } from 'lucide-react';
 import { usePixelMapContext, ELEVATION_VOXELS } from './PixelMap';
 import { useOptionalDahliaStore } from './DahliaStore';
-import type { StateMetadata } from './types';
+import { type StateMetadata, getCommonStateName } from './types';
 import { getYouthTurnoutBenchmark } from './data/ineYouthTurnout2024';
 import { cn } from '../../shared/utils';
 
@@ -274,17 +274,6 @@ export interface StateHologramCardProps {
 }
 
 /**
- * Nombres comunes estandarizados para visualización ciudadana en mapas (convención INE).
- * Sustituye títulos constitucionales solemnes por nombres comunes directos.
- */
-const COMMON_STATE_NAMES: Record<string, string> = {
-  '05': 'Coahuila',
-  '15': 'Estado de México',
-  '16': 'Michoacán',
-  '30': 'Veracruz',
-};
-
-/**
  * Divisor decorativo con micro-flor pixelada central (fidelidad 1:1 con mock-card.jpg).
  */
 function PixelDivider() {
@@ -488,7 +477,7 @@ function PixelCardChassis({ children }: PixelCardChassisProps) {
         >
           {/* CAPA 4: Marco Interior de 1px (#3C2E7E) y Panel Medianoche (#130D32) */}
           <div
-            className="relative w-full px-2.5 pt-2 pb-2.5 flex flex-col items-center justify-center text-center"
+            className="relative w-full px-2.5 pt-2.5 pb-2.5 flex flex-col items-center justify-center text-center"
             style={{
               background: '#130D32',
               clipPath: CHASSIS_PANEL_CLIP,
@@ -499,11 +488,6 @@ function PixelCardChassis({ children }: PixelCardChassisProps) {
               className="absolute inset-[1px] pointer-events-none border border-[#3C2E7E]/80"
               style={{ clipPath: CHASSIS_PANEL_CLIP }}
             />
-
-            {/* Ranura Superior Hundida (Top Handle Slot) con Barra Luminosa */}
-            <div className="w-8 h-2 bg-[#090518] border border-[#3C2E7E] rounded-full mb-1 flex items-center justify-center px-0.5 shadow-inner">
-              <span className="w-4.5 h-0.5 bg-[#B5A8FF] rounded-full shadow-[0_0_5px_#B5A8FF] inline-block" />
-            </div>
 
             {children}
           </div>
@@ -569,7 +553,7 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
   const level = state && dahliaStore ? dahliaStore.getLevel(state.id) : 0;
   const flowerLevel = level > 0 ? level : 1;
   const question = count === 0 ? '¿QUIERES SER LA PRIMERA?' : '¿YA ERES PARTE?';
-  const displayName = state ? (COMMON_STATE_NAMES[state.id] ?? state.nombre) : '';
+  const displayName = state ? getCommonStateName(state) : '';
   const titleComp = state ? formatStateTitle(state.id, displayName) : null;
   const youthBenchmark = state ? getYouthTurnoutBenchmark(state.id) : null;
 
