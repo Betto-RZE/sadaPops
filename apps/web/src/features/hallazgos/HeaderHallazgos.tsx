@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowLeft } from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { EASE } from '@/shared/components/motion';
@@ -24,16 +25,16 @@ export function HeaderHallazgos({ items }: { items: BloomItem[] }) {
 
   return (
     <header className="w-full px-3 pb-3 pt-3 sm:px-6 sm:pb-4 sm:pt-4 md:px-12 md:pt-6">
-      <div className="relative mx-auto h-[560px] w-full max-w-[1200px] overflow-hidden rounded-2xl border border-[#EADFCF] bg-gradient-to-br from-[#FFFDF8] via-[#FBF6EE] to-[#F6E6EC] shadow-[0_16px_45px_-12px_rgba(28,37,65,0.16)] sm:h-[470px] sm:rounded-3xl md:h-[500px]">
-        {/* papel cuadriculado y luz suave */}
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{ backgroundImage: 'linear-gradient(rgba(184,58,120,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(184,58,120,.06) 1px,transparent 1px)', backgroundSize: '24px 24px', maskImage: 'linear-gradient(90deg,transparent 20%,#000 70%)' }}
+      <div className="relative mx-auto h-[560px] w-full max-w-[1200px] overflow-hidden rounded-2xl border border-[#EADFCF] bg-[#FFF9F5] shadow-[0_16px_45px_-12px_rgba(28,37,65,0.16)] sm:h-[470px] sm:rounded-3xl md:h-[500px]">
+        <Image
+          src="/hallazgos/hero-background.png"
+          alt=""
+          fill
+          priority
+          sizes="(max-width: 1200px) 100vw, 1200px"
+          className="pointer-events-none object-cover"
           aria-hidden="true"
         />
-        <div className="pointer-events-none absolute -right-24 top-1/2 h-[120%] w-[65%] -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.85),transparent_65%)]" aria-hidden="true" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-[#EFE3D3]" aria-hidden="true" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-16 h-1 bg-[#E6D8C3]" aria-hidden="true" />
 
         {PETALS.map((petal) => (
           <motion.span

@@ -36,7 +36,7 @@ export function AnimatedNumber({ value, decimals = 0 }: { value: number; decimal
 export function YearToggle({ value, onChange, layoutId }: { value: number; onChange: (year: number) => void; layoutId: string }) {
   const reduceMotion = useReducedMotion();
   return (
-    <div className="inline-grid grid-cols-2 gap-1 rounded-full border border-[#F5D5E4] bg-white p-1 shadow-[0_1px_2px_rgba(194,0,106,0.06)]" role="group" aria-label="Elegir elección">
+    <div className="inline-grid grid-cols-3 gap-1 rounded-2xl border border-[#F5D5E4] bg-white p-1 shadow-[0_1px_2px_rgba(194,0,106,0.06)] lg:grid-cols-6 lg:rounded-full" role="group" aria-label="Elegir elección">
       {STATE_YEARS.map((year) => {
         const isActive = value === year;
         return (
@@ -45,7 +45,7 @@ export function YearToggle({ value, onChange, layoutId }: { value: number; onCha
             type="button"
             onClick={() => onChange(year)}
             aria-pressed={isActive}
-            className={`relative rounded-full px-4 py-1.5 text-sm font-semibold tabular-nums transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C2006A] ${isActive ? 'text-white' : 'text-[#6B5A68] hover:text-[#C2006A]'}`}
+            className={`relative rounded-xl px-3 py-1.5 text-sm font-semibold tabular-nums transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C2006A] sm:rounded-full ${isActive ? 'text-white' : 'text-[#6B5A68] hover:text-[#C2006A]'}`}
           >
             {isActive && <motion.span layoutId={layoutId} className="absolute inset-0 rounded-full bg-[#E3007E] shadow-[0_4px_12px_-4px_rgba(227,0,126,0.6)]" transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 420, damping: 34 }} aria-hidden="true" />}
             <span className="relative z-10">{year}</span>

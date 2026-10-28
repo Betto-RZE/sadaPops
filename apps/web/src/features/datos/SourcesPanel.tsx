@@ -6,28 +6,28 @@ import { EASE, Reveal } from '@/shared/components/motion';
 
 const SOURCES = [
   {
-    title: 'Conteos Censales de Participación Ciudadana',
+    title: 'Conteos Censales · agregado y sexo',
     kind: 'Datos oficiales · INE',
     status: '#6E9A63',
-    detail: 'Marcas de los cuadernillos de la lista nominal, 2009–2024. No incluyen casillas especiales ni voto desde el extranjero.',
-    stories: ['Evolución', 'Edades', 'Hallazgos', 'Cifras de esta página'],
+    detail: 'Agregados derivados de las marcas en cuadernillos de la lista nominal. La serie federal cubre 2009, 2012, 2015, 2018, 2021 y 2024; el sexo no especificado y otros registros sin clasificación se reportan aparte.',
+    stories: ['Evolución', 'Edades', 'Hallazgos', 'Mujeres y hombres', 'Cifras de esta página'],
     href: 'https://portal.ine.mx/transparencia/datos-abiertos/visualizacion-datos/conteos-censales-participacion/',
   },
   {
-    title: 'Estudios muestrales de participación',
+    title: 'Conteos Censales · cifras por entidad',
     kind: 'Datos oficiales · INE',
     status: '#6E9A63',
-    detail: 'Estimaciones a partir de una muestra de secciones. Cada estudio publica sus propias categorías y no siempre son comparables entre años.',
-    stories: ['Mujeres y hombres', 'Urbano y rural'],
-    href: 'https://centralelectoral.ine.mx/2025/07/17/te-contamos-cual-fue-la-participacion-ciudadana-en-2024-en-las-secciones-urbana-y-rural/',
+    detail: 'Agregados de los archivos abiertos del INE para las 32 entidades y las seis elecciones. Participación = votaron ÷ (votaron + no votaron); los registros sin clasificación se muestran por separado.',
+    stories: ['Estados'],
+    href: 'https://portal.ine.mx/transparencia/datos-abiertos/visualizacion-datos/conteos-censales-participacion/',
   },
   {
-    title: 'Datos de demostración',
-    kind: 'Pendiente de verificar',
-    status: '#D1932F',
-    detail: 'Cifras de muestra para revisar el concepto visual. Se reemplazarán por agregados estatales de los conteos censales.',
-    stories: ['Estados'],
-    href: null,
+    title: 'Estudios por tipo de sección',
+    kind: 'Estudios oficiales · INE/IFE',
+    status: '#6E9A63',
+    detail: 'La historia urbano-rural combina estudios muestrales de 2009, 2015, 2018, 2021 y 2024 con el estudio censal de 2012. Cada año puede usar categorías y métodos distintos; solo se muestran los valores publicados por la fuente.',
+    stories: ['Urbano y rural'],
+    href: 'https://portal.ine.mx/estudios-censales-muestrales-participacion-ciudadana/',
   },
 ];
 
@@ -40,7 +40,7 @@ export function SourcesPanel() {
         <h2 id="sources-title" className="text-sm font-bold uppercase tracking-widest">Fuentes de información</h2>
       </div>
       <p className="max-w-2xl font-medium leading-relaxed text-brand-navy/70">
-        Cada historia indica de dónde vienen sus datos. Así puedes saber qué cifras son conteos oficiales, cuáles son estimaciones y cuáles siguen en revisión.
+        Las cifras de esta sección ya están vinculadas con fuentes del INE. Aquí distinguimos los conteos censales nacionales y estatales de los estudios muestrales, que tienen su propio universo y metodología.
       </p>
       <ul className="mt-7 grid gap-4 md:grid-cols-3">
         {SOURCES.map((source, index) => (
