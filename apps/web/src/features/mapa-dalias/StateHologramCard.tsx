@@ -65,6 +65,13 @@ export const OPTICAL_CENTER_OVERRIDES: Record<string, [number, number]> = {
   '30': [0.50, 0.50], // Veracruz (centro de la media luna)
 };
 
+/**
+ * Silueta Pixel-Art del chasis exterior (fidelidad 1:1 con mock-card.jpg).
+ * Escalonado de 3 peldaños en esquinas (chamfer) y muescas laterales a media altura.
+ */
+const CHASSIS_CLIP_PATH =
+  'polygon(0 8px, 2px 8px, 2px 6px, 4px 6px, 4px 4px, 6px 4px, 6px 2px, 8px 2px, 8px 0, calc(100% - 8px) 0, calc(100% - 8px) 2px, calc(100% - 6px) 2px, calc(100% - 6px) 4px, calc(100% - 4px) 4px, calc(100% - 4px) 6px, calc(100% - 2px) 6px, calc(100% - 2px) 8px, 100% 8px, 100% calc(50% - 8px), calc(100% - 3px) calc(50% - 6px), calc(100% - 3px) calc(50% + 6px), 100% calc(50% + 8px), 100% calc(100% - 8px), calc(100% - 2px) calc(100% - 8px), calc(100% - 2px) calc(100% - 6px), calc(100% - 4px) calc(100% - 6px), calc(100% - 4px) calc(100% - 4px), calc(100% - 6px) calc(100% - 4px), calc(100% - 6px) calc(100% - 2px), calc(100% - 8px) calc(100% - 2px), calc(100% - 8px) 100%, 8px 100%, 8px calc(100% - 2px), 6px calc(100% - 2px), 6px calc(100% - 4px), 4px calc(100% - 4px), 4px calc(100% - 6px), 2px calc(100% - 6px), 2px calc(100% - 8px), 0 calc(100% - 8px), 0 calc(50% + 8px), 3px calc(50% + 6px), 3px calc(50% - 6px), 0 calc(50% - 8px))';
+
 interface HoloLayout {
   left: number;
   top: number;
@@ -334,6 +341,13 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
             animation: none !important;
           }
         }
+        .font-pixel {
+          font-family: 'Silkscreen', 'Press Start 2P', monospace;
+        }
+        .text-voxel-3d {
+          color: #FFAEFC;
+          text-shadow: 0 2px 0 #6D168F, 0 4px 0 #430B5C;
+        }
       `}</style>
 
       {state && stateMeta && layout && beamGeometry && (
@@ -482,106 +496,132 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
               className="block w-full h-full object-contain [image-rendering:pixelated] select-none pointer-events-none"
             />
 
-            {/* Tarjeta Holográfica Pixel Art HUD con Glow */}
+            {/* Chasis Pixel-Art 3D (Fidelidad 1:1 a mock-card.jpg) */}
             <div
               className="absolute z-20 flex flex-col items-center select-none pointer-events-auto transition-all"
               style={{
                 left: `${opticalCenter[0] * 100}%`,
                 top: `${opticalCenter[1] * 100}%`,
                 transform: 'translate(-50%, -50%)',
-                width: '195px',
+                width: '230px',
                 filter:
-                  'drop-shadow(0 0 10px rgba(180, 178, 255, 0.45)) drop-shadow(0 14px 28px rgba(15, 10, 48, 0.85))',
+                  'drop-shadow(0 20px 40px rgba(10, 6, 32, 0.75)) drop-shadow(0 0 16px rgba(139, 122, 235, 0.3))',
               }}
             >
-              {/* Baliza luminosa superior conectada con el haz */}
-              <span className="w-2.5 h-1 bg-[#B4B2FF] mb-1.5 shadow-[0_0_8px_#B4B2FF] inline-block [image-rendering:pixelated]" />
-
-              {/* Borde exterior Pixel Art (1px con esquinas facetadas) */}
+              {/* Borde exterior biselado pixel-art (Layered Pixel Border) */}
               <div
-                className="w-full p-[1px] bg-[#B4B2FF]/60"
+                className="relative w-full p-[2.5px]"
                 style={{
-                  clipPath:
-                    'polygon(0 4px, 2px 4px, 2px 2px, 4px 2px, 4px 0, calc(100% - 4px) 0, calc(100% - 4px) 2px, calc(100% - 2px) 2px, calc(100% - 2px) 4px, 100% 4px, 100% calc(100% - 4px), calc(100% - 2px) calc(100% - 4px), calc(100% - 2px) calc(100% - 2px), calc(100% - 4px) calc(100% - 2px), calc(100% - 4px) 100%, 4px 100%, 4px calc(100% - 2px), 2px calc(100% - 2px), 2px calc(100% - 4px), 0 calc(100% - 4px))',
+                  background:
+                    'linear-gradient(135deg, #8B7AEB 0%, #6857C4 35%, #3D2D82 70%, #201550 100%)',
+                  clipPath: CHASSIS_CLIP_PATH,
                 }}
               >
-                {/* Cuerpo de la tarjeta con esquinas facetadas y fondo índigo profundo */}
+                {/* Cuerpo interior con fondo índigo medianoche (#151038) */}
                 <div
-                  className="w-full px-3 py-2.5 flex flex-col items-center justify-center text-center"
+                  className="relative w-full px-3.5 pt-3.5 pb-4 flex flex-col items-center justify-center text-center"
                   style={{
-                    background: 'rgba(20, 14, 60, 0.94)',
-                    backdropFilter: 'blur(8px)',
-                    WebkitBackdropFilter: 'blur(8px)',
-                    clipPath:
-                      'polygon(0 4px, 2px 4px, 2px 2px, 4px 2px, 4px 0, calc(100% - 4px) 0, calc(100% - 4px) 2px, calc(100% - 2px) 2px, calc(100% - 2px) 4px, 100% 4px, 100% calc(100% - 4px), calc(100% - 2px) calc(100% - 4px), calc(100% - 2px) calc(100% - 2px), calc(100% - 4px) calc(100% - 2px), calc(100% - 4px) 100%, 4px 100%, 4px calc(100% - 2px), 2px calc(100% - 2px), 2px calc(100% - 4px), 0 calc(100% - 4px))',
+                    background: '#151038',
+                    clipPath: CHASSIS_CLIP_PATH,
                   }}
                 >
+                  {/* Línea interior fina (1px Inset Border) */}
+                  <div
+                    className="absolute inset-[3px] pointer-events-none border border-[#342678]/80"
+                    style={{
+                      clipPath: CHASSIS_CLIP_PATH,
+                    }}
+                  />
+
+                  {/* Píldora / Handle superior centrado */}
+                  <span className="w-8 h-1 bg-[#AEA3F8]/80 rounded-full mb-1.5 shadow-[0_0_6px_#AEA3F8] inline-block [image-rendering:pixelated]" />
+
                   {children ? (
                     children(state)
                   ) : (
                     <>
                       {/* Línea 1: Título con nombre común INE */}
-                      <h3 className="font-heading font-black text-xs tracking-wider text-white uppercase drop-shadow leading-tight">
+                      <h3 className="font-pixel font-bold text-sm tracking-[0.16em] text-white uppercase drop-shadow-[0_2px_0_rgba(0,0,0,0.8)] leading-tight mt-0.5">
                         {displayName.toUpperCase()}
                       </h3>
 
                       {/* Línea 2: Bloque Oficial INE 2024 (Participación 18-29 años + Benchmark) */}
                       {youthBenchmark && (
                         <div
-                          className="mt-1.5 flex flex-col items-center justify-center select-none"
+                          className="mt-2 flex flex-col items-center justify-center select-none"
                           title={`Participación 18-29 años en la Elección Federal 2024: ${youthBenchmark.turnoutYouthPercent}% (${youthBenchmark.source})`}
                           aria-label={`En 2024, el ${youthBenchmark.turnoutYouthPercent}% de jóvenes entre 18 y 29 años votaron en ${displayName}, ${youthBenchmark.diffLabel}, según datos del INE`}
                         >
                           <div className="flex items-center gap-1.5 leading-none">
-                            <span className="w-1.5 h-1.5 bg-[#00E5FF] shadow-[0_0_5px_#00E5FF] inline-block shrink-0 [image-rendering:pixelated]" />
-                            <span className="text-[10px] font-bold text-white tracking-tight">
+                            <span className="w-2.5 h-2.5 bg-[#00E5FF] shadow-[0_0_6px_#00E5FF] inline-block shrink-0 [image-rendering:pixelated]" />
+                            <span className="text-[12.5px] font-bold text-white tracking-tight">
                               {youthBenchmark.turnoutYouthPercent}% votó en 2024
                             </span>
                           </div>
-                          <span className="text-[8px] font-medium text-[#C8C5FF] tracking-tight mt-0.5 leading-tight">
-                            18-29 años · {youthBenchmark.diffLabel}
+                          <span className="text-[9.5px] font-medium text-[#C5BEFF] tracking-tight mt-1 leading-tight">
+                            18–29 años · {youthBenchmark.diffLabel}
                           </span>
-                          <span className="text-[7px] font-semibold text-[#8E8BB8] tracking-widest uppercase mt-0.5 leading-none">
+                          <span className="text-[8px] font-semibold text-[#8F85C7] tracking-[0.2em] uppercase mt-0.5 leading-none">
                             · INE ·
                           </span>
                         </div>
                       )}
 
-                      {/* Micro-separador de píxeles discontinuo */}
-                      <div className="w-24 border-t border-dashed border-[#B4B2FF]/30 my-1.5" />
+                      {/* Divisor 1: Línea discontinua con micro-flor pixelada central ✤ */}
+                      <div className="flex items-center justify-center w-full my-2.5 px-2 opacity-85">
+                        <div className="flex-1 border-t border-dashed border-[#5A4B9E]" />
+                        <div className="mx-2 flex items-center justify-center shrink-0">
+                          <div className="relative w-2 h-2 flex items-center justify-center">
+                            <span className="absolute w-1.5 h-1.5 bg-[#AEA3F8] rotate-45 shadow-[0_0_4px_#AEA3F8]" />
+                            <span className="absolute w-2 h-0.5 bg-[#AEA3F8]" />
+                            <span className="absolute w-0.5 h-2 bg-[#AEA3F8]" />
+                          </div>
+                        </div>
+                        <div className="flex-1 border-t border-dashed border-[#5A4B9E]" />
+                      </div>
 
-                      {/* Bloque Cívico de Plataforma (Separado e Independiente) */}
-                      <div className="flex items-center justify-center gap-1.5">
+                      {/* Bloque Cívico de Plataforma (Dalia Voxel + Cifra 3D Rosa) */}
+                      <div className="flex items-center justify-center gap-3">
                         <img
                           src={`/flowers/dahlia-${flowerLevel}.png`}
                           alt=""
                           aria-hidden="true"
-                          width={26}
-                          height={26}
-                          className="w-6.5 h-6.5 object-contain [image-rendering:pixelated] drop-shadow shrink-0"
+                          width={36}
+                          height={36}
+                          className="w-9 h-9 object-contain [image-rendering:pixelated] drop-shadow shrink-0"
                         />
-                        <span className="text-2xl font-black text-white font-heading tracking-tight drop-shadow leading-none">
+                        <span className="font-pixel text-[28px] font-black tracking-wider text-voxel-3d leading-none select-none">
                           {count.toLocaleString('es-MX')}
                         </span>
                       </div>
 
-                      <p className="text-[#E0DEFF] text-[9.5px] font-semibold leading-tight text-center mt-1 drop-shadow">
+                      <p className="text-[#E5E0FF] text-[11px] font-bold leading-tight text-center mt-1.5 drop-shadow">
                         personas que se informaron
                       </p>
 
-                      <p className="text-[#9A96D6] text-[7.5px] font-normal italic leading-none text-center mt-0.5 drop-shadow">
+                      <p className="text-[#9A92D0] text-[8.5px] italic leading-none text-center mt-0.5 drop-shadow">
                         Registro en plataforma · No mide votos
                       </p>
 
-                      {/* Separador pixel sólido */}
-                      <div className="w-20 h-px bg-[#B4B2FF]/40 my-1.5" />
+                      {/* Divisor 2: Línea discontinua con micro-flor pixelada central ✤ */}
+                      <div className="flex items-center justify-center w-full my-2.5 px-2 opacity-85">
+                        <div className="flex-1 border-t border-dashed border-[#5A4B9E]" />
+                        <div className="mx-2 flex items-center justify-center shrink-0">
+                          <div className="relative w-2 h-2 flex items-center justify-center">
+                            <span className="absolute w-1.5 h-1.5 bg-[#AEA3F8] rotate-45 shadow-[0_0_4px_#AEA3F8]" />
+                            <span className="absolute w-2 h-0.5 bg-[#AEA3F8]" />
+                            <span className="absolute w-0.5 h-2 bg-[#AEA3F8]" />
+                          </div>
+                        </div>
+                        <div className="flex-1 border-t border-dashed border-[#5A4B9E]" />
+                      </div>
 
                       {/* Pregunta */}
-                      <p className="text-white font-bold text-[9.5px] tracking-wide uppercase font-heading drop-shadow leading-tight">
+                      <p className="text-white font-pixel font-bold text-[11px] tracking-[0.14em] uppercase drop-shadow-[0_2px_0_rgba(0,0,0,0.8)] leading-tight">
                         {question}
                       </p>
 
-                      {/* Botón CTA Voxel 3D Extruido con Micro-interacción Táctil */}
+                      {/* Botón CTA Cápsula 3D Magenta */}
                       <button
                         type="button"
                         onClick={(e) => {
@@ -591,11 +631,7 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
                             el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                           }
                         }}
-                        className="mt-2 inline-flex items-center justify-center gap-1.5 px-3.5 py-1 bg-[#E3007E] hover:bg-[#FF1988] text-white font-bold text-[9.5px] tracking-wide select-none cursor-pointer [image-rendering:pixelated] border-t border-white/40 border-b-[3px] border-b-[#8A0047] border-x border-x-[#A00052] active:border-b-0 active:translate-y-[3px] transition-all shadow-md leading-tight whitespace-nowrap"
-                        style={{
-                          clipPath:
-                            'polygon(0 2px, 2px 2px, 2px 0, calc(100% - 2px) 0, calc(100% - 2px) 2px, 100% 2px, 100% calc(100% - 2px), calc(100% - 2px) calc(100% - 2px), calc(100% - 2px) 100%, 2px 100%, 2px calc(100% - 2px), 0 calc(100% - 2px))',
-                        }}
+                        className="mt-2.5 w-[90%] max-w-[200px] py-1.5 px-3 bg-[#E5007E] hover:bg-[#FF1988] text-white font-heading font-bold text-[10.5px] tracking-wide rounded-full border-t border-white/40 border-b-[4px] border-b-[#8A004C] border-x border-x-[#A00052] shadow-[0_4px_14px_rgba(229,0,126,0.35)] active:border-b-0 active:translate-y-[4px] active:shadow-none transition-all cursor-pointer inline-flex items-center justify-center gap-1.5 select-none whitespace-nowrap"
                       >
                         <span>Infórmate y participa →</span>
                       </button>

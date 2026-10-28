@@ -467,6 +467,17 @@ hasta cumplir los del actual.
 
 ## 13. Registro de cambios
 
+### v3.8 (28 oct 2026)
+- **Hito H5 (Fidelidad Total 1:1 a `mock-card.jpg` en la Tarjeta de Estado):**
+  - `apps/web/src/features/mapa-dalias/StateHologramCard.tsx`:
+    - Chasis pixel-art 3D con degradado lavanda/índigo (`#8B7AEB`..`#3D2D82`), esquinas con chamfer de 3 peldaños, muescas laterales a media altura y píldora/handle superior centrado.
+    - Encuadre interior con línea fina de 1px (`#342678`) y fondo índigo medianoche `#151038`.
+    - Título del estado y pregunta en tipografía `Silkscreen` (`font-pixel`) con sombra drop-shadow.
+    - Divisores idénticos a la referencia: líneas punteadas `#5A4B9E` con micro-flor/rombo pixelado central `✤` en `#AEA3F8`.
+    - Dalias voxel nativas conservadas (`dahlia-{1..3}.png`) emparejadas con el número de registro en **rosa 3D extruido** (`#FFAEFC` con sombras moradas `#6D168F` y `#430B5C`).
+    - Botón CTA en **cápsula 3D magenta** (`#E5007E`) con acantilado extruido de 4px (`#8A004C`) y respuesta táctil.
+  - Verificado con `npx tsc --noEmit` (0 errores) y compilación estática de producción de Next.js (`npm run build`, 9/9 rutas estáticas).
+
 ### v3.7 (28 oct 2026)
 - **Hito H5 (Tarjeta Pixel-Box 90° y Botón Voxel 3D Extruido):**
   - `apps/web/src/features/mapa-dalias/StateHologramCard.tsx`:
