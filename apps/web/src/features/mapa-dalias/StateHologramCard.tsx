@@ -315,7 +315,9 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
 
   return (
     <div ref={rootRef} className={cn('absolute inset-0 pointer-events-none z-[70]', className)}>
-      <style>{`
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
         @keyframes holo-island-in {
           0% {
             opacity: 0;
@@ -341,14 +343,9 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
             animation: none !important;
           }
         }
-        .font-pixel {
-          font-family: 'Silkscreen', 'Press Start 2P', monospace;
-        }
-        .text-voxel-3d {
-          color: #FFAEFC;
-          text-shadow: 0 2px 0 #6D168F, 0 4px 0 #430B5C;
-        }
-      `}</style>
+      `,
+        }}
+      />
 
       {state && stateMeta && layout && beamGeometry && (
         <>

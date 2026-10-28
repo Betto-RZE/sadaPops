@@ -23,11 +23,20 @@ body {
 }
 
 .font-pixel {
-  font-family: 'Pixelify Sans', 'Press Start 2P', 'Silkscreen', monospace, sans-serif;
+  font-family: 'Silkscreen', 'Pixelify Sans', 'Press Start 2P', monospace, sans-serif;
 }
 
 .font-press-start {
   font-family: 'Press Start 2P', monospace, sans-serif;
+}
+
+.font-silkscreen {
+  font-family: 'Silkscreen', 'Press Start 2P', monospace, sans-serif;
+}
+
+.text-voxel-3d {
+  color: #FFAEFC;
+  text-shadow: 0 2px 0 #6D168F, 0 4px 0 #430B5C;
 }
 
 /* Subtle utilities */
