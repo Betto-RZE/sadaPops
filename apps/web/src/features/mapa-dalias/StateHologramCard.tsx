@@ -17,6 +17,7 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 're
 import { BarChart } from 'lucide-react';
 import { usePixelMapContext, ELEVATION_VOXELS } from './PixelMap';
 import { useOptionalDahliaStore } from './DahliaStore';
+import { DAHLIA_SPRITE_META } from './computeLevels';
 import { type StateMetadata, getCommonStateName } from './types';
 import { getYouthTurnoutBenchmark } from './data/ineYouthTurnout2024';
 import { cn } from '../../shared/utils';
@@ -551,7 +552,8 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
 
   const count = state && dahliaStore ? dahliaStore.getCount(state.id) : 0;
   const level = state && dahliaStore ? dahliaStore.getLevel(state.id) : 0;
-  const flowerLevel = level > 0 ? level : 1;
+  const flowerLevel = ((level > 0 ? level : 1) as 1 | 2 | 3 | 4);
+  const flowerMeta = DAHLIA_SPRITE_META[flowerLevel];
   const question = count === 0 ? '¿QUIERES SER LA PRIMERA?' : '¿YA ERES PARTE?';
   const displayName = state ? getCommonStateName(state) : '';
   const titleComp = state ? formatStateTitle(state.id, displayName) : null;
@@ -901,8 +903,8 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
                     {/* Bloque Cívico de Plataforma (Dalia Voxel + Cifra 3D Rosa en Matriz) */}
                     <div className="flex items-center justify-center gap-2">
                       <img
-                        src={`/flowers/dahlia-${flowerLevel}.png`}
-                        alt=""
+                        src={flowerMeta.src}
+                        alt={`Dalia nivel ${flowerLevel} (${flowerMeta.label})`}
                         aria-hidden="true"
                         width={28}
                         height={28}

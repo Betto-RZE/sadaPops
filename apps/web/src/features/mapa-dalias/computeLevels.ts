@@ -1,10 +1,10 @@
 /**
- * computeLevels.ts — Cálculo puro de jerarquías discretas de dalia (0..3).
+ * computeLevels.ts — Cálculo puro de jerarquías discretas de dalia (0..4).
  *
  * Reglas acordadas (ROADMAP_MAPA_DALIAS.md y GEMINI.md):
  *   - Nivel 0: 0 usuarios/registros (sin flor).
- *   - Niveles 1, 2 y 3 (flor chica, mediana y grande):
- *     Se calculan mediante terciles sobre los estados con usuarios > 0.
+ *   - Niveles 1, 2, 3 y 4 (brote, flor joven, flor abierta y plena floración):
+ *     Se calculan mediante cuartiles sobre los estados con usuarios > 0.
  *     Esto garantiza que el mapa siempre muestre diversidad visual balanceada
  *     independientemente de si la muestra de usuarios es pequeña o masiva.
  */
@@ -14,10 +14,10 @@ export interface StateCountItem {
   usuarios: number;
 }
 
-export type DahliaLevel = 0 | 1 | 2 | 3;
+export type DahliaLevel = 0 | 1 | 2 | 3 | 4;
 
 /**
- * Calcula los niveles de dalia (0, 1, 2, 3) para un conjunto de conteos por estado.
+ * Calcula los niveles de dalia (0, 1, 2, 3, 4) para un conjunto de conteos por estado.
  * Devuelve un Map<string, DahliaLevel> indexado por la clave de entidad ("01".."32").
  */
 export function computeLevels(items: StateCountItem[]): Map<string, DahliaLevel> {
@@ -36,9 +36,9 @@ export function computeLevels(items: StateCountItem[]): Map<string, DahliaLevel>
   const n = active.length;
   if (n === 0) return result;
 
-  // Casos pequeños:
+  // Casos pequeños para muestras iniciales:
   if (n === 1) {
-    result.set(active[0].id, 2); // Un solo estado activo recibe nivel medio
+    result.set(active[0].id, 2); // Un solo estado activo recibe nivel medio-bajo
     return result;
   }
   if (n === 2) {
@@ -46,22 +46,32 @@ export function computeLevels(items: StateCountItem[]): Map<string, DahliaLevel>
     result.set(active[1].id, 3);
     return result;
   }
+  if (n === 3) {
+    result.set(active[0].id, 1);
+    result.set(active[1].id, 2);
+    result.set(active[2].id, 4);
+    return result;
+  }
 
-  // 2. Umbrales por terciles:
-  // Tercil 1: active[0 .. t1-1] -> Nivel 1
-  // Tercil 2: active[t1 .. t2-1] -> Nivel 2
-  // Tercil 3: active[t2 .. n-1]  -> Nivel 3
-  const t1 = Math.floor(n / 3);
-  const t2 = Math.floor((2 * n) / 3);
+  // 2. Umbrales por cuartiles (Q1, Q2, Q3, Q4):
+  // Cuartil 1: active[0 .. q1-1] -> Nivel 1 (Brote)
+  // Cuartil 2: active[q1 .. q2-1] -> Nivel 2 (Flor Joven)
+  // Cuartil 3: active[q2 .. q3-1] -> Nivel 3 (Flor Abierta)
+  // Cuartil 4: active[q3 .. n-1]  -> Nivel 4 (Plena Floración)
+  const q1 = Math.floor(n / 4);
+  const q2 = Math.floor((2 * n) / 4);
+  const q3 = Math.floor((3 * n) / 4);
 
   for (let i = 0; i < n; i++) {
     const id = active[i].id;
-    if (i < t1) {
+    if (i < q1) {
       result.set(id, 1);
-    } else if (i < t2) {
+    } else if (i < q2) {
       result.set(id, 2);
-    } else {
+    } else if (i < q3) {
       result.set(id, 3);
+    } else {
+      result.set(id, 4);
     }
   }
 
@@ -69,13 +79,14 @@ export function computeLevels(items: StateCountItem[]): Map<string, DahliaLevel>
 }
 
 /**
- * Configuración de dimensiones y anclas relativas de los 3 sprites de dalias
- * (`apps/web/public/flowers/dahlia-{1,2,3}.png`).
+ * Configuración de dimensiones y anclas relativas de los sprites de dalias
+ * (`apps/web/public/flowers/dahlia-{1,2,3,4}.png`).
  *
- * El ancho del sprite en el mapa interactivo se calcula como:
- * `(logicalMapWidth / 660) * 100%`
+ * El ancho del sprite en el mapa interactivo se calcula como porcentaje
+ * respecto al ancho del espacio lógico del mapa (660px):
+ * `(logicalWidth / 660) * 100%`
  */
-export const DAHLIA_SPRITE_META: Record<1 | 2 | 3, {
+export const DAHLIA_SPRITE_META: Record<1 | 2 | 3 | 4, {
   src: string;
   width: number;
   height: number;
@@ -85,32 +96,67 @@ export const DAHLIA_SPRITE_META: Record<1 | 2 | 3, {
   /** Centro del ancla de apoyo respecto al sprite en porcentaje */
   anchorPercentX: number;
   anchorPercentY: number;
+  /** Nombre descriptivo del nivel de floración */
+  label: string;
 }> = {
   1: {
     src: '/flowers/dahlia-1.png',
     width: 36,
     height: 42,
-    logicalWidth: 18,
-    logicalHeight: 21,
+    logicalWidth: 13,
+    logicalHeight: 15,
     anchorPercentX: 50.0,
     anchorPercentY: 57.0,
+    label: 'Brote',
   },
   2: {
+    src: '/flowers/dahlia-1.png',
+    width: 36,
+    height: 42,
+    logicalWidth: 19,
+    logicalHeight: 22,
+    anchorPercentX: 50.0,
+    anchorPercentY: 57.0,
+    label: 'Flor joven',
+  },
+  3: {
     src: '/flowers/dahlia-2.png',
     width: 54,
     height: 57,
-    logicalWidth: 27,
-    logicalHeight: 28.5,
+    logicalWidth: 26,
+    logicalHeight: 27.5,
     anchorPercentX: 50.0,
     anchorPercentY: 58.0,
+    label: 'Flor abierta',
   },
-  3: {
-    src: '/flowers/dahlia-3.png',
+  4: {
+    src: '/flowers/dahlia-4.png',
     width: 76,
     height: 76,
-    logicalWidth: 38,
-    logicalHeight: 38,
+    logicalWidth: 33,
+    logicalHeight: 33,
     anchorPercentX: 50.0,
     anchorPercentY: 58.0,
+    label: 'Plena floración',
   },
 };
+
+/**
+ * Claves de estados con superficie reducida o aglomeración en zona centro
+ * (CDMX, Morelos, Tlaxcala, Colima, Aguascalientes).
+ */
+export const DENSE_STATE_IDS = new Set<string>([
+  '01', // Aguascalientes
+  '06', // Colima
+  '09', // Ciudad de México
+  '17', // Morelos
+  '29', // Tlaxcala
+]);
+
+/**
+ * Multiplicador de escala para estados con superficie compacta o alta densidad de vecinos.
+ * Reduce el tamaño visual un 20% para evitar solapamientos entre estados vecinos.
+ */
+export function getStateScaleFactor(stateId: string): number {
+  return DENSE_STATE_IDS.has(stateId) ? 0.80 : 1.0;
+}

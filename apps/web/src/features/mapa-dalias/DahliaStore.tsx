@@ -49,7 +49,7 @@ export const DEMO_SEED_COUNTS: Readonly<Record<string, number>> = {
 export interface DahliaStoreValue {
   /** Conteo de dalias (personas registradas) por estado, siempre con las 32 claves */
   counts: Readonly<Record<string, number>>;
-  /** Nivel de flor 0..3 por estado (terciles, `computeLevels`) */
+  /** Nivel de flor 0..4 por estado (cuartiles, `computeLevels`) */
   levels: ReadonlyMap<string, DahliaLevel>;
   /** Lista en el formato que consume `computeLevels` / `DahliaLayer` */
   items: StateCountItem[];

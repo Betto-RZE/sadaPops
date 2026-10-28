@@ -11,7 +11,12 @@ export {
 } from './DahliaStore';
 export type { DahliaStoreValue, DahliaStoreProviderProps } from './DahliaStore';
 export { FloatingPetals } from './FloatingPetals';
-export { computeLevels, DAHLIA_SPRITE_META } from './computeLevels';
+export {
+  computeLevels,
+  DAHLIA_SPRITE_META,
+  DENSE_STATE_IDS,
+  getStateScaleFactor,
+} from './computeLevels';
 export type { DahliaLevel, StateCountItem } from './computeLevels';
 export { useMapData } from './useMapData';
 export type {

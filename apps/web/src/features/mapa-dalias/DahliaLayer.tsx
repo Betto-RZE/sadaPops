@@ -8,7 +8,13 @@ import {
   MAP_INTRO_STAGGER_MS,
   MAP_STATE_ANIM_MS,
 } from './PixelMap';
-import { computeLevels, DAHLIA_SPRITE_META, type StateCountItem } from './computeLevels';
+import {
+  computeLevels,
+  DAHLIA_SPRITE_META,
+  getStateScaleFactor,
+  type DahliaLevel,
+  type StateCountItem,
+} from './computeLevels';
 import { useOptionalDahliaStore } from './DahliaStore';
 import { getCommonStateName } from './types';
 import { cn } from '../../shared/utils';
@@ -123,7 +129,7 @@ export function DahliaLayer({
 
       return {
         state: st,
-        level: (levelsMap.get(st.id) ?? 1) as 1 | 2 | 3,
+        level: (levelsMap.get(st.id) ?? 1) as 1 | 2 | 3 | 4,
         delaySec: Number(totalBloomDelaySec.toFixed(3)),
       };
     });
@@ -178,6 +184,15 @@ export function DahliaLayer({
 
       {flowerStatesWithDelay.map(({ state: st, level, delaySec }) => {
         const meta = DAHLIA_SPRITE_META[level];
+        const scaleFactor = getStateScaleFactor(st.id);
+        const effectiveLogicalW = meta.logicalWidth * scaleFactor;
+        const widthPercent = (effectiveLogicalW / 660) * 100;
+
+        // Ancho acotado proporcionalmente al contenedor del mapa:
+        // - En mobile (ej. 340px de ancho): nivel 1 es ~11px, nivel 4 es ~21px
+        // - En desktop (ej. 1000px de ancho): nivel 1 es ~20px, nivel 4 es ~50px
+        const minPx = Math.max(10, Math.round(meta.logicalWidth * 0.72 * scaleFactor));
+        const maxPx = Math.round(meta.logicalWidth * 1.70 * scaleFactor);
 
         return (
           <PixelMapAnchor key={st.id} stateId={st.id}>
@@ -187,16 +202,15 @@ export function DahliaLayer({
                 hasBloomed ? 'dahlia-bloom' : 'opacity-0 scale-0'
               )}
               style={{
-                width: `${meta.width}px`,
-                maxWidth: `${meta.width}px`,
+                width: `clamp(${minPx}px, ${widthPercent.toFixed(3)}cqw, ${maxPx}px)`,
                 animationDelay: hasBloomed ? `${delaySec}s` : '0s',
-                transformOrigin: '50% 58%',
+                transformOrigin: `${meta.anchorPercentX}% ${meta.anchorPercentY}%`,
               }}
             >
               {/* Sprite voxel de dalia prehorneado */}
               <img
                 src={meta.src}
-                alt={`Dalia nivel ${level} en ${getCommonStateName(st)}`}
+                alt={`Dalia nivel ${level} (${meta.label}) en ${getCommonStateName(st)}`}
                 width={meta.width}
                 height={meta.height}
                 loading="eager"

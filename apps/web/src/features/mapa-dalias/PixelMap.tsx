@@ -868,10 +868,10 @@ export function PixelMap({
         role="region"
         aria-label="Mapa isométrico interactivo de México"
         className={cn(
-          'relative w-full max-w-5xl mx-auto select-none overflow-visible bg-transparent group',
+          'relative w-full max-w-5xl mx-auto select-none overflow-visible bg-transparent group @container',
           className
         )}
-        style={{ aspectRatio }}
+        style={{ aspectRatio, containerType: 'inline-size' }}
       >
         {/* Capa 1: Sombra de contacto suave sobre el fondo */}
         <img
