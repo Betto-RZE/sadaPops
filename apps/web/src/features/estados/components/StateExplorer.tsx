@@ -19,7 +19,8 @@ export function StateExplorer({ state, onStateChange, year, onYearChange }: Stat
   const metrics = state.data[year];
   const rate = participation(metrics);
   const classified = metrics.voted + metrics.notVoted;
-  const otherYear = STATE_YEARS.find((item) => item !== year)!;
+  const yearIndex = STATE_YEARS.indexOf(year as (typeof STATE_YEARS)[number]);
+  const otherYear = STATE_YEARS[yearIndex === 0 ? 1 : yearIndex - 1];
   const deltaRounded = Number((rate - participation(state.data[otherYear])).toFixed(1));
   const trend = deltaRounded > 0 ? 'up' : deltaRounded < 0 ? 'down' : 'flat';
   const TrendIcon = trend === 'up' ? ArrowUpRight : trend === 'down' ? ArrowDownRight : Minus;
@@ -67,7 +68,7 @@ export function StateExplorer({ state, onStateChange, year, onYearChange }: Stat
             </AnimatePresence>
           </h2>
 
-          <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-end">
+          <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
             <div className="sm:w-60"><StateSelect value={state} options={STATE_SAMPLES} onChange={onStateChange} label="Estado" /></div>
             <div>
               <span className="mb-2 block text-xs font-semibold uppercase tracking-[.14em] text-[#6B5A68]">Elección</span>
