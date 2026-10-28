@@ -94,6 +94,8 @@ interface HoloLayout {
   top: number;
   w: number;
   h: number;
+  islandOffsetPx: number;
+  cardOffsetPx: number;
   baseLeft: [number, number];
   baseRight: [number, number];
   baseCenter: [number, number];
@@ -182,18 +184,41 @@ function computeHoloLayout(
     cx = goRight ? ax + dx : ax - dx;
   }
 
-  // Clamping horizontal seguro para la tarjeta dentro del contenedor
+  // Propuesta A: Desfase Lateral Dinámico para siluetas estrechas o compactas (< 220px)
+  // En estados angostos (BC, Sinaloa, CDMX, etc.) la tarjeta de 168px taparía la silueta.
+  // Desplazamos la silueta a la izquierda (-45px) y la tarjeta a la derecha (+60px) hacia el espacio libre.
+  const isNarrow = w < 220;
+  let islandOffsetPx = 0;
+  let cardOffsetPx = 0;
+
+  if (isNarrow) {
+    const hasSpaceRight = cx + CARD_HALF_W + 65 <= cw - 16;
+    if (hasSpaceRight) {
+      cardOffsetPx = 60;
+      islandOffsetPx = -45;
+    } else {
+      cardOffsetPx = -60;
+      islandOffsetPx = 45;
+    }
+  }
+
+  // Clamping horizontal seguro para la tarjeta dentro del contenedor considerando el desfase
+  const effectiveCardCx = cx + cardOffsetPx;
   const padX = Math.max(16, cw * 0.02);
-  const minCenterX = padX + CARD_HALF_W;
-  const maxCenterX = cw - padX - CARD_HALF_W;
-  cx = Math.round(Math.min(maxCenterX, Math.max(minCenterX, cx)));
+  const minCardCx = padX + CARD_HALF_W;
+  const maxCardCx = cw - padX - CARD_HALF_W;
+  const clampedCardCx = Math.round(Math.min(maxCardCx, Math.max(minCardCx, effectiveCardCx)));
+  // Ajuste compensatorio a cx si la card tocó el borde
+  cx += clampedCardCx - effectiveCardCx;
+
   cy = Math.round(cy);
 
-  // Derivar las coordenadas de la silueta voxel 3D a partir del centro calibrado
-  const left = Math.round(cx - opticalCenter[0] * w);
+  // Derivar las coordenadas de la silueta voxel 3D a partir del centro de la isla
+  const islandCx = Math.round(cx + islandOffsetPx);
+  const left = Math.round(islandCx - opticalCenter[0] * w);
   const top = Math.round(cy - opticalCenter[1] * h);
 
-  const dxFinal = cx - ax;
+  const dxFinal = islandCx - ax;
   const dyFinal = cy - ay;
   const dist = Math.hypot(dxFinal, dyFinal) || 1;
   const ux = dxFinal / dist;
@@ -208,7 +233,7 @@ function computeHoloLayout(
   const rTop = 38;
 
   // El haz de luz llega a la base de la silueta voxel 3D
-  const tx = cx - ux * 8;
+  const tx = islandCx - ux * 8;
   const ty = cy - uy * 8;
 
   const baseLeft: [number, number] = [ax - nx * rBase, ay - ny * rBase];
@@ -221,6 +246,8 @@ function computeHoloLayout(
     top,
     w,
     h,
+    islandOffsetPx,
+    cardOffsetPx,
     baseLeft,
     baseRight,
     baseCenter: [ax, ay],
@@ -303,6 +330,94 @@ function CyanVoxelCube() {
       {/* Arista de luz especular superior-izquierda */}
       <rect x="1" y="1" width="7" height="1.5" fill="#A6F7FF" />
       <rect x="1" y="1" width="1.5" height="7" fill="#A6F7FF" />
+    </svg>
+  );
+}
+
+/**
+ * Matriz de glifos bitmap para el contador numérico voxel 3D (fidelidad 1:1 con mock-card.jpg).
+ */
+const DIGIT_BITMAPS: Record<string, { w: number; lines: string[] }> = {
+  '0': { w: 5, lines: ['11111', '10001', '10001', '10001', '10001', '10001', '10001', '10001', '11111'] },
+  '1': { w: 4, lines: ['0110', '1110', '0110', '0110', '0110', '0110', '0110', '0110', '1111'] },
+  '2': { w: 5, lines: ['11111', '00001', '00001', '00001', '11111', '10000', '10000', '10000', '11111'] },
+  '3': { w: 5, lines: ['11111', '00001', '00001', '00001', '11111', '00001', '00001', '00001', '11111'] },
+  '4': { w: 5, lines: ['10001', '10001', '10001', '10001', '11111', '00001', '00001', '00001', '00001'] },
+  '5': { w: 5, lines: ['11111', '10000', '10000', '10000', '11111', '00001', '00001', '00001', '11111'] },
+  '6': { w: 5, lines: ['11111', '10000', '10000', '10000', '11111', '10001', '10001', '10001', '11111'] },
+  '7': { w: 5, lines: ['11111', '00001', '00001', '00010', '00010', '00100', '00100', '01000', '01000'] },
+  '8': { w: 5, lines: ['11111', '10001', '10001', '10001', '11111', '10001', '10001', '10001', '11111'] },
+  '9': { w: 5, lines: ['11111', '10001', '10001', '10001', '11111', '00001', '00001', '00001', '11111'] },
+  ',': { w: 2, lines: ['00', '00', '00', '00', '00', '00', '00', '11', '10'] },
+  '.': { w: 2, lines: ['00', '00', '00', '00', '00', '00', '00', '11', '11'] },
+};
+
+/**
+ * Contador numérico voxel 3D con extrusión isométrica púrpura y luz especular frontal.
+ */
+function VoxelCounter3D({ value }: { value: number }) {
+  const str = value.toLocaleString('es-MX');
+  const P = 2; // Tamaño de bloque en px
+  const GAP = 2; // Separación entre dígitos
+
+  let totalW = 0;
+  for (let i = 0; i < str.length; i++) {
+    const ch = str[i];
+    const data = DIGIT_BITMAPS[ch] ?? DIGIT_BITMAPS['0'];
+    totalW += data.w * P + (i < str.length - 1 ? GAP : 0);
+  }
+  const svgW = totalW + 3;
+  const svgH = 22;
+
+  let curX = 0;
+  const extrusionRects: React.ReactNode[] = [];
+  const faceRects: React.ReactNode[] = [];
+  const highlightRects: React.ReactNode[] = [];
+
+  for (let idx = 0; idx < str.length; idx++) {
+    const ch = str[idx];
+    const glyph = DIGIT_BITMAPS[ch] ?? DIGIT_BITMAPS['0'];
+    for (let r = 0; r < glyph.lines.length; r++) {
+      const row = glyph.lines[r];
+      for (let c = 0; c < row.length; c++) {
+        if (row[c] === '1') {
+          const px = curX + c * P;
+          const py = r * P;
+          const key = `${idx}-${r}-${c}`;
+          // Capa 1 y 2: Extrusión 3D inferior-derecha
+          extrusionRects.push(
+            <rect key={`ex1-${key}`} x={px + 1} y={py + 2} width={P} height={P} fill="#6D168F" />,
+            <rect key={`ex2-${key}`} x={px + 2} y={py + 3} width={P} height={P} fill="#430B5C" />
+          );
+          // Capa 3: Cara frontal rosa brillante
+          faceRects.push(
+            <rect key={`fc-${key}`} x={px} y={py} width={P} height={P} fill="#FFAEFC" />
+          );
+          // Capa 4: Luz especular superior-izquierda
+          if (r === 0 || row[c - 1] !== '1') {
+            highlightRects.push(
+              <rect key={`hl-${key}`} x={px} y={py} width={P * 0.7} height={P * 0.7} fill="#FFFFFF" opacity={0.65} />
+            );
+          }
+        }
+      }
+    }
+    curX += glyph.w * P + GAP;
+  }
+
+  return (
+    <svg
+      width={svgW}
+      height={svgH}
+      viewBox={`0 0 ${svgW} ${svgH}`}
+      className="shrink-0 [image-rendering:pixelated] select-none"
+      shapeRendering="crispEdges"
+      role="img"
+      aria-label={str}
+    >
+      <g>{extrusionRects}</g>
+      <g>{faceRects}</g>
+      <g>{highlightRects}</g>
     </svg>
   );
 }
@@ -672,7 +787,10 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
               style={{
                 left: `${opticalCenter[0] * 100}%`,
                 top: `${opticalCenter[1] * 100}%`,
-                transform: 'translate(-50%, -50%)',
+                transform:
+                  layout.cardOffsetPx !== 0
+                    ? `translate(calc(-50% + ${layout.cardOffsetPx - layout.islandOffsetPx}px), -50%)`
+                    : 'translate(-50%, -50%)',
               }}
             >
               <PixelCardChassis>
@@ -710,7 +828,7 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
                     {/* Divisor 1: Línea discontinua con micro-flor pixelada central ✤ */}
                     <PixelDivider />
 
-                    {/* Bloque Cívico de Plataforma (Dalia Voxel + Cifra 3D Rosa) */}
+                    {/* Bloque Cívico de Plataforma (Dalia Voxel + Cifra 3D Rosa en Matriz) */}
                     <div className="flex items-center justify-center gap-2">
                       <img
                         src={`/flowers/dahlia-${flowerLevel}.png`}
@@ -720,9 +838,7 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
                         height={28}
                         className="w-7 h-7 object-contain [image-rendering:pixelated] drop-shadow shrink-0"
                       />
-                      <span className="font-pixel text-[22px] font-black tracking-wide text-voxel-3d leading-none select-none">
-                        {count.toLocaleString('es-MX')}
-                      </span>
+                      <VoxelCounter3D value={count} />
                     </div>
 
                     <p className="text-[#E5E0FF] text-[9.5px] font-bold leading-tight text-center mt-1 drop-shadow">
@@ -737,7 +853,7 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
                     <PixelDivider />
 
                     {/* Pregunta */}
-                    <p className="text-white font-pixel font-bold text-[9.5px] tracking-[0.12em] uppercase drop-shadow-[0_2px_0_rgba(0,0,0,0.8)] leading-tight">
+                    <p className="text-white font-heading font-bold text-[9.5px] tracking-wide uppercase drop-shadow-[0_2px_0_rgba(0,0,0,0.8)] leading-tight">
                       {question}
                     </p>
 
