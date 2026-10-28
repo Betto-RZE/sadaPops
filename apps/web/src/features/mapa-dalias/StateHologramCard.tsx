@@ -169,6 +169,17 @@ export interface StateHologramCardProps {
   className?: string;
 }
 
+/**
+ * Nombres comunes estandarizados para visualización ciudadana en mapas (convención INE).
+ * Sustituye títulos constitucionales solemnes por nombres comunes directos.
+ */
+const COMMON_STATE_NAMES: Record<string, string> = {
+  '05': 'Coahuila',
+  '15': 'Estado de México',
+  '16': 'Michoacán',
+  '30': 'Veracruz',
+};
+
 export function StateHologramCard({ children, className }: StateHologramCardProps) {
   const { data, selectedStateId, selectState } = usePixelMapContext();
   const dahliaStore = useOptionalDahliaStore();
@@ -180,6 +191,7 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
   const level = state && dahliaStore ? dahliaStore.getLevel(state.id) : 0;
   const flowerLevel = level > 0 ? level : 1;
   const question = count === 0 ? '¿QUIERES SER LA PRIMERA?' : '¿YA ERES PARTE?';
+  const displayName = state ? (COMMON_STATE_NAMES[state.id] ?? state.nombre) : '';
 
   // Cierre accesible con tecla Escape
   useEffect(() => {
@@ -428,7 +440,7 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
             ))}
           </svg>
 
-          {/* CAPA 2 (z-20): ISLA VOXEL 3D AMPLIADA DEL ESTADO (PROTOTIPO A) */}
+          {/* CAPA 2 (z-20): ISLA VOXEL 3D AMPLIADA DEL ESTADO (PROTOTIPO A MONOLÍTICO) */}
           <div
             key={`island-${state.id}`}
             className="holo-island-enter absolute z-20 pointer-events-auto"
@@ -445,76 +457,62 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
           >
             <img
               src={`/data/holo/state-${state.id}.png`}
-              alt={`Silueta voxel 3D ampliada de ${state.nombre}`}
+              alt={`Silueta voxel 3D ampliada de ${displayName}`}
               width={stateMeta.width}
               height={stateMeta.height}
               decoding="async"
               className="block w-full h-full object-contain [image-rendering:pixelated] select-none pointer-events-none"
             />
 
-            {/* Botón de cierre discreto ✕ */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                selectState(null);
-              }}
-              aria-label={`Cerrar detalle de ${state.nombre}`}
-              title="Cerrar (Esc)"
-              className="absolute top-2 right-2 z-30 w-6 h-6 rounded-full flex items-center justify-center text-white/70 hover:text-white bg-black/25 hover:bg-black/50 transition-colors cursor-pointer text-xs font-bold leading-none select-none"
-            >
-              ✕
-            </button>
-
-            {/* Contenido editorial grabado directamente sobre la cara superior de la isla */}
+            {/* Contenido editorial ceñido grabado directamente sobre la meseta sólida de la isla */}
             <div
-              className="absolute flex flex-col items-center justify-center text-center select-none pointer-events-auto"
+              className="absolute z-20 flex flex-col items-center justify-center text-center select-none pointer-events-auto"
               style={{
                 left: `${stateMeta.visualCenter[0] * 100}%`,
                 top: `${stateMeta.visualCenter[1] * 100}%`,
                 transform: 'translate(-50%, -50%)',
                 width: 'max-content',
-                maxWidth: `${Math.round(layout.w * 0.90)}px`,
+                maxWidth: '155px',
               }}
             >
               {children ? (
                 children(state)
               ) : (
                 <>
-                  {/* Línea 1: Título */}
-                  <h3 className="font-heading font-black text-sm tracking-widest text-white uppercase drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)] leading-tight">
-                    {state.nombre.toUpperCase()}
+                  {/* Línea 1: Título con nombre común INE */}
+                  <h3 className="font-heading font-black text-xs tracking-wider text-white uppercase drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)] leading-tight">
+                    {displayName.toUpperCase()}
                   </h3>
 
                   {/* Línea 2: Dalia + Conteo */}
-                  <div className="flex items-center justify-center gap-2 mt-0.5">
+                  <div className="flex items-center justify-center gap-1.5 mt-0.5">
                     <img
                       src={`/flowers/dahlia-${flowerLevel}.png`}
                       alt=""
                       aria-hidden="true"
-                      width={32}
-                      height={32}
-                      className="w-8 h-8 object-contain [image-rendering:pixelated] drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)] shrink-0"
+                      width={28}
+                      height={28}
+                      className="w-7 h-7 object-contain [image-rendering:pixelated] drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)] shrink-0"
                     />
-                    <span className="text-3xl font-black text-white font-heading tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)] leading-none">
+                    <span className="text-2xl font-black text-white font-heading tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)] leading-none">
                       {count.toLocaleString('es-MX')}
                     </span>
                   </div>
 
-                  {/* Línea 3: Bajada */}
-                  <p className="text-[#D8D4FF] text-[10.5px] font-semibold tracking-normal mt-0.5 whitespace-nowrap drop-shadow-sm leading-tight">
-                    Personas que ya dieron el primer paso
+                  {/* Línea 3: Bajada en 2 líneas compactas */}
+                  <p className="text-[#D8D4FF] text-[9.5px] font-semibold leading-tight text-center mt-0.5 drop-shadow-sm">
+                    Personas que ya<br />dieron el primer paso
                   </p>
 
-                  {/* Línea 4: Separador sutil */}
-                  <div className="w-28 h-px bg-[#B4B2FF]/40 my-1.5" />
+                  {/* Línea 4: Separador sutil ceñido */}
+                  <div className="w-14 h-px bg-[#B4B2FF]/40 my-1.5" />
 
                   {/* Línea 5: Pregunta */}
-                  <p className="text-white font-bold text-[11px] tracking-wider uppercase font-heading drop-shadow-sm leading-tight">
+                  <p className="text-white font-bold text-[9.5px] tracking-wide uppercase font-heading drop-shadow-sm leading-tight">
                     {question}
                   </p>
 
-                  {/* Botón CTA */}
+                  {/* Botón CTA Ceñido */}
                   <button
                     type="button"
                     onClick={(e) => {
@@ -524,9 +522,9 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
                         el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                       }
                     }}
-                    className="bg-dalia-600 hover:bg-dalia-700 active:scale-95 text-white font-bold text-[10px] py-1.5 px-3.5 shadow-md cursor-pointer rounded-full transition-transform mt-1 inline-flex items-center gap-1 select-none"
+                    className="bg-dalia-600 hover:bg-dalia-700 active:scale-95 text-white font-bold text-[9.5px] py-1 px-3 shadow-md cursor-pointer rounded-full transition-transform mt-1 inline-flex items-center gap-1 select-none whitespace-nowrap"
                   >
-                    <span>Infórmate y prepárate para participar →</span>
+                    <span>Infórmate y participa →</span>
                   </button>
                 </>
               )}
