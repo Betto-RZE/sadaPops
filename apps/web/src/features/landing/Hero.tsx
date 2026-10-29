@@ -274,7 +274,7 @@ export function Hero() {
 
   return (
     <section className="relative w-full bg-transparent overflow-x-clip pt-0 pb-0 md:pb-8 select-none">
-      {/* Fase 4: HUD de instrucciones y control de zoom en esquina superior derecha de Mobile */}
+      {/* Fase 4: HUD de instrucciones y control de zoom en esquina inferior izquierda de Mobile */}
       {hasReachedPlace && (
         <MobileMapHud
           isZoomed={isMobileZoomed}

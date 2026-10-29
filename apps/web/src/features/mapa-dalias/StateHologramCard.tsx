@@ -884,7 +884,7 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
                     {titleComp && (
                       <div className="flex flex-col items-center justify-center text-center mt-0.5 select-none leading-none">
                         {titleComp.antetitulo && (
-                          <span className="font-heading text-[9.5px] font-semibold text-[#C5BEFF] uppercase tracking-[0.24em] leading-tight select-none mb-0.5">
+                          <span className="font-heading text-[9.5px] font-semibold text-[#EAE6FF] uppercase tracking-[0.24em] leading-tight select-none mb-0.5">
                             {titleComp.antetitulo}
                           </span>
                         )}
@@ -916,10 +916,10 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
                             {youthBenchmark.turnoutYouthPercent}% votó en 2024
                           </span>
                         </div>
-                        <span className="text-[8px] font-medium text-[#C5BEFF] tracking-tight mt-0.5 leading-tight">
+                        <span className="text-[8px] font-medium text-[#EAE6FF] tracking-tight mt-0.5 leading-tight">
                           18–29 años · {youthBenchmark.diffLabel}
                         </span>
-                        <span className="text-[7px] font-semibold text-[#8F85C7] tracking-[0.16em] uppercase mt-0.5 leading-none">
+                        <span className="text-[7px] font-semibold text-[#C2B9FF] tracking-[0.16em] uppercase mt-0.5 leading-none">
                           · INE ·
                         </span>
                       </div>
@@ -945,7 +945,7 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
                       personas que ya dieron el primer paso
                     </p>
 
-                    <p className="text-[#9A92D0] text-[7.5px] italic leading-none text-center mt-0.5 drop-shadow">
+                    <p className="text-[#D5CEFF] text-[7.5px] italic leading-none text-center mt-0.5 drop-shadow">
                       Registro en plataforma · No mide votos
                     </p>
 
