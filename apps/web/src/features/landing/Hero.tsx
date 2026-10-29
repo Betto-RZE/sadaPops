@@ -156,10 +156,10 @@ export function Hero() {
   const magentaLetterMultiplier = Number((1 - effectiveProgress * (1 - 0.82)).toFixed(3));
 
   return (
-    <section className="relative w-full bg-transparent overflow-x-clip pt-0 pb-6 sm:pb-8 select-none">
-      <div className="mx-auto max-w-[1440px] px-3 sm:px-6 lg:px-10 relative z-10 overflow-visible">
-        {/* Contenedor principal del escenario */}
-        <div className="relative flex flex-col items-center justify-center min-h-[380px] sm:min-h-[460px] md:min-h-[560px] lg:min-h-[620px]">
+    <section className="relative w-full bg-transparent overflow-x-clip pt-0 pb-0 md:pb-8 select-none">
+      <div className="mx-auto max-w-[1440px] px-0 md:px-6 lg:px-10 relative z-10 overflow-visible">
+        {/* Contenedor principal del escenario: pantalla completa en móvil (100dvh), altura calculada en desktop */}
+        <div className="relative flex flex-col items-center justify-center h-[100dvh] md:h-auto md:min-h-[560px] lg:min-h-[620px] w-full px-3 md:px-0">
           {/* ========================================================================= */}
           {/* CAPA PORTADA MÓVIL (< md): HOJA DE PAPEL CON LETRAS QUE SE RASGA AL SUBIR */}
           {/* ========================================================================= */}

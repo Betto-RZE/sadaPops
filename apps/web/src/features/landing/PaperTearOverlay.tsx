@@ -110,7 +110,7 @@ export function PaperTearOverlay({
   return (
     <div
       aria-hidden="true"
-      className="md:hidden absolute -inset-x-4 sm:-inset-x-8 -top-4 -bottom-8 z-30 pointer-events-none select-none overflow-hidden"
+      className="md:hidden absolute inset-0 z-30 pointer-events-none select-none overflow-hidden"
     >
       {/* Capa 1: Sombra suave proyectada únicamente bajo la línea activa del rasgado sobre el mapa */}
       {isTearing && (
@@ -135,9 +135,10 @@ export function PaperTearOverlay({
         />
       )}
 
-      {/* Capa 3: Hoja superior con la textura oficial de papel y el titular editorial que desaparece al romperse */}
+      {/* Capa 3: Hoja superior con la textura oficial de papel, sombra del mapa en el centro
+          y el titular editorial con la misma distribución y animación que en Desktop */}
       <div
-        className="absolute inset-0 flex flex-col items-center justify-center text-center px-3 will-change-[clip-path]"
+        className="absolute inset-0 flex flex-col justify-between py-6 px-3 sm:px-6 will-change-[clip-path]"
         style={{
           backgroundColor: '#EEEDEA',
           backgroundImage: "url('/bg/bg-ine-hero.webp')",
@@ -147,33 +148,64 @@ export function PaperTearOverlay({
           clipPath: sheetPolygon,
         }}
       >
+        {/* Sombra del mapa en el centro de la hoja, apareciendo a los 1.55s tras las letras */}
         <div
-          className="flex flex-col items-center justify-center w-full max-w-[360px] mx-auto will-change-transform"
+          aria-hidden="true"
+          className="hero-shadow-delayed-enter absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[380px] px-3 pointer-events-none select-none z-0"
+          style={{ aspectRatio: '660 / 435' }}
+        >
+          <img
+            src="/data/map-shadow.webp"
+            alt=""
+            className="w-full h-full object-contain pointer-events-none select-none opacity-85"
+            loading="eager"
+          />
+        </div>
+
+        {/* Contenedor tipográfico con la misma distribución y animaciones que Desktop */}
+        <div
+          className="relative z-10 flex flex-col justify-between h-full w-full will-change-transform py-3 sm:py-6"
           style={{
             transform: `translate3d(0, -${textPullUpPx}px, 0)`,
           }}
         >
-          <span className="text-[clamp(2rem,8.8vw,2.75rem)] font-black tracking-tighter leading-[1.02] text-brand-navy uppercase font-sans">
-            <span className="hero-word-mobile" style={{ animationDelay: '0.10s' }}>
-              Tu participación
+          {/* Bloque Superior Izquierdo: "Tu" (0.10s) + "participación" (0.35s) */}
+          <div className="w-full flex justify-start pl-1 sm:pl-4">
+            <span className="text-[clamp(2.1rem,8.4vw,3.4rem)] font-black tracking-tighter leading-[0.88] text-brand-navy uppercase font-sans flex flex-wrap gap-x-2.5">
+              <span className="hero-word" style={{ animationDelay: '0.10s' }}>
+                Tu
+              </span>
+              <span className="hero-word" style={{ animationDelay: '0.35s' }}>
+                participación
+              </span>
             </span>
-          </span>
-          <span className="text-[clamp(2rem,8.8vw,2.75rem)] font-black tracking-tighter leading-[1.02] text-brand-navy uppercase font-sans mt-1">
-            <span className="hero-word-mobile" style={{ animationDelay: '0.30s' }}>
-              hace{' '}
+          </div>
+
+          {/* Bloque Medio Asimétrico: "hace" (0.65s) + "florecer" (0.95s, magenta INE) */}
+          <div className="w-full flex justify-between items-center px-1">
+            <span className="text-[clamp(2.1rem,8.4vw,3.4rem)] font-black tracking-tighter leading-[0.88] text-brand-navy uppercase font-sans">
+              <span className="hero-word" style={{ animationDelay: '0.65s' }}>
+                hace
+              </span>
             </span>
-            <span
-              className="hero-word-mobile text-dalia-600"
-              style={{ animationDelay: '0.50s' }}
-            >
-              florecer
+            <span className="text-[clamp(2.3rem,9.2vw,3.8rem)] font-black tracking-tighter leading-[0.88] text-dalia-600 uppercase font-sans">
+              <span className="hero-word-magenta" style={{ animationDelay: '0.95s' }}>
+                florecer
+              </span>
             </span>
-          </span>
-          <span className="text-[clamp(2rem,8.8vw,2.75rem)] font-black tracking-tighter leading-[1.02] text-brand-navy uppercase font-sans mt-1">
-            <span className="hero-word-mobile" style={{ animationDelay: '0.70s' }}>
-              a México.
+          </div>
+
+          {/* Bloque Inferior Derecho: "a" (1.25s) + "México." (1.45s) */}
+          <div className="w-full flex justify-end pr-1 sm:pr-4 pb-1 sm:pb-3">
+            <span className="text-[clamp(2.1rem,8.4vw,3.4rem)] font-black tracking-tighter leading-[0.88] text-brand-navy uppercase font-sans flex flex-wrap gap-x-2.5">
+              <span className="hero-word" style={{ animationDelay: '1.25s' }}>
+                a
+              </span>
+              <span className="hero-word" style={{ animationDelay: '1.45s' }}>
+                México.
+              </span>
             </span>
-          </span>
+          </div>
         </div>
       </div>
     </div>
