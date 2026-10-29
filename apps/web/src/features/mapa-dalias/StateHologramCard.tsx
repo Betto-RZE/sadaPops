@@ -123,6 +123,7 @@ function computeHoloLayout(
   state: StateMetadata,
   meta: HoloStateMeta
 ): HoloLayout {
+  const isMobile = cw < 768;
   const sx = cw / mapW;
   const sy = ch / mapH;
 
@@ -134,9 +135,11 @@ function computeHoloLayout(
   const rawAy = (state.anchor.y - liftLogicalPx) * sy;
 
   // Dimensiones escaladas de la silueta voxel 3D manteniendo su proporción original.
-  // Se mantiene amplia (~275px a 325px) para que enmarque generosamente a la tarjeta de 168px.
+  // En desktop: 275px a 325px. En mobile: 110px a 145px para encajar cómodamente en el viewport
   const aspect = meta.height / meta.width;
-  const targetMaxDim = Math.min(325, Math.max(275, Math.round(cw * 0.28)));
+  const targetMaxDim = isMobile
+    ? Math.min(145, Math.max(110, Math.round(cw * 0.35)))
+    : Math.min(325, Math.max(275, Math.round(cw * 0.28)));
   let w: number;
   let h: number;
   if (aspect >= 1) {
@@ -150,36 +153,42 @@ function computeHoloLayout(
   // Dimensiones de la tarjeta compacta (168px ancho x ~185px alto)
   const CARD_HALF_W = 84;
   const CARD_HALF_H = 92;
-  const SAFE_CARD_TOP = -18; // Techo seguro: la tarjeta nunca sube de -18px en el Hero
-  const MIN_BEAM_DIST = 145; // Longitud mínima de proyección para haz de luz siempre visible y despejado
+  // En móvil el contenedor es de ~230px, la distancia mínima de proyección se acota a 70px
+  const SAFE_CARD_TOP = isMobile ? 8 : -18;
+  const MIN_BEAM_DIST = isMobile ? 70 : 145;
 
   const opticalCenter = OPTICAL_CENTER_OVERRIDES[state.id] ?? meta.visualCenter;
 
   // Cota mínima para cy: garantiza que cardTop = cy - CARD_HALF_H >= SAFE_CARD_TOP
-  const minCenterY = SAFE_CARD_TOP + CARD_HALF_H; // ~ 74px
+  const minCenterY = SAFE_CARD_TOP + CARD_HALF_H; // ~ 74px en desktop, ~100px en mobile
 
   const ax = rawAx;
   const ay = rawAy;
 
   // Altura tentativa estándar para proyección vertical
-  const standardCy = ay - h * opticalCenter[1] - 50;
+  const standardCy = isMobile
+    ? Math.max(minCenterY, ay - h * opticalCenter[1] - 25)
+    : ay - h * opticalCenter[1] - 50;
 
   let cy: number;
   let cx: number;
 
-  if (standardCy >= minCenterY && Math.abs(standardCy - ay) >= MIN_BEAM_DIST) {
-    // Proyección vertical estándar sin desbordamiento (estados centrales y del sur)
+  if (!isMobile && standardCy >= minCenterY && Math.abs(standardCy - ay) >= MIN_BEAM_DIST) {
+    // Proyección vertical estándar sin desbordamiento (desktop estados centrales y del sur)
     cy = standardCy;
     cx = ax;
+  } else if (isMobile) {
+    // En móvil, centrar cy de forma estable y acotada dentro del contenedor
+    cy = Math.max(minCenterY, Math.min(ch - CARD_HALF_H - 10, standardCy));
+    cx = ax;
   } else {
-    // Estado cercano a la frontera norte (BC, Sonora, Chihuahua, Coahuila, Nuevo León, etc.):
+    // Desktop: Estado cercano a la frontera norte (BC, Sonora, Chihuahua, Coahuila, Nuevo León, etc.):
     // Fijamos cy en la posición segura más alta dentro del viewport
     cy = Math.max(minCenterY, standardCy);
     const dy = cy - ay;
     const dyAbs = Math.abs(dy);
 
     // Si la distancia vertical es corta, se abre un desplazamiento diagonal lateral dx
-    // para garantizar un haz de luz largo y visible sin aplastar la tarjeta sobre el estado.
     let dx = 0;
     if (dyAbs < MIN_BEAM_DIST) {
       dx = Math.round(Math.sqrt(Math.max(0, MIN_BEAM_DIST * MIN_BEAM_DIST - dy * dy)));
@@ -192,11 +201,9 @@ function computeHoloLayout(
     cx = goRight ? ax + dx : ax - dx;
   }
 
-  // Propuesta A: Desfase Lateral Dinámico para siluetas estrechas o compactas (< 220px) y casos especiales (CDMX '09', Puebla '21')
-  // En estados angostos (BC, Sinaloa, etc.) o con masa concentrada/cintura estrecha (CDMX, Puebla),
-  // la tarjeta de 168px taparía la silueta territorial.
-  // Desplazamos la silueta a la izquierda (-45px) y la tarjeta a la derecha (+60px) hacia el espacio libre sin exagerar.
-  const isNarrow = w < 220 || state.id === '09' || state.id === '21';
+  // Desfase lateral dinámico: EXCLUSIVO para desktop en siluetas estrechas (< 220px) o casos especiales (CDMX, Puebla)
+  // En mobile se desactiva (0px) para evitar que la card o la silueta se salgan de la pantalla táctil
+  const isNarrow = !isMobile && (w < 220 || state.id === '09' || state.id === '21');
   let islandOffsetPx = 0;
   let cardOffsetPx = 0;
 
@@ -213,7 +220,7 @@ function computeHoloLayout(
 
   // Clamping horizontal seguro para la tarjeta dentro del contenedor considerando el desfase
   const effectiveCardCx = cx + cardOffsetPx;
-  const padX = Math.max(16, cw * 0.02);
+  const padX = isMobile ? 12 : Math.max(16, cw * 0.02);
   const minCardCx = padX + CARD_HALF_W;
   const maxCardCx = cw - padX - CARD_HALF_W;
   const clampedCardCx = Math.round(Math.min(maxCardCx, Math.max(minCardCx, effectiveCardCx)));
@@ -237,9 +244,9 @@ function computeHoloLayout(
   const ny = ux;
 
   // Ancho en la base (proporcional al estado en el mapa, acotado para haz sutil)
-  const rBase = Math.min(Math.max(12, Math.min(stateSpanW, stateSpanH) * 0.30), 16);
-  // Ancho en el destino: apertura estrecha y controlada
-  const rTop = 38;
+  const rBase = Math.min(Math.max(10, Math.min(stateSpanW, stateSpanH) * 0.30), 16);
+  // Ancho en el destino: apertura estrecha y controlada (más compacta en móvil)
+  const rTop = isMobile ? 22 : 38;
 
   // El haz de luz llega a la base de la silueta voxel 3D
   const tx = islandCx - ux * 8;
@@ -435,13 +442,14 @@ function VoxelCounter3D({ value }: { value: number }) {
 }
 
 interface PixelCardChassisProps {
+  onClose?: () => void;
   children: React.ReactNode;
 }
 
 /**
  * Chasis Voxel 3D con Bisel Escalonado, Canal Hundido y Extrusión Inferior (Fidelidad 1:1 con mock-card.jpg).
  */
-function PixelCardChassis({ children }: PixelCardChassisProps) {
+function PixelCardChassis({ onClose, children }: PixelCardChassisProps) {
   return (
     <div
       className="relative w-[168px] select-none pointer-events-auto"
@@ -450,6 +458,23 @@ function PixelCardChassis({ children }: PixelCardChassisProps) {
           'drop-shadow(0 16px 32px rgba(10, 6, 32, 0.75)) drop-shadow(0 0 14px rgba(139, 122, 235, 0.25))',
       }}
     >
+      {/* Botón táctil accesible de cierre (WCAG 2.1 AA >= 44x44px hit target) */}
+      {onClose && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+          }}
+          aria-label="Cerrar tarjeta holográfica"
+          className="absolute -top-2 -right-2 z-40 flex items-center justify-center w-6 h-6 rounded-full bg-[#1C184A] text-[#AEA3F8] hover:text-white hover:bg-[#342687] border border-[#AEA3F8]/80 shadow-[0_2px_8px_rgba(0,0,0,0.6)] transition-transform active:scale-90 cursor-pointer touch-manipulation after:absolute after:-inset-2.5 after:content-['']"
+        >
+          <svg width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true">
+            <path d="M1 1L7 7M7 1L1 7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          </svg>
+        </button>
+      )}
+
       {/* CAPA 1: Extrusión 3D Inferior en Bloques Voxel (#1B0E44) */}
       <div
         className="absolute inset-0 translate-y-[3.5px] pointer-events-none"
@@ -847,7 +872,7 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
                     : 'translate(-50%, -50%)',
               }}
             >
-              <PixelCardChassis>
+              <PixelCardChassis onClose={() => selectState(null)}>
                 {children ? (
                   children(state)
                 ) : (

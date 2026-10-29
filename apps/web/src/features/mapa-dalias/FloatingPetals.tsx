@@ -97,6 +97,14 @@ export function FloatingPetals({
       return;
     }
 
+    // Desactivar efecto brisa en pantallas táctiles o sin ratón fino para garantizar 60 fps en móviles
+    if (
+      typeof window !== 'undefined' &&
+      !window.matchMedia('(hover: hover) and (pointer: fine)').matches
+    ) {
+      return;
+    }
+
     const BRUSH_RADIUS = 52; // Radio de detección de brisa en píxeles
 
     const handlePointerMove = (e: PointerEvent) => {

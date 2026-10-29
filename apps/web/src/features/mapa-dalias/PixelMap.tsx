@@ -222,8 +222,9 @@ function resolveStateAt(
   if (code === 0 && isTouch) {
     let closestCode = 0;
     let closestDistSq = Infinity;
-    for (let dy = -2; dy <= 2; dy++) {
-      for (let dx = -2; dx <= 2; dx++) {
+    // Ventana ampliada a ±5 vóxeles para asistencia táctil con pulgares en bordes y costas
+    for (let dy = -5; dy <= 5; dy++) {
+      for (let dx = -5; dx <= 5; dx++) {
         const nx = lx + dx;
         const ny = ly + dy;
         if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
@@ -232,7 +233,7 @@ function resolveStateAt(
             const rawId = c > 32 ? c - 32 : c;
             const distSq = dx * dx + dy * dy;
             const isSmall = SMALL_STATE_NUM_IDS.has(rawId);
-            const effectiveDist = isSmall ? distSq * 0.5 : distSq;
+            const effectiveDist = isSmall ? distSq * 0.45 : distSq;
             if (effectiveDist < closestDistSq) {
               closestDistSq = effectiveDist;
               closestCode = c;
@@ -244,9 +245,11 @@ function resolveStateAt(
     code = closestCode;
   } else if (code !== 0 && isTouch) {
     const currentNum = code > 32 ? code - 32 : code;
+    // Si el toque cayó en un estado grande envolvente (ej. Edomex o Puebla),
+    // verificar si a menos de 3 vóxeles hay un micro-estado (CDMX, Tlaxcala, Morelos)
     if (!SMALL_STATE_NUM_IDS.has(currentNum)) {
-      for (let dy = -1; dy <= 1; dy++) {
-        for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -3; dy <= 3; dy++) {
+        for (let dx = -3; dx <= 3; dx++) {
           const nx = lx + dx;
           const ny = ly + dy;
           if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
@@ -299,6 +302,9 @@ export function PixelMap({
 
   // Estado para controlar cuando los 32 estados ya terminaron de aterrizar
   const [introDone, setIntroDone] = useState(false);
+
+  // Referencia para discriminar toques rápidos (tap) de desplazamientos de scroll en pantallas táctiles
+  const touchStartRef = useRef<{ clientX: number; clientY: number; time: number } | null>(null);
 
   // Estado local para hover cuando el componente no está completamente controlado
   const [internalHoveredId, setInternalHoveredId] = useState<string | null>(null);
@@ -794,6 +800,15 @@ export function PixelMap({
     (e: React.PointerEvent<HTMLCanvasElement>) => {
       if (!data || !introDone) return;
 
+      // En pantallas táctiles, ocultar píldora de hover y no disparar eventos de hover
+      // para no ensuciar la vista del usuario ni dejar tooltips pegados al dedo
+      if (e.pointerType === 'touch') {
+        if (cursorPillRef.current) {
+          cursorPillRef.current.style.transform = 'translate3d(-9999px, -9999px, 0)';
+        }
+        return;
+      }
+
       if (cursorPillRef.current && canvasRef.current) {
         const rect = canvasRef.current.getBoundingClientRect();
         const relX = e.clientX - rect.left;
@@ -802,11 +817,10 @@ export function PixelMap({
       }
 
       const coords = getLogicalCoords(e);
-      const isTouch = e.pointerType === 'touch';
       const activeNumId = activeState ? activeState.numId : null;
       const liftPx = ELEVATION_VOXELS * data.pixelScale;
       const resolved = coords
-        ? resolveStateAt(coords.lx, coords.ly, data.mapIds, width, height, isTouch, activeNumId, liftPx)
+        ? resolveStateAt(coords.lx, coords.ly, data.mapIds, width, height, false, activeNumId, liftPx)
         : null;
 
       if (resolved !== currentHoveredId) {
@@ -820,12 +834,24 @@ export function PixelMap({
   const handlePointerDown = useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {
       if (!data || !introDone) return;
+
+      // En pantallas táctiles, registrar el punto inicial y diferir la selección a pointerUp
+      // para permitir scroll vertical fluido sin secuestrar el desplazamiento del usuario
+      if (e.pointerType === 'touch') {
+        touchStartRef.current = {
+          clientX: e.clientX,
+          clientY: e.clientY,
+          time: Date.now(),
+        };
+        return;
+      }
+
+      // En mouse (escritorio): selección instantánea
       const coords = getLogicalCoords(e);
-      const isTouch = e.pointerType === 'touch';
       const activeNumId = activeState ? activeState.numId : null;
       const liftPx = ELEVATION_VOXELS * data.pixelScale;
       const resolved = coords
-        ? resolveStateAt(coords.lx, coords.ly, data.mapIds, width, height, isTouch, activeNumId, liftPx)
+        ? resolveStateAt(coords.lx, coords.ly, data.mapIds, width, height, false, activeNumId, liftPx)
         : null;
 
       if (resolved) {
@@ -837,6 +863,44 @@ export function PixelMap({
     },
     [data, introDone, width, height, selectedStateId, activeState, getLogicalCoords, onSelectState]
   );
+
+  const handlePointerUp = useCallback(
+    (e: React.PointerEvent<HTMLCanvasElement>) => {
+      if (!data || !introDone || e.pointerType !== 'touch') return;
+
+      if (!touchStartRef.current) return;
+      const dx = e.clientX - touchStartRef.current.clientX;
+      const dy = e.clientY - touchStartRef.current.clientY;
+      const dt = Date.now() - touchStartRef.current.time;
+      touchStartRef.current = null;
+
+      // Si el dedo se movió más de 8px o mantuvo presionado más de 350ms,
+      // fue un gesto de scroll de página o arrastre, NO un tap
+      if (dx * dx + dy * dy > 64 || dt > 350) {
+        return;
+      }
+
+      // Tap táctil genuino: resolver el estado con hitbox asistido
+      const coords = getLogicalCoords(e);
+      const activeNumId = activeState ? activeState.numId : null;
+      const liftPx = ELEVATION_VOXELS * data.pixelScale;
+      const resolved = coords
+        ? resolveStateAt(coords.lx, coords.ly, data.mapIds, width, height, true, activeNumId, liftPx)
+        : null;
+
+      if (resolved) {
+        const nextSelected = resolved === selectedStateId ? null : resolved;
+        onSelectState?.(nextSelected);
+      } else if (selectedStateId) {
+        onSelectState?.(null);
+      }
+    },
+    [data, introDone, width, height, selectedStateId, activeState, getLogicalCoords, onSelectState]
+  );
+
+  const handlePointerCancel = useCallback(() => {
+    touchStartRef.current = null;
+  }, []);
 
   const handlePointerLeave = useCallback(() => {
     if (cursorPillRef.current) {
@@ -901,6 +965,8 @@ export function PixelMap({
           aria-label="Lienzo interactivo de estados"
           onPointerMove={handlePointerMove}
           onPointerDown={handlePointerDown}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerCancel}
           onPointerLeave={handlePointerLeave}
           className={cn(
             'absolute inset-0 w-full h-full object-contain [image-rendering:pixelated] touch-manipulation z-10',

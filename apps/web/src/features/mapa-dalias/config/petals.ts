@@ -71,7 +71,7 @@ export const HERO_PETALS: PetalConfig[] = [
     floatDistancePx: 6,
     durationSec: 1.20,
     delaySec: 0.18,
-    desktopOnly: false, // Visible en móvil
+    desktopOnly: true,
   },
   {
     id: 5,
@@ -93,7 +93,7 @@ export const HERO_PETALS: PetalConfig[] = [
     floatDistancePx: 6,
     durationSec: 1.25,
     delaySec: 0.35,
-    desktopOnly: false, // Visible en móvil
+    desktopOnly: true,
   },
   {
     id: 7,
@@ -115,7 +115,7 @@ export const HERO_PETALS: PetalConfig[] = [
     floatDistancePx: 6,
     durationSec: 1.30,
     delaySec: 0.48,
-    desktopOnly: false, // Visible en móvil
+    desktopOnly: true,
   },
 
   // ── ZONA B: GOLFO DE MÉXICO Y CARIBE (5 pétalos en el hueco marino oriental) ──
@@ -150,7 +150,7 @@ export const HERO_PETALS: PetalConfig[] = [
     floatDistancePx: 6,
     durationSec: 1.25,
     delaySec: 0.32,
-    desktopOnly: false, // Visible en móvil
+    desktopOnly: true,
   },
   {
     id: 12,
@@ -172,7 +172,7 @@ export const HERO_PETALS: PetalConfig[] = [
     floatDistancePx: 6,
     durationSec: 1.30,
     delaySec: 0.50,
-    desktopOnly: false, // Visible en móvil
+    desktopOnly: true,
   },
 
   // ── ZONA C: SUR DEL PACÍFICO (3 pétalos cerrando la diagonal inferior) ──

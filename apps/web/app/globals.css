@@ -118,6 +118,28 @@ body {
   will-change: transform, opacity;
 }
 
+/* Titular editorial móvil: permanece 100% nítido y legible sobre el mapa */
+@keyframes heroWordMobileReveal {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.hero-word-mobile {
+  display: inline-block;
+  opacity: 0;
+  animation-name: heroWordMobileReveal;
+  animation-duration: 0.65s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  animation-fill-mode: forwards;
+  will-change: transform, opacity;
+}
+
 /* =========================================================================
    ENTRADA DEL LOGO INE Y NAVBAR (FADE-IN SUAVE A LOS 1.65s)
    ========================================================================= */
@@ -170,6 +192,11 @@ body {
 
 /* Accesibilidad */
 @media (prefers-reduced-motion: reduce) {
+  .hero-word-mobile {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
   .hero-word {
     animation: none !important;
     opacity: 0.30 !important;
