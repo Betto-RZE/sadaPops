@@ -7,6 +7,8 @@ import React, {
   Suspense,
 } from "react";
 import { PixelFullscreenButton } from "./PixelFullscreenButton";
+import { RotateDeviceOverlay } from "./RotateDeviceOverlay";
+import { VirtualGamepad } from "./VirtualGamepad";
 import {
   gameSessionReducer,
   INITIAL_SESSION_STATE,
@@ -35,6 +37,8 @@ export {
 export * from "./features/npcs";
 export * from "./features/mitos";
 export * from "./features/ambientacion";
+export { RotateDeviceOverlay, type RotateDeviceOverlayProps } from "./RotateDeviceOverlay";
+export { VirtualGamepad, type VirtualGamepadProps } from "./VirtualGamepad";
 
 type GameScreen = "splash" | "chapters" | "gameplay";
 
@@ -480,6 +484,12 @@ export function PixiGameCanvas({
           : "rounded-2xl shadow-2xl overflow-hidden"
       }`}
     >
+      {/* OVERLAY OBLIGATORIO DE ROTACIÓN EN MÓVIL (PORTRAIT -> LANDSCAPE) */}
+      <RotateDeviceOverlay
+        onRequestFullscreen={toggleFullscreen}
+        isFullscreen={isFullscreen}
+      />
+
       {/* Game Display Container */}
       <div
         style={{ containerType: "inline-size" }}

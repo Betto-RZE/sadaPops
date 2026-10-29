@@ -40,6 +40,7 @@ import {
 import { CastShadow, DECORATION_SHADOWS } from "./features/sombras";
 import { PlazaAmbience } from "./features/ambientacion";
 import { OffscreenWaypointArrow } from "./OffscreenWaypointArrow";
+import { VirtualGamepad } from "./VirtualGamepad";
 
 /**
  * Capítulo 3: "Aprende a votar".
@@ -1701,6 +1702,17 @@ export default function Chapter3Scene({
         }
       `}</style>
 
+
+      {/* CONTROLES VIRTUALES TÁCTILES (D-PAD + BOTÓN E) */}
+      <VirtualGamepad
+        visible={
+          selectedMamparaIndex === null &&
+          !showIntroDialogue &&
+          postVotingPhase !== "urna_instruction_dialogue" &&
+          postVotingPhase !== "ending_dialogue" &&
+          !isPaused
+        }
+      />
 
       {/* VISTA EN PRIMERA PERSONA (POV): SIMULADOR DE VOTO EN MAMPARA */}
       {selectedMamparaIndex !== null && (

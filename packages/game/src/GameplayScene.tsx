@@ -24,6 +24,7 @@ import {
 import { CastShadow, DECORATION_SHADOWS } from "./features/sombras";
 import { PlazaAmbience } from "./features/ambientacion";
 import { OffscreenWaypointArrow } from "./OffscreenWaypointArrow";
+import { VirtualGamepad } from "./VirtualGamepad";
 
 // Centralized Plaza Collision Bounds (Edit these 9 numbers to dynamically adjust boundaries in real-time!)
 export const PLAZA_BOUNDS = {
@@ -2184,6 +2185,11 @@ export default function GameplayScene({
         {/* AMBIENTACIÓN DINÁMICA: RAYOS DE LUZ, PARTÍCULAS, PÉTALOS Y MARIPOSITAS EN ÁREAS VERDES */}
         <PlazaAmbience isPaused={isPaused} />
       </div>
+
+      {/* CONTROLES VIRTUALES TÁCTILES (D-PAD + BOTÓN E) */}
+      <VirtualGamepad
+        visible={dialogueState === "dismissed" && !isPaused}
+      />
 
       {/* INTRO SPEECH BUBBLE DIALOGUE OVERLAY */}
       {dialogueState !== "initial_delay" &&

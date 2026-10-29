@@ -32,6 +32,7 @@ import {
   EXCLAMATION_ICON_WIDTH,
 } from "./GameplayScene";
 import { OffscreenWaypointArrow } from "./OffscreenWaypointArrow";
+import { VirtualGamepad } from "./VirtualGamepad";
 import type { ChapterSceneProps } from "./features/capitulos/ChapterSceneRouter";
 import {
   getChapterHandoff,
@@ -1399,6 +1400,18 @@ export default function Chapter2Scene({
         {/* AMBIENTACIÓN DINÁMICA: RAYOS DE LUZ, PARTÍCULAS, PÉTALOS Y MARIPOSITAS EN ÁREAS VERDES */}
         <PlazaAmbience isPaused={isPaused} />
       </div>
+
+      {/* CONTROLES VIRTUALES TÁCTILES (D-PAD + BOTÓN E) */}
+      <VirtualGamepad
+        visible={
+          !showBridgeDialogue &&
+          !showVoterDialogue &&
+          !showArrivalDialogue &&
+          !showConversation &&
+          !showOutroDialogue &&
+          !isPaused
+        }
+      />
 
       {/* DIÁLOGO 1: PUENTE DESDE CAPÍTULO 1 / INICIO DEL CAPÍTULO 2 */}
       {showBridgeDialogue && (
