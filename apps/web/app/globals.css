@@ -53,9 +53,9 @@ body {
 }
 
 /* =========================================================================
-   ANIMACIÓN HERO FASE 1: REVELACIÓN PALABRA POR PALABRA (0.10s a 1.45s)
-   A los 1.85s (exactamente al iniciar la oleada de estados) las letras
-   hacen su transición gradual al tono gris de marca de agua editorial
+   ANIMACIÓN HERO: REVELACIÓN PALABRA POR PALABRA (0.10s a 1.45s)
+   Las letras permanecen nítidas al terminar de aparecer; su transición
+   al tono gris de marca de agua editorial ocurre progresivamente al hacer scroll.
    ========================================================================= */
 
 @keyframes heroWordReveal {
@@ -63,18 +63,8 @@ body {
     opacity: 0;
     transform: translate3d(0, 18px, 0);
   }
-  16% {
-    opacity: 0.88;
-    transform: translate3d(0, 0, 0);
-  }
-  56% {
-    /* Mantiene nitidez total hasta los 1.85s */
-    opacity: 0.88;
-    transform: translate3d(0, 0, 0);
-  }
   100% {
-    /* Se atenúa a la par que la oleada de estados aterriza (1.85s a 3.0s) */
-    opacity: 0.30;
+    opacity: 0.90;
     transform: translate3d(0, 0, 0);
   }
 }
@@ -84,16 +74,12 @@ body {
     opacity: 0;
     transform: translate3d(0, 20px, 0) scale(0.96);
   }
-  20% {
+  65% {
     opacity: 1;
     transform: translate3d(0, 0, 0) scale(1.02);
   }
-  56% {
-    opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
-  }
   100% {
-    opacity: 0.82;
+    opacity: 1;
     transform: translate3d(0, 0, 0) scale(1);
   }
 }
@@ -102,7 +88,7 @@ body {
   display: inline-block;
   opacity: 0;
   animation-name: heroWordReveal;
-  animation-duration: 3.3s;
+  animation-duration: 0.65s;
   animation-timing-function: cubic-bezier(0.2, 0.8, 0.25, 1);
   animation-fill-mode: forwards;
   will-change: transform, opacity;
@@ -112,13 +98,13 @@ body {
   display: inline-block;
   opacity: 0;
   animation-name: heroMagentaReveal;
-  animation-duration: 3.3s;
+  animation-duration: 0.75s;
   animation-timing-function: cubic-bezier(0.2, 0.8, 0.25, 1);
   animation-fill-mode: forwards;
   will-change: transform, opacity;
 }
 
-/* Titular editorial móvil: permanece 100% nítido y legible sobre el mapa */
+/* Titular editorial móvil: permanece 100% nítido y legible */
 @keyframes heroWordMobileReveal {
   0% {
     opacity: 0;
@@ -166,13 +152,13 @@ body {
 }
 
 /* =========================================================================
-   ENTRADA DEL MAPA ELEVADO (FADE-IN SUAVE DE 0.45s ENTRE 1.55s Y 2.0s)
+   ENTRADA DE LA SOMBRA DEL MAPA (APARECE A LOS 1.55s TRAS LAS LETRAS)
    ========================================================================= */
 
-@keyframes heroMapContainerEnter {
+@keyframes heroShadowEnter {
   0% {
     opacity: 0;
-    transform: scale(0.985);
+    transform: scale(0.97);
   }
   100% {
     opacity: 1;
@@ -180,10 +166,30 @@ body {
   }
 }
 
+.hero-shadow-delayed-enter {
+  opacity: 0;
+  animation-name: heroShadowEnter;
+  animation-duration: 0.65s;
+  animation-delay: 1.55s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  animation-fill-mode: forwards;
+  will-change: opacity, transform;
+}
+
+/* Entrada diferida para el mapa en ascenso inicial */
+@keyframes heroMapContainerEnter {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
 .hero-map-delayed-enter {
   opacity: 0;
   animation-name: heroMapContainerEnter;
-  animation-duration: 0.48s;
+  animation-duration: 0.55s;
   animation-delay: 1.55s;
   animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
   animation-fill-mode: forwards;
@@ -212,6 +218,7 @@ body {
     opacity: 1 !important;
     transform: none !important;
   }
+  .hero-shadow-delayed-enter,
   .hero-map-delayed-enter {
     animation: none !important;
     opacity: 1 !important;

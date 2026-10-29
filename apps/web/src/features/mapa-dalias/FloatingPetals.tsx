@@ -3,7 +3,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { HERO_PETALS, type PetalConfig } from './config/petals';
 import {
-  MAP_INTRO_DELAY_MS,
   MAP_INTRO_STAGGER_MS,
   MAP_STATE_ANIM_MS,
 } from './PixelMap';
@@ -40,12 +39,12 @@ export function FloatingPetals({
 }: FloatingPetalsProps) {
   const [hasStarted, setHasStarted] = useState(false);
   const [isSettled, setIsSettled] = useState(false);
+  const [anchorTopPx, setAnchorTopPx] = useState(0);
   const [offsets, setOffsets] = useState<Record<number, PetalOffset>>({});
   const petalRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
-  // Los pétalos inician su descenso cuando el mapa y las dalias terminan su floración (~2.75s).
-  const petalsStartDelayMs =
-    MAP_INTRO_DELAY_MS +
+  // Los pétalos inician su descenso justo cuando la oleada de estados y dalias concluye (~1.4s tras el inicio de caída)
+  const petalsAfterDropDelayMs =
     MAP_INTRO_STAGGER_MS +
     MAP_STATE_ANIM_MS;
 
@@ -71,20 +70,38 @@ export function FloatingPetals({
       return;
     }
 
-    const startTimer = window.setTimeout(() => {
-      setHasStarted(true);
-    }, petalsStartDelayMs);
+    let startTimer = 0;
+    let settleTimer = 0;
+    let triggered = false;
 
-    // Tras iniciar la caída, todos terminan de posarse de forma sincronizada con su animación real
-    const settleTimer = window.setTimeout(() => {
-      setIsSettled(true);
-    }, petalsStartDelayMs + maxAnimationTotalMs);
+    const handleDropStart = (ev: Event) => {
+      if (triggered) return;
+      triggered = true;
+
+      const customEv = ev as CustomEvent<{ scrollY?: number }>;
+      const dropScrollY =
+        typeof customEv.detail?.scrollY === 'number'
+          ? customEv.detail.scrollY
+          : window.scrollY;
+      setAnchorTopPx(Math.max(0, Math.round(dropScrollY)));
+
+      startTimer = window.setTimeout(() => {
+        setHasStarted(true);
+      }, petalsAfterDropDelayMs);
+
+      settleTimer = window.setTimeout(() => {
+        setIsSettled(true);
+      }, petalsAfterDropDelayMs + maxAnimationTotalMs);
+    };
+
+    window.addEventListener('dalias:map-drop-start', handleDropStart);
 
     return () => {
-      window.clearTimeout(startTimer);
-      window.clearTimeout(settleTimer);
+      window.removeEventListener('dalias:map-drop-start', handleDropStart);
+      if (startTimer) window.clearTimeout(startTimer);
+      if (settleTimer) window.clearTimeout(settleTimer);
     };
-  }, [petalsStartDelayMs, maxAnimationTotalMs]);
+  }, [petalsAfterDropDelayMs, maxAnimationTotalMs]);
 
   // Efecto Brisa: escucha pasiva del mouse para empujar los pétalos cuando ya están posados
   useEffect(() => {
@@ -152,9 +169,10 @@ export function FloatingPetals({
     <div
       aria-hidden="true"
       className={cn(
-        'absolute inset-x-0 top-0 h-[100vh] min-h-[720px] pointer-events-none overflow-hidden select-none z-[60]',
+        'absolute inset-x-0 h-[100vh] min-h-[720px] pointer-events-none overflow-hidden select-none z-[60]',
         className
       )}
+      style={{ top: `${anchorTopPx}px` }}
     >
       <style>{`
         @keyframes petal-sky-glide {

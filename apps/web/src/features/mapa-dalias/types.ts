@@ -53,6 +53,8 @@ export interface PixelMapContextValue {
   selectedStateId: string | null;
   hoveredStateId: string | null;
   selectState: (stateId: string | null) => void;
+  /** Indica si el mapa ya llegó a su posición objetivo para disparar la caída de estados y brote de dalias */
+  readyToDrop: boolean;
 }
 
 export interface PixelMapAnchorProps {
@@ -77,6 +79,10 @@ export interface PixelMapProps {
   showTooltip?: boolean;
   /** Clases CSS adicionales para el contenedor exterior */
   className?: string;
+  /** Controla cuándo se dispara la oleada de caída y rebote de los 32 estados (por defecto true) */
+  readyToDrop?: boolean;
+  /** Oculta la sombra interna (/data/map-shadow.webp) cuando el contenedor padre la proyecta de forma estacionaria */
+  hideInternalShadow?: boolean;
   /** Ranura para montar capas secundarias y anclas (ej. Dalias en Hito H4) */
   children?: React.ReactNode;
 }

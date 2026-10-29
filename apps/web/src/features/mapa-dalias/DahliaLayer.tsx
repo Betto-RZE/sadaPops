@@ -4,7 +4,6 @@ import React, { useEffect, useRef, useState, useMemo } from 'react';
 import {
   PixelMapAnchor,
   usePixelMapContext,
-  MAP_INTRO_DELAY_MS,
   MAP_INTRO_STAGGER_MS,
   MAP_STATE_ANIM_MS,
 } from './PixelMap';
@@ -65,19 +64,19 @@ export function DahliaLayer({
   className,
   onBloomComplete,
 }: DahliaLayerProps) {
-  const { data } = usePixelMapContext();
+  const { data, readyToDrop } = usePixelMapContext();
   const store = useOptionalDahliaStore();
   const [hasBloomed, setHasBloomed] = useState(false);
   const layerRef = useRef<HTMLDivElement>(null);
 
-  // 1. Calcular mapa de niveles (0..3): prop explícito > store reactivo > demo
+  // 1. Calcular mapa de niveles (0..4): prop explícito > store reactivo > demo
   const levelsMap = useMemo(() => {
     if (userCounts) return computeLevels(userCounts);
     if (store) return store.levels;
     return computeLevels(DEFAULT_DEMO_COUNTS);
   }, [userCounts, store]);
 
-  // 2. Disparar florecimiento en sincronía con la secuencia de entrada del mapa
+  // 2. Disparar florecimiento únicamente cuando el mapa llega a su lugar (`readyToDrop === true`)
   useEffect(() => {
     if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       setHasBloomed(true);
@@ -85,17 +84,21 @@ export function DahliaLayer({
       return;
     }
 
+    if (!readyToDrop) return;
+
+    let finishTimer = 0;
     const timer = window.setTimeout(() => {
       setHasBloomed(true);
-      const finishTimer = window.setTimeout(() => {
+      finishTimer = window.setTimeout(() => {
         onBloomComplete?.();
-      }, MAP_INTRO_DELAY_MS + MAP_INTRO_STAGGER_MS + MAP_STATE_ANIM_MS + 200);
+      }, MAP_INTRO_STAGGER_MS + MAP_STATE_ANIM_MS + 200);
+    }, 40);
 
-      return () => window.clearTimeout(finishTimer);
-    }, 50);
-
-    return () => window.clearTimeout(timer);
-  }, [onBloomComplete]);
+    return () => {
+      window.clearTimeout(timer);
+      if (finishTimer) window.clearTimeout(finishTimer);
+    };
+  }, [readyToDrop, onBloomComplete]);
 
   // 3. Precalcular el tiempo exacto de brote para cada estado (justo al asentarse tras su rebote)
   const flowerStatesWithDelay = useMemo(() => {
@@ -123,9 +126,9 @@ export function DahliaLayer({
       const dropStartMs = g * MAP_INTRO_STAGGER_MS;
 
       // El estado impacta en 0 al 62% y amortigua su rebote al 85%
-      // La dalia florece al primer impacto firme con el plano
+      // La dalia florece al primer impacto firme con el plano una vez disparada la oleada
       const settleMs = dropStartMs + MAP_STATE_ANIM_MS * 0.70;
-      const totalBloomDelaySec = (MAP_INTRO_DELAY_MS + settleMs) / 1000;
+      const totalBloomDelaySec = settleMs / 1000;
 
       return {
         state: st,

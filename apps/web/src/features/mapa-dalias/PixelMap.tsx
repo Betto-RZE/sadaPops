@@ -286,6 +286,8 @@ export function PixelMap({
   // `showTooltip` se conserva por compatibilidad de API; el tooltip de debug se retiró en H5.
   showTooltip: _showTooltip = false,
   className,
+  readyToDrop = true,
+  hideInternalShadow = false,
   children,
 }: PixelMapProps) {
   const { data, loading, error } = useMapData();
@@ -702,7 +704,7 @@ export function PixelMap({
       };
     });
 
-    // Pre-dibujar el estado inicial suspendido antes de que el contenedor haga fade-in a los 1.95s
+    // Pre-dibujar el estado inicial suspendido mientras el mapa asciende por scroll
     const initialFrame = stateSchedule.map((item) => ({
       stateId: item.stateId,
       liftPx: Math.round(item.startVoxels * data.pixelScale),
@@ -710,11 +712,24 @@ export function PixelMap({
     }));
     renderStatesFrame(initialFrame, true);
 
+    // Mantener los 32 estados suspendidos en el aire hasta que el mapa llegue a su sitio
+    if (!readyToDrop) {
+      return;
+    }
+
     const totalIntroDuration = MAP_INTRO_STAGGER_MS + MAP_STATE_ANIM_MS + 40;
     let rafId = 0;
     let startTime: number | null = null;
 
     const timerId = window.setTimeout(() => {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('dalias:map-drop-start', {
+            detail: { scrollY: window.scrollY },
+          })
+        );
+      }
+
       const tick = (now: number) => {
         if (startTime === null) startTime = now;
         const elapsed = now - startTime;
@@ -740,13 +755,13 @@ export function PixelMap({
       };
 
       rafId = window.requestAnimationFrame(tick);
-    }, MAP_INTRO_DELAY_MS);
+    }, 40);
 
     return () => {
       window.clearTimeout(timerId);
       if (rafId) window.cancelAnimationFrame(rafId);
     };
-  }, [data, introDone, renderStatesFrame]);
+  }, [data, introDone, readyToDrop, renderStatesFrame]);
 
   // Renderizado volumétrico interactivo normal (Hover y Selección) una vez concluida la intro
   useEffect(() => {
@@ -924,6 +939,7 @@ export function PixelMap({
     selectedStateId,
     hoveredStateId: currentHoveredId,
     selectState,
+    readyToDrop,
   };
 
   return (
@@ -937,14 +953,16 @@ export function PixelMap({
         )}
         style={{ aspectRatio, containerType: 'inline-size' }}
       >
-        {/* Capa 1: Sombra de contacto suave sobre el fondo */}
-        <img
-          src="/data/map-shadow.webp"
-          alt=""
-          aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none"
-          loading="eager"
-        />
+        {/* Capa 1: Sombra de contacto suave sobre el fondo (se oculta si el Hero la proyecta fija) */}
+        {!hideInternalShadow && (
+          <img
+            src="/data/map-shadow.webp"
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none"
+            loading="eager"
+          />
+        )}
 
         {/* Capa 2: Mapa Base Pixel Art (Oculto durante la intro para que las piezas elevadas no se dupliquen abajo) */}
         <img
