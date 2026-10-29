@@ -1,8 +1,17 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { PixelMap, DahliaLayer, DahliaStoreProvider, StateHologramCard } from '@/features/mapa-dalias';
 import { PaperTearOverlay } from './PaperTearOverlay';
+
+// Constantes de la cámara con zoom (1.85x) en Mobile (< md):
+// - En panProgress = 0: encuadre icónico en Baja California, Mar de Cortés y Noroeste (+50%, +41%)
+// - En panProgress = 1: recorrido diagonal acoplado hasta el Sureste y Península de Yucatán (-48%, -30%)
+const MOBILE_ZOOM_SCALE = 1.85;
+const MOBILE_START_TX = 50;
+const MOBILE_END_TX = -48;
+const MOBILE_START_TY = 41;
+const MOBILE_END_TY = -30;
 
 export function Hero() {
   // Inicialización neutral: ningún estado seleccionado al cargar la landing
@@ -12,13 +21,26 @@ export function Hero() {
   // Progreso [0..1] impulsado por gesto de scroll sin desplazar el documento:
   // - En Desktop (>= md): el mapa sube de abajo hacia arriba mientras las letras pasan a gris.
   // - En Mobile (< md): la hoja de papel se rompe irregularmente de abajo al centro hacia arriba,
-  //   quitando por completo las letras y descubriendo el mapa debajo.
+  //   quitando por completo las letras y descubriendo el mapa debajo ya con zoom en Baja California.
   const [ascentProgress, setAscentProgress] = useState(0);
   const [hasReachedPlace, setHasReachedPlace] = useState(false);
+
+  // Fase 3: Progreso de paneo horizontal acoplado a la diagonal de México en Mobile [0 = Baja California .. 1 = Yucatán]
+  const [mobilePanProgress, setMobilePanProgress] = useState(0);
 
   const targetProgressRef = useRef(0);
   const currentProgressRef = useRef(0);
   const reachedRef = useRef(false);
+
+  const targetPanRef = useRef(0);
+  const currentPanRef = useRef(0);
+  const panRafRef = useRef(0);
+  const panGestureRef = useRef<{
+    startX: number;
+    startY: number;
+    lastX: number;
+    lockedAxis: 'horizontal' | 'vertical' | null;
+  } | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -143,12 +165,102 @@ export function Hero() {
     };
   }, []);
 
+  // Limpieza del loop de paneo horizontal en desmontaje
+  useEffect(() => {
+    return () => {
+      if (panRafRef.current) {
+        window.cancelAnimationFrame(panRafRef.current);
+      }
+    };
+  }, []);
+
+  const tickMobilePan = useCallback(() => {
+    const target = targetPanRef.current;
+    const current = currentPanRef.current;
+    const diff = target - current;
+
+    if (Math.abs(diff) > 0.001) {
+      const next = current + diff * 0.22;
+      currentPanRef.current = next;
+      setMobilePanProgress(next);
+      panRafRef.current = window.requestAnimationFrame(tickMobilePan);
+    } else {
+      currentPanRef.current = target;
+      setMobilePanProgress(target);
+      panRafRef.current = 0;
+    }
+  }, []);
+
+  const handleMapTouchStart = useCallback(
+    (e: React.TouchEvent<HTMLDivElement>) => {
+      if (!hasReachedPlace || e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      panGestureRef.current = {
+        startX: touch.clientX,
+        startY: touch.clientY,
+        lastX: touch.clientX,
+        lockedAxis: null,
+      };
+    },
+    [hasReachedPlace]
+  );
+
+  const handleMapTouchMove = useCallback(
+    (e: React.TouchEvent<HTMLDivElement>) => {
+      if (!hasReachedPlace || !panGestureRef.current || e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      const gesture = panGestureRef.current;
+
+      const totalDx = touch.clientX - gesture.startX;
+      const totalDy = touch.clientY - gesture.startY;
+
+      if (!gesture.lockedAxis) {
+        if (Math.abs(totalDx) < 6 && Math.abs(totalDy) < 6) return;
+        gesture.lockedAxis =
+          Math.abs(totalDx) > Math.abs(totalDy) ? 'horizontal' : 'vertical';
+      }
+
+      // Si el gesto es vertical, dejamos que el navegador ejecute el scroll normal de la página (pan-y)
+      if (gesture.lockedAxis === 'vertical') return;
+
+      const stepDx = touch.clientX - gesture.lastX;
+      gesture.lastX = touch.clientX;
+
+      // Arrastrar hacia la izquierda (stepDx < 0) avanza hacia el Sureste (panProgress -> 1)
+      const PAN_RANGE_PX = 290;
+      const nextTarget = Math.min(
+        1,
+        Math.max(0, targetPanRef.current - stepDx / PAN_RANGE_PX)
+      );
+      targetPanRef.current = nextTarget;
+
+      if (!panRafRef.current) {
+        panRafRef.current = window.requestAnimationFrame(tickMobilePan);
+      }
+    },
+    [hasReachedPlace, tickMobilePan]
+  );
+
+  const handleMapTouchEnd = useCallback(() => {
+    panGestureRef.current = null;
+  }, []);
+
   // Progreso final [0..1]: se bloquea en 1 cuando el mapa llega a su lugar / termina de romperse la hoja
   const effectiveProgress = hasReachedPlace ? 1 : ascentProgress;
 
   // En Desktop: el mapa inicia 115vh abajo (100% fuera de pantalla) y oculto hasta que inicia el scroll
   const mapTranslateYVh = Number(((1 - effectiveProgress) * 115).toFixed(2));
   const isDesktopMapVisible = effectiveProgress > 0.002 || hasReachedPlace;
+
+  // En Mobile (< md): cálculo de cámara con zoom (1.85x) iniciando en Baja California (panProgress = 0)
+  const mobileTxPct = Number(
+    (MOBILE_START_TX + (MOBILE_END_TX - MOBILE_START_TX) * mobilePanProgress).toFixed(2)
+  );
+  const mobileTyPct = Number(
+    (MOBILE_START_TY + (MOBILE_END_TY - MOBILE_START_TY) * mobilePanProgress).toFixed(2)
+  );
+  const initialBajaTransform = `translate3d(${MOBILE_START_TX}%, ${MOBILE_START_TY}%, 0) scale(${MOBILE_ZOOM_SCALE})`;
+  const activeMobileCameraTransform = `translate3d(${mobileTxPct}%, ${mobileTyPct}%, 0) scale(${MOBILE_ZOOM_SCALE})`;
 
   // Transición progresiva de las letras monumentales de Desktop hacia gris marca de agua editorial (0.90 -> 0.30)
   const navyLetterMultiplier = Number((1 - effectiveProgress * (1 - 0.333)).toFixed(3));
@@ -159,13 +271,20 @@ export function Hero() {
     <section className="relative w-full bg-transparent overflow-x-clip pt-0 pb-0 md:pb-8 select-none">
       <div className="mx-auto max-w-[1440px] px-0 md:px-6 lg:px-10 relative z-10 overflow-visible">
         {/* Contenedor principal del escenario: pantalla completa en móvil (100dvh), altura calculada en desktop */}
-        <div className="relative flex flex-col items-center justify-center h-[100dvh] md:h-auto md:min-h-[560px] lg:min-h-[620px] w-full px-3 md:px-0">
+        <div
+          onTouchStart={handleMapTouchStart}
+          onTouchMove={handleMapTouchMove}
+          onTouchEnd={handleMapTouchEnd}
+          onTouchCancel={handleMapTouchEnd}
+          className="relative flex flex-col items-center justify-center h-[100dvh] md:h-auto md:min-h-[560px] lg:min-h-[620px] w-full px-0 md:px-0 max-md:overflow-hidden touch-pan-y"
+        >
           {/* ========================================================================= */}
-          {/* CAPA PORTADA MÓVIL (< md): HOJA DE PAPEL CON LETRAS QUE SE RASGA AL SUBIR */}
+          {/* CAPA PORTADA MÓVIL (< md): HOJA DE PAPEL CON LETRAS Y SOMBRA CON ZOOM     */}
           {/* ========================================================================= */}
           <PaperTearOverlay
             progress={effectiveProgress}
             isComplete={hasReachedPlace}
+            initialMapTransform={initialBajaTransform}
           />
 
           {/* ========================================================================= */}
@@ -242,14 +361,19 @@ export function Hero() {
 
           {/* ========================================================================= */}
           {/* CAPA 2 & 3: SOMBRA ESTACIONARIA + MAPA ISOMÉTRICO                         */}
-          {/* - En Mobile (< md): fijo debajo de la hoja que se rasga                   */}
+          {/* - En Mobile (< md): cámara con zoom 1.85x en Baja California y pan lateral*/}
           {/* - En Desktop (>= md): sube desde +115vh hasta encajar sobre su sombra     */}
           {/* ========================================================================= */}
           <div
             id="mapa-interactivo"
-            className="relative z-20 w-full max-w-[780px] sm:max-w-[920px] md:max-w-[1040px] lg:max-w-[1140px] xl:max-w-[1220px] mt-1 md:-mt-5"
+            className="relative z-20 w-full max-w-[780px] sm:max-w-[920px] md:max-w-[1040px] lg:max-w-[1140px] xl:max-w-[1220px] mt-0 md:-mt-5 origin-center will-change-transform [transform:var(--mobile-cam-transform)] md:[transform:none]"
+            style={
+              {
+                '--mobile-cam-transform': activeMobileCameraTransform,
+              } as React.CSSProperties
+            }
           >
-            {/* Sombra estacionaria que en Desktop aparece después de las letras (1.55s) y en Mobile yace bajo la hoja */}
+            {/* Sombra estacionaria: en Mobile viaja solidaria con la cámara 1.85x; en Desktop permanece fija esperando al mapa */}
             <div
               aria-hidden="true"
               className="hero-shadow-delayed-enter pointer-events-none select-none w-full max-w-5xl mx-auto"
@@ -264,7 +388,7 @@ export function Hero() {
             </div>
 
             {/* Contenedor del mapa:
-                - Mobile (< md): ya posicionado en translate3d(0,0,0) debajo de PaperTearOverlay.
+                - Mobile (< md): ya posicionado en translate3d(0,0,0) dentro de la cámara con zoom 1.85x.
                 - Desktop (>= md): inicia oculto en +115vh y asciende con el scroll. */}
             <div
               className="absolute inset-0 w-full h-full map-isometric-shadow will-change-transform opacity-100 md:opacity-[var(--desktop-map-opacity)]"

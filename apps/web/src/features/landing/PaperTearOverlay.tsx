@@ -7,6 +7,8 @@ export interface PaperTearOverlayProps {
   progress: number;
   /** Indica si la animación ya concluyó para desmontar visualmente la capa */
   isComplete?: boolean;
+  /** Transformación CSS inicial del zoom en Baja California para que la sombra coincida 1:1 con el mapa debajo */
+  initialMapTransform?: string;
 }
 
 const SAMPLE_COUNT = 64;
@@ -93,6 +95,7 @@ function buildTearPolygons(progress: number): {
 export function PaperTearOverlay({
   progress,
   isComplete = false,
+  initialMapTransform = 'translate3d(50%, 41%, 0) scale(1.85)',
 }: PaperTearOverlayProps) {
   const { sheetPolygon, pulpPolygon, shadowPolygon } = useMemo(
     () => buildTearPolygons(progress),
@@ -135,10 +138,10 @@ export function PaperTearOverlay({
         />
       )}
 
-      {/* Capa 3: Hoja superior con la textura oficial de papel, sombra del mapa en el centro
-          y el titular editorial con la misma distribución y animación que en Desktop */}
+      {/* Capa 3: Hoja superior con la textura oficial de papel, la sombra de México ya con el zoom
+          de Baja California y la composición tipográfica tipo póster */}
       <div
-        className="absolute inset-0 flex flex-col justify-between py-6 px-3 sm:px-6 will-change-[clip-path]"
+        className="absolute inset-0 flex flex-col justify-between px-3.5 py-10 will-change-[clip-path] overflow-hidden"
         style={{
           backgroundColor: '#EEEDEA',
           backgroundImage: "url('/bg/bg-ine-hero.webp')",
@@ -148,61 +151,74 @@ export function PaperTearOverlay({
           clipPath: sheetPolygon,
         }}
       >
-        {/* Sombra del mapa en el centro de la hoja, apareciendo a los 1.55s tras las letras */}
+        {/* Sombra del mapa de México ya con el Zoom en Baja California (1:1 con el mapa debajo) */}
         <div
           aria-hidden="true"
-          className="hero-shadow-delayed-enter absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[380px] px-3 pointer-events-none select-none z-0"
+          className="absolute inset-x-0 top-1/2 -translate-y-1/2 w-full pointer-events-none select-none z-0"
           style={{ aspectRatio: '660 / 435' }}
         >
-          <img
-            src="/data/map-shadow.webp"
-            alt=""
-            className="w-full h-full object-contain pointer-events-none select-none opacity-85"
-            loading="eager"
-          />
+          <div
+            className="w-full h-full origin-center"
+            style={{
+              transform: initialMapTransform,
+            }}
+          >
+            <img
+              src="/data/map-shadow.webp"
+              alt=""
+              className="hero-shadow-delayed-enter w-full h-full object-contain pointer-events-none select-none opacity-90"
+              loading="eager"
+            />
+          </div>
         </div>
 
-        {/* Contenedor tipográfico con la misma distribución y animaciones que Desktop */}
+        {/* Composición tipográfica tipo póster idéntica a la referencia */}
         <div
-          className="relative z-10 flex flex-col justify-between h-full w-full will-change-transform py-3 sm:py-6"
+          className="relative z-10 flex flex-col justify-between h-full w-full will-change-transform py-2"
           style={{
             transform: `translate3d(0, -${textPullUpPx}px, 0)`,
           }}
         >
-          {/* Bloque Superior Izquierdo: "Tu" (0.10s) + "participación" (0.35s) */}
-          <div className="w-full flex justify-start pl-1 sm:pl-4">
-            <span className="text-[clamp(2.1rem,8.4vw,3.4rem)] font-black tracking-tighter leading-[0.88] text-brand-navy uppercase font-sans flex flex-wrap gap-x-2.5">
+          {/* Bloque Superior Izquierdo (2 líneas apiladas): "TU" sobre "PARTICIPACIÓN" */}
+          <div className="w-full flex flex-col items-start">
+            <span className="text-[clamp(4.2rem,19vw,6.4rem)] font-black tracking-tighter leading-[0.82] text-brand-navy uppercase font-sans block">
               <span className="hero-word" style={{ animationDelay: '0.10s' }}>
-                Tu
+                TU
               </span>
+            </span>
+            <span className="text-[clamp(2.35rem,11.2vw,3.95rem)] font-black tracking-tighter leading-[0.86] text-brand-navy uppercase font-sans block mt-1">
               <span className="hero-word" style={{ animationDelay: '0.35s' }}>
-                participación
+                PARTICIPACIÓN
               </span>
             </span>
           </div>
 
-          {/* Bloque Medio Asimétrico: "hace" (0.65s) + "florecer" (0.95s, magenta INE) */}
-          <div className="w-full flex justify-between items-center px-1">
-            <span className="text-[clamp(2.1rem,8.4vw,3.4rem)] font-black tracking-tighter leading-[0.88] text-brand-navy uppercase font-sans">
-              <span className="hero-word" style={{ animationDelay: '0.65s' }}>
-                hace
+          {/* Bloque Medio Asimétrico (2 niveles): "HACE" (izq) y debajo "FLORECER" (der, magenta INE) */}
+          <div className="w-full flex flex-col my-auto py-4">
+            <div className="w-full flex justify-start">
+              <span className="text-[clamp(3.6rem,16.5vw,5.5rem)] font-black tracking-tighter leading-[0.84] text-brand-navy uppercase font-sans block">
+                <span className="hero-word" style={{ animationDelay: '0.65s' }}>
+                  HACE
+                </span>
               </span>
-            </span>
-            <span className="text-[clamp(2.3rem,9.2vw,3.8rem)] font-black tracking-tighter leading-[0.88] text-dalia-600 uppercase font-sans">
-              <span className="hero-word-magenta" style={{ animationDelay: '0.95s' }}>
-                florecer
+            </div>
+            <div className="w-full flex justify-end mt-1.5">
+              <span className="text-[clamp(3.15rem,14.4vw,4.85rem)] font-black tracking-tighter leading-[0.84] text-dalia-600 uppercase font-sans block">
+                <span className="hero-word-magenta" style={{ animationDelay: '0.95s' }}>
+                  FLORECER
+                </span>
               </span>
-            </span>
+            </div>
           </div>
 
-          {/* Bloque Inferior Derecho: "a" (1.25s) + "México." (1.45s) */}
-          <div className="w-full flex justify-end pr-1 sm:pr-4 pb-1 sm:pb-3">
-            <span className="text-[clamp(2.1rem,8.4vw,3.4rem)] font-black tracking-tighter leading-[0.88] text-brand-navy uppercase font-sans flex flex-wrap gap-x-2.5">
+          {/* Bloque Inferior Derecho: "A MÉXICO." */}
+          <div className="w-full flex justify-end pb-2">
+            <span className="text-[clamp(2.8rem,12.8vw,4.35rem)] font-black tracking-tighter leading-[0.86] text-brand-navy uppercase font-sans flex flex-wrap gap-x-2.5">
               <span className="hero-word" style={{ animationDelay: '1.25s' }}>
-                a
+                A
               </span>
               <span className="hero-word" style={{ animationDelay: '1.45s' }}>
-                México.
+                MÉXICO.
               </span>
             </span>
           </div>

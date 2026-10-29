@@ -9,8 +9,8 @@ export default function LandingPage() {
       {/* Capa de Pétalos en z-[60] por encima de la Navbar (z-50) y Hero para caída desde el cielo */}
       <FloatingPetals />
       
-      {/* En Mobile (< md), la primera pantalla no muestra el logo de INE ni la sidebar */}
-      <Navbar className="hidden md:block" />
+      {/* En Mobile (< md), se oculta en la portada de papel y aparece al descubrirse la pantalla del mapa */}
+      <Navbar revealOnMobileMap />
       <main className="flex-1 w-full relative">
         <Hero />
         <ModuleCards />

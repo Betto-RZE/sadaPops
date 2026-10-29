@@ -4,12 +4,43 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Lock, Menu, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { cn } from '@/shared/utils';
 
-export function Navbar({ className }: { className?: string } = {}) {
+export interface NavbarProps {
+  className?: string;
+  /** En Mobile (< md), mantiene ocultos el logo del INE y la sidebar en la portada de papel hasta descubrir el mapa */
+  revealOnMobileMap?: boolean;
+}
+
+export function Navbar({ className, revealOnMobileMap = false }: NavbarProps = {}) {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobileRevealed, setIsMobileRevealed] = useState(!revealOnMobileMap);
+
+  useEffect(() => {
+    if (!revealOnMobileMap || typeof window === 'undefined') {
+      setIsMobileRevealed(true);
+      return;
+    }
+
+    if (
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+      window.scrollY > 30
+    ) {
+      setIsMobileRevealed(true);
+      return;
+    }
+
+    const handleMapReveal = () => {
+      setIsMobileRevealed(true);
+    };
+
+    window.addEventListener('dalias:map-drop-start', handleMapReveal);
+    return () => {
+      window.removeEventListener('dalias:map-drop-start', handleMapReveal);
+    };
+  }, [revealOnMobileMap]);
 
   // Opciones verticales según mockheroine4: INICIO, DATOS, JUEGO
   const navLinks = [
@@ -19,16 +50,27 @@ export function Navbar({ className }: { className?: string } = {}) {
   ];
 
   return (
-    <header className={cn("hero-nav-enter relative z-50 w-full bg-transparent pt-6 md:pt-8 px-6 lg:px-12 pointer-events-none", className)}>
+    <header
+      className={cn(
+        'hero-nav-enter relative z-50 w-full bg-transparent pt-6 md:pt-8 px-6 lg:px-12 pointer-events-none',
+        revealOnMobileMap &&
+          'max-md:fixed max-md:top-0 max-md:inset-x-0 max-md:pt-4 max-md:px-4 max-md:transition-opacity max-md:duration-500',
+        revealOnMobileMap && !isMobileRevealed && 'max-md:!opacity-0 max-md:invisible',
+        revealOnMobileMap && isMobileRevealed && 'max-md:!opacity-100 max-md:visible',
+        className
+      )}
+    >
       <div className="mx-auto flex max-w-[1440px] items-start justify-between">
-        
         {/* Superior Izquierdo: Logo Oficial del INE limpio y transparente sobre el fondo de papel */}
-        <Link 
-          href="/" 
-          className="pointer-events-auto block transition-transform hover:scale-[1.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-dalia-600 rounded-sm"
+        <Link
+          href="/"
+          className={cn(
+            'block transition-transform hover:scale-[1.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-dalia-600 rounded-sm',
+            isMobileRevealed ? 'pointer-events-auto' : 'max-md:pointer-events-none pointer-events-auto'
+          )}
           title="Instituto Nacional Electoral"
         >
-          <div className="relative w-36 sm:w-44 md:w-52 h-16 sm:h-20">
+          <div className="relative w-32 sm:w-44 md:w-52 h-14 sm:h-20">
             <Image
               src="/Logo_ine_2026.svg"
               alt="Instituto Nacional Electoral - INE"
@@ -40,8 +82,12 @@ export function Navbar({ className }: { className?: string } = {}) {
         </Link>
 
         {/* Superior Derecho: Mini Sidebar vertical (una opción debajo de la otra) transparente */}
-        <div className="pointer-events-auto flex items-start gap-4">
-          
+        <div
+          className={cn(
+            'flex items-start gap-4',
+            isMobileRevealed ? 'pointer-events-auto' : 'max-md:pointer-events-none pointer-events-auto'
+          )}
+        >
           {/* Navegación Desktop: Sidebar vertical */}
           <nav className="hidden md:flex flex-col items-end gap-2 text-right">
             {navLinks.map((link) => {
@@ -74,7 +120,7 @@ export function Navbar({ className }: { className?: string } = {}) {
             })}
 
             {/* Agrega tu Dalia (debajo en la sidebar vertical) */}
-            <div 
+            <div
               className="flex items-center gap-1.5 text-brand-navy/60 hover:text-brand-navy text-[11px] lg:text-xs font-bold tracking-tight cursor-default select-none pt-1"
               title="Completa un módulo para desbloquear"
             >
@@ -83,11 +129,11 @@ export function Navbar({ className }: { className?: string } = {}) {
             </div>
           </nav>
 
-          {/* Botón Móvil */}
-          <button 
-            className="md:hidden p-2 text-brand-navy rounded-lg bg-black/5 hover:bg-black/10 transition-colors pointer-events-auto"
+          {/* Botón Móvil (Sidebar Toggle) */}
+          <button
+            className="md:hidden p-2 text-brand-navy rounded-lg bg-white/80 hover:bg-white shadow-sm border border-brand-navy/10 backdrop-blur-sm transition-colors"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            aria-label={isMobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
+            aria-label={isMobileMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
           >
             {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
