@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { PixelMap, DahliaLayer, DahliaStoreProvider, StateHologramCard } from '@/features/mapa-dalias';
 import { PaperTearOverlay } from './PaperTearOverlay';
+import { MobileMapHud } from './MobileMapHud';
 
 // Constantes de la cámara con zoom (2.45x) en Mobile (< md):
 // - En panProgress = 0: encuadre inmersivo en Baja California, Mar de Cortés y Noroeste (+66%, +56%)
@@ -27,6 +28,8 @@ export function Hero() {
 
   // Fase 3: Progreso de paneo horizontal acoplado a la diagonal de México en Mobile [0 = Baja California .. 1 = Yucatán]
   const [mobilePanProgress, setMobilePanProgress] = useState(0);
+  // Fase 4: Alternar escala entre Zoom inmersivo (2.45x) y Vista completa (1.0x)
+  const [isMobileZoomed, setIsMobileZoomed] = useState(true);
 
   const targetProgressRef = useRef(0);
   const currentProgressRef = useRef(0);
@@ -260,7 +263,9 @@ export function Hero() {
     (MOBILE_START_TY + (MOBILE_END_TY - MOBILE_START_TY) * mobilePanProgress).toFixed(2)
   );
   const initialBajaTransform = `translate3d(${MOBILE_START_TX}%, ${MOBILE_START_TY}%, 0) scale(${MOBILE_ZOOM_SCALE})`;
-  const activeMobileCameraTransform = `translate3d(${mobileTxPct}%, ${mobileTyPct}%, 0) scale(${MOBILE_ZOOM_SCALE})`;
+  const activeMobileCameraTransform = isMobileZoomed
+    ? `translate3d(${mobileTxPct}%, ${mobileTyPct}%, 0) scale(${MOBILE_ZOOM_SCALE})`
+    : 'translate3d(0%, 0%, 0) scale(1)';
 
   // Transición progresiva de las letras monumentales de Desktop hacia gris marca de agua editorial (0.90 -> 0.30)
   const navyLetterMultiplier = Number((1 - effectiveProgress * (1 - 0.333)).toFixed(3));
@@ -269,6 +274,15 @@ export function Hero() {
 
   return (
     <section className="relative w-full bg-transparent overflow-x-clip pt-0 pb-0 md:pb-8 select-none">
+      {/* Fase 4: HUD de instrucciones y control de zoom en esquina superior derecha de Mobile */}
+      {hasReachedPlace && (
+        <MobileMapHud
+          isZoomed={isMobileZoomed}
+          onToggleZoom={() => setIsMobileZoomed((z) => !z)}
+          panProgress={mobilePanProgress}
+        />
+      )}
+
       <div className="mx-auto max-w-[1440px] px-0 md:px-6 lg:px-10 relative z-10 overflow-visible">
         {/* Contenedor principal del escenario: en móvil altura compactada (84dvh con espacio para Navbar arriba y sin hueco muerto abajo) */}
         <div

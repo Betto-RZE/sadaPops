@@ -98,6 +98,7 @@ const BUTTON_CLIP_PATH =
   'polygon(0 6px, 2px 6px, 2px 4px, 4px 4px, 4px 2px, 6px 2px, 6px 0, calc(100% - 6px) 0, calc(100% - 6px) 2px, calc(100% - 4px) 2px, calc(100% - 4px) 4px, calc(100% - 2px) 4px, calc(100% - 2px) 6px, 100% 6px, 100% calc(100% - 6px), calc(100% - 2px) calc(100% - 6px), calc(100% - 2px) calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) calc(100% - 2px), calc(100% - 6px) calc(100% - 2px), calc(100% - 6px) 100%, 6px 100%, 6px calc(100% - 2px), 4px calc(100% - 2px), 4px calc(100% - 4px), 2px calc(100% - 4px), 2px calc(100% - 6px), 0 calc(100% - 6px))';
 
 interface HoloLayout {
+  isMobile: boolean;
   left: number;
   top: number;
   w: number;
@@ -135,10 +136,10 @@ function computeHoloLayout(
   const rawAy = (state.anchor.y - liftLogicalPx) * sy;
 
   // Dimensiones escaladas de la silueta voxel 3D manteniendo su proporción original.
-  // En desktop: 275px a 325px. En mobile: 110px a 145px para encajar cómodamente en el viewport
+  // En desktop: 275px a 325px. En mobile con cámara 2.45x: 65px a 80px (para medir ~160-195px en pantalla)
   const aspect = meta.height / meta.width;
   const targetMaxDim = isMobile
-    ? Math.min(145, Math.max(110, Math.round(cw * 0.35)))
+    ? Math.min(80, Math.max(65, Math.round(cw * 0.18)))
     : Math.min(325, Math.max(275, Math.round(cw * 0.28)));
   let w: number;
   let h: number;
@@ -150,12 +151,12 @@ function computeHoloLayout(
     h = Math.round(w * aspect);
   }
 
-  // Dimensiones de la tarjeta compacta (168px ancho x ~185px alto)
-  const CARD_HALF_W = 84;
-  const CARD_HALF_H = 92;
-  // En móvil el contenedor es de ~230px, la distancia mínima de proyección se acota a 70px
-  const SAFE_CARD_TOP = isMobile ? 8 : -18;
-  const MIN_BEAM_DIST = isMobile ? 70 : 145;
+  // Dimensiones de la tarjeta: en móvil el chasis se contra-escala para encajar en el viewport
+  const CARD_HALF_W = isMobile ? 48 : 84;
+  const CARD_HALF_H = isMobile ? 54 : 92;
+  // En móvil la distancia mínima de proyección se acota a 45px
+  const SAFE_CARD_TOP = isMobile ? 4 : -18;
+  const MIN_BEAM_DIST = isMobile ? 45 : 145;
 
   const opticalCenter = OPTICAL_CENTER_OVERRIDES[state.id] ?? meta.visualCenter;
 
@@ -258,6 +259,7 @@ function computeHoloLayout(
   const targetRight: [number, number] = [tx + nx * rTop, ty + ny * rTop];
 
   return {
+    isMobile,
     left,
     top,
     w,
@@ -866,10 +868,11 @@ export function StateHologramCard({ children, className }: StateHologramCardProp
               style={{
                 left: `${opticalCenter[0] * 100}%`,
                 top: `${opticalCenter[1] * 100}%`,
-                transform:
-                  layout.cardOffsetPx !== 0
-                    ? `translate(calc(-50% + ${layout.cardOffsetPx - layout.islandOffsetPx}px), -50%)`
-                    : 'translate(-50%, -50%)',
+                transform: layout.isMobile
+                  ? 'translate(-50%, -50%) scale(0.52)'
+                  : layout.cardOffsetPx !== 0
+                  ? `translate(calc(-50% + ${layout.cardOffsetPx - layout.islandOffsetPx}px), -50%)`
+                  : 'translate(-50%, -50%)',
               }}
             >
               <PixelCardChassis onClose={() => selectState(null)}>
