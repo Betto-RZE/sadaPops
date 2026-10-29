@@ -238,88 +238,89 @@ export function PaperTearOverlay({
       aria-hidden="true"
       className="md:hidden fixed inset-0 w-screen h-[100dvh] z-40 pointer-events-none select-none overflow-hidden"
     >
-      {!isTearing ? (
-        /* Hoja 100% íntegra antes de iniciar el gesto */
-        <div className="absolute -inset-x-3 inset-y-0">
-          <PosterSheetContent initialMapTransform={initialMapTransform} />
+      {/* ================================================================= */}
+      {/* MITAD SUPERIOR DE LA HOJA (siempre montada para no reiniciar CSS) */}
+      {/* ================================================================= */}
+      <div
+        className="absolute -inset-x-3 -top-3 bottom-0 pt-3 will-change-transform"
+        style={{
+          filter: isTearing
+            ? 'drop-shadow(0 5px 10px rgba(28, 37, 65, 0.16)) drop-shadow(0 1px 2px rgba(28, 37, 65, 0.11))'
+            : 'none',
+        }}
+      >
+        {/* Sub-capa de fibra del propio papel deslaminado (tono cálido sutil, no línea blanca gruesa) */}
+        <div
+          className="absolute inset-0 will-change-[clip-path]"
+          style={{
+            backgroundColor: '#F5F4F0',
+            backgroundImage: "url('/bg/bg-ine-hero.webp')",
+            backgroundPosition: 'calc(50% + 7px) calc(0% + 5px)',
+            backgroundSize: 'cover',
+            filter: 'brightness(1.035) contrast(0.96)',
+            clipPath: isTearing
+              ? topPlyPoly
+              : 'polygon(0% 0%, 100% 0%, 100% 0%, 0% 0%)',
+          }}
+        />
+
+        {/* Hoja principal superior (cubre el 100% cuando !isTearing) */}
+        <div
+          className="absolute inset-0 will-change-[clip-path]"
+          style={{
+            clipPath: isTearing
+              ? topSheetPoly
+              : 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)',
+          }}
+        >
+          <PosterSheetContent
+            initialMapTransform={initialMapTransform}
+            pullOffsetY={isTearing ? -pullPx : 0}
+          />
         </div>
-      ) : (
-        <>
-          {/* ================================================================= */}
-          {/* MITAD SUPERIOR DE LA HOJA (se abre hacia arriba)                  */}
-          {/* ================================================================= */}
-          <div
-            className="absolute -inset-x-3 -top-3 bottom-0 pt-3 will-change-transform"
-            style={{
-              filter:
-                'drop-shadow(0 5px 10px rgba(28, 37, 65, 0.16)) drop-shadow(0 1px 2px rgba(28, 37, 65, 0.11))',
-            }}
-          >
-            {/* Sub-capa de fibra del propio papel deslaminado (tono cálido sutil, no línea blanca gruesa) */}
-            <div
-              className="absolute inset-0 will-change-[clip-path]"
-              style={{
-                backgroundColor: '#F5F4F0',
-                backgroundImage: "url('/bg/bg-ine-hero.webp')",
-                backgroundPosition: 'calc(50% + 7px) calc(0% + 5px)',
-                backgroundSize: 'cover',
-                filter: 'brightness(1.035) contrast(0.96)',
-                clipPath: topPlyPoly,
-              }}
-            />
+      </div>
 
-            {/* Hoja principal superior */}
-            <div
-              className="absolute inset-0 will-change-[clip-path]"
-              style={{
-                clipPath: topSheetPoly,
-              }}
-            >
-              <PosterSheetContent
-                initialMapTransform={initialMapTransform}
-                pullOffsetY={-pullPx}
-              />
-            </div>
-          </div>
+      {/* ================================================================= */}
+      {/* MITAD INFERIOR DE LA HOJA (siempre montada para no reiniciar CSS) */}
+      {/* ================================================================= */}
+      <div
+        className="absolute -inset-x-3 top-0 -bottom-3 pb-3 will-change-transform"
+        style={{
+          filter: isTearing
+            ? 'drop-shadow(0 -4px 10px rgba(28, 37, 65, 0.14)) drop-shadow(0 -1px 2px rgba(28, 37, 65, 0.10))'
+            : 'none',
+        }}
+      >
+        {/* Sub-capa de fibra del propio papel deslaminado en el borde inferior */}
+        <div
+          className="absolute inset-0 will-change-[clip-path]"
+          style={{
+            backgroundColor: '#F5F4F0',
+            backgroundImage: "url('/bg/bg-ine-hero.webp')",
+            backgroundPosition: 'calc(50% - 6px) calc(0% - 4px)',
+            backgroundSize: 'cover',
+            filter: 'brightness(1.035) contrast(0.96)',
+            clipPath: isTearing
+              ? bottomPlyPoly
+              : 'polygon(0% 100%, 100% 100%, 100% 100%, 0% 100%)',
+          }}
+        />
 
-          {/* ================================================================= */}
-          {/* MITAD INFERIOR DE LA HOJA (se abre hacia abajo)                   */}
-          {/* ================================================================= */}
-          <div
-            className="absolute -inset-x-3 top-0 -bottom-3 pb-3 will-change-transform"
-            style={{
-              filter:
-                'drop-shadow(0 -4px 10px rgba(28, 37, 65, 0.14)) drop-shadow(0 -1px 2px rgba(28, 37, 65, 0.10))',
-            }}
-          >
-            {/* Sub-capa de fibra del propio papel deslaminado en el borde inferior */}
-            <div
-              className="absolute inset-0 will-change-[clip-path]"
-              style={{
-                backgroundColor: '#F5F4F0',
-                backgroundImage: "url('/bg/bg-ine-hero.webp')",
-                backgroundPosition: 'calc(50% - 6px) calc(0% - 4px)',
-                backgroundSize: 'cover',
-                filter: 'brightness(1.035) contrast(0.96)',
-                clipPath: bottomPlyPoly,
-              }}
-            />
-
-            {/* Hoja principal inferior */}
-            <div
-              className="absolute inset-0 will-change-[clip-path]"
-              style={{
-                clipPath: bottomSheetPoly,
-              }}
-            >
-              <PosterSheetContent
-                initialMapTransform={initialMapTransform}
-                pullOffsetY={pullPx}
-              />
-            </div>
-          </div>
-        </>
-      )}
+        {/* Hoja principal inferior (colapsada en 100% cuando !isTearing) */}
+        <div
+          className="absolute inset-0 will-change-[clip-path]"
+          style={{
+            clipPath: isTearing
+              ? bottomSheetPoly
+              : 'polygon(0% 100%, 100% 100%, 100% 100%, 0% 100%)',
+          }}
+        >
+          <PosterSheetContent
+            initialMapTransform={initialMapTransform}
+            pullOffsetY={isTearing ? pullPx : 0}
+          />
+        </div>
+      </div>
     </div>
   );
 }
