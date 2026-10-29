@@ -4,14 +4,14 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { PixelMap, DahliaLayer, DahliaStoreProvider, StateHologramCard } from '@/features/mapa-dalias';
 import { PaperTearOverlay } from './PaperTearOverlay';
 
-// Constantes de la cámara con zoom (1.85x) en Mobile (< md):
-// - En panProgress = 0: encuadre icónico en Baja California, Mar de Cortés y Noroeste (+50%, +41%)
-// - En panProgress = 1: recorrido diagonal acoplado hasta el Sureste y Península de Yucatán (-48%, -30%)
-const MOBILE_ZOOM_SCALE = 1.85;
-const MOBILE_START_TX = 50;
-const MOBILE_END_TX = -48;
-const MOBILE_START_TY = 41;
-const MOBILE_END_TY = -30;
+// Constantes de la cámara con zoom (2.45x) en Mobile (< md):
+// - En panProgress = 0: encuadre inmersivo en Baja California, Mar de Cortés y Noroeste (+66%, +56%)
+// - En panProgress = 1: recorrido diagonal acoplado hasta el Sureste y Península de Yucatán (-64%, -37%)
+const MOBILE_ZOOM_SCALE = 2.45;
+const MOBILE_START_TX = 66;
+const MOBILE_END_TX = -64;
+const MOBILE_START_TY = 56;
+const MOBILE_END_TY = -37;
 
 export function Hero() {
   // Inicialización neutral: ningún estado seleccionado al cargar la landing
@@ -270,13 +270,13 @@ export function Hero() {
   return (
     <section className="relative w-full bg-transparent overflow-x-clip pt-0 pb-0 md:pb-8 select-none">
       <div className="mx-auto max-w-[1440px] px-0 md:px-6 lg:px-10 relative z-10 overflow-visible">
-        {/* Contenedor principal del escenario: pantalla completa en móvil (100dvh), altura calculada en desktop */}
+        {/* Contenedor principal del escenario: en móvil altura compactada (84dvh con espacio para Navbar arriba y sin hueco muerto abajo) */}
         <div
           onTouchStart={handleMapTouchStart}
           onTouchMove={handleMapTouchMove}
           onTouchEnd={handleMapTouchEnd}
           onTouchCancel={handleMapTouchEnd}
-          className="relative flex flex-col items-center justify-center h-[100dvh] md:h-auto md:min-h-[560px] lg:min-h-[620px] w-full px-0 md:px-0 max-md:overflow-hidden touch-pan-y"
+          className="relative flex flex-col items-center justify-center h-[84dvh] pt-12 pb-2 md:pt-0 md:pb-0 md:h-auto md:min-h-[560px] lg:min-h-[620px] w-full px-0 md:px-0 max-md:overflow-hidden touch-pan-y"
         >
           {/* ========================================================================= */}
           {/* CAPA PORTADA MÓVIL (< md): HOJA DE PAPEL CON LETRAS Y SOMBRA CON ZOOM     */}
