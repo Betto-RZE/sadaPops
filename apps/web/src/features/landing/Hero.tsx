@@ -274,15 +274,6 @@ export function Hero() {
 
   return (
     <section className="relative w-full bg-transparent overflow-x-clip pt-0 pb-0 md:pb-8 select-none">
-      {/* Fase 4: HUD de instrucciones y control de zoom en esquina inferior izquierda de Mobile */}
-      {hasReachedPlace && (
-        <MobileMapHud
-          isZoomed={isMobileZoomed}
-          onToggleZoom={() => setIsMobileZoomed((z) => !z)}
-          panProgress={mobilePanProgress}
-        />
-      )}
-
       <div className="mx-auto max-w-[1440px] px-0 md:px-6 lg:px-10 relative z-10 overflow-visible">
         {/* Contenedor principal del escenario: en móvil altura compactada (84dvh con espacio para Navbar arriba y sin hueco muerto abajo) */}
         <div
@@ -292,6 +283,14 @@ export function Hero() {
           onTouchCancel={handleMapTouchEnd}
           className="relative flex flex-col items-center justify-center h-[84dvh] pt-12 pb-2 md:pt-0 md:pb-0 md:h-auto md:min-h-[560px] lg:min-h-[620px] w-full px-0 md:px-0 max-md:overflow-hidden touch-pan-y"
         >
+          {/* HUD de instrucciones y control de zoom: vive exclusivamente en la esquina inferior izquierda del Hero */}
+          {hasReachedPlace && (
+            <MobileMapHud
+              isZoomed={isMobileZoomed}
+              onToggleZoom={() => setIsMobileZoomed((z) => !z)}
+              panProgress={mobilePanProgress}
+            />
+          )}
           {/* ========================================================================= */}
           {/* CAPA PORTADA MÓVIL (< md): HOJA DE PAPEL CON LETRAS Y SOMBRA CON ZOOM     */}
           {/* ========================================================================= */}

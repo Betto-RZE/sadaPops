@@ -870,9 +870,11 @@ export function PixelMap({
         : null;
 
       if (resolved) {
+        if (e.cancelable) e.preventDefault();
         const nextSelected = resolved === selectedStateId ? null : resolved;
         onSelectState?.(nextSelected);
       } else if (selectedStateId) {
+        if (e.cancelable) e.preventDefault();
         onSelectState?.(null);
       }
     },
@@ -904,9 +906,11 @@ export function PixelMap({
         : null;
 
       if (resolved) {
+        if (e.cancelable) e.preventDefault();
         const nextSelected = resolved === selectedStateId ? null : resolved;
         onSelectState?.(nextSelected);
       } else if (selectedStateId) {
+        if (e.cancelable) e.preventDefault();
         onSelectState?.(null);
       }
     },

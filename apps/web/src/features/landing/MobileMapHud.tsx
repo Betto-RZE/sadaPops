@@ -49,7 +49,7 @@ export function MobileMapHud({
     <div
       aria-label="Controles de navegación del mapa en móvil"
       className={cn(
-        'md:hidden fixed bottom-5 left-4 z-40 flex flex-col items-start pointer-events-auto select-none transition-all duration-300',
+        'md:hidden absolute bottom-4 left-4 z-30 flex flex-col items-start pointer-events-auto select-none transition-all duration-300',
         className
       )}
     >
