@@ -2,10 +2,6 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { HERO_PETALS, type PetalConfig } from './config/petals';
-import {
-  MAP_INTRO_STAGGER_MS,
-  MAP_STATE_ANIM_MS,
-} from './PixelMap';
 import { cn } from '../../shared/utils';
 
 export interface FloatingPetalsProps {
@@ -22,16 +18,16 @@ interface PetalOffset {
 }
 
 /**
- * FloatingPetals — Capa de pétalos ambientales (Hito H6).
+ * FloatingPetals — Capa de pétalos ambientales exclusiva para Desktop (Hito H6).
  *
- * Características:
- *   - Ubicada en z-[60] por encima de la Navbar y del Hero: caen literalmente desde arriba
- *     de la ventana cruzando el encabezado del INE.
- *   - Trayectoria de planeo en S: caen con una ondulación y balanceo suave de hoja hasta
- *     posarse de forma 100% estática en sus coordenadas finales (sin bucle infinito).
- *   - Efecto "Brisa": una vez posados, si el cursor pasa cerca (< 48px), la brisa del movimiento
- *     los desliza suavemente sobre el papel en dirección opuesta con una leve rotación,
- *     manteniendo cursor-default y sin bloquear clics de la interfaz.
+ * Características de fluidez:
+ *   - Arquitectura de Animación en 2 Capas Compuestas por GPU:
+ *       1. Capa Exterior: Descenso vertical continuo en Y (sin escalas intermedias ni frenados segmentados)
+ *          con un fade-in suave al inicio.
+ *       2. Capa Interior: Balanceo aerodinámico en X y rotación sinusoidal suave que simula la sustentación del aire.
+ *   - Cascada Progresiva Armónica: Los pétalos inician su descenso en una onda continua sin agrupaciones toscas.
+ *   - Efecto "Brisa": Al posarse en el papel, el movimiento del cursor los empuja sutilmente.
+ *   - Exclusivo de Desktop: Oculto en móvil para no saturar la vista vertical táctil.
  */
 export function FloatingPetals({
   petals = HERO_PETALS,
@@ -43,21 +39,19 @@ export function FloatingPetals({
   const [offsets, setOffsets] = useState<Record<number, PetalOffset>>({});
   const petalRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
-  // Los pétalos inician su descenso justo cuando la oleada de estados y dalias concluye (~1.4s tras el inicio de caída)
-  const petalsAfterDropDelayMs =
-    MAP_INTRO_STAGGER_MS +
-    MAP_STATE_ANIM_MS;
+  // Inicio de descenso armonizado: arranca suavemente (~350ms tras el aterrizaje del mapa)
+  const petalsAfterDropDelayMs = 350;
 
-  // Tiempo máximo calculado para sincronizar el timer de asentamiento cuando todos los pétalos hayan aterrizado
+  // Tiempo máximo para sincronizar el estado asentado (interactividad de brisa con ratón)
   const maxAnimationTotalMs = useMemo(() => {
     let maxMs = 0;
     petals.forEach((p, idx) => {
-      const dur = 2.4 + ((p.id * 7) % 5) * 0.15;
-      const del = 0.05 + ((idx * 0.11) % 0.7);
+      const dur = 2.6 + ((p.id * 7) % 5) * 0.18;
+      const del = 0.05 + idx * 0.075 + ((p.id * 13) % 5) * 0.03;
       const total = Math.round((dur + del) * 1000);
       if (total > maxMs) maxMs = total;
     });
-    return maxMs + 120;
+    return maxMs + 150;
   }, [petals]);
 
   useEffect(() => {
@@ -114,7 +108,6 @@ export function FloatingPetals({
       return;
     }
 
-    // Desactivar efecto brisa en pantallas táctiles o sin ratón fino para garantizar 60 fps en móviles
     if (
       typeof window !== 'undefined' &&
       !window.matchMedia('(hover: hover) and (pointer: fine)').matches
@@ -122,7 +115,7 @@ export function FloatingPetals({
       return;
     }
 
-    const BRUSH_RADIUS = 52; // Radio de detección de brisa en píxeles
+    const BRUSH_RADIUS = 52;
 
     const handlePointerMove = (e: PointerEvent) => {
       const mouseX = e.clientX;
@@ -139,11 +132,9 @@ export function FloatingPetals({
         const dist = Math.hypot(dx, dy);
 
         if (dist > 0 && dist < BRUSH_RADIUS) {
-          // Fuerza de empuje proporcional a la cercanía
           const force = (1 - dist / BRUSH_RADIUS) * 36;
           const nx = (dx / dist) * force;
           const ny = (dy / dist) * force;
-          // Rotación sutil según la dirección del empuje
           const rotDelta = (dx > 0 ? 1 : -1) * (force * 0.7);
 
           setOffsets((prev) => {
@@ -169,43 +160,68 @@ export function FloatingPetals({
     <div
       aria-hidden="true"
       className={cn(
-        'absolute inset-x-0 h-[100vh] min-h-[720px] pointer-events-none overflow-hidden select-none z-[60]',
+        'hidden md:block absolute inset-x-0 h-[100vh] min-h-[720px] pointer-events-none overflow-hidden select-none z-[60]',
         className
       )}
       style={{ top: `${anchorTopPx}px` }}
     >
       <style>{`
-        @keyframes petal-sky-glide {
+        /* ==================================================================== */
+        /* CAPA 1: Descenso continuo y progresivo en Y con fade-in orgánico     */
+        /* Sin saltos de interpolación: curva natural continua de deceleración  */
+        /* ==================================================================== */
+        @keyframes petal-glide-fall {
           0% {
             opacity: 0;
-            transform: translate3d(var(--start-x, -40px), var(--start-y, -200px), 0) rotate(var(--sway-rot-start, -18deg));
+            transform: translate3d(0, var(--start-y, -220px), 0);
           }
           18% {
             opacity: 1;
           }
-          45% {
-            transform: translate3d(calc(var(--start-x, -40px) * -0.45), calc(var(--start-y, -200px) * 0.48), 0) rotate(var(--sway-rot-mid, 12deg));
-          }
-          75% {
-            transform: translate3d(calc(var(--start-x, -40px) * 0.18), calc(var(--start-y, -200px) * 0.14), 0) rotate(var(--sway-rot-end, -4deg));
-          }
           100% {
             opacity: 1;
+            transform: translate3d(0, 0, 0);
+          }
+        }
+
+        /* ==================================================================== */
+        /* CAPA 2: Balanceo aerodinámico en X y rotación suave sinusoidal       */
+        /* ==================================================================== */
+        @keyframes petal-glide-sway {
+          0% {
+            transform: translate3d(var(--start-x, -36px), 0, 0) rotate(var(--rot-start, -18deg));
+          }
+          36% {
+            transform: translate3d(var(--sway-x-mid, 22px), 0, 0) rotate(var(--rot-mid, 14deg));
+          }
+          72% {
+            transform: translate3d(var(--sway-x-end, -8px), 0, 0) rotate(var(--rot-end, -5deg));
+          }
+          100% {
             transform: translate3d(0, 0, 0) rotate(0deg);
           }
         }
 
-        .petal-sky-falling {
+        .petal-sky-fall-wrap {
           opacity: 0;
-          animation-name: petal-sky-glide;
+          animation-name: petal-glide-fall;
           animation-iteration-count: 1;
-          animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+          animation-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
           animation-fill-mode: forwards;
           will-change: transform, opacity;
         }
 
+        .petal-sky-sway-wrap {
+          animation-name: petal-glide-sway;
+          animation-iteration-count: 1;
+          animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+          animation-fill-mode: forwards;
+          will-change: transform;
+        }
+
         @media (prefers-reduced-motion: reduce) {
-          .petal-sky-falling {
+          .petal-sky-fall-wrap,
+          .petal-sky-sway-wrap {
             animation: none !important;
             opacity: 1 !important;
             transform: none !important;
@@ -215,17 +231,21 @@ export function FloatingPetals({
 
       {petals.map((petal, idx) => {
         const spriteSrc = `/petals/petal-${petal.shape}-r${petal.rot}.png`;
-        const startYPx = 170 + (petal.shape * 22) + ((petal.id * 13) % 40);
+        const startYPx = 180 + (petal.shape * 24) + ((petal.id * 13) % 45);
         const startY = `-${startYPx}px`;
 
         const dir = idx % 2 === 0 ? -1 : 1;
-        const startX = dir * (36 + ((idx * 8) % 28));
-        const rotStart = dir * (18 + (idx % 4) * 3);
-        const rotMid = -dir * (12 + (idx % 3) * 3);
-        const rotEnd = dir * 3;
+        const startX = dir * (34 + ((idx * 7) % 26));
+        const swayMidX = -dir * (20 + (idx % 3) * 6);
+        const swayEndX = dir * (8 + (idx % 2) * 4);
 
-        const glideDuration = (2.4 + ((petal.id * 7) % 5) * 0.15).toFixed(2);
-        const individualDelay = (0.05 + ((idx * 0.11) % 0.7)).toFixed(2);
+        const rotStart = dir * (18 + (idx % 4) * 4);
+        const rotMid = -dir * (12 + (idx % 3) * 3);
+        const rotEnd = dir * 4;
+
+        // Ritmo de cascada continuo y natural: sin retrasos caóticos por módulo
+        const glideDuration = (2.6 + ((petal.id * 7) % 5) * 0.16).toFixed(2);
+        const individualDelay = (0.05 + idx * 0.075 + ((petal.id * 13) % 5) * 0.03).toFixed(2);
 
         const currentOffset = offsets[petal.id] || { x: 0, y: 0, rot: 0 };
 
@@ -239,10 +259,7 @@ export function FloatingPetals({
                 petalRefs.current.delete(petal.id);
               }
             }}
-            className={cn(
-              'absolute pointer-events-none cursor-default transition-transform duration-500 ease-out',
-              petal.desktopOnly ? 'hidden md:block' : 'block'
-            )}
+            className="absolute pointer-events-none cursor-default transition-transform duration-500 ease-out"
             style={{
               left: `${petal.x}%`,
               top: `${petal.y}%`,
@@ -251,33 +268,47 @@ export function FloatingPetals({
                 : undefined,
             }}
           >
+            {/* Capa 1: Descenso continuo y suave en Y */}
             <div
               className={cn(
                 'relative select-none pointer-events-none',
-                hasStarted ? 'petal-sky-falling' : 'opacity-0'
+                hasStarted ? 'petal-sky-fall-wrap' : 'opacity-0'
               )}
               style={
                 {
-                  '--start-x': `${startX}px`,
                   '--start-y': startY,
-                  '--sway-rot-start': `${rotStart}deg`,
-                  '--sway-rot-mid': `${rotMid}deg`,
-                  '--sway-rot-end': `${rotEnd}deg`,
                   animationDuration: `${glideDuration}s`,
                   animationDelay: `${individualDelay}s`,
                 } as React.CSSProperties
               }
             >
-              <img
-                src={spriteSrc}
-                alt=""
-                loading="eager"
-                decoding="async"
-                className="select-none pointer-events-none block drop-shadow-[0_2px_4px_rgba(28,37,65,0.16)]"
-                style={{
-                  imageRendering: 'pixelated',
-                }}
-              />
+              {/* Capa 2: Balanceo aerodinámico en X y rotación de sustentación */}
+              <div
+                className="petal-sky-sway-wrap"
+                style={
+                  {
+                    '--start-x': `${startX}px`,
+                    '--sway-x-mid': `${swayMidX}px`,
+                    '--sway-x-end': `${swayEndX}px`,
+                    '--rot-start': `${rotStart}deg`,
+                    '--rot-mid': `${rotMid}deg`,
+                    '--rot-end': `${rotEnd}deg`,
+                    animationDuration: `${glideDuration}s`,
+                    animationDelay: `${individualDelay}s`,
+                  } as React.CSSProperties
+                }
+              >
+                <img
+                  src={spriteSrc}
+                  alt=""
+                  loading="eager"
+                  decoding="async"
+                  className="select-none pointer-events-none block drop-shadow-[0_2px_4px_rgba(28,37,65,0.16)]"
+                  style={{
+                    imageRendering: 'pixelated',
+                  }}
+                />
+              </div>
             </div>
           </div>
         );

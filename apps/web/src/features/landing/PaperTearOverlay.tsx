@@ -160,15 +160,30 @@ function PosterSheetContent({
         </div>
       </div>
 
-      {/* Composición tipográfica tipo póster idéntica a la referencia */}
+      {/* Composición tipográfica tipo póster idéntica a la referencia con Sello Institucional INE superior */}
       <div
         className="relative z-10 flex flex-col justify-between h-full w-full will-change-transform py-2"
         style={{
           transform: pullOffsetY ? `translate3d(0, ${pullOffsetY}px, 0)` : undefined,
         }}
       >
+        {/* Cabecera Editorial Institucional: Micro-sello oficial INE para legitimidad inmediata (lado derecho limpio) */}
+        <div className="w-full flex items-center justify-start pb-3 pt-1 border-b border-brand-navy/10">
+          <div className="flex items-center gap-2">
+            <img
+              src="/Logo_ine_2026.svg"
+              alt="INE"
+              className="h-4 sm:h-5 w-auto object-contain opacity-90"
+            />
+            <div className="w-px h-3 bg-brand-navy/20" />
+            <span className="text-[9.5px] font-black uppercase tracking-[0.18em] text-brand-navy/80 leading-none">
+              Cultura Cívica
+            </span>
+          </div>
+        </div>
+
         {/* Bloque Superior Izquierdo (2 líneas apiladas): "TU" sobre "PARTICIPACIÓN" */}
-        <div className="w-full flex flex-col items-start">
+        <div className="w-full flex flex-col items-start pt-2">
           <span className="text-[clamp(4.2rem,19vw,6.4rem)] font-black tracking-tighter leading-[0.82] text-brand-navy uppercase font-sans block">
             <span className="hero-word" style={{ animationDelay: '0.10s' }}>
               TU
