@@ -367,7 +367,7 @@ export function TimelineVisualization({ selectedYear, onSelectYear }: Props) {
   };
 
   return (
-    <section className="bg-white rounded-t-[32px] rounded-b-3xl p-6 md:p-10 border border-gray-100 border-t-4 border-t-[#E3007E] shadow-[0_20px_50px_-20px_rgba(227,0,126,0.12)] mb-12 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
+    <section className="bg-white rounded-t-[24px] rounded-b-3xl p-4 sm:p-6 md:p-10 border border-gray-100 border-t-4 border-t-[#E3007E] shadow-[0_20px_50px_-20px_rgba(227,0,126,0.12)] mb-12 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
       
       {/* Barra de control superior idéntica al mockup */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-6 border-b border-gray-100 pb-6">
@@ -442,7 +442,8 @@ export function TimelineVisualization({ selectedYear, onSelectYear }: Props) {
         className="relative w-full rounded-2xl border border-pink-200/60 bg-gradient-to-b from-[#F8FAFC] via-[#FFF5FA]/40 to-[#FFF0F7]/60 overflow-hidden shadow-inner" 
         style={{ imageRendering: 'pixelated' }}
       >
-        <div className="overflow-x-auto hide-scrollbar w-full">
+        <p className="mb-2 text-center text-xs text-slate-500 sm:hidden">Desliza la gráfica para recorrer los datos →</p>
+        <div className="overflow-x-auto hide-scrollbar w-full" role="region" aria-label="Gráfica de evolución histórica; desliza horizontalmente para ver todos los años" tabIndex={0}>
           <div className="w-full min-w-[620px] sm:min-w-full relative aspect-[1000/350]">
             <svg 
               className="w-full h-full block" 

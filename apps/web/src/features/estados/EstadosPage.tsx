@@ -17,7 +17,7 @@ export function EstadosPage() {
   const [year, setYear] = useState(2024);
 
   return (
-    <div className="min-h-screen bg-[#FFF8FB] font-sans text-[#1C2541]">
+    <div className="min-h-screen bg-transparent font-sans text-[#1C2541]">
       <Navbar />
       <HeaderEstados />
 

@@ -13,7 +13,7 @@ export function HeaderEdades() {
   const reduceMotion = useReducedMotion();
 
   return (
-    <header className="w-full bg-[#FDFCFD] px-3 pb-3 pt-3 sm:px-6 sm:pb-4 sm:pt-4 md:px-12 md:pt-6">
+    <header className="w-full bg-transparent px-3 pb-3 pt-3 sm:px-6 sm:pb-4 sm:pt-4 md:px-12 md:pt-6">
       <div className="relative mx-auto h-[500px] w-full max-w-[1200px] overflow-hidden rounded-2xl border border-slate-200/80 bg-[#172235] shadow-[0_16px_45px_-12px_rgba(28,37,65,0.18)] sm:h-[450px] sm:rounded-3xl md:h-[480px]">
         <div className="pointer-events-none absolute inset-0" aria-hidden="true">
           <Image src="/edades/hero-plaza.png" alt="" fill priority unoptimized sizes="(max-width: 1200px) 100vw, 1200px" className="object-cover object-[58%_center] sm:object-center" />

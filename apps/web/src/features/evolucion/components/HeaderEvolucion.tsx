@@ -5,7 +5,7 @@ import { pixelFont } from '../fonts';
 
 export function HeaderEvolucion() {
   return (
-    <header className="relative w-full bg-[#FDFCFD] pt-3 sm:pt-4 md:pt-6 pb-2 px-3 sm:px-6 lg:px-12">
+    <header className="relative w-full bg-transparent pt-3 sm:pt-4 md:pt-6 pb-2 px-3 sm:px-6 lg:px-12">
       {/* Contenedor enmarcado del Hero: con bordes laterales y esquinas redondeadas en desktop para ajustar el tamaño */}
       <div className="relative w-full max-w-[1200px] mx-auto h-[440px] sm:h-[480px] md:h-[520px] lg:h-[550px] rounded-2xl sm:rounded-3xl overflow-hidden border border-slate-200/90 shadow-[0_16px_45px_-12px_rgba(28,37,65,0.14)] bg-[#1C2541]">
         

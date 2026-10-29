@@ -15,7 +15,7 @@ export function GeneroPage() {
   const currentData = GENDER_MOCK_DATA[selectedYear] ?? GENDER_MOCK_DATA[2024];
 
   return (
-    <div className="min-h-screen bg-[#FBF9FB] flex flex-col font-sans selection:bg-dalia-200 selection:text-brand-navy">
+    <div className="min-h-screen bg-transparent flex flex-col font-sans selection:bg-dalia-200 selection:text-brand-navy">
       <Navbar />
 
       {/* 1. Hero exacto a ancho completo directamente bajo el Navbar */}

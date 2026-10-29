@@ -50,7 +50,7 @@ function Fighter({ state, side, rate, isLeader }: { state: StateSample; side: Si
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={state.id}
-          className="relative h-[160px] w-[160px] sm:h-[210px] sm:w-[210px]"
+          className="relative aspect-square w-full max-w-[160px] sm:h-[210px] sm:w-[210px]"
           initial={reduceMotion ? false : { opacity: 0, x: isP1 ? -40 : 40 }}
           animate={{ opacity: 1, x: 0 }}
           exit={reduceMotion ? undefined : { opacity: 0, x: isP1 ? -40 : 40 }}
@@ -207,13 +207,14 @@ export function StateDuel({ primary, opponent, onPrimaryChange, onOpponentChange
 
       {/* Tabla espejo */}
       <div className="mt-4 overflow-hidden rounded-2xl border border-[#F5D5E4] bg-white">
-        <table className="w-full text-sm">
+        <table className="w-full table-fixed text-xs sm:text-sm">
           <caption className="sr-only">Comparación de participación entre {primary.name} y {opponent.name}, {year}</caption>
+          <colgroup><col className="w-[40%]" /><col className="w-[20%]" /><col className="w-[40%]" /></colgroup>
           <thead className="bg-[#FFF7FB] text-xs uppercase tracking-wide text-[#6B5A68]">
             <tr>
-              <th scope="col" className="px-3 py-3 text-left sm:px-5"><span className="inline-flex items-center gap-2"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: DUEL_COLORS.p1 }} aria-hidden="true" />{primary.name}</span></th>
-              <th scope="col" className="px-2 py-3 text-center font-medium">Indicador</th>
-              <th scope="col" className="px-3 py-3 text-right sm:px-5"><span className="inline-flex items-center gap-2">{opponent.name}<span className="h-2 w-2 rounded-full" style={{ backgroundColor: DUEL_COLORS.p2 }} aria-hidden="true" /></span></th>
+              <th scope="col" className="break-words px-2 py-3 text-left sm:px-5"><span className="inline-flex min-w-0 flex-wrap items-start gap-1.5"><span className="mt-1 h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: DUEL_COLORS.p1 }} aria-hidden="true" /><span className="min-w-0 break-words">{primary.name}</span></span></th>
+              <th scope="col" className="break-words px-1 py-3 text-center font-medium">Indicador</th>
+              <th scope="col" className="break-words px-2 py-3 text-right sm:px-5"><span className="inline-flex min-w-0 flex-wrap items-start justify-end gap-1.5"><span className="min-w-0 break-words">{opponent.name}</span><span className="mt-1 h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: DUEL_COLORS.p2 }} aria-hidden="true" /></span></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#FBE7F0]">
@@ -223,12 +224,12 @@ export function StateDuel({ primary, opponent, onPrimaryChange, onOpponentChange
               const max = Math.max(a, b) || 1;
               return (
                 <tr key={row.label} className="transition-colors hover:bg-[#FFF7FB]">
-                  <td className="px-3 py-3 sm:px-5">
+                  <td className="px-2 py-3 sm:px-5">
                     <span className={`block tabular-nums ${a >= b ? 'font-semibold text-[#1C2541]' : 'text-[#6B5A68]'}`}>{row.format(a)}</span>
                     {row.scale && <MirrorBar value={a} max={max} side="p1" />}
                   </td>
-                  <th scope="row" className="whitespace-nowrap px-2 py-3 text-center text-xs font-medium text-[#6B5A68]">{row.label}</th>
-                  <td className="px-3 py-3 text-right sm:px-5">
+                  <th scope="row" className="break-words px-1 py-3 text-center text-[10px] font-medium leading-tight text-[#6B5A68] sm:px-2 sm:text-xs">{row.label}</th>
+                  <td className="px-2 py-3 text-right sm:px-5">
                     <span className={`block tabular-nums ${b >= a ? 'font-semibold text-[#1C2541]' : 'text-[#6B5A68]'}`}>{row.format(b)}</span>
                     {row.scale && <MirrorBar value={b} max={max} side="p2" />}
                   </td>

@@ -18,7 +18,7 @@ export function EdadesPage() {
   const ageGap = topGroup.participation - lowestGroup.participation;
 
   return (
-    <div className="min-h-screen bg-[#FBF9FB] flex flex-col font-sans selection:bg-dalia-200 selection:text-brand-navy">
+    <div className="min-h-screen bg-transparent flex flex-col font-sans selection:bg-dalia-200 selection:text-brand-navy">
       <Navbar />
       <HeaderEdades />
 

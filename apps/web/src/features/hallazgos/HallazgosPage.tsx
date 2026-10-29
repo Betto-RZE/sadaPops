@@ -275,7 +275,7 @@ function ChapterSpread({ chapter, index }: { chapter: Chapter; index: number }) 
 export function HallazgosPage() {
   const reduceMotion = useReducedMotion();
   return (
-    <div className="min-h-screen bg-[#FBF9FB] font-sans text-[#1C2541]">
+    <div className="min-h-screen bg-transparent font-sans text-[#1C2541]">
       <Navbar />
 
       <HeaderHallazgos items={chapters.map(({ id, number, title, petal, petalDeep }) => ({ id, number, title, petal, petalDeep }))} />
