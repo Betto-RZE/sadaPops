@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import { motion, useScroll, useTransform, useReducedMotion } from 'framer-motion';
 import {
   INE_YOUTH_TURNOUT_2024,
   getYouthTurnoutBenchmark,
 } from '../mapa-dalias/data/ineYouthTurnout2024';
-import { ArrowUpRight, ArrowDownRight, ChevronDown } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, ChevronDown, Check } from 'lucide-react';
 import { cn } from '@/shared/utils';
 
 interface CivicBridgeAndGapSectionProps {
@@ -60,6 +60,27 @@ export function CivicBridgeAndGapSection({
     [effectiveStateId]
   );
   const stateName = INE_YOUTH_TURNOUT_2024[effectiveStateId]?.name || 'tu estado';
+
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isDropdownOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsDropdownOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isDropdownOpen]);
 
   const prefersReducedMotion = useReducedMotion();
 
@@ -129,33 +150,36 @@ export function CivicBridgeAndGapSection({
 
         {/* Párrafo del puente constitucional */}
         <p className="text-sm sm:text-base text-[#3A4354] leading-[1.65] font-sans font-normal mb-8 max-w-3xl">
-          Estos temas se deciden, en parte, por quienes eligen y por quienes aparecen. Un ejemplo concreto:
-          en junio de 2027 se eligen las 500 diputaciones federales. Esa Cámara aprueba cada año el
-          Presupuesto de Egresos de la Federación, una facultad que le corresponde en exclusiva, y que asigna
-          recursos públicos a educación, salud y programas de empleo. Junto con el Senado, el Congreso legisla
-          en materia laboral y de seguridad social.
+          Las condiciones en las que estudias, buscas empleo o trabajas se relacionan con decisiones públicas,
+          y algunas se toman en el Congreso. En junio de 2027 se eligen las 500 diputaciones federales. Esa
+          Cámara aprueba cada año el Presupuesto de Egresos de la Federación, una facultad que le corresponde en
+          exclusiva, y que asigna recursos públicos a educación, salud y programas de empleo. Junto con el
+          Senado, el Congreso legisla en materia laboral y de seguridad social. Quiénes ocupan esas diputaciones
+          depende de lo que decidan las personas que votan.
         </p>
 
-        {/* Cita editorial destacada */}
-        <div className="relative pl-6 sm:pl-8 py-2 border-l-2 border-[#5E4EC8]/70 my-6">
-          <p className="font-serif text-lg sm:text-xl text-[#0F1B2D] leading-snug font-normal italic">
-            “Si piensas que tu voto solo no cambia nada, tienes parte de razón. Lo que pesa es que quienes
-            tienen tu edad aparezcan.”
+        {/* Declaración editorial: mayor tamaño y negritas, sin formato de card ni comillas */}
+        <div className="relative pl-6 sm:pl-8 py-2.5 border-l-[3px] border-[#5E4EC8] my-8 max-w-3xl">
+          <p className="font-serif font-bold text-2xl sm:text-3xl text-[#0F1B2D] leading-snug tracking-tight">
+            La participación comienza antes de llegar a las urnas.
+          </p>
+          <p className="font-serif font-bold text-lg sm:text-xl text-[#2C384A] leading-relaxed mt-2.5">
+            Una persona que se informa puede motivar a otra. Una comunidad que se prepara puede hacerse más visible. Y una generación que comprende cómo funcionan las decisiones públicas puede participar de manera más consciente.
           </p>
         </div>
       </section>
 
       {/* ========================================================================= */}
-      {/* PASO 3: SECCIÓN NEGRA EN FLUJO NATURAL (Sin doble scroll)                 */}
+      {/* PASO 3: SECCIÓN NEGRA EN FLUJO NATURAL (Sin doble scroll ni corte visual) */}
       {/* ========================================================================= */}
-      <div ref={sectionRef} className="w-full flex justify-center overflow-hidden">
+      <div ref={sectionRef} className="w-full flex justify-center">
         <motion.section
           aria-labelledby="brecha-heading"
           style={{
             width,
             borderRadius,
           }}
-          className="bg-[#0B0C10] text-white min-h-[100svh] flex flex-col justify-center overflow-hidden border-y border-white/10"
+          className="bg-[#0B0C10] text-white min-h-[100svh] flex flex-col justify-center border-y border-white/10 relative"
         >
           {/* El contenido mantiene su ancho fijo (100vw max-w-5xl) para nunca deformarse ni reacomodarse,
               y aparece únicamente cuando el bloque negro ya llegó a su lugar */}
@@ -164,7 +188,7 @@ export function CivicBridgeAndGapSection({
               opacity: contentOpacity,
               y: contentY,
             }}
-            className="w-screen max-w-5xl mx-auto px-6 sm:px-10 lg:px-12 py-16 sm:py-20"
+            className="w-screen max-w-5xl mx-auto px-6 sm:px-10 lg:px-12 pt-16 pb-40 sm:pt-20 sm:pb-52"
           >
             {/* Cabecera superior: 03 / 06 LA BRECHA GENERACIONAL + INE CCPC 2024 */}
             <div className="flex flex-wrap items-center justify-between gap-4 pb-6 mb-4 border-b border-white/10">
@@ -326,28 +350,69 @@ export function CivicBridgeAndGapSection({
             {/* ========================================================================= */}
             <div className="mt-8 pt-6 border-t border-white/10">
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                <div className="flex-1 max-w-md">
+                <div className="flex-1 max-w-sm" ref={dropdownRef}>
                   <label
-                    htmlFor="state-turnout-select"
+                    id="state-dropdown-label"
                     className="font-mono text-[10px] sm:text-[11px] font-bold tracking-[0.2em] uppercase text-[#B8A8FF] block mb-2"
                   >
                     CONSULTA TU ENTIDAD FEDERATIVA (18 A 29 AÑOS)
                   </label>
 
                   <div className="relative">
-                    <select
-                      id="state-turnout-select"
-                      value={effectiveStateId}
-                      onChange={(e) => onSelectState(e.target.value)}
-                      className="w-full bg-transparent border-b border-white/25 hover:border-white/50 focus:border-[#9988FC] text-white font-serif text-2xl sm:text-3xl font-bold py-2 pr-10 appearance-none focus:outline-none transition-colors cursor-pointer rounded-none"
+                    <button
+                      type="button"
+                      aria-haspopup="listbox"
+                      aria-expanded={isDropdownOpen}
+                      aria-labelledby="state-dropdown-label"
+                      onClick={() => setIsDropdownOpen((prev) => !prev)}
+                      className="w-full bg-[#161A2B] hover:bg-[#1E2338] border border-white/20 focus:border-[#9988FC] text-white text-sm sm:text-base font-medium py-2.5 px-4 rounded-lg flex items-center justify-between transition-all focus:outline-none focus:ring-2 focus:ring-[#9988FC]/50 cursor-pointer shadow-md"
                     >
-                      {STATE_LIST.map((state) => (
-                        <option key={state.id} value={state.id} className="bg-[#0B0C10] text-white">
-                          {state.name}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="w-5 h-5 text-white/40 absolute right-1 bottom-3.5 pointer-events-none" />
+                      <div className="flex items-center gap-2.5 truncate">
+                        <span className="w-2 h-2 rounded-full bg-[#9988FC] shrink-0" />
+                        <span className="font-serif text-base sm:text-lg font-bold tracking-tight truncate">
+                          {stateName}
+                        </span>
+                      </div>
+                      <ChevronDown
+                        className={cn(
+                          'w-4 h-4 text-white/60 shrink-0 transition-transform duration-200',
+                          isDropdownOpen && 'rotate-180 text-[#9988FC]'
+                        )}
+                      />
+                    </button>
+
+                    {/* Menú desplegable hacia abajo con scroll limpio y tamaño contenido */}
+                    {isDropdownOpen && (
+                      <div
+                        role="listbox"
+                        className="absolute left-0 right-0 top-full mt-2 z-50 bg-[#121626] border border-white/20 rounded-lg shadow-2xl max-h-48 overflow-y-auto p-1.5 backdrop-blur-md animate-in fade-in-0 zoom-in-95 duration-150"
+                      >
+                        {STATE_LIST.map((state) => {
+                          const isSelected = state.id === effectiveStateId;
+                          return (
+                            <button
+                              key={state.id}
+                              type="button"
+                              role="option"
+                              aria-selected={isSelected}
+                              onClick={() => {
+                                onSelectState(state.id);
+                                setIsDropdownOpen(false);
+                              }}
+                              className={cn(
+                                'w-full text-left px-3.5 py-2 rounded-[4px] text-xs sm:text-sm font-sans flex items-center justify-between transition-colors cursor-pointer',
+                                isSelected
+                                  ? 'bg-[#5E4EC8] text-white font-semibold'
+                                  : 'text-white/80 hover:bg-white/10 hover:text-white'
+                              )}
+                            >
+                              <span>{state.name}</span>
+                              {isSelected && <Check className="w-3.5 h-3.5 text-white shrink-0 ml-2" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
 
