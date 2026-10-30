@@ -29,10 +29,13 @@
     "submit": "Dejar mi dalia",
     "anonymous": "Registro anónimo · Sin cuenta",
     "disclaimer": "Tu dalia representa preparación, no un voto.",
-    "planted": "Tu compromiso ya está en el mapa",
+    "planted": "Ya dejaste tu dalia",
     "plantedDetail": "Dalia registrada de forma anónima en",
     "localSaved": "La preferencia de avisos quedó guardada en este dispositivo.",
     "viewMap": "Ver en el mapa",
-    "edit": "Reubicar o cambiar color"
+    "loadingTheme": "Preparando tu color…",
+    "themeError": "No se pudo cargar el color. Vuelve a seleccionarlo para reintentar.",
+    "storageWarning": "Algunos cambios solo se conservarán mientras esta página permanezca abierta.",
+    "emailError": "Ingresa un correo válido para guardar la preferencia de avisos."
   }
 }

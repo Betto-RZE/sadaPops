@@ -95,8 +95,14 @@
 .confirmationCheck { color: var(--dahlia-accent); border: 1px solid var(--dahlia-border); background: var(--dahlia-scene); border-radius: 50%; padding: 10px; }
 .confirmation h4 { font-family: 'Newsreader', Georgia, 'Times New Roman', serif; font-size: 33px; line-height: 1.15; margin: 0; font-weight: 600; }
 .confirmation p { color: #4b5563; line-height: 1.6; margin: 0; font-size: 14px; }
-.edit { display: inline-flex; gap: 8px; align-items: center; cursor: pointer; color: var(--dahlia-accent); border: 0; background: transparent; font-size: 12px; padding: 8px 0; }
 .section :is(select, button, a, input):focus-visible { outline: 2px solid #172536; outline-offset: 4px; }
+.fieldHelp, .themeStatus { color: #4b5563; font-size: 11px; line-height: 1.5; margin: 8px 0 0; }
+.themeStatus { min-height: 17px; margin-top: 9px; }
+.section :is(select, button, input):disabled { cursor: default; opacity: .65; }
+.submit:disabled { transform: none; }
+.scene::before, .sheet, .title span, .label, .paperMessage, .ornament, .selectWrap > svg, .tape { transition: color .2s, background-color .2s, border-color .2s; }
+.section img { animation: themeReveal .2s ease-out; }
+@keyframes themeReveal { from { opacity: .6; } to { opacity: 1; } }
 @media (max-width: 1279px) {
   .sheet { width: min(720px, calc(100% - 120px)); padding: 40px 36px 24px; }
   .polaroid { width: 145px; left: -15px; top: 90px; }

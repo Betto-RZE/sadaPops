@@ -8,3 +8,18 @@ export const REGISTRATION_THEMES = [
 
 export type RegistrationTheme = (typeof REGISTRATION_THEMES)[number];
 export const DEFAULT_REGISTRATION_THEME = REGISTRATION_THEMES[1];
+
+// Paletas del antiguo visor: colores sin equivalente usan el tema inicial.
+const LEGACY_THEME_IDS: Record<string, RegistrationTheme['id']> = {
+  'rosa-dalia': 'fucsia',
+  'morado-voxel': 'lila-claro',
+  carmin: 'vino',
+  cempasuchil: 'fucsia',
+  jade: 'fucsia',
+  cobalto: 'fucsia',
+};
+
+export function resolveRegistrationTheme(id: string | null): RegistrationTheme {
+  const resolved = id ? LEGACY_THEME_IDS[id] ?? id : null;
+  return REGISTRATION_THEMES.find(theme => theme.id === resolved) ?? DEFAULT_REGISTRATION_THEME;
+}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowRight, Sparkles } from 'lucide-react';
@@ -9,7 +9,8 @@ import { useOptionalDahliaStore } from '../mapa-dalias/DahliaStore';
 import { cn } from '@/shared/utils';
 import { MetroTimeline } from './metro-timeline/MetroTimeline';
 import { DahliaRegistrationSection } from './registro-dalia/DahliaRegistrationSection';
-import { REGISTRATION_THEMES, DEFAULT_REGISTRATION_THEME, type RegistrationTheme } from './registro-dalia/themes';
+import { useDahliaRegistration } from './registro-dalia/useDahliaRegistration';
+import { isStateId } from './registro-dalia/registrationState';
 
 interface CivicTimelineAndExploreSectionProps {
   /** Estado seleccionado actualmente (sincronizado con el mapa y la sección de brecha) */
@@ -27,22 +28,14 @@ export function CivicTimelineAndExploreSection({
   onSelectState,
   className,
 }: CivicTimelineAndExploreSectionProps) {
-  const effectiveStateId = selectedStateId || '09';
+  const registration = useDahliaRegistration(isStateId(selectedStateId) ? selectedStateId : '09');
+  const effectiveStateId = registration.plantedStateId ?? (isStateId(selectedStateId) ? selectedStateId : '09');
   const selectedStateName =
     INE_YOUTH_TURNOUT_2024[effectiveStateId]?.name || 'tu entidad federativa';
   const stateTurnout = INE_YOUTH_TURNOUT_2024[effectiveStateId]?.turnoutYouthPercent;
 
   const dahliaStore = useOptionalDahliaStore();
   const currentCount = dahliaStore?.getCount(effectiveStateId) ?? 0;
-
-  // Estados del formulario unificado
-  const [selectedPalette, setSelectedPalette] = useState<RegistrationTheme>(DEFAULT_REGISTRATION_THEME);
-  const [wantsAlerts, setWantsAlerts] = useState(false);
-  const [email, setEmail] = useState('');
-  const [isPlanted, setIsPlanted] = useState(false);
-  const [emailError, setEmailError] = useState<string | null>(null);
-  const [alertsSaved, setAlertsSaved] = useState(false);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   // Estado del carrusel horizontal en móvil para "Explora los datos" (estilo "Tu día a día")
   const exploreCarouselRef = useRef<HTMLDivElement>(null);
@@ -66,69 +59,6 @@ export function CivicTimelineAndExploreSection({
     if (cards[index]) {
       cards[index].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     }
-  };
-
-  // Restaurar dalia previa por dispositivo (1 dalia por sesión anónima)
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedState = localStorage.getItem('sada_dalia_planted_state');
-      if (savedState) {
-        setIsPlanted(true);
-      }
-      const savedEmail = localStorage.getItem('sada_alerts_email');
-      if (savedEmail) {
-        setAlertsSaved(true);
-        setEmail(savedEmail);
-      }
-      const savedColorId = localStorage.getItem('sada_dalia_color_id');
-      if (savedColorId) {
-        const found = REGISTRATION_THEMES.find((p) => p.id === savedColorId);
-        if (found) setSelectedPalette(found);
-      }
-    }
-  }, []);
-
-  const handleSelectPalette = (palette: RegistrationTheme) => {
-    setSelectedPalette(palette);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('sada_dalia_color_id', palette.id);
-    }
-  };
-
-  const handlePlantDalia = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Si marcó avisos y no los ha guardado, validar correo
-    if (wantsAlerts && !alertsSaved) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!email.trim() || !emailRegex.test(email.trim())) {
-        setEmailError('Por favor ingresa un correo electrónico válido para recibir los avisos.');
-        return;
-      }
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('sada_alerts_email', email.trim());
-      }
-      setAlertsSaved(true);
-    }
-
-    setEmailError(null);
-
-    // Disparar evento para sumar la dalia en el mapa del Hero sin modificar Hero.tsx
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(
-        new CustomEvent('dalias:add-dahlia', {
-          detail: { stateId: effectiveStateId },
-        })
-      );
-      localStorage.setItem('sada_dalia_planted_state', effectiveStateId);
-      localStorage.setItem('sada_dalia_color_id', selectedPalette.id);
-    }
-
-    setIsPlanted(true);
-  };
-
-  const handleRelocateDalia = () => {
-    setIsPlanted(false);
   };
 
   return (
@@ -181,23 +111,8 @@ export function CivicTimelineAndExploreSection({
           states={STATE_LIST}
           turnout={stateTurnout}
           count={currentCount}
-          theme={selectedPalette}
-          isPlanted={isPlanted}
-          wantsAlerts={wantsAlerts}
-          email={email}
-          emailError={emailError}
-          alertsSaved={alertsSaved}
-          detailsOpen={isDetailsOpen}
+          {...registration}
           onStateChange={onSelectState}
-          onThemeChange={handleSelectPalette}
-          onAlertsChange={(checked) => {
-            setWantsAlerts(checked);
-            if (!checked) setEmailError(null);
-          }}
-          onEmailChange={setEmail}
-          onDetailsChange={() => setIsDetailsOpen(!isDetailsOpen)}
-          onSubmit={handlePlantDalia}
-          onEdit={handleRelocateDalia}
         />
 
         {/* ========================================================================= */}

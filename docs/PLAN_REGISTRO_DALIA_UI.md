@@ -6,7 +6,8 @@
 - Fase 1 completada: especificación de composición, textos y cinco temas.
 - Fase 2 completada: recursos de los cinco temas preparados en `apps/web/public/form/themes/`; inventario en `manifest.json` y notas de uso en `README.md`.
 - Fase 3 completada: maquetación local en `src/features/landing/registro-dalia/`, integrada en la sección existente.
-- Fases 4–6 pendientes. Esperar confirmación del usuario antes de continuar con la integración avanzada.
+- Fase 4 completada: persistencia, migración de colores, precarga coordinada y registro sin duplicar envíos. Por indicación del usuario, se retiró la reubicación/edición; el registro previo muestra «Ya dejaste tu dalia».
+- Fases 5–6 pendientes. Esperar confirmación del usuario antes de continuar.
 - La fase 1 fue documental; la fase 2 incorpora imágenes sin cambiar la interfaz.
 - Referencia visual única: `docs/referencias/Formulario Deja una Dalia.png`.
 - Recursos originales: `apps/web/public/form/`; conservarlos sin sobrescribir.
@@ -133,8 +134,8 @@ El texto principal supera 15:1 y el secundario 7.3:1 sobre los cinco papeles. Es
 | Cambio de color | Actualizar toda la escena de forma coordinada, sin mover los controles, perder foco ni reiniciar entidad/correo. Transición de 180–240 ms; inmediata con movimiento reducido. |
 | Avisos activados | Expandir correo con etiqueta explícita, ayuda y detalles debajo del checkbox. La hoja crece en flujo; el botón conserva su texto. |
 | Error de correo | Mensaje junto al campo, asociado programáticamente; conservar tema, estado y color. No depender exclusivamente del color para comunicar el error. |
-| Confirmación | Conservar cabecera y escena; sustituir los controles por confirmación breve con entidad, acceso al mapa y acción secundaria de edición. La nota «Gracias por ser parte» permanece una sola vez. |
-| Edición posterior | Restaurar controles con selección actual, sin volver al tema inicial. Verificar el comportamiento existente de reubicación antes de modificar su lógica. |
+| Confirmación | Conservar cabecera y escena; sustituir los controles por «Ya dejaste tu dalia», con la entidad registrada y acceso al mapa. La nota «Gracias por ser parte» permanece una sola vez. |
+| Registro previo | Restaurar entidad y tema guardados y mostrar la confirmación. Sin opción de reubicación ni edición, por decisión del usuario durante fase 4. |
 
 La imagen principal ya no depende del visor 3D. En fases posteriores, desacoplar las cinco opciones nuevas de `DAHLIA_PALETTES` y definir un catálogo local de temas con sus recursos. No eliminar el componente 3D de otros usos sin verificar referencias.
 
@@ -183,4 +184,19 @@ La migración de IDs antiguos a los nuevos temas debe ser explícita y tolerante
 - El usuario pidió no acceder al navegador salvo necesidad. Se suspendió la revisión por navegador y se cerró la fase con verificaciones de código. El último ajuste de la fuente serif no se volvió a inspeccionar visualmente.
 - `Hero.tsx`, el visor 3D original, el dataset INE y las secciones adyacentes permanecen sin cambios. El contrato `dalias:add-dahlia` con `{ stateId }` se conserva.
 - Pendiente en fase 4: migración explícita de IDs de colores antiguos, precarga/transiciones de recursos, persistencia robusta y auditoría de avisos/edición/confirmación. Los nuevos IDs ya se guardan mediante los handlers existentes.
-- [ ] Confirmación del usuario para comenzar la fase 4.
+- [x] Confirmación del usuario para comenzar la fase 4.
+
+### Entrega de fase 4
+
+- Lógica del registro extraída a `useDahliaRegistration.ts`, con utilidades de almacenamiento y validación en `registrationState.ts`.
+- Migración: `rosa-dalia` → Fucsia, `morado-voxel` → Lila claro, `carmin` → Vino. Cempasúchil, Jade y Cobalto, sin equivalente en la nueva paleta, vuelven a Fucsia. Valores desconocidos también usan Fucsia. Se normalizan las preferencias almacenadas.
+- Restauración de entidad registrada independiente de la selección actual del mapa. IDs estatales y correos corruptos se ignoran. Controles desactivados hasta restaurar el estado inicial.
+- Cambio de tema: precargar y decodificar los cuatro WebP antes de sustituir tema e imágenes; reutilizar las mismas URLs optimizadas en la vista. Solo la última selección pendiente puede aplicarse. Fallos de carga mantienen la escena anterior y permiten reintento. Transición visual de 200 ms, anulada con movimiento reducido.
+- Envíos repetidos consultan la marca local y una referencia de sesión antes de emitir el evento; solo la primera siembra suma. El contrato sigue siendo `dalias:add-dahlia` con `{ stateId }`. El almacenamiento local no constituye una garantía global contra duplicados ni reemplaza un backend; el store del mapa continúa en memoria como antes.
+- Accesos a `localStorage` protegidos: si se bloquea o se agota la cuota, el registro puede continuar durante la sesión y muestra un aviso de persistencia limitada.
+- Correo validado en cada envío con avisos activados; error vinculado al campo y foco en él. Preferencias sin consentimiento no conservan correo. Confirmación y ayuda describen almacenamiento local, sin prometer envíos.
+- Decisión expresa del usuario: quitar la opción de reubicar y mostrar que ya se dejó la dalia. Se retiró por completo la acción de edición; tras registrar o restaurar se muestra «Ya dejaste tu dalia», la entidad original y el acceso al mapa. No se amplió el store.
+- El acceso al mapa usa el ancla existente `#mapa-interactivo`; el ancla anterior `#hero-mapa` no tenía destino. Se corrigió el enlace sin editar `Hero.tsx`.
+- Verificación sin navegador: diez pruebas automatizadas de restauración, migración, datos inválidos, correo, duplicados, almacenamiento bloqueado y precarga/reintento de imágenes; todas pasan. TypeScript y `git diff --check` correctos.
+- No se modificaron `Hero.tsx`, `DahliaStore.tsx`, el dataset INE ni el visor 3D original. La revisión visual/responsive queda para fases 5–6; sigue pendiente la fuente Newsreader autorizada.
+- [ ] Confirmación del usuario para comenzar la fase 5.

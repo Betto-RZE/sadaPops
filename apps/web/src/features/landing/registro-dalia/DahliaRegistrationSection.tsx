@@ -1,15 +1,20 @@
 'use client';
 
 import type { CSSProperties, FormEvent } from 'react';
-import Image from 'next/image';
+import NextImage, { type ImageProps } from 'next/image';
 import { IBM_Plex_Mono } from 'next/font/google';
-import { ArrowRight, Check, ChevronDown, MapPin, ShieldCheck, RotateCcw, Plus } from 'lucide-react';
+import { ArrowRight, Check, ChevronDown, MapPin, ShieldCheck, Plus } from 'lucide-react';
 import messages from '@/i18n/es.json';
 import { REGISTRATION_THEMES, type RegistrationTheme } from './themes';
 import styles from './DahliaRegistrationSection.module.css';
 
 const mono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500', '600'], display: 'swap' });
 const copy = messages.dahliaRegistration;
+
+// Los WebP ya están optimizados. Usar la misma URL en precarga y presentación.
+function Image(props: ImageProps) {
+  return <NextImage key={String(props.src)} {...props} unoptimized loading="eager" />;
+}
 
 interface Props {
   stateId: string;
@@ -24,13 +29,16 @@ interface Props {
   emailError: string | null;
   alertsSaved: boolean;
   detailsOpen: boolean;
+  ready: boolean;
+  pendingTheme: RegistrationTheme | null;
+  themeError: boolean;
+  storageWarning: boolean;
   onStateChange: (id: string) => void;
   onThemeChange: (theme: RegistrationTheme) => void;
   onAlertsChange: (checked: boolean) => void;
   onEmailChange: (email: string) => void;
   onDetailsChange: () => void;
   onSubmit: (event: FormEvent) => void;
-  onEdit: () => void;
 }
 
 function Stationery({ theme, ticket = false }: { theme: RegistrationTheme; ticket?: boolean }) {
@@ -93,12 +101,13 @@ export function DahliaRegistrationSection(props: Props) {
           </header>
 
           {!props.isPlanted ? (
-            <form onSubmit={props.onSubmit} className={styles.form}>
+            <form onSubmit={props.onSubmit} className={styles.form} noValidate>
               <div className={styles.field}>
                 <label htmlFor="registro-estado-select" className={`${styles.label} ${mono.className}`}>{copy.stateLabel}</label>
                 <div className={styles.selectWrap}>
                   <MapPin size={21} aria-hidden="true" />
-                  <select id="registro-estado-select" value={props.stateId} onChange={event => props.onStateChange(event.target.value)}>
+                  <select id="registro-estado-select" value={props.stateId} onChange={event => props.onStateChange(event.target.value)}
+                    disabled={!props.ready}>
                     {props.states.map(state => <option key={state.id} value={state.id}>{state.name}</option>)}
                   </select>
                   <ChevronDown size={20} aria-hidden="true" />
@@ -109,25 +118,29 @@ export function DahliaRegistrationSection(props: Props) {
                 </div>
               </div>
 
-              <fieldset className={styles.palette}>
+              <fieldset className={styles.palette} aria-busy={Boolean(props.pendingTheme)}>
                 <legend className={`${styles.label} ${mono.className}`}>{copy.colorLabel}</legend>
                 <div className={styles.swatches}>
                   {REGISTRATION_THEMES.map(option => (
                     <label key={option.id} className={styles.swatchOption} title={option.name}>
-                      <input type="radio" name="dahlia-color" value={option.id} checked={theme.id === option.id}
-                        onChange={() => props.onThemeChange(option)} aria-label={option.name} />
+                      <input type="radio" name="dahlia-color" value={option.id} checked={(props.pendingTheme ?? theme).id === option.id}
+                        disabled={!props.ready} onChange={() => props.onThemeChange(option)} aria-label={option.name}
+                        onClick={() => { if (props.themeError && theme.id === option.id) props.onThemeChange(option); }} />
                       <span className={styles.swatch} style={{ backgroundColor: option.hex }} aria-hidden="true">
-                        {theme.id === option.id && <Check size={18} strokeWidth={3} />}
+                        {(props.pendingTheme ?? theme).id === option.id && <Check size={18} strokeWidth={3} />}
                       </span>
                     </label>
                   ))}
-                  <span className={`${styles.selectedName} ${mono.className}`}>{theme.name}</span>
+                  <span className={`${styles.selectedName} ${mono.className}`}>{(props.pendingTheme ?? theme).name}</span>
                 </div>
+                <p className={styles.themeStatus} role="status" aria-live="polite">
+                  {props.pendingTheme ? copy.loadingTheme : props.themeError ? copy.themeError : ''}
+                </p>
               </fieldset>
 
               <div className={styles.alerts}>
                 <label className={styles.alertLabel}>
-                  <input type="checkbox" checked={props.wantsAlerts} onChange={event => props.onAlertsChange(event.target.checked)} aria-controls="registro-avisos" />
+                  <input type="checkbox" disabled={!props.ready} checked={props.wantsAlerts} onChange={event => props.onAlertsChange(event.target.checked)} aria-controls="registro-avisos" />
                   <span>{copy.alertsQuestion}</span>
                   <span className={`${styles.optional} ${mono.className}`}>{copy.optional}</span>
                 </label>
@@ -137,13 +150,14 @@ export function DahliaRegistrationSection(props: Props) {
                     <label htmlFor="registro-correo" className={`${styles.emailLabel} ${mono.className}`}>{copy.emailLabel}</label>
                     <input id="registro-correo" type="email" autoComplete="email" value={props.email}
                       onChange={event => props.onEmailChange(event.target.value)} placeholder={copy.emailPlaceholder}
+                      required
                       aria-invalid={Boolean(props.emailError)} aria-describedby={`registro-correo-help${props.emailError ? ' registro-correo-error' : ''}`} />
                     <p id="registro-correo-help" className={styles.emailHelp}>{copy.localEmail}</p>
                     {props.emailError && <p id="registro-correo-error" role="alert" className={styles.error}>{props.emailError}</p>}
                   </div>
                 )}
               </div>
-              <button type="submit" className={`${styles.submit} ${mono.className}`}>
+              <button type="submit" disabled={!props.ready || Boolean(props.pendingTheme)} className={`${styles.submit} ${mono.className}`}>
                 {copy.submit}<ArrowRight size={25} strokeWidth={1.5} aria-hidden="true" />
               </button>
               <div className={styles.assurances}>
@@ -163,10 +177,10 @@ export function DahliaRegistrationSection(props: Props) {
               <h4>{copy.planted}</h4>
               <p>{copy.plantedDetail} <strong>{props.stateName}</strong>.</p>
               {props.alertsSaved && <p>{copy.localSaved}</p>}
-              <a href="#hero-mapa" className={`${styles.submit} ${mono.className}`}>{copy.viewMap}<ArrowRight size={22} aria-hidden="true" /></a>
-              <button type="button" onClick={props.onEdit} className={styles.edit}><RotateCcw size={15} aria-hidden="true" />{copy.edit}</button>
+              <a href="#mapa-interactivo" className={`${styles.submit} ${mono.className}`}>{copy.viewMap}<ArrowRight size={22} aria-hidden="true" /></a>
             </div>
           )}
+          {props.storageWarning && <p role="status" className={styles.fieldHelp}>{copy.storageWarning}</p>}
           <p className={styles.disclaimer}>{copy.disclaimer}</p>
           <div className={styles.closingRule} aria-hidden="true"><span />✦<span /></div>
         </div>
