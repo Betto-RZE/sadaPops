@@ -3,10 +3,6 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import {
-  Calendar,
-  MapPin,
-  Vote,
-  ExternalLink,
   ArrowRight,
   Bell,
   BarChart3,
@@ -17,6 +13,7 @@ import {
 } from 'lucide-react';
 import { INE_YOUTH_TURNOUT_2024 } from '../mapa-dalias/data/ineYouthTurnout2024';
 import { cn } from '@/shared/utils';
+import { MetroTimeline } from './metro-timeline/MetroTimeline';
 
 interface CivicTimelineAndExploreSectionProps {
   /** Estado seleccionado actualmente (sincronizado con el mapa y la sección de brecha) */
@@ -106,116 +103,8 @@ export function CivicTimelineAndExploreSection({
             </p>
           </div>
 
-          {/* Tres Paradas Editoriales */}
-          <ol className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 relative">
-            {/* Parada 01: Hoy */}
-            <li className="flex flex-col justify-between p-6 sm:p-7 rounded-[4px] bg-[#FDFCFA] border border-[#E5DFD7] shadow-[-6px_10px_20px_-4px_rgba(18,24,38,0.06)] relative overflow-hidden">
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-dalia-600 to-dalia-400 opacity-90" />
-
-              <div>
-                <div className="flex items-center justify-between gap-2 mb-4">
-                  <span className="text-[10px] font-mono font-bold tracking-[0.2em] uppercase text-dalia-700 bg-dalia-50 px-2 py-0.5 rounded-[2px] border border-dalia-200">
-                    HOY
-                  </span>
-                  <span className="font-serif text-2xl text-black/20 font-normal">01</span>
-                </div>
-
-                <div className="flex items-center gap-2 mb-2 text-[#0F1B2D]">
-                  <Calendar className="w-5 h-5 text-dalia-600 shrink-0" />
-                  <h4 className="font-serif text-xl sm:text-[22px] font-bold text-[#0F1B2D] leading-snug">
-                    Revisa si tu credencial está vigente
-                  </h4>
-                </div>
-
-                <p className="text-xs sm:text-[13px] text-[#4A5568] leading-relaxed font-sans mt-3">
-                  Revisa si tu credencial está vigente; si te mudaste o estudias en otra ciudad, consulta las fechas
-                  límite del calendario oficial del INE para actualizar tu domicilio, o conoce cómo funcionan las
-                  casillas especiales.
-                </p>
-              </div>
-
-              <div className="mt-6 pt-4 border-t border-black/5">
-                <a
-                  href="https://listanominal.ine.mx/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider text-dalia-700 hover:text-dalia-800 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-dalia-600 rounded py-1"
-                >
-                  <span>Verificar vigencia en la Lista Nominal</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
-              </div>
-            </li>
-
-            {/* Parada 02: Más adelante */}
-            <li className="flex flex-col justify-between p-6 sm:p-7 rounded-[4px] bg-[#FDFCFA] border border-[#E5DFD7] shadow-[-6px_10px_20px_-4px_rgba(18,24,38,0.06)] relative overflow-hidden">
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#5B46D6] to-[#8C7BEE] opacity-90" />
-
-              <div>
-                <div className="flex items-center justify-between gap-2 mb-4">
-                  <span className="text-[10px] font-mono font-bold tracking-[0.2em] uppercase text-[#4332B5] bg-[#F1EDFD] px-2 py-0.5 rounded-[2px] border border-[#DDD5FA]">
-                    MÁS ADELANTE
-                  </span>
-                  <span className="font-serif text-2xl text-black/20 font-normal">02</span>
-                </div>
-
-                <div className="flex items-center gap-2 mb-2 text-[#0F1B2D]">
-                  <MapPin className="w-5 h-5 text-[#5B46D6] shrink-0" />
-                  <h4 className="font-serif text-xl sm:text-[22px] font-bold text-[#0F1B2D] leading-snug">
-                    Conoce qué se elige y ubica tu casilla
-                  </h4>
-                </div>
-
-                <p className="text-xs sm:text-[13px] text-[#4A5568] leading-relaxed font-sans mt-3">
-                  Conoce qué cargos se eligen en tu estado y ubica tu casilla cuando el INE publique el listado
-                  oficial.
-                </p>
-              </div>
-
-              <div className="mt-6 pt-4 border-t border-black/5">
-                <a
-                  href="https://ubicatucasilla.ine.mx/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider text-[#4332B5] hover:text-[#2E208F] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5B46D6] rounded py-1"
-                >
-                  <span>Portal Ubica tu Casilla</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
-              </div>
-            </li>
-
-            {/* Parada 03: Domingo 6 de junio de 2027 */}
-            <li className="flex flex-col justify-between p-6 sm:p-7 rounded-[4px] bg-[#FDFCFA] border border-[#E5DFD7] shadow-[-6px_10px_20px_-4px_rgba(18,24,38,0.06)] relative overflow-hidden">
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#0F1B2D] to-[#2D3F5A] opacity-90" />
-
-              <div>
-                <div className="flex items-center justify-between gap-2 mb-4">
-                  <span className="text-[10px] font-mono font-bold tracking-[0.2em] uppercase text-[#0F1B2D] bg-black/5 px-2 py-0.5 rounded-[2px] border border-black/10">
-                    DOMINGO 6 DE JUNIO DE 2027
-                  </span>
-                  <span className="font-serif text-2xl text-black/20 font-normal">03</span>
-                </div>
-
-                <div className="flex items-center gap-2 mb-2 text-[#0F1B2D]">
-                  <Vote className="w-5 h-5 text-[#0F1B2D] shrink-0" />
-                  <h4 className="font-serif text-xl sm:text-[22px] font-bold text-[#0F1B2D] leading-snug">
-                    La jornada electoral
-                  </h4>
-                </div>
-
-                <p className="text-xs sm:text-[13px] text-[#4A5568] leading-relaxed font-sans mt-3">
-                  La jornada electoral. Las casillas electorales reciben a las y los electores en todo el país de 8:00 a
-                  18:00 horas.
-                </p>
-              </div>
-
-              <div className="mt-6 pt-4 border-t border-black/5 flex items-center gap-2 text-[11px] font-mono text-[#0F1B2D]/70 font-semibold">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-                <span>Voto libre, personal y secreto en casilla</span>
-              </div>
-            </li>
-          </ol>
+          {/* Tres Paradas: escenario ferroviario voxel (tren + andenes) */}
+          <MetroTimeline dockedAt={0} />
         </section>
 
         {/* ========================================================================= */}
