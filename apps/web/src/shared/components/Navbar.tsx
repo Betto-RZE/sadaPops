@@ -17,7 +17,9 @@ export function Navbar({ className, revealOnMobileMap = false }: NavbarProps = {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileRevealed, setIsMobileRevealed] = useState(!revealOnMobileMap);
+  const [isVisibleOnScroll, setIsVisibleOnScroll] = useState(true);
 
+  // Detección del descubrimiento inicial del mapa
   useEffect(() => {
     if (!revealOnMobileMap || typeof window === 'undefined') {
       setIsMobileRevealed(true);
@@ -42,6 +44,43 @@ export function Navbar({ className, revealOnMobileMap = false }: NavbarProps = {
     };
   }, [revealOnMobileMap]);
 
+  // En móvil: ocultar al hacer scroll hacia abajo, mostrar al hacer scroll hacia arriba
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    let lastScrollY = window.scrollY;
+    let ticking = false;
+
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const currentScrollY = window.scrollY;
+          const diff = currentScrollY - lastScrollY;
+
+          // Siempre visible cerca de la parte superior
+          if (currentScrollY <= 40) {
+            setIsVisibleOnScroll(true);
+          } else if (diff > 8) {
+            // Scroll hacia abajo: ocultar (siempre que el menú desplegable no esté abierto)
+            if (!isMobileMenuOpen) {
+              setIsVisibleOnScroll(false);
+            }
+          } else if (diff < -8) {
+            // Scroll hacia arriba: mostrar
+            setIsVisibleOnScroll(true);
+          }
+
+          lastScrollY = currentScrollY;
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [isMobileMenuOpen]);
+
   // Opciones verticales según mockheroine4: INICIO, DATOS, JUEGO
   const navLinks = [
     { name: 'INICIO', href: '/' },
@@ -54,9 +93,16 @@ export function Navbar({ className, revealOnMobileMap = false }: NavbarProps = {
       className={cn(
         'hero-nav-enter relative z-50 w-full bg-transparent pt-6 md:pt-8 px-6 lg:px-12 pointer-events-none',
         revealOnMobileMap &&
-          'max-md:fixed max-md:top-0 max-md:inset-x-0 max-md:pt-4 max-md:px-4 max-md:transition-opacity max-md:duration-500',
+          'max-md:fixed max-md:top-0 max-md:inset-x-0 max-md:pt-4 max-md:px-4 max-md:transition-all max-md:duration-300 max-md:ease-in-out',
         revealOnMobileMap && !isMobileRevealed && 'max-md:!opacity-0 max-md:invisible',
-        revealOnMobileMap && isMobileRevealed && 'max-md:!opacity-100 max-md:visible',
+        revealOnMobileMap &&
+          isMobileRevealed &&
+          !isVisibleOnScroll &&
+          'max-md:-translate-y-full max-md:opacity-0 max-md:pointer-events-none',
+        revealOnMobileMap &&
+          isMobileRevealed &&
+          isVisibleOnScroll &&
+          'max-md:translate-y-0 max-md:opacity-100',
         className
       )}
     >
@@ -66,7 +112,7 @@ export function Navbar({ className, revealOnMobileMap = false }: NavbarProps = {
           href="/"
           className={cn(
             'block transition-transform hover:scale-[1.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-dalia-600 rounded-sm',
-            isMobileRevealed ? 'pointer-events-auto' : 'max-md:pointer-events-none pointer-events-auto'
+            isMobileRevealed && isVisibleOnScroll ? 'pointer-events-auto' : 'max-md:pointer-events-none pointer-events-auto'
           )}
           title="Instituto Nacional Electoral"
         >
@@ -85,7 +131,7 @@ export function Navbar({ className, revealOnMobileMap = false }: NavbarProps = {
         <div
           className={cn(
             'flex items-start gap-4',
-            isMobileRevealed ? 'pointer-events-auto' : 'max-md:pointer-events-none pointer-events-auto'
+            isMobileRevealed && isVisibleOnScroll ? 'pointer-events-auto' : 'max-md:pointer-events-none pointer-events-auto'
           )}
         >
           {/* Navegación Desktop: Sidebar vertical */}
@@ -131,7 +177,7 @@ export function Navbar({ className, revealOnMobileMap = false }: NavbarProps = {
 
           {/* Botón Móvil (Sidebar Toggle) */}
           <button
-            className="md:hidden p-2 text-brand-navy rounded-lg bg-white/80 hover:bg-white shadow-sm border border-brand-navy/10 backdrop-blur-sm transition-colors"
+            className="md:hidden p-2 text-brand-navy rounded-lg bg-white/80 hover:bg-white shadow-sm border border-brand-navy/10 backdrop-blur-sm transition-colors cursor-pointer"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-label={isMobileMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
           >
