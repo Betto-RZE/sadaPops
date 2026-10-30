@@ -8,18 +8,34 @@
   --foreground-rgb: 28, 37, 65; /* brand-navy */
 }
 
-html, body {
-  min-height: 100vh;
+html {
+  min-height: 100%;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
+  min-height: 100vh;
+  min-height: 100dvh;
   color: rgb(var(--foreground-rgb));
+  background-color: #EEEDEA;
+  position: relative;
+}
+
+/* Fondo de papel fijo universal optimizado para Safari iOS/iPadOS y Desktop
+   (Evita el bug de distorsión y parpadeo de background-attachment: fixed en WebKit móvil) */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
   background-color: #EEEDEA;
   background-image: url('/bg/bg-ine-hero.webp');
   background-repeat: repeat;
   background-position: center top;
-  background-attachment: fixed;
   background-size: cover;
+  pointer-events: none;
+  transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
 }
 
 .font-pixel {
