@@ -1,6 +1,6 @@
 'use client';
 
-import type { CSSProperties, FormEvent } from 'react';
+import { useEffect, useRef, type CSSProperties, type FormEvent } from 'react';
 import NextImage, { type ImageProps } from 'next/image';
 import { IBM_Plex_Mono } from 'next/font/google';
 import { ArrowRight, Check, ChevronDown, MapPin, ShieldCheck, Plus } from 'lucide-react';
@@ -57,6 +57,10 @@ function Stationery({ theme, ticket = false }: { theme: RegistrationTheme; ticke
 
 export function DahliaRegistrationSection(props: Props) {
   const { theme } = props;
+  const confirmationHeading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (props.isPlanted) confirmationHeading.current?.focus({ preventScroll: true });
+  }, [props.isPlanted]);
   const variables = {
     '--dahlia-swatch': theme.hex, '--dahlia-scene': theme.scene, '--dahlia-paper': theme.paper,
     '--dahlia-accent': theme.accent, '--dahlia-border': theme.border,
@@ -74,8 +78,6 @@ export function DahliaRegistrationSection(props: Props) {
         <div className={styles.polaroid} aria-hidden="true">
           <Image src={`/form/themes/polaroid-ine-${theme.id}.webp`} alt="" width={640} height={684} sizes="(min-width: 1280px) 225px, 120px" />
         </div>
-        <div className={styles.notePosition}><Stationery theme={theme} /></div>
-        <div className={styles.ticketPosition}><Stationery theme={theme} ticket /></div>
         {[0, 1, 2, 3].map(index => (
           <div key={index} className={`${styles.petal} ${styles[`petal${index}`]}`} aria-hidden="true">
             <Image src={`/form/themes/petal-${theme.id}.webp`} alt="" width={256} height={234} sizes="90px" />
@@ -144,18 +146,16 @@ export function DahliaRegistrationSection(props: Props) {
                   <span>{copy.alertsQuestion}</span>
                   <span className={`${styles.optional} ${mono.className}`}>{copy.optional}</span>
                 </label>
-                {props.wantsAlerts && (
-                  <div id="registro-avisos" className={styles.alertFields}>
+                  <div id="registro-avisos" className={styles.alertFields} hidden={!props.wantsAlerts}>
                     <p>{copy.alertsHelp}</p>
                     <label htmlFor="registro-correo" className={`${styles.emailLabel} ${mono.className}`}>{copy.emailLabel}</label>
                     <input id="registro-correo" type="email" autoComplete="email" value={props.email}
                       onChange={event => props.onEmailChange(event.target.value)} placeholder={copy.emailPlaceholder}
-                      required
+                      required={props.wantsAlerts}
                       aria-invalid={Boolean(props.emailError)} aria-describedby={`registro-correo-help${props.emailError ? ' registro-correo-error' : ''}`} />
                     <p id="registro-correo-help" className={styles.emailHelp}>{copy.localEmail}</p>
                     {props.emailError && <p id="registro-correo-error" role="alert" className={styles.error}>{props.emailError}</p>}
                   </div>
-                )}
               </div>
               <button type="submit" disabled={!props.ready || Boolean(props.pendingTheme)} className={`${styles.submit} ${mono.className}`}>
                 {copy.submit}<ArrowRight size={25} strokeWidth={1.5} aria-hidden="true" />
@@ -164,17 +164,15 @@ export function DahliaRegistrationSection(props: Props) {
                 <span><ShieldCheck size={15} aria-hidden="true" />{copy.anonymous}</span>
                 <button type="button" onClick={props.onDetailsChange} aria-expanded={props.detailsOpen} aria-controls="registro-detalles">{copy.details}<ChevronDown size={14} aria-hidden="true" /></button>
               </div>
-              {props.detailsOpen && (
-                <div id="registro-detalles" className={styles.details}>
+                <div id="registro-detalles" className={styles.details} hidden={!props.detailsOpen}>
                   <ol>{copy.stops.map(stop => <li key={stop.title}><strong>{stop.title}</strong><p>{stop.text}</p></li>)}</ol>
                   <p>{copy.privacy}</p><p>{copy.definition}</p>
                 </div>
-              )}
             </form>
           ) : (
             <div className={styles.confirmation} role="status">
               <span className={styles.confirmationCheck}><Check size={24} aria-hidden="true" /></span>
-              <h4>{copy.planted}</h4>
+              <h4 ref={confirmationHeading} tabIndex={-1}>{copy.planted}</h4>
               <p>{copy.plantedDetail} <strong>{props.stateName}</strong>.</p>
               {props.alertsSaved && <p>{copy.localSaved}</p>}
               <a href="#mapa-interactivo" className={`${styles.submit} ${mono.className}`}>{copy.viewMap}<ArrowRight size={22} aria-hidden="true" /></a>
@@ -184,6 +182,8 @@ export function DahliaRegistrationSection(props: Props) {
           <p className={styles.disclaimer}>{copy.disclaimer}</p>
           <div className={styles.closingRule} aria-hidden="true"><span />✦<span /></div>
         </div>
+        <div className={styles.notePosition}><Stationery theme={theme} /></div>
+        <div className={styles.ticketPosition}><Stationery theme={theme} ticket /></div>
       </div>
     </section>
   );

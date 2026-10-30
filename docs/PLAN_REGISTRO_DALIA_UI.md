@@ -7,7 +7,8 @@
 - Fase 2 completada: recursos de los cinco temas preparados en `apps/web/public/form/themes/`; inventario en `manifest.json` y notas de uso en `README.md`.
 - Fase 3 completada: maquetación local en `src/features/landing/registro-dalia/`, integrada en la sección existente.
 - Fase 4 completada: persistencia, migración de colores, precarga coordinada y registro sin duplicar envíos. Por indicación del usuario, se retiró la reubicación/edición; el registro previo muestra «Ya dejaste tu dalia».
-- Fases 5–6 pendientes. Esperar confirmación del usuario antes de continuar.
+- Fase 5 completada: ajustes de responsive y accesibilidad con revisión dirigida en navegador.
+- Fase 6 pendiente. Esperar confirmación del usuario antes de la revisión visual final.
 - La fase 1 fue documental; la fase 2 incorpora imágenes sin cambiar la interfaz.
 - Referencia visual única: `docs/referencias/Formulario Deja una Dalia.png`.
 - Recursos originales: `apps/web/public/form/`; conservarlos sin sobrescribir.
@@ -199,4 +200,18 @@ La migración de IDs antiguos a los nuevos temas debe ser explícita y tolerante
 - El acceso al mapa usa el ancla existente `#mapa-interactivo`; el ancla anterior `#hero-mapa` no tenía destino. Se corrigió el enlace sin editar `Hero.tsx`.
 - Verificación sin navegador: diez pruebas automatizadas de restauración, migración, datos inválidos, correo, duplicados, almacenamiento bloqueado y precarga/reintento de imágenes; todas pasan. TypeScript y `git diff --check` correctos.
 - No se modificaron `Hero.tsx`, `DahliaStore.tsx`, el dataset INE ni el visor 3D original. La revisión visual/responsive queda para fases 5–6; sigue pendiente la fuente Newsreader autorizada.
-- [ ] Confirmación del usuario para comenzar la fase 5.
+- [x] Confirmación del usuario para comenzar la fase 5.
+
+### Entrega de fase 5
+
+- Reflujo comprobado en navegador a 320, 360, 768, 1024 y 1440 px, con avisos y privacidad expandidos: ancho de documento igual al viewport y controles dentro de la sección. 320 px sirve como comprobación de reflujo estrecho; no sustituye una auditoría completa de zoom y tecnologías de asistencia.
+- Recorte horizontal acotado a la sección para los adornos; desplazamiento de polaroid, nota y boleto hacia el interior para conservar sus mensajes. Título ajustado a dos líneas en escritorio.
+- Metadatos, ayudas y aclaración a 12 px, campos de texto móviles a 16 px y botón de detalles con altura mínima de 44 px. Círculos con objetivos de 44 × 44 px y reflujo permitido en espacios reducidos.
+- Los textos de nota y boleto pasan al final del orden DOM, después del formulario. Sus posiciones visuales siguen gobernadas por el CSS de cada breakpoint.
+- Paneles colapsables con destinos ARIA presentes y atributo `hidden`. Confirmación con foco programático en el encabezado; campo de correo requerido únicamente cuando se activan avisos.
+- Verificación dirigida: cinco temas sin desbordamiento a 360 px; flecha derecha cambia el radio y mantiene foco; envío con correo vacío muestra error, `aria-invalid=true` y foco en `registro-correo`. No se sembró una dalia durante la prueba.
+- Contrastes sólidos recalculados: todos los acentos sobre papel y blanco sobre botón superan 4.5:1. Los adornos no transmiten estados por color exclusivamente; se conserva marca y aro de selección. El contraste exacto de cada textura y la revisión con lector de pantalla no se certifican aquí.
+- Movimiento reducido conserva la regla que anula animaciones y transiciones. No se cambió la preferencia del sistema durante la revisión.
+- Evidencia de escritorio guardada en `/private/tmp/registro-dalia-fase5.png`; tamaño de navegador restaurado tras las pruebas. Se usó navegador exclusivamente para esta validación necesaria.
+- TypeScript correcto, diez pruebas previas pasan y diff sin errores. Sigue pendiente cargar Newsreader con autorización; se mantiene Georgia como alternativa local.
+- [ ] Confirmación del usuario para comenzar la fase 6.
