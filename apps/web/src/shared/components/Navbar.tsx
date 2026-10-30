@@ -19,7 +19,7 @@ export function Navbar({ className, revealOnMobileMap = false }: NavbarProps = {
   const [isMobileRevealed, setIsMobileRevealed] = useState(!revealOnMobileMap);
   const [isVisibleOnScroll, setIsVisibleOnScroll] = useState(true);
 
-  // Detección del descubrimiento inicial del mapa
+  // Detección del descubrimiento inicial del mapa en móvil
   useEffect(() => {
     if (!revealOnMobileMap || typeof window === 'undefined') {
       setIsMobileRevealed(true);
@@ -57,16 +57,14 @@ export function Navbar({ className, revealOnMobileMap = false }: NavbarProps = {
           const currentScrollY = window.scrollY;
           const diff = currentScrollY - lastScrollY;
 
-          // Siempre visible cerca de la parte superior
-          if (currentScrollY <= 40) {
+          if (currentScrollY <= 24) {
             setIsVisibleOnScroll(true);
-          } else if (diff > 8) {
-            // Scroll hacia abajo: ocultar (siempre que el menú desplegable no esté abierto)
-            if (!isMobileMenuOpen) {
-              setIsVisibleOnScroll(false);
-            }
-          } else if (diff < -8) {
-            // Scroll hacia arriba: mostrar
+          } else if (diff > 5) {
+            // Scroll hacia abajo: ocultar header y cerrar menú si estaba abierto
+            setIsVisibleOnScroll(false);
+            setIsMobileMenuOpen(false);
+          } else if (diff < -5) {
+            // Scroll hacia arriba: volver a mostrar header
             setIsVisibleOnScroll(true);
           }
 
@@ -79,7 +77,7 @@ export function Navbar({ className, revealOnMobileMap = false }: NavbarProps = {
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [isMobileMenuOpen]);
+  }, []);
 
   // Opciones verticales según mockheroine4: INICIO, DATOS, JUEGO
   const navLinks = [
@@ -88,21 +86,18 @@ export function Navbar({ className, revealOnMobileMap = false }: NavbarProps = {
     { name: 'JUEGO', href: '/juego' },
   ];
 
+  const showMobileHeader = isMobileRevealed && isVisibleOnScroll;
+
   return (
     <header
       className={cn(
         'hero-nav-enter relative z-50 w-full bg-transparent pt-6 md:pt-8 px-6 lg:px-12 pointer-events-none',
-        revealOnMobileMap &&
-          'max-md:fixed max-md:top-0 max-md:inset-x-0 max-md:pt-4 max-md:px-4 max-md:transition-all max-md:duration-300 max-md:ease-in-out',
-        revealOnMobileMap && !isMobileRevealed && 'max-md:!opacity-0 max-md:invisible',
-        revealOnMobileMap &&
-          isMobileRevealed &&
-          !isVisibleOnScroll &&
-          'max-md:-translate-y-full max-md:opacity-0 max-md:pointer-events-none',
-        revealOnMobileMap &&
-          isMobileRevealed &&
-          isVisibleOnScroll &&
-          'max-md:translate-y-0 max-md:opacity-100',
+        // En móvil (< md) desactivamos la animación CSS (.hero-nav-enter con fill-mode: forwards)
+        // porque bloqueaba las propiedades transform y opacity al hacer scroll
+        'max-md:!animate-none max-md:fixed max-md:top-0 max-md:inset-x-0 max-md:pt-4 max-md:px-4 max-md:transition-all max-md:duration-300 max-md:ease-out',
+        showMobileHeader
+          ? 'max-md:!opacity-100 max-md:!translate-y-0 max-md:visible'
+          : 'max-md:!opacity-0 max-md:!-translate-y-full max-md:invisible max-md:pointer-events-none',
         className
       )}
     >
@@ -112,7 +107,7 @@ export function Navbar({ className, revealOnMobileMap = false }: NavbarProps = {
           href="/"
           className={cn(
             'block transition-transform hover:scale-[1.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-dalia-600 rounded-sm',
-            isMobileRevealed && isVisibleOnScroll ? 'pointer-events-auto' : 'max-md:pointer-events-none pointer-events-auto'
+            showMobileHeader ? 'pointer-events-auto' : 'max-md:pointer-events-none pointer-events-auto'
           )}
           title="Instituto Nacional Electoral"
         >
@@ -131,7 +126,7 @@ export function Navbar({ className, revealOnMobileMap = false }: NavbarProps = {
         <div
           className={cn(
             'flex items-start gap-4',
-            isMobileRevealed && isVisibleOnScroll ? 'pointer-events-auto' : 'max-md:pointer-events-none pointer-events-auto'
+            showMobileHeader ? 'pointer-events-auto' : 'max-md:pointer-events-none pointer-events-auto'
           )}
         >
           {/* Navegación Desktop: Sidebar vertical */}
