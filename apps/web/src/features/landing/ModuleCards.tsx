@@ -168,10 +168,10 @@ export function ModuleCards() {
               </span>
             </div>
 
-            <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black text-brand-navy tracking-tight">
+            <h3 className="font-serif font-bold text-3xl sm:text-4xl lg:text-[42px] text-[#0F1B2D] tracking-tight leading-[1.1]">
               Lo que vives todos los días
             </h3>
-            <p className="mt-2 text-xs sm:text-sm text-brand-navy/70 max-w-2xl leading-relaxed">
+            <p className="mt-2.5 text-sm sm:text-[15px] text-[#4A5568] max-w-2xl leading-relaxed font-sans">
               Tres situaciones cotidianas que conoces de cerca, contrastadas con cifras oficiales de la
               Encuesta Nacional de Ocupación y Empleo (ENOE) del INEGI. Toca una tarjeta para descubrir el dato.
             </p>
