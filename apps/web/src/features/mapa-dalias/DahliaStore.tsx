@@ -99,6 +99,21 @@ export function DahliaStoreProvider({
     setCounts((prev) => ({ ...prev, [stateId]: (prev[stateId] ?? 0) + 1 }));
   }, []);
 
+  // Escucha de eventos globales para sumar dalias desde cualquier sección (ej. ModuleCards)
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleAdd = (e: Event) => {
+      const custom = e as CustomEvent<{ stateId: string }>;
+      if (custom.detail?.stateId) {
+        addDahliaToState(custom.detail.stateId);
+      }
+    };
+    window.addEventListener('dalias:add-dahlia', handleAdd);
+    return () => {
+      window.removeEventListener('dalias:add-dahlia', handleAdd);
+    };
+  }, [addDahliaToState]);
+
   const value = useMemo<DahliaStoreValue>(() => {
     const items: StateCountItem[] = STATE_IDS.map((id) => ({ id, usuarios: counts[id] }));
     const levels = computeLevels(items);

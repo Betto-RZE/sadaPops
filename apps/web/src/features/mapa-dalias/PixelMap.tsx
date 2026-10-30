@@ -312,6 +312,14 @@ export function PixelMap({
   const [internalHoveredId, setInternalHoveredId] = useState<string | null>(null);
   const currentHoveredId = controlledHoveredId !== undefined ? controlledHoveredId : internalHoveredId;
 
+  // Notifica la selección del estado a componentes exteriores (ej. ModuleCards)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(
+      new CustomEvent('dalias:state-selected', { detail: { stateId: selectedStateId } })
+    );
+  }, [selectedStateId]);
+
   const width = data?.width ?? 660;
   const height = data?.height ?? 435;
   const aspectRatio = `${width} / ${height}`;

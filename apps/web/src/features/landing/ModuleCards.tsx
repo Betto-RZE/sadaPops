@@ -1,131 +1,186 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { BookOpen, BarChart3, Gamepad2, ArrowRight, MessageCircleQuestion, Flower2 } from 'lucide-react';
+import { BarChart3, Gamepad2, ArrowRight, Flower2, ShieldAlert, Sparkles } from 'lucide-react';
+import { DayToDayFlipCards, DayToDayCardItem } from './DayToDayFlipCards';
 import { cn } from '@/shared/utils';
 
 export function ModuleCards() {
+  // Estado de la tarjeta actualmente volteada (solo 1 abierta a la vez)
+  const [activeCardId, setActiveCardId] = useState<string | null>(null);
+  // Registro del último tema consultado para el giro en secciones posteriores
+  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+  // Estado sincronizado desde el mapa del Hero (vía evento dalias:state-selected)
+  const [selectedStateId, setSelectedStateId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleStateSelect = (e: Event) => {
+      const custom = e as CustomEvent<{ stateId: string | null }>;
+      if (custom.detail) {
+        setSelectedStateId(custom.detail.stateId);
+      }
+    };
+    window.addEventListener('dalias:state-selected', handleStateSelect);
+    return () => {
+      window.removeEventListener('dalias:state-selected', handleStateSelect);
+    };
+  }, []);
+
+  const handleToggleCard = (id: DayToDayCardItem['id']) => {
+    setActiveCardId((prev) => {
+      const next = prev === id ? null : id;
+      if (next) setSelectedTopic(id);
+      return next;
+    });
+  };
+
   return (
-    <section id="modulos" className="w-full bg-transparent py-16 pb-32 scroll-mt-12">
+    <section id="modulos" className="w-full bg-transparent pt-0 pb-32 scroll-mt-12 select-none">
       <div className="mx-auto max-w-[1440px] px-6 lg:px-12 relative">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          
-          {/* Narrativa Card */}
-          <Link href="/narrativa" className="group block rounded-3xl bg-[#FFF0F7] overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 h-[320px] relative">
-            <div className="p-8 pb-0 h-full flex flex-col justify-between">
-              <div>
-                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded bg-white text-dalia-600 shadow-sm">
-                  <BookOpen className="h-5 w-5" />
-                </div>
-                <h3 className="mb-2 text-2xl font-bold text-brand-navy">Narrativa</h3>
-                <p className="text-sm font-medium text-brand-navy/70 leading-relaxed max-w-[200px]">
-                  Conoce las historias detrás de la participación ciudadana.
-                </p>
-              </div>
-              
-              <div className="mt-4 pb-8">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/50 text-brand-navy transition-colors group-hover:bg-white">
-                  <ArrowRight className="h-5 w-5" />
-                </div>
-              </div>
-            </div>
-            {/* Illustration Mock */}
-            <div className="absolute right-0 bottom-0 w-48 h-48 opacity-90 transition-transform duration-700 group-hover:scale-105 origin-bottom-right">
-               <svg viewBox="0 0 100 100" className="w-full h-full" fill="none">
-                 {/* Cityscape */}
-                 <rect x="50" y="60" width="10" height="40" fill="#E8D1DF" />
-                 <rect x="65" y="45" width="12" height="55" fill="#D3BAD0" />
-                 <rect x="80" y="70" width="15" height="30" fill="#E8D1DF" />
-                 {/* Woman silhouette */}
-                 <path d="M40 100 C 40 70, 55 65, 55 50 C 55 40, 45 40, 45 30 C 45 15, 30 15, 25 30 C 20 40, 30 45, 30 55 C 30 70, 5 70, 5 100 Z" fill="#1C2541" />
-                 <circle cx="25" cy="30" r="12" fill="#FFE0E0" /> {/* Face hint */}
-               </svg>
-            </div>
-          </Link>
-          
-          {/* Datos Card */}
-          <Link href="/datos" className="group block rounded-3xl bg-[#F0F7FF] overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 h-[320px] relative">
-            <div className="p-8 pb-0 h-full flex flex-col justify-between">
-              <div>
-                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded bg-white text-blue-500 shadow-sm">
-                  <BarChart3 className="h-5 w-5" />
-                </div>
-                <h3 className="mb-2 text-2xl font-bold text-brand-navy">Datos</h3>
-                <p className="text-sm font-medium text-brand-navy/70 leading-relaxed max-w-[200px]">
-                  Explora estadísticas y visualizaciones de participación en todo el país.
-                </p>
-              </div>
-              
-              <div className="mt-4 pb-8">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/50 text-brand-navy transition-colors group-hover:bg-white">
-                  <ArrowRight className="h-5 w-5" />
-                </div>
-              </div>
-            </div>
-            {/* Illustration Mock */}
-            <div className="absolute right-4 bottom-0 w-40 h-40 transition-transform duration-700 group-hover:scale-105 origin-bottom">
-               <svg viewBox="0 0 100 100" className="w-full h-full" fill="none">
-                 <rect x="10" y="60" width="15" height="40" rx="4" fill="#93C5FD" />
-                 <rect x="35" y="30" width="15" height="70" rx="4" fill="#60A5FA" />
-                 <rect x="60" y="10" width="15" height="90" rx="4" fill="#3B82F6" />
-                 {/* Dalia on top bar */}
-                 <circle cx="67.5" cy="10" r="10" fill="#E3007E" />
-               </svg>
-            </div>
-          </Link>
-          
-          {/* Juego Card */}
-          <Link href="/juego" className="group block rounded-3xl bg-brand-navy overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-brand-navy/30 hover:-translate-y-1 h-[320px] relative">
-            <div className="p-8 pb-0 h-full flex flex-col justify-between">
-              <div className="relative z-10">
-                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded bg-white/10 text-white shadow-sm">
-                  <Gamepad2 className="h-5 w-5" />
-                </div>
-                <h3 className="mb-2 text-2xl font-bold text-white">Juego</h3>
-                <p className="text-sm font-medium text-white/70 leading-relaxed max-w-[220px]">
-                  Pon a prueba lo que aprendiste sobre la participación ciudadana.
-                </p>
-              </div>
-              
-              <div className="mt-4 pb-8 relative z-10">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors group-hover:bg-white/20">
-                  <ArrowRight className="h-5 w-5" />
-                </div>
-              </div>
-            </div>
-            {/* Illustration Mock */}
-            <div className="absolute right-0 bottom-0 w-64 h-48 opacity-80 transition-transform duration-700 group-hover:scale-105 origin-bottom-right">
-               <svg viewBox="0 0 200 150" className="w-full h-full" fill="none">
-                 {/* Pixel Art City Bg */}
-                 <rect x="0" y="100" width="200" height="50" fill="#1e1e1e" />
-                 <rect x="20" y="70" width="30" height="30" fill="#333" />
-                 <rect x="60" y="50" width="40" height="50" fill="#222" />
-                 <rect x="110" y="60" width="50" height="40" fill="#333" />
-                 {/* Hearts */}
-                 <path d="M150 20 l5-5 l10 0 l5 5 l0 10 l-10 10 l-10 -10 z" fill="#E3007E" />
-                 <path d="M175 20 l5-5 l10 0 l5 5 l0 10 l-10 10 l-10 -10 z" stroke="#E3007E" strokeWidth="2" />
-                 {/* Pixel runner boy mockup */}
-                 <rect x="120" y="90" width="10" height="15" fill="#E3007E" />
-                 <rect x="120" y="80" width="12" height="10" fill="#FFE0E0" />
-                 <rect x="120" y="75" width="14" height="5" fill="#000" />
-                 {/* Pixel Dalia */}
-                 <rect x="170" y="80" width="20" height="20" fill="#E3007E" />
-               </svg>
-            </div>
-          </Link>
-          
+        
+        {/* ========================================================================= */}
+        {/* 1. CINTILLA CORTA AL PIE DEL MAPA (Demostración + Significado de la Dalia) */}
+        {/* ========================================================================= */}
+        <div className="-mt-3 md:-mt-6 mb-12 sm:mb-16 flex justify-center">
+          <div className="inline-flex flex-wrap items-center justify-center gap-2 sm:gap-3 px-4 py-2 rounded-full bg-white/80 border border-black/5 shadow-sm backdrop-blur-sm text-[11px] sm:text-xs text-brand-navy/70 text-center max-w-2xl">
+            <span className="inline-flex items-center gap-1 font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full uppercase tracking-wider font-mono text-[9px] sm:text-[10px]">
+              <ShieldAlert className="w-3 h-3 text-amber-600" />
+              Demostración
+            </span>
+            <span>Este mapa inicia con datos de ejemplo.</span>
+            <span className="hidden sm:inline text-black/20">•</span>
+            <span className="font-semibold text-brand-navy">
+              Una flor no es un voto: es una persona que decidió prepararse.
+            </span>
+          </div>
         </div>
 
-        {/* Floating Chatbot Assistant */}
-        <div className="absolute -bottom-16 right-6 lg:right-12 z-50">
-          <button className="flex flex-col items-center bg-white p-3 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15)] border border-gray-100 group transition-transform hover:-translate-y-1">
-            <div className="w-12 h-12 rounded-full bg-brand-navy flex items-center justify-center mb-2 shadow-inner">
-               <Flower2 className="w-6 h-6 text-dalia-600" />
+        {/* ========================================================================= */}
+        {/* 2. LÍNEA DE CONFIANZA INDEPENDIENTE                                       */}
+        {/* ========================================================================= */}
+        <div className="mb-10 text-center max-w-3xl mx-auto px-4">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-dalia-50 border border-dalia-200/60 text-dalia-700 text-[11px] font-bold tracking-wider uppercase font-mono mb-3">
+            <Sparkles className="w-3 h-3" />
+            Sin sesgos partidistas
+          </div>
+          <p className="text-xs sm:text-sm text-brand-navy/80 leading-relaxed font-medium">
+            Aquí no te decimos por quién votar. Solo mostramos datos oficiales y cómo prepararte.
+            <span className="block mt-1 text-[11px] text-brand-navy/50 font-normal">
+              Proyecto independiente de estudiantes para el Hackathon INE; no es un portal oficial del INE.
+            </span>
+          </p>
+        </div>
+
+        {/* ========================================================================= */}
+        {/* 3. SECCIÓN 2: "TU DÍA A DÍA" (3 FLIP CARDS 3D)                            */}
+        {/* ========================================================================= */}
+        <div className="mb-20">
+          <div className="mb-8 text-center sm:text-left">
+            <span className="text-[11px] font-mono font-bold tracking-widest uppercase text-dalia-600 block mb-1">
+              Paso 1 de 6 • Tu día a día
+            </span>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-brand-navy tracking-tight">
+              Lo que vives todos los días
+            </h2>
+            <p className="mt-2 text-xs sm:text-sm text-brand-navy/70 max-w-2xl leading-relaxed">
+              Tres situaciones cotidianas que conoces de cerca, contrastadas con cifras oficiales de la
+              Encuesta Nacional de Ocupación y Empleo (ENOE) del INEGI. Toca una tarjeta para descubrir el dato.
+            </p>
+          </div>
+
+          {/* Grid de 3 Tarjetas Giratorias 3D */}
+          <DayToDayFlipCards
+            activeCardId={activeCardId}
+            onToggleCard={handleToggleCard}
+          />
+        </div>
+
+        {/* ========================================================================= */}
+        {/* COMPONENTES TEMPORALES DE NAVEGACIÓN HACIA DATOS Y JUEGO                   */}
+        {/* (Se integrarán completamente en las Fases 2, 3 y 4 del recorrido)         */}
+        {/* ========================================================================= */}
+        <div className="pt-8 border-t border-black/5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div>
+              <p className="text-[11px] font-mono font-bold tracking-wider uppercase text-brand-navy/40">
+                Siguientes secciones en desarrollo
+              </p>
+              <h3 className="text-lg font-bold text-brand-navy">
+                Explora los módulos a profundidad
+              </h3>
             </div>
-            <div className="text-center">
-              <p className="text-[10px] font-bold text-brand-navy leading-tight">Asistente Cívico</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Datos Card */}
+            <Link
+              href="/datos"
+              className="group block rounded-3xl bg-[#F0F7FF] border border-blue-100 overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 h-[240px] relative"
+            >
+              <div className="p-8 pb-0 h-full flex flex-col justify-between">
+                <div>
+                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-white text-blue-500 shadow-sm">
+                    <BarChart3 className="h-5 w-5" />
+                  </div>
+                  <h4 className="mb-2 text-xl font-bold text-brand-navy">Explora los Datos CCPC</h4>
+                  <p className="text-xs sm:text-sm font-medium text-brand-navy/70 leading-relaxed max-w-[280px]">
+                    Visualiza estadísticas censales de participación electoral por edad, sexo y evolución histórica.
+                  </p>
+                </div>
+                
+                <div className="mt-4 pb-6">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/70 text-brand-navy transition-colors group-hover:bg-white shadow-sm">
+                    <ArrowRight className="h-4 w-4" />
+                  </div>
+                </div>
+              </div>
+            </Link>
+            
+            {/* Juego Card */}
+            <Link
+              href="/juego"
+              className="group block rounded-3xl bg-brand-navy border border-brand-navy/20 overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-brand-navy/20 hover:-translate-y-1 h-[240px] relative"
+            >
+              <div className="p-8 pb-0 h-full flex flex-col justify-between relative z-10">
+                <div>
+                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white shadow-sm">
+                    <Gamepad2 className="h-5 w-5" />
+                  </div>
+                  <h4 className="mb-2 text-xl font-bold text-white">Modo Juego Pixel Art</h4>
+                  <p className="text-xs sm:text-sm font-medium text-white/70 leading-relaxed max-w-[280px]">
+                    Desmiente mitos con datos del INE y practica en el simulador de proceso de votación en casilla.
+                  </p>
+                </div>
+                
+                <div className="mt-4 pb-6">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white transition-colors group-hover:bg-white/20 shadow-sm">
+                    <ArrowRight className="h-4 w-4" />
+                  </div>
+                </div>
+              </div>
+            </Link>
+          </div>
+        </div>
+
+        {/* Asistente Cívico Flotante */}
+        <div className="fixed bottom-6 right-6 z-50">
+          <button
+            type="button"
+            className="flex items-center gap-3 bg-white pl-3 pr-4 py-2.5 rounded-full shadow-[0_10px_35px_-5px_rgba(0,0,0,0.18)] border border-gray-100 group transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-dalia-600"
+            title="Abrir Asistente Cívico"
+          >
+            <div className="w-8 h-8 rounded-full bg-brand-navy flex items-center justify-center shadow-inner text-dalia-500">
+              <Flower2 className="w-4 h-4" />
+            </div>
+            <div className="text-left">
+              <p className="text-[11px] font-bold text-brand-navy leading-tight">Asistente Cívico</p>
               <p className="text-[9px] text-gray-500 font-medium">¿Tienes dudas?</p>
             </div>
           </button>
         </div>
+
       </div>
     </section>
   );
