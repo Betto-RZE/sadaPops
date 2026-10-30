@@ -1,119 +1,209 @@
-import Image from 'next/image';
-import Link from 'next/link';
-import {
-  ArrowRight,
-  BarChart3,
-  BookOpen,
-  Flower2,
-  Gamepad2,
-} from 'lucide-react';
+'use client';
 
-const cards = [
-  {
-    href: '/narrativa',
-    title: 'Narrativa',
-    description: 'Conoce las historias detrás de la participación ciudadana.',
-    image: '/cards/narrativa.png',
-    imageAlt: 'Facilitador del INE explica una historia de participación ciudadana',
-    imagePosition: 'object-[42%_center]',
-    icon: BookOpen,
-    theme: 'light' as const,
-    surface: 'bg-[#fff3f8]',
-    fade: 'linear-gradient(to bottom, #fff3f8 0%, rgba(255, 243, 248, 0.94) 24%, rgba(255, 243, 248, 0.48) 43%, rgba(255, 243, 248, 0) 58%)',
-    iconColor: 'text-dalia-600',
-  },
-  {
-    href: '/datos',
-    title: 'Datos',
-    description: 'Explora estadísticas y visualizaciones de participación en todo el país.',
-    image: '/cards/datos.png',
-    imageAlt: 'Facilitador del INE presenta gráficas y un mapa de México',
-    imagePosition: 'object-[55%_center]',
-    icon: BarChart3,
-    theme: 'light' as const,
-    surface: 'bg-[#eff7ff]',
-    fade: 'linear-gradient(to bottom, #eff7ff 0%, rgba(239, 247, 255, 0.94) 24%, rgba(239, 247, 255, 0.48) 43%, rgba(239, 247, 255, 0) 58%)',
-    iconColor: 'text-blue-500',
-  },
-  {
-    href: '/juego',
-    title: 'Juego',
-    description: 'Pon a prueba lo que aprendiste sobre la participación ciudadana.',
-    image: '/cards/juego.png',
-    imageAlt: 'Personaje pixel art juega en una máquina arcade del INE',
-    imagePosition: 'object-[43%_center]',
-    icon: Gamepad2,
-    theme: 'dark' as const,
-    surface: 'bg-[#111a38]',
-    fade: 'linear-gradient(to bottom, #111a38 0%, rgba(17, 26, 56, 0.94) 24%, rgba(17, 26, 56, 0.48) 43%, rgba(17, 26, 56, 0) 58%)',
-    iconColor: 'text-white',
-  },
-];
+import React, { useState, useEffect, useRef } from 'react';
+import { X } from 'lucide-react';
+import { DayToDayFlipCards, DayToDayCardItem } from './DayToDayFlipCards';
+import { CivicBridgeAndGapSection } from './CivicBridgeAndGapSection';
+import { CivicTimelineAndExploreSection } from './CivicTimelineAndExploreSection';
+import { cn } from '@/shared/utils';
 
 export function ModuleCards() {
+  // Estado de la tarjeta actualmente volteada (solo 1 abierta a la vez)
+  const [activeCardId, setActiveCardId] = useState<string | null>(null);
+  // Registro del último tema consultado para el giro en secciones posteriores
+  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+  // Estado sincronizado desde el mapa del Hero (vía evento dalias:state-selected)
+  const [selectedStateId, setSelectedStateId] = useState<string | null>(null);
+  // Estado para la nota cultural interactiva de la palabra "dalia"
+  const [isDaliaNoteOpen, setIsDaliaNoteOpen] = useState(false);
+  const daliaNoteRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isDaliaNoteOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsDaliaNoteOpen(false);
+    };
+    const handleClickOutside = (e: MouseEvent) => {
+      if (daliaNoteRef.current && !daliaNoteRef.current.contains(e.target as Node)) {
+        setIsDaliaNoteOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDaliaNoteOpen]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleStateSelect = (e: Event) => {
+      const custom = e as CustomEvent<{ stateId: string | null }>;
+      if (custom.detail) {
+        setSelectedStateId(custom.detail.stateId);
+      }
+    };
+    window.addEventListener('dalias:state-selected', handleStateSelect);
+    return () => {
+      window.removeEventListener('dalias:state-selected', handleStateSelect);
+    };
+  }, []);
+
+  const handleToggleCard = (id: DayToDayCardItem['id']) => {
+    setActiveCardId((prev) => {
+      const next = prev === id ? null : id;
+      if (next) setSelectedTopic(id);
+      return next;
+    });
+  };
+
   return (
-    <section className="w-full bg-transparent py-12 pb-32 sm:py-16 sm:pb-32">
-      <div className="relative mx-auto max-w-[1440px] px-6 lg:px-12">
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {cards.map((card) => {
-            const Icon = card.icon;
-            const isDark = card.theme === 'dark';
-            const foreground = isDark ? 'text-white' : 'text-brand-navy';
+    <section id="modulos" className="w-full bg-transparent pt-0 pb-32 scroll-mt-12 select-none overflow-x-clip">
+      <div className="mx-auto max-w-[1440px] px-6 lg:px-12 relative">
 
-            return (
-              <Link
-                key={card.href}
-                href={card.href}
-                className={`group relative isolate block h-[320px] overflow-hidden rounded-3xl border border-white/60 ${card.surface} shadow-[0_12px_32px_-24px_rgba(28,37,65,0.45)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_44px_-24px_rgba(28,37,65,0.45)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-dalia-600/40`}
-              >
-                <Image
-                  src={card.image}
-                  alt={card.imageAlt}
-                  fill
-                  sizes="(max-width: 767px) 100vw, (max-width: 1279px) 33vw, 432px"
-                  className={`z-0 object-cover transition-transform duration-700 group-hover:scale-[1.04] ${card.imagePosition}`}
-                />
-                <div
-                  aria-hidden="true"
-                  className="absolute inset-0 z-10"
-                  style={{ backgroundImage: card.fade }}
-                />
-                <div className="relative z-20 flex h-full flex-col justify-between p-7 sm:p-8">
-                  <div className="max-w-[250px]">
-                    <div className={`mb-5 flex h-11 w-11 items-center justify-center rounded-xl shadow-sm ${isDark ? 'bg-white/15 text-white' : 'bg-white/90'} ${card.iconColor}`}>
-                      <Icon className="h-5 w-5" aria-hidden="true" />
-                    </div>
-                    <h3 className={`mb-2 text-2xl font-bold ${foreground}`}>{card.title}</h3>
-                    <p className={`text-sm font-medium leading-relaxed ${isDark ? 'text-white/80' : 'text-brand-navy/75'}`}>
-                      {card.description}
-                    </p>
-                  </div>
-
-                  <div className={`flex h-11 w-11 items-center justify-center rounded-full backdrop-blur-sm transition-colors ${isDark ? 'bg-white/20 text-white group-hover:bg-white/30' : 'bg-white/65 text-brand-navy group-hover:bg-white/90'}`}>
-                    <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
+        {/* ========================================================================= */}
+        {/* 1. MODO DEMOSTRACIÓN (Tratamiento editorial sobrio, impreso sobre el papel) */}
+        {/* ========================================================================= */}
+        <div className="-mt-2 sm:-mt-4 mb-6 md:mb-8 text-center">
+          <p className="text-[10px] sm:text-[11px] font-mono tracking-[0.22em] uppercase text-[#8C7D70] select-none">
+            <span>MODO DEMOSTRACIÓN</span>
+            <span className="mx-3 sm:mx-4 text-[#8C7D70]/40 font-light">|</span>
+            <span>ESTE MAPA INICIA CON DATOS DE EJEMPLO.</span>
+          </p>
         </div>
 
-        <div className="absolute -bottom-20 right-6 z-20 sm:right-8 lg:right-12">
-          <button
-            type="button"
-            aria-label="Asistente Cívico: ¿Tienes dudas?"
-            className="group flex min-h-[142px] min-w-[142px] flex-col items-center justify-center rounded-[26px] border border-white/80 bg-white/95 p-4 shadow-[0_16px_40px_-16px_rgba(28,37,65,0.35)] backdrop-blur-md transition-transform hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-dalia-600/40"
-          >
-            <span className="mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-brand-navy shadow-inner">
-              <Flower2 className="h-7 w-7 text-dalia-600" aria-hidden="true" />
-            </span>
-            <span className="text-center">
-              <span className="block text-xs font-bold leading-tight text-brand-navy">Asistente Cívico</span>
-              <span className="mt-0.5 block text-[11px] font-medium text-gray-500">¿Tienes dudas?</span>
-            </span>
-          </button>
+        {/* ========================================================================= */}
+        {/* 2. FRASE PRINCIPAL EDITORIAL CON MICRO-INTERACCIÓN DE "DALIA"             */}
+        {/* ========================================================================= */}
+        <div className="mb-6 text-center max-w-2xl mx-auto px-4 relative">
+          <h2 className="font-serif text-2xl sm:text-3xl md:text-[34px] lg:text-[38px] leading-[1.25] text-brand-navy font-normal tracking-tight">
+            Una{' '}
+            <button
+              type="button"
+              onClick={() => setIsDaliaNoteOpen((prev) => !prev)}
+              aria-expanded={isDaliaNoteOpen}
+              aria-controls="dalia-cultural-note"
+              className="inline font-semibold text-brand-navy underline decoration-dotted decoration-dalia-600/60 underline-offset-4 hover:text-dalia-600 hover:decoration-dalia-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-dalia-600 rounded transition-colors cursor-pointer"
+              title="Toca para conocer por qué la dalia nos representa"
+            >
+              dalia
+            </button>{' '}
+            no es un voto:
+            <br />
+            es una persona que decidió prepararse.
+          </h2>
+
+          {/* Nota al pie flotante y elegante (símbolo nacional y significado en la plataforma) */}
+          {isDaliaNoteOpen && (
+            <div
+              id="dalia-cultural-note"
+              ref={daliaNoteRef}
+              role="region"
+              aria-label="Significado de la dalia como flor nacional"
+              className="mt-4 p-5 sm:p-6 rounded-2xl bg-[#FDFCFA] border border-black/10 shadow-lg max-w-md mx-auto text-left animate-in fade-in-0 zoom-in-95 duration-150 relative z-30"
+            >
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <div>
+                  <span className="text-[10px] font-mono tracking-[0.2em] uppercase font-bold text-[#8C7D70] block">
+                    Flor Nacional de México • Decreto de 1963
+                  </span>
+                  <h4 className="font-serif text-base font-bold text-brand-navy mt-0.5">
+                    La Dalia <span className="font-sans text-xs font-normal text-brand-navy/60">(Acocoxóchitl)</span>
+                  </h4>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsDaliaNoteOpen(false)}
+                  aria-label="Cerrar nota sobre la dalia"
+                  className="p-1 rounded-lg text-brand-navy/40 hover:text-brand-navy hover:bg-black/5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-dalia-600"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <p className="text-xs text-brand-navy/80 leading-relaxed font-sans mb-3">
+                Declarada oficialmente <strong>Flor Nacional de México</strong> el 12 de mayo de 1963 por decreto presidencial,
+                representa la diversidad cultural y botánica del país. Posee raíces tubulares resistentes que se adaptan,
+                se reproducen y florecen en comunidad.
+              </p>
+
+              <div className="pt-2.5 border-t border-black/5 flex items-center gap-2 text-[11px] text-dalia-700 font-medium font-sans">
+                <span className="w-1.5 h-1.5 rounded-full bg-dalia-600 shrink-0" />
+                <span>En esta plataforma, cada dalia representa a una persona que decidió informarse.</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Separador fino sutil entre la frase y el aviso editorial */}
+        <div className="w-full max-w-xl mx-auto h-px bg-black/10 my-6 sm:my-7" />
+
+        {/* ========================================================================= */}
+        {/* 3 y 4. AVISO DE NEUTRALIDAD E INSTITUCIONAL (Sin badges, integrado al flujo) */}
+        {/* ========================================================================= */}
+        <div className="mb-14 sm:mb-20 text-center max-w-2xl mx-auto px-4">
+          <p className="text-xs sm:text-[13px] text-brand-navy/70 leading-relaxed font-normal">
+            Aquí no te decimos por quién votar. Solo mostramos datos oficiales y cómo prepararte.
+          </p>
+          <p className="mt-1.5 text-[11px] sm:text-xs text-brand-navy/45 font-normal">
+            Proyecto independiente de estudiantes para el Hackathon INE; no es un portal oficial del INE ni del INEGI.
+          </p>
+        </div>
+
+        {/* ========================================================================= */}
+        {/* 5. INDICADOR DE PROGRESO Y SECCIÓN 2: "TU DÍA A DÍA" (3 FLIP CARDS 3D)    */}
+        {/* ========================================================================= */}
+        <div className="mb-20">
+          <div className="mb-8 text-left">
+            {/* Indicador de progreso limpio como metadato de navegación */}
+            <div className="flex items-center gap-2.5 sm:gap-3 mb-4">
+              <div className="flex items-center gap-1 font-mono text-xs sm:text-[13px]">
+                <span className="font-bold text-dalia-600">01</span>
+                <span className="text-black/30 font-light">/</span>
+                <span className="text-black/40 font-medium">06</span>
+              </div>
+              <div className="w-10 sm:w-16 h-px bg-dalia-600/35" />
+              <span className="text-[10px] sm:text-[11px] font-mono font-bold tracking-[0.22em] uppercase text-black/55">
+                TU DÍA A DÍA
+              </span>
+            </div>
+
+            <h3 className="font-serif font-bold text-3xl sm:text-4xl lg:text-[42px] text-[#0F1B2D] tracking-tight leading-[1.1]">
+              Lo que vives todos los días
+            </h3>
+            <p className="mt-2 text-base sm:text-lg font-serif italic text-brand-navy/80">
+              «Antes de hablar de votar, hablemos de tu día a día.»
+            </p>
+            <p className="mt-2 text-sm sm:text-[15px] text-[#4A5568] max-w-2xl leading-relaxed font-sans">
+              Tres situaciones cotidianas que conoces de cerca, contrastadas con cifras oficiales de la
+              Encuesta Nacional de Ocupación y Empleo (ENOE) del INEGI. Toca una tarjeta para descubrir el dato.
+            </p>
+          </div>
+
+          {/* Grid de 3 Tarjetas Giratorias 3D */}
+          <DayToDayFlipCards
+            activeCardId={activeCardId}
+            onToggleCard={handleToggleCard}
+          />
         </div>
       </div>
+
+      {/* ========================================================================= */}
+      {/* FASE 2: PUENTE CONSTITUCIONAL Y LA BRECHA GENERACIONAL (CCPC 2024)        */}
+      {/* ========================================================================= */}
+      <CivicBridgeAndGapSection
+        selectedStateId={selectedStateId}
+        onSelectState={setSelectedStateId}
+      />
+
+      {/* ========================================================================= */}
+      {/* FASES 3 Y 4: RESPIRO Y LÍNEA DE TIEMPO, TU DALIA Y AVISOS, Y EXPLORACIÓN   */}
+      {/* ========================================================================= */}
+      <CivicTimelineAndExploreSection
+        selectedStateId={selectedStateId}
+        onSelectState={setSelectedStateId}
+      />
     </section>
   );
 }

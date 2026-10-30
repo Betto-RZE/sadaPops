@@ -1,1 +1,554 @@
-{"version":1,"width":660,"height":435,"pixelScale":3,"extrusionPx":18,"idEncoding":"0 = vacío/isla decorativa; 1..32 = cara superior; 33..64 = pared extruida (id - 32)","states":[{"id":"01","numId":1,"nombre":"Aguascalientes","anchor":{"x":331,"y":250},"bbox":[324,246,338,257],"topPixels":162,"sidePixels":0},{"id":"02","numId":2,"nombre":"Baja California","anchor":{"x":94,"y":61},"bbox":[72,42,143,140],"topPixels":2311,"sidePixels":952},{"id":"03","numId":3,"nombre":"Baja California Sur","anchor":{"x":133,"y":148},"bbox":[105,135,203,254],"topPixels":2233,"sidePixels":1887},{"id":"04","numId":4,"nombre":"Campeche","anchor":{"x":568,"y":295},"bbox":[522,258,587,332],"topPixels":1852,"sidePixels":662},{"id":"05","numId":5,"nombre":"Coahuila de Zaragoza","anchor":{"x":328,"y":139},"bbox":[300,96,371,197],"topPixels":4872,"sidePixels":14},{"id":"06","numId":6,"nombre":"Colima","anchor":{"x":304,"y":310},"bbox":[294,303,311,335],"topPixels":186,"sidePixels":267},{"id":"07","numId":7,"nombre":"Chiapas","anchor":{"x":523,"y":346},"bbox":[495,315,569,398],"topPixels":2424,"sidePixels":1312},{"id":"08","numId":8,"nombre":"Chihuahua","anchor":{"x":256,"y":121},"bbox":[210,63,308,185],"topPixels":7933,"sidePixels":30},{"id":"09","numId":9,"nombre":"Ciudad de México","anchor":{"x":394,"y":301},"bbox":[387,294,401,305],"topPixels":108,"sidePixels":0},{"id":"10","numId":10,"nombre":"Durango","anchor":{"x":283,"y":193},"bbox":[243,159,326,245],"topPixels":3951,"sidePixels":0},{"id":"11","numId":11,"nombre":"Guanajuato","anchor":{"x":355,"y":271},"bbox":[339,255,380,290],"topPixels":954,"sidePixels":0},{"id":"12","numId":12,"nombre":"Guerrero","anchor":{"x":385,"y":334},"bbox":[339,312,416,377],"topPixels":2106,"sidePixels":1341},{"id":"13","numId":13,"nombre":"Hidalgo","anchor":{"x":394,"y":277},"bbox":[381,264,413,293],"topPixels":675,"sidePixels":0},{"id":"14","numId":14,"nombre":"Jalisco","anchor":{"x":289,"y":292},"bbox":[270,243,347,326],"topPixels":2523,"sidePixels":427},{"id":"15","numId":15,"nombre":"México","anchor":{"x":382,"y":304},"bbox":[369,285,404,317],"topPixels":630,"sidePixels":0},{"id":"16","numId":16,"nombre":"Michoacán de Ocampo","anchor":{"x":346,"y":304},"bbox":[309,285,374,350],"topPixels":1859,"sidePixels":536},{"id":"17","numId":17,"nombre":"Morelos","anchor":{"x":397,"y":310},"bbox":[390,306,401,317],"topPixels":144,"sidePixels":0},{"id":"18","numId":18,"nombre":"Nayarit","anchor":{"x":283,"y":253},"bbox":[267,234,305,284],"topPixels":893,"sidePixels":193},{"id":"19","numId":19,"nombre":"Nuevo León","anchor":{"x":370,"y":169},"bbox":[351,135,398,224],"topPixels":2087,"sidePixels":0},{"id":"20","numId":20,"nombre":"Oaxaca","anchor":{"x":442,"y":343},"bbox":[408,312,497,386],"topPixels":2979,"sidePixels":1503},{"id":"21","numId":21,"nombre":"Puebla","anchor":{"x":412,"y":313},"bbox":[399,273,440,326],"topPixels":1080,"sidePixels":0},{"id":"22","numId":22,"nombre":"Querétaro","anchor":{"x":373,"y":277},"bbox":[366,258,392,284],"topPixels":378,"sidePixels":0},{"id":"23","numId":23,"nombre":"Quintana Roo","anchor":{"x":595,"y":277},"bbox":[582,231,626,323],"topPixels":1406,"sidePixels":747},{"id":"24","numId":24,"nombre":"San Luis Potosí","anchor":{"x":364,"y":244},"bbox":[333,204,404,263],"topPixels":1944,"sidePixels":0},{"id":"25","numId":25,"nombre":"Sinaloa","anchor":{"x":217,"y":178},"bbox":[201,159,272,257],"topPixels":1791,"sidePixels":1171},{"id":"26","numId":26,"nombre":"Sonora","anchor":{"x":184,"y":103},"bbox":[108,48,218,179],"topPixels":5748,"sidePixels":1625},{"id":"27","numId":27,"nombre":"Tabasco","anchor":{"x":520,"y":313},"bbox":[492,303,551,326],"topPixels":770,"sidePixels":0},{"id":"28","numId":28,"nombre":"Tamaulipas","anchor":{"x":397,"y":220},"bbox":[372,138,425,239],"topPixels":2544,"sidePixels":331},{"id":"29","numId":29,"nombre":"Tlaxcala","anchor":{"x":412,"y":295},"bbox":[402,291,422,302],"topPixels":144,"sidePixels":0},{"id":"30","numId":30,"nombre":"Veracruz de Ignacio de la Llave","anchor":{"x":484,"y":325},"bbox":[402,240,500,335],"topPixels":2334,"sidePixels":76},{"id":"31","numId":31,"nombre":"Yucatán","anchor":{"x":580,"y":253},"bbox":[555,234,608,272],"topPixels":1244,"sidePixels":0},{"id":"32","numId":32,"nombre":"Zacatecas","anchor":{"x":316,"y":229},"bbox":[294,192,356,269],"topPixels":2475,"sidePixels":0}]}
+{
+  "version": 1,
+  "width": 660,
+  "height": 435,
+  "pixelScale": 3,
+  "extrusionPx": 18,
+  "idEncoding": "0 = vacío/isla decorativa; 1..32 = cara superior; 33..64 = pared extruida (id - 32)",
+  "states": [
+    {
+      "id": "01",
+      "numId": 1,
+      "nombre": "Aguascalientes",
+      "anchor": {
+        "x": 331,
+        "y": 250
+      },
+      "bbox": [
+        324,
+        246,
+        338,
+        257
+      ],
+      "topPixels": 162,
+      "sidePixels": 0
+    },
+    {
+      "id": "02",
+      "numId": 2,
+      "nombre": "Baja California",
+      "anchor": {
+        "x": 94,
+        "y": 61
+      },
+      "bbox": [
+        72,
+        42,
+        143,
+        140
+      ],
+      "topPixels": 2311,
+      "sidePixels": 952
+    },
+    {
+      "id": "03",
+      "numId": 3,
+      "nombre": "Baja California Sur",
+      "anchor": {
+        "x": 133,
+        "y": 148
+      },
+      "bbox": [
+        105,
+        135,
+        203,
+        254
+      ],
+      "topPixels": 2233,
+      "sidePixels": 1887
+    },
+    {
+      "id": "04",
+      "numId": 4,
+      "nombre": "Campeche",
+      "anchor": {
+        "x": 568,
+        "y": 295
+      },
+      "bbox": [
+        522,
+        258,
+        587,
+        332
+      ],
+      "topPixels": 1852,
+      "sidePixels": 662
+    },
+    {
+      "id": "05",
+      "numId": 5,
+      "nombre": "Coahuila",
+      "anchor": {
+        "x": 328,
+        "y": 139
+      },
+      "bbox": [
+        300,
+        96,
+        371,
+        197
+      ],
+      "topPixels": 4872,
+      "sidePixels": 14
+    },
+    {
+      "id": "06",
+      "numId": 6,
+      "nombre": "Colima",
+      "anchor": {
+        "x": 304,
+        "y": 310
+      },
+      "bbox": [
+        294,
+        303,
+        311,
+        335
+      ],
+      "topPixels": 186,
+      "sidePixels": 267
+    },
+    {
+      "id": "07",
+      "numId": 7,
+      "nombre": "Chiapas",
+      "anchor": {
+        "x": 523,
+        "y": 346
+      },
+      "bbox": [
+        495,
+        315,
+        569,
+        398
+      ],
+      "topPixels": 2424,
+      "sidePixels": 1312
+    },
+    {
+      "id": "08",
+      "numId": 8,
+      "nombre": "Chihuahua",
+      "anchor": {
+        "x": 256,
+        "y": 121
+      },
+      "bbox": [
+        210,
+        63,
+        308,
+        185
+      ],
+      "topPixels": 7933,
+      "sidePixels": 30
+    },
+    {
+      "id": "09",
+      "numId": 9,
+      "nombre": "Ciudad de México",
+      "anchor": {
+        "x": 394,
+        "y": 301
+      },
+      "bbox": [
+        387,
+        294,
+        401,
+        305
+      ],
+      "topPixels": 108,
+      "sidePixels": 0
+    },
+    {
+      "id": "10",
+      "numId": 10,
+      "nombre": "Durango",
+      "anchor": {
+        "x": 283,
+        "y": 193
+      },
+      "bbox": [
+        243,
+        159,
+        326,
+        245
+      ],
+      "topPixels": 3951,
+      "sidePixels": 0
+    },
+    {
+      "id": "11",
+      "numId": 11,
+      "nombre": "Guanajuato",
+      "anchor": {
+        "x": 355,
+        "y": 271
+      },
+      "bbox": [
+        339,
+        255,
+        380,
+        290
+      ],
+      "topPixels": 954,
+      "sidePixels": 0
+    },
+    {
+      "id": "12",
+      "numId": 12,
+      "nombre": "Guerrero",
+      "anchor": {
+        "x": 385,
+        "y": 334
+      },
+      "bbox": [
+        339,
+        312,
+        416,
+        377
+      ],
+      "topPixels": 2106,
+      "sidePixels": 1341
+    },
+    {
+      "id": "13",
+      "numId": 13,
+      "nombre": "Hidalgo",
+      "anchor": {
+        "x": 401,
+        "y": 274
+      },
+      "bbox": [
+        381,
+        264,
+        413,
+        293
+      ],
+      "topPixels": 675,
+      "sidePixels": 0
+    },
+    {
+      "id": "14",
+      "numId": 14,
+      "nombre": "Jalisco",
+      "anchor": {
+        "x": 289,
+        "y": 292
+      },
+      "bbox": [
+        270,
+        243,
+        347,
+        326
+      ],
+      "topPixels": 2523,
+      "sidePixels": 427
+    },
+    {
+      "id": "15",
+      "numId": 15,
+      "nombre": "Estado de México",
+      "anchor": {
+        "x": 382,
+        "y": 304
+      },
+      "bbox": [
+        369,
+        285,
+        404,
+        317
+      ],
+      "topPixels": 630,
+      "sidePixels": 0
+    },
+    {
+      "id": "16",
+      "numId": 16,
+      "nombre": "Michoacán",
+      "anchor": {
+        "x": 346,
+        "y": 304
+      },
+      "bbox": [
+        309,
+        285,
+        374,
+        350
+      ],
+      "topPixels": 1859,
+      "sidePixels": 536
+    },
+    {
+      "id": "17",
+      "numId": 17,
+      "nombre": "Morelos",
+      "anchor": {
+        "x": 397,
+        "y": 310
+      },
+      "bbox": [
+        390,
+        306,
+        401,
+        317
+      ],
+      "topPixels": 144,
+      "sidePixels": 0
+    },
+    {
+      "id": "18",
+      "numId": 18,
+      "nombre": "Nayarit",
+      "anchor": {
+        "x": 283,
+        "y": 253
+      },
+      "bbox": [
+        267,
+        234,
+        305,
+        284
+      ],
+      "topPixels": 893,
+      "sidePixels": 193
+    },
+    {
+      "id": "19",
+      "numId": 19,
+      "nombre": "Nuevo León",
+      "anchor": {
+        "x": 370,
+        "y": 169
+      },
+      "bbox": [
+        351,
+        135,
+        398,
+        224
+      ],
+      "topPixels": 2087,
+      "sidePixels": 0
+    },
+    {
+      "id": "20",
+      "numId": 20,
+      "nombre": "Oaxaca",
+      "anchor": {
+        "x": 442,
+        "y": 343
+      },
+      "bbox": [
+        408,
+        312,
+        497,
+        386
+      ],
+      "topPixels": 2979,
+      "sidePixels": 1503
+    },
+    {
+      "id": "21",
+      "numId": 21,
+      "nombre": "Puebla",
+      "anchor": {
+        "x": 424,
+        "y": 308
+      },
+      "bbox": [
+        399,
+        273,
+        440,
+        326
+      ],
+      "topPixels": 1080,
+      "sidePixels": 0
+    },
+    {
+      "id": "22",
+      "numId": 22,
+      "nombre": "Querétaro",
+      "anchor": {
+        "x": 373,
+        "y": 277
+      },
+      "bbox": [
+        366,
+        258,
+        392,
+        284
+      ],
+      "topPixels": 378,
+      "sidePixels": 0
+    },
+    {
+      "id": "23",
+      "numId": 23,
+      "nombre": "Quintana Roo",
+      "anchor": {
+        "x": 595,
+        "y": 277
+      },
+      "bbox": [
+        582,
+        231,
+        626,
+        323
+      ],
+      "topPixels": 1406,
+      "sidePixels": 747
+    },
+    {
+      "id": "24",
+      "numId": 24,
+      "nombre": "San Luis Potosí",
+      "anchor": {
+        "x": 364,
+        "y": 244
+      },
+      "bbox": [
+        333,
+        204,
+        404,
+        263
+      ],
+      "topPixels": 1944,
+      "sidePixels": 0
+    },
+    {
+      "id": "25",
+      "numId": 25,
+      "nombre": "Sinaloa",
+      "anchor": {
+        "x": 217,
+        "y": 178
+      },
+      "bbox": [
+        201,
+        159,
+        272,
+        257
+      ],
+      "topPixels": 1791,
+      "sidePixels": 1171
+    },
+    {
+      "id": "26",
+      "numId": 26,
+      "nombre": "Sonora",
+      "anchor": {
+        "x": 184,
+        "y": 103
+      },
+      "bbox": [
+        108,
+        48,
+        218,
+        179
+      ],
+      "topPixels": 5748,
+      "sidePixels": 1625
+    },
+    {
+      "id": "27",
+      "numId": 27,
+      "nombre": "Tabasco",
+      "anchor": {
+        "x": 520,
+        "y": 313
+      },
+      "bbox": [
+        492,
+        303,
+        551,
+        326
+      ],
+      "topPixels": 770,
+      "sidePixels": 0
+    },
+    {
+      "id": "28",
+      "numId": 28,
+      "nombre": "Tamaulipas",
+      "anchor": {
+        "x": 397,
+        "y": 220
+      },
+      "bbox": [
+        372,
+        138,
+        425,
+        239
+      ],
+      "topPixels": 2544,
+      "sidePixels": 331
+    },
+    {
+      "id": "29",
+      "numId": 29,
+      "nombre": "Tlaxcala",
+      "anchor": {
+        "x": 412,
+        "y": 295
+      },
+      "bbox": [
+        402,
+        291,
+        422,
+        302
+      ],
+      "topPixels": 144,
+      "sidePixels": 0
+    },
+    {
+      "id": "30",
+      "numId": 30,
+      "nombre": "Veracruz",
+      "anchor": {
+        "x": 484,
+        "y": 325
+      },
+      "bbox": [
+        402,
+        240,
+        500,
+        335
+      ],
+      "topPixels": 2334,
+      "sidePixels": 76
+    },
+    {
+      "id": "31",
+      "numId": 31,
+      "nombre": "Yucatán",
+      "anchor": {
+        "x": 580,
+        "y": 253
+      },
+      "bbox": [
+        555,
+        234,
+        608,
+        272
+      ],
+      "topPixels": 1244,
+      "sidePixels": 0
+    },
+    {
+      "id": "32",
+      "numId": 32,
+      "nombre": "Zacatecas",
+      "anchor": {
+        "x": 316,
+        "y": 229
+      },
+      "bbox": [
+        294,
+        192,
+        356,
+        269
+      ],
+      "topPixels": 2475,
+      "sidePixels": 0
+    }
+  ]
+}

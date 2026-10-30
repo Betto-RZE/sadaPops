@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { Lock, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/shared/utils';
+import { LandingNavbar, type LandingNavbarProps } from './LandingNavbar';
 
 const navLinks = [
   { name: 'Inicio', href: '/' },
@@ -34,12 +35,19 @@ function DaliaStatus({ mobile = false }: { mobile?: boolean }) {
   );
 }
 
-export function Navbar() {
+export type NavbarProps = LandingNavbarProps;
+
+export function Navbar(props: NavbarProps = {}) {
+  const pathname = usePathname();
+  return pathname === '/' ? <LandingNavbar {...props} /> : <StandardNavbar className={props.className} />;
+}
+
+function StandardNavbar({ className }: { className?: string }) {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <header className="pointer-events-none relative z-50 w-full px-4 pt-4 sm:px-6 sm:pt-5 lg:px-10">
+    <header className={cn("pointer-events-none relative z-50 w-full px-4 pt-4 sm:px-6 sm:pt-5 lg:px-10", className)}>
       <div className="mx-auto max-w-[1440px]">
         <div className="flex items-center justify-between gap-4">
           <Link

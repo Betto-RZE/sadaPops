@@ -9,12 +9,19 @@ import React, {
   useContext,
 } from 'react';
 import { useMapData } from './useMapData';
-import type {
-  PixelMapProps,
-  PixelMapAnchorProps,
-  PixelMapContextValue,
+import {
+  type PixelMapProps,
+  type PixelMapAnchorProps,
+  type PixelMapContextValue,
+  getCommonStateName,
 } from './types';
 import { cn } from '../../shared/utils';
+
+// Constantes globales de sincronización de la secuencia de entrada (Hito H6)
+// Sincronizado: el mapa se materializa suave a los 1.55s y la oleada arranca a los 1.85s a la par del gris
+export const MAP_INTRO_DELAY_MS = 1850;     // Instante en que arranca la oleada (exacto al inicio del fade a gris)
+export const MAP_INTRO_STAGGER_MS = 780;    // Ventana amplia para que los 32 estados caigan en oleada visible uno a uno
+export const MAP_STATE_ANIM_MS = 620;       // Duración física con peso real, impacto y micro-rebote claro
 
 // Contexto para compartir metadatos y estado activo con componentes hijos (como PixelMapAnchor)
 const PixelMapContext = createContext<PixelMapContextValue | null>(null);
@@ -52,7 +59,6 @@ export function PixelMapAnchor({
   const liftPx = ELEVATION_VOXELS * data.pixelScale;
 
   // Ordenamiento en eje Z por coordenada Y (las flores más al sur se renderizan al frente)
-  // Base 20 + posición vertical entera (0..435)
   const zDepth = 20 + Math.round(state.anchor.y);
 
   return (
@@ -102,20 +108,31 @@ function brightenU32(u32: number, delta: number): number {
   return (((255 << 24) | (b << 16) | (g << 8) | r) >>> 0);
 }
 
-/** Entinta un pixel Uint32 hacia la paleta rosa/magenta de selección preservando sus biseles */
+/**
+ * Entinta un pixel Uint32 hacia la luz lavanda/índigo claro de selección (Hito H5)
+ * preservando sus biseles. Es el mismo tono del cono de luz que proyecta el estado ampliado.
+ */
 function tintSelectU32(u32: number): number {
   const r0 = u32 & 0xff;
   const g0 = (u32 >> 8) & 0xff;
   const b0 = (u32 >> 16) & 0xff;
-  // Luminancia relativa respecto al tono base índigo (~105, 103, 234)
   const lumDelta = Math.round((r0 - 105) * 0.45 + (g0 - 103) * 0.45 + (b0 - 234) * 0.2);
-  const r = Math.min(255, Math.max(0, 232 + lumDelta));
-  const g = Math.min(255, Math.max(0, 56 + Math.round(lumDelta * 0.85)));
-  const b = Math.min(255, Math.max(0, 130 + Math.round(lumDelta * 0.9)));
+  const r = Math.min(255, Math.max(0, 168 + lumDelta));
+  const g = Math.min(255, Math.max(0, 166 + Math.round(lumDelta * 0.95)));
+  const b = Math.min(255, Math.max(0, 255 + Math.round(lumDelta * 0.5)));
   return (((255 << 24) | (b << 16) | (g << 8) | r) >>> 0);
 }
 
-// Paletas de acantilados 3D para estados elevados (Mini Pop)
+// Paletas de acantilados 3D para estados elevados
+const INTRO_CLIFF = {
+  light: hexToU32('#5E4EC8'),
+  mid: hexToU32('#4738A6'),
+  dark: hexToU32('#342687'),
+  deep: hexToU32('#231768'),
+  rimLip: hexToU32('#8A82E8'),
+  rimHighlight: hexToU32('#CEC9FA'),
+};
+
 const HOVER_CLIFF = {
   light: hexToU32('#6654D8'),
   mid: hexToU32('#5542C4'),
@@ -125,34 +142,58 @@ const HOVER_CLIFF = {
   rimHighlight: hexToU32('#EBE6FF'),
 };
 
+// Selección (Hito H5): luz lavanda, un tono más claro que el mapa base (sin rosa;
+// la dalia queda como única protagonista magenta)
 const SELECT_CLIFF = {
-  light: hexToU32('#BD1E62'),
-  mid: hexToU32('#9E1650'),
-  dark: hexToU32('#780E3B'),
-  deep: hexToU32('#520726'),
-  rimLip: hexToU32('#FF75AE'),
-  rimHighlight: hexToU32('#FFC2DC'),
+  light: hexToU32('#7A74F0'),
+  mid: hexToU32('#5F57D6'),
+  dark: hexToU32('#4A40B8'),
+  deep: hexToU32('#33288F'),
+  rimLip: hexToU32('#B4B2FF'),
+  rimHighlight: hexToU32('#F0EEFF'),
 };
 
 // Micro-sombra de oclusión y contacto bajo el bloque elevado
 const BASE_SHADOW_1 = hexToU32('#1A1638', 85); // 1er pixel debajo (~33% alfa)
 const BASE_SHADOW_2 = hexToU32('#1A1638', 40); // 2do pixel debajo (~15% alfa)
 
-// Fondo de papel con sombra para cubrir la huella del acantilado viejo al flotar (Opción A)
+// Fondo de papel con sombra para cubrir la huella del acantilado viejo al flotar
 const PAPER_SHADOW = hexToU32('#C3C1C8', 255);
-const SOCKET_GROOVE = hexToU32('#27197A', 255);
 
 /** Elevación vertical en vóxeles al hacer hover o seleccionar (2 vóxeles = 6px a escala 3x) */
-const ELEVATION_VOXELS = 2;
+export const ELEVATION_VOXELS = 2;
 
 /**
- * Resuelve qué estado federativo corresponde a las coordenadas lógicas (lx, ly)
- * en O(1) consultando directamente el buffer binario mapIds.
- *
- * Incluye:
- * 1. Histeresis de altura anti-flicker: tolera la elevación 3D del estado activo.
- * 2. Asistencia táctil: radio de 2 vóxeles para pantallas móviles en estados pequeños.
+ * Curva física para el aterrizaje de cada pieza:
+ * Descenso con peso gravitatorio físico -> impacto seco en 0 -> micro-rebote amortiguado.
  */
+function computeDropBounceLiftPx(p: number, startVoxels: number, pixelScale: number): number {
+  if (p <= 0) {
+    return Math.round(startVoxels * pixelScale);
+  }
+  if (p >= 1) {
+    return 0;
+  }
+
+  let voxels = 0;
+  if (p <= 0.62) {
+    // Descenso con gravedad: inicia suave y acelera hacia el suelo
+    const u = p / 0.62;
+    const ease = u * u;
+    voxels = startVoxels * (1 - ease);
+  } else if (p <= 0.88) {
+    // Micro-rebote físico visible (~24% de la altura de la pieza)
+    const u = (p - 0.62) / 0.26;
+    const bounceAmp = Math.min(1.4, Math.max(0.85, startVoxels * 0.24));
+    voxels = bounceAmp * Math.sin(u * Math.PI);
+  } else {
+    // Asentamiento firme en 0
+    voxels = 0;
+  }
+
+  return Math.max(0, Math.round(voxels * pixelScale));
+}
+
 function resolveStateAt(
   lx: number,
   ly: number,
@@ -165,8 +206,6 @@ function resolveStateAt(
 ): string | null {
   if (lx < 0 || lx >= width || ly < 0 || ly >= height) return null;
 
-  // Histeresis de altura: si el estado activo está elevado en 3D, verificar si el cursor
-  // apunta a su cara superior elevada (lx, ly + liftPx)
   if (activeNumId && liftPx > 0 && ly + liftPx < height) {
     const shiftedCode = mapIds[(ly + liftPx) * width + lx];
     if (shiftedCode === activeNumId) {
@@ -176,17 +215,16 @@ function resolveStateAt(
 
   let code = mapIds[ly * width + lx];
 
-  // Si toca directamente la base o la pared extruida del estado activo elevado
   if (activeNumId && (code === activeNumId || code === activeNumId + 32)) {
     return String(activeNumId).padStart(2, '0');
   }
 
-  // Asistencia táctil: si se pulsó agua o isla decorativa, buscar en radio de 2 vóxeles
   if (code === 0 && isTouch) {
     let closestCode = 0;
     let closestDistSq = Infinity;
-    for (let dy = -2; dy <= 2; dy++) {
-      for (let dx = -2; dx <= 2; dx++) {
+    // Ventana ampliada a ±5 vóxeles para asistencia táctil con pulgares en bordes y costas
+    for (let dy = -5; dy <= 5; dy++) {
+      for (let dx = -5; dx <= 5; dx++) {
         const nx = lx + dx;
         const ny = ly + dy;
         if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
@@ -195,7 +233,7 @@ function resolveStateAt(
             const rawId = c > 32 ? c - 32 : c;
             const distSq = dx * dx + dy * dy;
             const isSmall = SMALL_STATE_NUM_IDS.has(rawId);
-            const effectiveDist = isSmall ? distSq * 0.5 : distSq;
+            const effectiveDist = isSmall ? distSq * 0.45 : distSq;
             if (effectiveDist < closestDistSq) {
               closestDistSq = effectiveDist;
               closestCode = c;
@@ -206,11 +244,12 @@ function resolveStateAt(
     }
     code = closestCode;
   } else if (code !== 0 && isTouch) {
-    // Si se pulsó en un estado limítrofe a 1px de un estado pequeño, priorizar el pequeño
     const currentNum = code > 32 ? code - 32 : code;
+    // Si el toque cayó en un estado grande envolvente (ej. Edomex o Puebla),
+    // verificar si a menos de 3 vóxeles hay un micro-estado (CDMX, Tlaxcala, Morelos)
     if (!SMALL_STATE_NUM_IDS.has(currentNum)) {
-      for (let dy = -1; dy <= 1; dy++) {
-        for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -3; dy <= 3; dy++) {
+        for (let dx = -3; dx <= 3; dx++) {
           const nx = lx + dx;
           const ny = ly + dy;
           if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
@@ -229,7 +268,6 @@ function resolveStateAt(
 
   if (code === 0) return null;
 
-  // Códigos 1..32: cara superior; Códigos 33..64: pared extruida (code - 32)
   const numId = code > 32 ? code - 32 : code;
   if (numId >= 1 && numId <= 32) {
     return String(numId).padStart(2, '0');
@@ -238,19 +276,23 @@ function resolveStateAt(
 }
 
 /**
- * PixelMap: Componente interactivo multicapa para el mapa isométrico pixel art de México (Hito H2).
+ * PixelMap: Componente interactivo multicapa para el mapa isométrico pixel art de México (Hito H2 + H6).
  */
 export function PixelMap({
   selectedStateId = null,
   hoveredStateId: controlledHoveredId,
   onSelectState,
   onHoverState,
-  showTooltip = true,
+  // `showTooltip` se conserva por compatibilidad de API; el tooltip de debug se retiró en H5.
+  showTooltip: _showTooltip = false,
   className,
+  readyToDrop = true,
+  hideInternalShadow = false,
   children,
 }: PixelMapProps) {
   const { data, loading, error } = useMapData();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const cursorPillRef = useRef<HTMLDivElement | null>(null);
 
   // Buffer persistente para renderizado de alta velocidad sin recolección de basura
   const bufferRef = useRef<{
@@ -260,9 +302,23 @@ export function PixelMap({
     liftedMask: Uint8Array;
   } | null>(null);
 
+  // Estado para controlar cuando los 32 estados ya terminaron de aterrizar
+  const [introDone, setIntroDone] = useState(false);
+
+  // Referencia para discriminar toques rápidos (tap) de desplazamientos de scroll en pantallas táctiles
+  const touchStartRef = useRef<{ clientX: number; clientY: number; time: number } | null>(null);
+
   // Estado local para hover cuando el componente no está completamente controlado
   const [internalHoveredId, setInternalHoveredId] = useState<string | null>(null);
   const currentHoveredId = controlledHoveredId !== undefined ? controlledHoveredId : internalHoveredId;
+
+  // Notifica la selección del estado a componentes exteriores (ej. ModuleCards)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(
+      new CustomEvent('dalias:state-selected', { detail: { stateId: selectedStateId } })
+    );
+  }, [selectedStateId]);
 
   const width = data?.width ?? 660;
   const height = data?.height ?? 435;
@@ -272,270 +328,492 @@ export function PixelMap({
   const activeStateId = currentHoveredId || selectedStateId;
   const activeState = (data && activeStateId) ? data.stateById.get(activeStateId) : null;
 
-  // Renderizado volumétrico 3D ("Mini Pop") en el Canvas
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !data) return;
+  // Estado en hover (Opción B: se muestra junto al cursor, se oculta si el estado ya está abierto por clic)
+  const hoveredState =
+    data && currentHoveredId && currentHoveredId !== selectedStateId
+      ? data.stateById.get(currentHoveredId) ?? null
+      : null;
 
-    const ctx = canvas.getContext('2d', { willReadFrequently: false });
-    if (!ctx) return;
+  // Función que pinta un conjunto de estados en el canvas con su elevación `liftPx` (incluso liftPx === 0 durante la intro)
+  const renderStatesFrame = useCallback(
+    (
+      statesToDraw: Array<{
+        stateId: string;
+        liftPx: number;
+        mode: 'intro' | 'hover' | 'select';
+      }>,
+      isFullIntroFrame = false
+    ) => {
+      const canvas = canvasRef.current;
+      if (!canvas || !data) return;
 
-    // Inicializar o redimensionar buffer persistente si es necesario
-    if (
-      !bufferRef.current ||
-      bufferRef.current.imgData.width !== width ||
-      bufferRef.current.imgData.height !== height
-    ) {
-      const imgData = ctx.createImageData(width, height);
-      bufferRef.current = {
-        imgData,
-        u32: new Uint32Array(imgData.data.buffer),
-        prevDrawnIndices: [],
-        liftedMask: new Uint8Array(width * height),
+      const ctx = canvas.getContext('2d', { willReadFrequently: false });
+      if (!ctx) return;
+
+      if (
+        !bufferRef.current ||
+        bufferRef.current.imgData.width !== width ||
+        bufferRef.current.imgData.height !== height
+      ) {
+        const imgData = ctx.createImageData(width, height);
+        bufferRef.current = {
+          imgData,
+          u32: new Uint32Array(imgData.data.buffer),
+          prevDrawnIndices: [],
+          liftedMask: new Uint8Array(width * height),
+        };
+      }
+
+      const { imgData, u32, prevDrawnIndices, liftedMask } = bufferRef.current;
+      const { mapIds, basePixels, pixelScale } = data;
+
+      let minDirtyX = width;
+      let minDirtyY = height;
+      let maxDirtyX = -1;
+      let maxDirtyY = -1;
+
+      // 1. Limpiar píxeles previamente dibujados
+      for (let i = 0; i < prevDrawnIndices.length; i++) {
+        const idx = prevDrawnIndices[i];
+        u32[idx] = 0;
+        const x = idx % width;
+        const y = Math.floor(idx / width);
+        if (x < minDirtyX) minDirtyX = x;
+        if (x > maxDirtyX) maxDirtyX = x;
+        if (y < minDirtyY) minDirtyY = y;
+        if (y > maxDirtyY) maxDirtyY = y;
+      }
+      prevDrawnIndices.length = 0;
+
+      const setPixel = (idx: number, color: number) => {
+        u32[idx] = color;
+        prevDrawnIndices.push(idx);
       };
-    }
 
-    const { imgData, u32, prevDrawnIndices, liftedMask } = bufferRef.current;
-    const { mapIds, basePixels, pixelScale } = data;
-    const liftPx = ELEVATION_VOXELS * pixelScale; // 6px
+      // 2. Pintar cada estado en el orden suministrado
+      for (let s = 0; s < statesToDraw.length; s++) {
+        const { stateId, liftPx: customLiftPx, mode } = statesToDraw[s];
+        // En modo normal (no intro), si liftPx es 0 no hace falta sobredibujar map-base.png
+        if (!isFullIntroFrame && customLiftPx <= 0) continue;
 
-    // Variables para delimitar la región sucia (dirty rectangle)
-    let minDirtyX = width;
-    let minDirtyY = height;
-    let maxDirtyX = -1;
-    let maxDirtyY = -1;
+        const state = data.stateById.get(stateId);
+        if (!state) continue;
+        const pixelIndex = data.pixelsByNumId.get(state.numId);
+        if (!pixelIndex) continue;
 
-    // 1. Limpiar píxeles previamente dibujados
-    for (let i = 0; i < prevDrawnIndices.length; i++) {
-      const idx = prevDrawnIndices[i];
-      u32[idx] = 0;
-      const x = idx % width;
-      const y = Math.floor(idx / width);
-      if (x < minDirtyX) minDirtyX = x;
-      if (x > maxDirtyX) maxDirtyX = x;
-      if (y < minDirtyY) minDirtyY = y;
-      if (y > maxDirtyY) maxDirtyY = y;
-    }
-    prevDrawnIndices.length = 0;
-
-    const setPixel = (idx: number, color: number) => {
-      u32[idx] = color;
-      prevDrawnIndices.push(idx);
-    };
-
-    // 2. Función para renderizar un estado elevado 2 vóxeles con paredes prismáticas 3D
-    const paintElevatedState = (stateId: string, mode: 'hover' | 'select') => {
-      const state = data.stateById.get(stateId);
-      if (!state) return;
-      const pixelIndex = data.pixelsByNumId.get(state.numId);
-      if (!pixelIndex) return;
-
-      const numId = state.numId;
-      const cliffPalette = mode === 'select' ? SELECT_CLIFF : HOVER_CLIFF;
-      const [bboxMinX, bboxMinY, bboxMaxX, bboxMaxY] = state.bbox;
-
-      const expandedMinX = Math.max(0, bboxMinX - pixelScale);
-      const expandedMaxX = Math.min(width - 1, bboxMaxX + pixelScale);
-      const expandedMinY = Math.max(0, bboxMinY - liftPx - 1);
-      const expandedMaxY = Math.min(height - 1, bboxMaxY + 3);
-
-      if (expandedMinX < minDirtyX) minDirtyX = expandedMinX;
-      if (expandedMaxX > maxDirtyX) maxDirtyX = expandedMaxX;
-      if (expandedMinY < minDirtyY) minDirtyY = expandedMinY;
-      if (expandedMaxY > maxDirtyY) maxDirtyY = expandedMaxY;
-
-      const top = pixelIndex.topPixels;
-      const side = pixelIndex.sidePixels;
-
-      // Opción A: Levantar el bloque completo (cara superior + acantilado frontal) como una pieza sólida 3D.
-      // Paso A1: Registrar en `liftedMask` las posiciones donde aterrizará el bloque elevado (y - liftPx)
-      const touchedMaskIndices: number[] = [];
-      for (let i = 0; i < top.length; i++) {
-        const idx = top[i];
-        const y = Math.floor(idx / width);
-        if (y >= liftPx) {
-          const targetIdx = idx - liftPx * width;
-          liftedMask[targetIdx] = 1;
-          touchedMaskIndices.push(targetIdx);
-        }
-      }
-      for (let i = 0; i < side.length; i++) {
-        const idx = side[i];
-        const y = Math.floor(idx / width);
-        if (y >= liftPx) {
-          const targetIdx = idx - liftPx * width;
-          liftedMask[targetIdx] = 1;
-          touchedMaskIndices.push(targetIdx);
-        }
-      }
-
-      // Paso A2: Enmascarar la huella inferior del acantilado en map-base.png para que no se duplique abajo
-      for (let i = 0; i < side.length; i++) {
-        const idx = side[i];
-        if (!liftedMask[idx]) {
-          // Cubrir la base vieja expuesta con textura de papel sombreado
-          setPixel(idx, PAPER_SHADOW);
-        }
-      }
-
-      // Paso A3: Dibujar el acantilado costero/frontal suspendido en (x, y - liftPx)
-      for (let i = 0; i < side.length; i++) {
-        const idx = side[i];
-        const x = idx % width;
-        const y = Math.floor(idx / width);
-        if (y < liftPx) continue;
-
-        const orig = basePixels[idx];
-        const wallCol =
+        const numId = state.numId;
+        const cliffPalette =
           mode === 'select'
-            ? cliffPalette.dark
-            : orig !== 0
-            ? brightenU32(orig, 16)
-            : cliffPalette.mid;
+            ? SELECT_CLIFF
+            : mode === 'hover'
+            ? HOVER_CLIFF
+            : INTRO_CLIFF;
+        const [bboxMinX, bboxMinY, bboxMaxX, bboxMaxY] = state.bbox;
 
-        const liftedIdx = (y - liftPx) * width + x;
-        setPixel(liftedIdx, wallCol);
+        const expandedMinX = Math.max(0, bboxMinX - pixelScale - 2);
+        const expandedMaxX = Math.min(width - 1, bboxMaxX + pixelScale + 2);
+        const expandedMinY = Math.max(0, bboxMinY - customLiftPx - 3);
+        const expandedMaxY = Math.min(height - 1, bboxMaxY + 4);
 
-        // Sombra de contacto suave debajo de la base del acantilado elevado
-        const belowId = (y + 1 < height) ? mapIds[(y + 1) * width + x] : 0;
-        if (belowId !== numId && belowId !== numId + 32) {
-          const shadowY1 = y - liftPx + 1;
-          if (shadowY1 < height) {
-            setPixel(shadowY1 * width + x, BASE_SHADOW_1);
+        if (expandedMinX < minDirtyX) minDirtyX = expandedMinX;
+        if (expandedMaxX > maxDirtyX) maxDirtyX = expandedMaxX;
+        if (expandedMinY < minDirtyY) minDirtyY = expandedMinY;
+        if (expandedMaxY > maxDirtyY) maxDirtyY = expandedMaxY;
+
+        const top = pixelIndex.topPixels;
+        const side = pixelIndex.sidePixels;
+
+        // Si el estado ya aterrizó en 0 durante la intro, copiar directamente sus píxeles originales de map-base.png
+        if (customLiftPx === 0) {
+          for (let i = 0; i < side.length; i++) {
+            const idx = side[i];
+            setPixel(idx, basePixels[idx]);
+          }
+          for (let i = 0; i < top.length; i++) {
+            const idx = top[i];
+            setPixel(idx, basePixels[idx]);
+          }
+          continue;
+        }
+
+        const touchedMaskIndices: number[] = [];
+        for (let i = 0; i < top.length; i++) {
+          const idx = top[i];
+          const y = Math.floor(idx / width);
+          if (y >= customLiftPx) {
+            const targetIdx = idx - customLiftPx * width;
+            liftedMask[targetIdx] = 1;
+            touchedMaskIndices.push(targetIdx);
           }
         }
-      }
-
-      // Paso A4: Extruir nueva pared vertical (6px) en bordes continentales limítrofes con otros estados
-      for (let i = 0; i < top.length; i++) {
-        const idx = top[i];
-        const x = idx % width;
-        const y = Math.floor(idx / width);
-
-        const isBottomEdge = y + 1 >= height || (mapIds[(y + 1) * width + x] !== numId && mapIds[(y + 1) * width + x] !== numId + 32);
-        const isRightEdge = x + 1 >= width || (mapIds[y * width + (x + 1)] !== numId && mapIds[y * width + (x + 1)] !== numId + 32);
-
-        if (isBottomEdge) {
-          // Orientación de la pared continental
-          const leftSame = x > 0 && mapIds[y * width + (x - 1)] === numId;
-          const rightSame = x + 1 < width && mapIds[y * width + (x + 1)] === numId;
-          const isStepCrease = !leftSame || !rightSame;
-
-          let wallColor = cliffPalette.mid;
-          if (isStepCrease) {
-            wallColor = cliffPalette.deep;
-          }
-
-          for (let d = 1; d <= liftPx; d++) {
-            const wy = y - liftPx + d;
-            if (wy >= 0 && wy < height) {
-              setPixel(wy * width + x, wallColor);
-            }
-          }
-
-          // Micro-sombra de contacto bajo el estado elevado
-          if (y + 1 < height && mapIds[(y + 1) * width + x] !== numId && mapIds[(y + 1) * width + x] !== numId + 32) {
-            setPixel((y + 1) * width + x, BASE_SHADOW_1);
-            if (y + 2 < height && mapIds[(y + 2) * width + x] !== numId && mapIds[(y + 2) * width + x] !== numId + 32) {
-              setPixel((y + 2) * width + x, BASE_SHADOW_2);
-            }
+        for (let i = 0; i < side.length; i++) {
+          const idx = side[i];
+          const y = Math.floor(idx / width);
+          if (y >= customLiftPx) {
+            const targetIdx = idx - customLiftPx * width;
+            liftedMask[targetIdx] = 1;
+            touchedMaskIndices.push(targetIdx);
           }
         }
 
-        // Pared este (sombra profunda)
-        if (isRightEdge && x + 1 < width) {
-          for (let d = 1; d <= liftPx; d++) {
-            const wy = y - liftPx + d;
-            if (wy >= 0 && wy < height) {
-              setPixel(wy * width + x, cliffPalette.deep);
+        // En modo normal (con map-base.png visible debajo), cubrir la huella inferior expuesta
+        if (!isFullIntroFrame) {
+          for (let i = 0; i < side.length; i++) {
+            const idx = side[i];
+            if (!liftedMask[idx]) {
+              setPixel(idx, PAPER_SHADOW);
             }
-          }
-        }
-      }
-
-      // Paso A5: Pintar la cara superior desplazada en (x, y - liftPx) con biseles y colores vibrantes
-      for (let i = 0; i < top.length; i++) {
-        const idx = top[i];
-        const x = idx % width;
-        const y = Math.floor(idx / width);
-        const ly = y - liftPx;
-        if (ly < 0) continue;
-
-        const orig = basePixels[idx];
-        const isNorthOrWestEdge =
-          y === 0 ||
-          mapIds[(y - 1) * width + x] !== numId ||
-          x === 0 ||
-          mapIds[y * width + (x - 1)] !== numId;
-        const isSouthOrEastEdge =
-          y + 1 >= height ||
-          mapIds[(y + 1) * width + x] !== numId ||
-          x + 1 >= width ||
-          mapIds[y * width + (x + 1)] !== numId;
-
-        let topColor: number;
-        if (mode === 'select') {
-          if (isNorthOrWestEdge) {
-            topColor = cliffPalette.rimHighlight;
-          } else if (isSouthOrEastEdge) {
-            topColor = cliffPalette.rimLip;
-          } else {
-            topColor = orig !== 0 ? tintSelectU32(orig) : hexToU32('#E83882');
           }
         } else {
-          // Modo Hover
-          if (isNorthOrWestEdge) {
-            topColor = cliffPalette.rimHighlight;
-          } else if (isSouthOrEastEdge) {
-            topColor = cliffPalette.rimLip;
-          } else {
-            topColor = orig !== 0 ? brightenU32(orig, 26) : hexToU32('#807FF9');
+          // Durante la intro (sin map-base.png debajo), proyectar sombra suave en la huella sobre el papel
+          for (let i = 0; i < side.length; i++) {
+            const idx = side[i];
+            if (!liftedMask[idx]) {
+              setPixel(idx, BASE_SHADOW_2);
+            }
           }
         }
 
-        setPixel(ly * width + x, topColor);
+        // Dibujar acantilado costero/frontal desplazado en (x, y - customLiftPx)
+        for (let i = 0; i < side.length; i++) {
+          const idx = side[i];
+          const x = idx % width;
+          const y = Math.floor(idx / width);
+          if (y < customLiftPx) continue;
+
+          const orig = basePixels[idx];
+          const wallCol =
+            mode === 'select'
+              ? cliffPalette.dark
+              : mode === 'hover'
+              ? orig !== 0
+                ? brightenU32(orig, 16)
+                : cliffPalette.mid
+              : orig !== 0
+              ? orig
+              : cliffPalette.mid;
+
+          const liftedIdx = (y - customLiftPx) * width + x;
+          setPixel(liftedIdx, wallCol);
+
+          const belowId = y + 1 < height ? mapIds[(y + 1) * width + x] : 0;
+          if (belowId !== numId && belowId !== numId + 32) {
+            const shadowY1 = y - customLiftPx + 1;
+            if (shadowY1 < height) {
+              setPixel(shadowY1 * width + x, BASE_SHADOW_1);
+            }
+          }
+        }
+
+        // Extruir pared vertical de relieve (altura = customLiftPx) en fronteras
+        for (let i = 0; i < top.length; i++) {
+          const idx = top[i];
+          const x = idx % width;
+          const y = Math.floor(idx / width);
+
+          const isBottomEdge =
+            y + 1 >= height ||
+            (mapIds[(y + 1) * width + x] !== numId &&
+              mapIds[(y + 1) * width + x] !== numId + 32);
+          const isRightEdge =
+            x + 1 >= width ||
+            (mapIds[y * width + (x + 1)] !== numId &&
+              mapIds[y * width + (x + 1)] !== numId + 32);
+
+          if (isBottomEdge) {
+            const leftSame = x > 0 && mapIds[y * width + (x - 1)] === numId;
+            const rightSame = x + 1 < width && mapIds[y * width + (x + 1)] === numId;
+            const isStepCrease = !leftSame || !rightSame;
+
+            const wallColor = isStepCrease ? cliffPalette.deep : cliffPalette.mid;
+
+            for (let d = 1; d <= customLiftPx; d++) {
+              const wy = y - customLiftPx + d;
+              if (wy >= 0 && wy < height) {
+                setPixel(wy * width + x, wallColor);
+              }
+            }
+
+            if (
+              y + 1 < height &&
+              mapIds[(y + 1) * width + x] !== numId &&
+              mapIds[(y + 1) * width + x] !== numId + 32
+            ) {
+              setPixel((y + 1) * width + x, BASE_SHADOW_1);
+              if (
+                y + 2 < height &&
+                mapIds[(y + 2) * width + x] !== numId &&
+                mapIds[(y + 2) * width + x] !== numId + 32
+              ) {
+                setPixel((y + 2) * width + x, BASE_SHADOW_2);
+              }
+            }
+          }
+
+          if (isRightEdge && x + 1 < width) {
+            for (let d = 1; d <= customLiftPx; d++) {
+              const wy = y - customLiftPx + d;
+              if (wy >= 0 && wy < height) {
+                setPixel(wy * width + x, cliffPalette.deep);
+              }
+            }
+          }
+        }
+
+        // Pintar cara superior desplazada en (x, y - customLiftPx)
+        for (let i = 0; i < top.length; i++) {
+          const idx = top[i];
+          const x = idx % width;
+          const y = Math.floor(idx / width);
+          const ly = y - customLiftPx;
+          if (ly < 0) continue;
+
+          const orig = basePixels[idx];
+          const isNorthOrWestEdge =
+            y === 0 ||
+            mapIds[(y - 1) * width + x] !== numId ||
+            x === 0 ||
+            mapIds[y * width + (x - 1)] !== numId;
+          const isSouthOrEastEdge =
+            y + 1 >= height ||
+            mapIds[(y + 1) * width + x] !== numId ||
+            x + 1 >= width ||
+            mapIds[y * width + (x + 1)] !== numId;
+
+          let topColor: number;
+          if (mode === 'select') {
+            if (isNorthOrWestEdge) {
+              topColor = cliffPalette.rimHighlight;
+            } else if (isSouthOrEastEdge) {
+              topColor = cliffPalette.rimLip;
+            } else {
+              topColor = orig !== 0 ? tintSelectU32(orig) : hexToU32('#A8A6FF');
+            }
+          } else if (mode === 'hover') {
+            if (isNorthOrWestEdge) {
+              topColor = cliffPalette.rimHighlight;
+            } else if (isSouthOrEastEdge) {
+              topColor = cliffPalette.rimLip;
+            } else {
+              topColor = orig !== 0 ? brightenU32(orig, 26) : hexToU32('#807FF9');
+            }
+          } else {
+            // Modo 'intro': Las caras superiores conservan su violeta original con bisel sutil
+            if (isNorthOrWestEdge) {
+              topColor = orig !== 0 ? brightenU32(orig, 16) : cliffPalette.rimHighlight;
+            } else {
+              topColor = orig !== 0 ? orig : hexToU32('#6A5FE0');
+            }
+          }
+
+          setPixel(ly * width + x, topColor);
+        }
+
+        // Contorno luminoso lavanda de 2px alrededor de la silueta activa en el mapa ÚNICAMENTE al seleccionar (clic)
+        if (mode === 'select') {
+          const glowInner = hexToU32('#F4F2FF', 235);
+          const glowOuter = hexToU32('#B4B2FF', 135);
+          for (let i = 0; i < touchedMaskIndices.length; i++) {
+            const tIdx = touchedMaskIndices[i];
+            const tx = tIdx % width;
+            const ty = Math.floor(tIdx / width);
+            const neighbors = [
+              [tx - 1, ty],
+              [tx + 1, ty],
+              [tx, ty - 1],
+              [tx, ty + 1],
+            ];
+            for (let n = 0; n < 4; n++) {
+              const nx = neighbors[n][0];
+              const ny = neighbors[n][1];
+              if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+                const nIdx = ny * width + nx;
+                if (!liftedMask[nIdx]) {
+                  setPixel(nIdx, glowInner);
+                  const nx2 = nx + (nx - tx);
+                  const ny2 = ny + (ny - ty);
+                  if (nx2 >= 0 && nx2 < width && ny2 >= 0 && ny2 < height) {
+                    const nIdx2 = ny2 * width + nx2;
+                    if (!liftedMask[nIdx2] && u32[nIdx2] !== glowInner) {
+                      setPixel(nIdx2, glowOuter);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        for (let i = 0; i < touchedMaskIndices.length; i++) {
+          liftedMask[touchedMaskIndices[i]] = 0;
+        }
       }
 
-      // Limpiar `liftedMask` para reutilizarlo en la siguiente llamada sin coste de GC
-      for (let i = 0; i < touchedMaskIndices.length; i++) {
-        liftedMask[touchedMaskIndices[i]] = 0;
+      // 3. Volcar al canvas la región modificada
+      if (minDirtyX <= maxDirtyX && minDirtyY <= maxDirtyY) {
+        const dirtyW = maxDirtyX - minDirtyX + 1;
+        const dirtyH = maxDirtyY - minDirtyY + 1;
+        ctx.putImageData(imgData, 0, 0, minDirtyX, minDirtyY, dirtyW, dirtyH);
+      } else if (prevDrawnIndices.length === 0) {
+        ctx.clearRect(0, 0, width, height);
       }
+    },
+    [data, width, height]
+  );
+
+  // Secuencia de Entrada:
+  // 1) Al cargarse `data`, pre-dibujamos en el canvas los 32 estados YA ELEVADOS en el aire
+  //    (con `map-base.png` oculto), para que cuando el contenedor aparezca a los 1.95s,
+  //    el mapa irrumpa directamente con relieve separado.
+  // 2) Tras un breve instante (MAP_INTRO_HOLD_MS), los estados caen en oleada de Noroeste a Sureste,
+  //    hacen su micro-rebote y encajan en 0.
+  // 3) Al terminar, se enciende `map-base.png` (transición invisible) y el canvas queda limpio para hover/click.
+  useEffect(() => {
+    if (!data || introDone) return;
+
+    if (
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) {
+      setIntroDone(true);
+      return;
+    }
+
+    // Ordenar de norte a sur para renderizado correcto en profundidad
+    const sortedStates = [...data.states].sort((a, b) => a.anchor.y - b.anchor.y);
+
+    // Para la oleada geográfica (Noroeste -> Sureste), calcular una métrica diagonal suave
+    // y asignar un ranking continuo [0..31] para que los 32 estados caigan en progresión real
+    // evitando que el centro caiga todo en un solo bloque.
+    const statesByGeoOrder = [...data.states]
+      .map((st) => ({
+        state: st,
+        geoVal: st.anchor.x * 0.72 + st.anchor.y,
+      }))
+      .sort((a, b) => a.geoVal - b.geoVal);
+
+    // Mapear cada estado a su progreso normalizado (0 a 1) en 32 pasos
+    const geoRankMap = new Map<string, number>();
+    const totalStates = statesByGeoOrder.length;
+    for (let r = 0; r < totalStates; r++) {
+      geoRankMap.set(statesByGeoOrder[r].state.id, r / Math.max(1, totalStates - 1));
+    }
+
+    const stateSchedule = sortedStates.map((st) => {
+      const g = geoRankMap.get(st.id) ?? 0;
+      // Oleada continua de 32 pasos a lo largo de MAP_INTRO_STAGGER_MS
+      const dropStartMs = g * MAP_INTRO_STAGGER_MS;
+      // Altura inicial suspendida entre 4.0 y 6.2 vóxeles con microvariación armónica
+      const startVoxels = 4.0 + ((st.numId * 17) % 23) / 10;
+      return {
+        stateId: st.id,
+        dropStartMs,
+        startVoxels,
+      };
+    });
+
+    // Pre-dibujar el estado inicial suspendido mientras el mapa asciende por scroll
+    const initialFrame = stateSchedule.map((item) => ({
+      stateId: item.stateId,
+      liftPx: Math.round(item.startVoxels * data.pixelScale),
+      mode: 'intro' as const,
+    }));
+    renderStatesFrame(initialFrame, true);
+
+    // Mantener los 32 estados suspendidos en el aire hasta que el mapa llegue a su sitio
+    if (!readyToDrop) {
+      return;
+    }
+
+    const totalIntroDuration = MAP_INTRO_STAGGER_MS + MAP_STATE_ANIM_MS + 40;
+    let rafId = 0;
+    let startTime: number | null = null;
+
+    const timerId = window.setTimeout(() => {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('dalias:map-drop-start', {
+            detail: { scrollY: window.scrollY },
+          })
+        );
+      }
+
+      const tick = (now: number) => {
+        if (startTime === null) startTime = now;
+        const elapsed = now - startTime;
+
+        const frameStates = stateSchedule.map((item) => {
+          const localT = elapsed - item.dropStartMs;
+          const p = localT <= 0 ? 0 : Math.min(1, localT / MAP_STATE_ANIM_MS);
+          const liftPx = computeDropBounceLiftPx(p, item.startVoxels, data.pixelScale);
+          return {
+            stateId: item.stateId,
+            liftPx,
+            mode: 'intro' as const,
+          };
+        });
+
+        renderStatesFrame(frameStates, true);
+
+        if (elapsed < totalIntroDuration) {
+          rafId = window.requestAnimationFrame(tick);
+        } else {
+          setIntroDone(true);
+        }
+      };
+
+      rafId = window.requestAnimationFrame(tick);
+    }, 40);
+
+    return () => {
+      window.clearTimeout(timerId);
+      if (rafId) window.cancelAnimationFrame(rafId);
     };
+  }, [data, introDone, readyToDrop, renderStatesFrame]);
 
-    // Pintar primero el seleccionado y después el hovered para respetar jerarquía visual
+  // Renderizado volumétrico interactivo normal (Hover y Selección) una vez concluida la intro
+  useEffect(() => {
+    if (!data || !introDone) return;
+
+    const liftPx = ELEVATION_VOXELS * data.pixelScale;
+    const statesToDraw: Array<{
+      stateId: string;
+      liftPx: number;
+      mode: 'hover' | 'select';
+    }> = [];
+
     if (selectedStateId) {
-      paintElevatedState(selectedStateId, 'select');
+      statesToDraw.push({
+        stateId: selectedStateId,
+        liftPx,
+        mode: 'select',
+      });
     }
 
     if (currentHoveredId && currentHoveredId !== selectedStateId) {
-      paintElevatedState(currentHoveredId, 'hover');
+      statesToDraw.push({
+        stateId: currentHoveredId,
+        liftPx,
+        mode: 'hover',
+      });
     }
 
-    // 3. Volcar al canvas únicamente la región modificada para máximo rendimiento
-    if (minDirtyX <= maxDirtyX && minDirtyY <= maxDirtyY) {
-      const dirtyW = maxDirtyX - minDirtyX + 1;
-      const dirtyH = maxDirtyY - minDirtyY + 1;
-      ctx.putImageData(imgData, 0, 0, minDirtyX, minDirtyY, dirtyW, dirtyH);
-    } else if (prevDrawnIndices.length === 0) {
-      ctx.clearRect(0, 0, width, height);
-    }
-  }, [data, selectedStateId, currentHoveredId, width, height]);
+    renderStatesFrame(statesToDraw, false);
+  }, [data, introDone, selectedStateId, currentHoveredId, renderStatesFrame]);
 
   // Conversión precisa de coordenadas de pantalla a la rejilla lógica de vóxeles
   const getLogicalCoords = useCallback(
-    (e: React.PointerEvent<HTMLCanvasElement>) => {
+    (e: React.PointerEvent<HTMLCanvasElement>): { lx: number; ly: number } | null => {
       const canvas = canvasRef.current;
       if (!canvas) return null;
       const rect = canvas.getBoundingClientRect();
-      if (rect.width <= 0 || rect.height <= 0) return null;
+      if (rect.width === 0 || rect.height === 0) return null;
 
       const scaleX = width / rect.width;
       const scaleY = height / rect.height;
 
       const lx = Math.floor((e.clientX - rect.left) * scaleX);
       const ly = Math.floor((e.clientY - rect.top) * scaleY);
-
-      if (lx < 0 || lx >= width || ly < 0 || ly >= height) return null;
       return { lx, ly };
     },
     [width, height]
@@ -543,13 +821,29 @@ export function PixelMap({
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {
-      if (!data) return;
+      if (!data || !introDone) return;
+
+      // En pantallas táctiles, ocultar píldora de hover y no disparar eventos de hover
+      // para no ensuciar la vista del usuario ni dejar tooltips pegados al dedo
+      if (e.pointerType === 'touch') {
+        if (cursorPillRef.current) {
+          cursorPillRef.current.style.transform = 'translate3d(-9999px, -9999px, 0)';
+        }
+        return;
+      }
+
+      if (cursorPillRef.current && canvasRef.current) {
+        const rect = canvasRef.current.getBoundingClientRect();
+        const relX = e.clientX - rect.left;
+        const relY = e.clientY - rect.top;
+        cursorPillRef.current.style.transform = `translate3d(${relX + 16}px, ${relY - 18}px, 0)`;
+      }
+
       const coords = getLogicalCoords(e);
-      const isTouch = e.pointerType === 'touch';
       const activeNumId = activeState ? activeState.numId : null;
       const liftPx = ELEVATION_VOXELS * data.pixelScale;
       const resolved = coords
-        ? resolveStateAt(coords.lx, coords.ly, data.mapIds, width, height, isTouch, activeNumId, liftPx)
+        ? resolveStateAt(coords.lx, coords.ly, data.mapIds, width, height, false, activeNumId, liftPx)
         : null;
 
       if (resolved !== currentHoveredId) {
@@ -557,29 +851,88 @@ export function PixelMap({
         onHoverState?.(resolved);
       }
     },
-    [data, width, height, currentHoveredId, activeState, getLogicalCoords, onHoverState]
+    [data, introDone, width, height, currentHoveredId, activeState, getLogicalCoords, onHoverState]
   );
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {
-      if (!data) return;
+      if (!data || !introDone) return;
+
+      // En pantallas táctiles, registrar el punto inicial y diferir la selección a pointerUp
+      // para permitir scroll vertical fluido sin secuestrar el desplazamiento del usuario
+      if (e.pointerType === 'touch') {
+        touchStartRef.current = {
+          clientX: e.clientX,
+          clientY: e.clientY,
+          time: Date.now(),
+        };
+        return;
+      }
+
+      // En mouse (escritorio): selección instantánea
       const coords = getLogicalCoords(e);
-      const isTouch = e.pointerType === 'touch';
       const activeNumId = activeState ? activeState.numId : null;
       const liftPx = ELEVATION_VOXELS * data.pixelScale;
       const resolved = coords
-        ? resolveStateAt(coords.lx, coords.ly, data.mapIds, width, height, isTouch, activeNumId, liftPx)
+        ? resolveStateAt(coords.lx, coords.ly, data.mapIds, width, height, false, activeNumId, liftPx)
         : null;
 
       if (resolved) {
+        if (e.cancelable) e.preventDefault();
         const nextSelected = resolved === selectedStateId ? null : resolved;
         onSelectState?.(nextSelected);
+      } else if (selectedStateId) {
+        if (e.cancelable) e.preventDefault();
+        onSelectState?.(null);
       }
     },
-    [data, width, height, selectedStateId, activeState, getLogicalCoords, onSelectState]
+    [data, introDone, width, height, selectedStateId, activeState, getLogicalCoords, onSelectState]
   );
 
+  const handlePointerUp = useCallback(
+    (e: React.PointerEvent<HTMLCanvasElement>) => {
+      if (!data || !introDone || e.pointerType !== 'touch') return;
+
+      if (!touchStartRef.current) return;
+      const dx = e.clientX - touchStartRef.current.clientX;
+      const dy = e.clientY - touchStartRef.current.clientY;
+      const dt = Date.now() - touchStartRef.current.time;
+      touchStartRef.current = null;
+
+      // Si el dedo se movió más de 8px o mantuvo presionado más de 350ms,
+      // fue un gesto de scroll de página o arrastre, NO un tap
+      if (dx * dx + dy * dy > 64 || dt > 350) {
+        return;
+      }
+
+      // Tap táctil genuino: resolver el estado con hitbox asistido
+      const coords = getLogicalCoords(e);
+      const activeNumId = activeState ? activeState.numId : null;
+      const liftPx = ELEVATION_VOXELS * data.pixelScale;
+      const resolved = coords
+        ? resolveStateAt(coords.lx, coords.ly, data.mapIds, width, height, true, activeNumId, liftPx)
+        : null;
+
+      if (resolved) {
+        if (e.cancelable) e.preventDefault();
+        const nextSelected = resolved === selectedStateId ? null : resolved;
+        onSelectState?.(nextSelected);
+      } else if (selectedStateId) {
+        if (e.cancelable) e.preventDefault();
+        onSelectState?.(null);
+      }
+    },
+    [data, introDone, width, height, selectedStateId, activeState, getLogicalCoords, onSelectState]
+  );
+
+  const handlePointerCancel = useCallback(() => {
+    touchStartRef.current = null;
+  }, []);
+
   const handlePointerLeave = useCallback(() => {
+    if (cursorPillRef.current) {
+      cursorPillRef.current.style.transform = 'translate3d(-9999px, -9999px, 0)';
+    }
     if (currentHoveredId !== null) {
       setInternalHoveredId(null);
       onHoverState?.(null);
@@ -598,6 +951,7 @@ export function PixelMap({
     selectedStateId,
     hoveredStateId: currentHoveredId,
     selectState,
+    readyToDrop,
   };
 
   return (
@@ -606,29 +960,34 @@ export function PixelMap({
         role="region"
         aria-label="Mapa isométrico interactivo de México"
         className={cn(
-          'relative w-full max-w-5xl mx-auto select-none overflow-visible bg-transparent group',
+          'relative w-full max-w-5xl mx-auto select-none overflow-visible bg-transparent group @container',
           className
         )}
-        style={{ aspectRatio }}
+        style={{ aspectRatio, containerType: 'inline-size' }}
       >
-        {/* Capa 1: Sombra de contacto suave sobre el fondo */}
-        <img
-          src="/data/map-shadow.webp"
-          alt=""
-          aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none"
-          loading="eager"
-        />
+        {/* Capa 1: Sombra de contacto suave sobre el fondo (se oculta si el Hero la proyecta fija) */}
+        {!hideInternalShadow && (
+          <img
+            src="/data/map-shadow.webp"
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none"
+            loading="eager"
+          />
+        )}
 
-        {/* Capa 2: Mapa Base Pixel Art con bordes nítidos */}
+        {/* Capa 2: Mapa Base Pixel Art (Oculto durante la intro para que las piezas elevadas no se dupliquen abajo) */}
         <img
           src="/data/map-base.png"
           alt="Silueta y estados de la República Mexicana en estilo pixel art isométrico"
-          className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none [image-rendering:pixelated]"
+          className={cn(
+            'absolute inset-0 w-full h-full object-contain pointer-events-none select-none [image-rendering:pixelated]',
+            introDone ? 'opacity-100' : 'opacity-0'
+          )}
           loading="eager"
         />
 
-        {/* Capa 3: Canvas para interacción y resaltado volumétrico */}
+        {/* Capa 3: Canvas para animación de piezas elevadas e interacción volumétrica */}
         <canvas
           ref={canvasRef}
           width={width}
@@ -636,8 +995,13 @@ export function PixelMap({
           aria-label="Lienzo interactivo de estados"
           onPointerMove={handlePointerMove}
           onPointerDown={handlePointerDown}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerCancel}
           onPointerLeave={handlePointerLeave}
-          className="absolute inset-0 w-full h-full object-contain [image-rendering:pixelated] cursor-pointer touch-manipulation z-10"
+          className={cn(
+            'absolute inset-0 w-full h-full object-contain [image-rendering:pixelated] touch-manipulation z-10',
+            currentHoveredId ? 'cursor-pointer' : 'cursor-default'
+          )}
         />
 
         {/* Capa 4: Ranura para overlays y dalias (Hito H4) */}
@@ -647,27 +1011,21 @@ export function PixelMap({
           </div>
         )}
 
-        {/* Tooltip informativo discreto del estado activo */}
-        {showTooltip && activeState && (
-          <div className="absolute top-3 left-3 z-30 pointer-events-none flex items-center gap-2 rounded-lg bg-white/90 px-3 py-1.5 shadow-md backdrop-blur-md border border-stone-200/80 animate-in fade-in zoom-in-95 duration-150">
-            <span
-              className={cn(
-                'inline-block h-2.5 w-2.5 rounded-full',
-                activeState.id === selectedStateId
-                  ? 'bg-pink-600 ring-2 ring-pink-300'
-                  : 'bg-violet-600 ring-2 ring-violet-300'
-              )}
-            />
-            <div className="flex flex-col">
-              <span className="text-xs font-bold text-stone-800 leading-tight">
-                {activeState.nombre}
-              </span>
-              <span className="text-[10px] text-stone-500 font-mono">
-                Estado {activeState.id}
-              </span>
-            </div>
+        {/* Indicador de cursor en hover (Opción B: cápsula compacta seguidora del puntero) */}
+        <div
+          ref={cursorPillRef}
+          aria-hidden="true"
+          className={cn(
+            'absolute top-0 left-0 z-30 pointer-events-none select-none transition-opacity duration-150 ease-out will-change-transform',
+            hoveredState ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+          )}
+          style={{ transform: 'translate3d(-9999px, -9999px, 0)' }}
+        >
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1C184A]/92 text-white text-[11px] font-bold tracking-wider uppercase shadow-[0_4px_12px_rgba(24,18,68,0.35)] border border-[#B4B2FF]/80 backdrop-blur-sm whitespace-nowrap">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#B4B2FF] shadow-[0_0_6px_#B4B2FF]" />
+            <span>{getCommonStateName(hoveredState)}</span>
           </div>
-        )}
+        </div>
 
         {/* Indicador sutil de carga si aún no se han indexado los datos */}
         {loading && (
