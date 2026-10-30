@@ -179,7 +179,7 @@ export function CivicBridgeAndGapSection({
             width,
             borderRadius,
           }}
-          className="bg-[#0B0C10] text-white min-h-[100svh] flex flex-col justify-center border-y border-white/10 relative"
+          className="bg-[#0B0C10] text-white min-h-screen supports-[height:100svh]:min-h-[100svh] flex flex-col justify-center border-y border-white/10 relative"
         >
           {/* El contenido mantiene su ancho fijo (100vw max-w-5xl) para nunca deformarse ni reacomodarse,
               y aparece únicamente cuando el bloque negro ya llegó a su lugar */}

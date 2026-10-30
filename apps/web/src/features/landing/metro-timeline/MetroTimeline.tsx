@@ -167,9 +167,18 @@ export function MetroTimeline({ className }: MetroTimelineProps) {
   return (
     <div
       ref={trackRef}
-      className={cn('relative', isScrollDriven && 'h-[320vh]', className)}
+      className={cn(
+        'relative',
+        isScrollDriven && 'h-[320vh] supports-[height:100svh]:h-[320svh]',
+        className
+      )}
     >
-      <div className={cn(isScrollDriven && 'sticky top-0 h-screen flex flex-col justify-center')}>
+      <div
+        className={cn(
+          isScrollDriven &&
+            'sticky top-0 h-screen supports-[height:100svh]:h-[100svh] flex flex-col justify-center'
+        )}
+      >
         <div className="relative w-full max-w-5xl mx-auto">
           {/* Contenido accesible para lectores de pantalla (WCAG 2.1 AA) */}
           <div className="sr-only">

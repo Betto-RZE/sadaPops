@@ -160,7 +160,7 @@ export function FloatingPetals({
     <div
       aria-hidden="true"
       className={cn(
-        'hidden md:block absolute inset-x-0 h-[100vh] min-h-[720px] pointer-events-none overflow-hidden select-none z-[60]',
+        'hidden md:block absolute inset-x-0 h-screen supports-[height:100svh]:h-[100svh] min-h-[720px] pointer-events-none overflow-hidden select-none z-[60]',
         className
       )}
       style={{ top: `${anchorTopPx}px` }}
