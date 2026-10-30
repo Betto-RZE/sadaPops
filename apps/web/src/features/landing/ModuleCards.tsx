@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { BarChart3, Gamepad2, ArrowRight, X } from 'lucide-react';
 import { DayToDayFlipCards, DayToDayCardItem } from './DayToDayFlipCards';
+import { CivicBridgeAndGapSection } from './CivicBridgeAndGapSection';
 import { cn } from '@/shared/utils';
 
 export function ModuleCards() {
@@ -183,6 +184,15 @@ export function ModuleCards() {
             onToggleCard={handleToggleCard}
           />
         </div>
+
+        {/* ========================================================================= */}
+        {/* FASE 2: PUENTE CONSTITUCIONAL Y LA BRECHA GENERACIONAL (CCPC 2024)        */}
+        {/* ========================================================================= */}
+        <CivicBridgeAndGapSection
+          selectedStateId={selectedStateId}
+          onSelectState={setSelectedStateId}
+          className="mb-24"
+        />
 
         {/* ========================================================================= */}
         {/* COMPONENTES TEMPORALES DE NAVEGACIÓN HACIA DATOS Y JUEGO                   */}
