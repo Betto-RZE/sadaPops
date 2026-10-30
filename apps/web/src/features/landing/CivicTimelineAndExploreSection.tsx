@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   ArrowRight,
   Bell,
@@ -9,9 +10,16 @@ import {
   Gamepad2,
   Check,
   ChevronDown,
+  ChevronUp,
   Sparkles,
+  ShieldCheck,
+  Mail,
+  MapPin,
+  RotateCcw,
+  Lock,
 } from 'lucide-react';
 import { INE_YOUTH_TURNOUT_2024 } from '../mapa-dalias/data/ineYouthTurnout2024';
+import { useOptionalDahliaStore } from '../mapa-dalias/DahliaStore';
 import { cn } from '@/shared/utils';
 import { MetroTimeline } from './metro-timeline/MetroTimeline';
 
@@ -34,22 +42,50 @@ export function CivicTimelineAndExploreSection({
   const effectiveStateId = selectedStateId || '09';
   const selectedStateName =
     INE_YOUTH_TURNOUT_2024[effectiveStateId]?.name || 'tu entidad federativa';
+  const stateTurnout = INE_YOUTH_TURNOUT_2024[effectiveStateId]?.turnoutYouthPercent;
 
-  // Estados del formulario "Tu dalia y tus avisos"
+  const dahliaStore = useOptionalDahliaStore();
+  const currentCount = dahliaStore?.getCount(effectiveStateId) ?? 0;
+  const currentLevel = (dahliaStore?.getLevel(effectiveStateId) || 3) as 1 | 2 | 3 | 4;
+
+  // Estados de sesión anónima y formulario "Tu dalia y tus avisos"
   const [wantsAlerts, setWantsAlerts] = useState(false);
   const [email, setEmail] = useState('');
   const [isPlanted, setIsPlanted] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
+  const [alertsSaved, setAlertsSaved] = useState(false);
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
+  const [justPlantedAnim, setJustPlantedAnim] = useState(false);
+
+  // Restaurar dalia previa por dispositivo (1 dalia por sesión anónima)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedState = localStorage.getItem('sada_dalia_planted_state');
+      if (savedState) {
+        setIsPlanted(true);
+      }
+      const savedEmail = localStorage.getItem('sada_alerts_email');
+      if (savedEmail) {
+        setAlertsSaved(true);
+        setEmail(savedEmail);
+      }
+    }
+  }, []);
 
   const handlePlantDalia = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (wantsAlerts) {
+    // Si marcó avisos y no los ha guardado, validar correo
+    if (wantsAlerts && !alertsSaved) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!email.trim() || !emailRegex.test(email.trim())) {
         setEmailError('Por favor ingresa un correo electrónico válido para recibir los avisos.');
         return;
       }
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('sada_alerts_email', email.trim());
+      }
+      setAlertsSaved(true);
     }
 
     setEmailError(null);
@@ -61,9 +97,30 @@ export function CivicTimelineAndExploreSection({
           detail: { stateId: effectiveStateId },
         })
       );
+      localStorage.setItem('sada_dalia_planted_state', effectiveStateId);
     }
 
     setIsPlanted(true);
+    setJustPlantedAnim(true);
+    setTimeout(() => setJustPlantedAnim(false), 1200);
+  };
+
+  const handleSaveAlertsStandalone = (e: React.FormEvent) => {
+    e.preventDefault();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email.trim() || !emailRegex.test(email.trim())) {
+      setEmailError('Ingresa un correo electrónico válido (ej. tu.nombre@correo.com)');
+      return;
+    }
+    setEmailError(null);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sada_alerts_email', email.trim());
+    }
+    setAlertsSaved(true);
+  };
+
+  const handleRelocateDalia = () => {
+    setIsPlanted(false);
   };
 
   return (
@@ -113,9 +170,10 @@ export function CivicTimelineAndExploreSection({
         <section
           id="registro-dalia"
           aria-labelledby="registro-dalia-heading"
-          className="pt-16 pb-20 border-t border-black/10"
+          className="pt-16 pb-24 border-t border-black/10"
         >
-          <div className="max-w-3xl mb-8">
+          {/* Encabezado editorial institucional (Borrador 3) */}
+          <div className="max-w-3xl mb-12">
             <div className="flex items-center gap-2.5 sm:gap-3 mb-4">
               <div className="flex items-center gap-1 font-mono text-xs sm:text-[13px]">
                 <span className="font-bold text-dalia-600">05</span>
@@ -140,117 +198,348 @@ export function CivicTimelineAndExploreSection({
             </p>
           </div>
 
-          {/* Formulario / Tarjeta de Registro */}
-          <div className="max-w-2xl bg-[#FDFCFA] border border-[#E5DFD7] rounded-[4px] p-7 sm:p-9 shadow-[-8px_14px_28px_-6px_rgba(18,24,38,0.08)]">
-            {!isPlanted ? (
-              <form onSubmit={handlePlantDalia} className="space-y-6">
-                {/* Selector de Estado */}
-                <div>
-                  <label
-                    htmlFor="registro-estado-select"
-                    className="block text-xs font-mono font-bold uppercase tracking-wider text-[#0F1B2D] mb-2"
-                  >
-                    1. Selecciona tu entidad federativa para tu dalia
-                  </label>
-                  <div className="relative">
-                    <select
-                      id="registro-estado-select"
-                      value={effectiveStateId}
-                      onChange={(e) => onSelectState(e.target.value)}
-                      className="w-full bg-[#F5F2EC] border border-[#D5CDC3] text-[#0F1B2D] font-serif text-lg font-bold py-3 px-4 pr-10 rounded-[3px] appearance-none focus:outline-none focus:ring-2 focus:ring-dalia-600 cursor-pointer"
-                    >
-                      {STATE_LIST.map((state) => (
-                        <option key={state.id} value={state.id}>
-                          {state.name}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="w-5 h-5 text-black/40 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          {/* Grid de 2 Cédulas Editoriales Independientes */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            {/* =============================================================== */}
+            {/* ACTO I: TU FLOR EN EL TERRITORIO (Acción Incondicional / Anónima) */}
+            {/* =============================================================== */}
+            <div className="lg:col-span-7 bg-[#FDFCFA] border border-[#E5DFD7] rounded-[4px] p-7 sm:p-9 shadow-[-8px_14px_28px_-6px_rgba(18,24,38,0.08)] relative overflow-hidden flex flex-col justify-between">
+              {/* Filete superior editorial dalia */}
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-dalia-600 via-rose-500 to-amber-500" />
+
+              <div>
+                {/* Cabecera de la Cédula */}
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b border-black/5">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-dalia-600 animate-pulse" />
+                    <span className="text-[10px] sm:text-[11px] font-mono font-bold tracking-[0.2em] uppercase text-dalia-700 bg-dalia-50 px-2.5 py-1 rounded-[2px] border border-dalia-200/60">
+                      ACTO I · HUELLA CÍVICA
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-mono text-[#5A6474] flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>100% Anónimo · Sin cuenta</span>
+                  </span>
+                </div>
+
+                {!isPlanted ? (
+                  <form onSubmit={handlePlantDalia} className="space-y-6">
+                    {/* Pedestal de la Dalia e Info de la Entidad */}
+                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 p-5 rounded-[4px] bg-[#F7F4EE]/70 border border-[#E8E1D5]">
+                      {/* Visualizador / Brote de Dalia */}
+                      <div className="relative shrink-0 flex flex-col items-center justify-center p-3 w-28 h-28 sm:w-32 sm:h-32 rounded-[4px] bg-white border border-[#E2DAD0] shadow-sm">
+                        <div className="absolute inset-0 bg-gradient-to-t from-dalia-500/10 via-transparent to-transparent rounded-[4px]" />
+                        <div className={cn('relative transition-transform duration-300', justPlantedAnim && 'scale-110')}>
+                          <Image
+                            src={`/flowers/dahlia-${currentLevel}.png`}
+                            alt="Dalia de participación"
+                            width={54}
+                            height={62}
+                            className="drop-shadow-[0_6px_10px_rgba(200,0,110,0.25)] select-none"
+                            priority
+                          />
+                        </div>
+                        <span className="relative mt-2 text-[10px] font-mono font-semibold tracking-wider text-dalia-800 uppercase text-center">
+                          Flor Cívica
+                        </span>
+                      </div>
+
+                      {/* Selector de Entidad */}
+                      <div className="flex-1 w-full">
+                        <label
+                          htmlFor="registro-estado-select"
+                          className="block text-xs font-mono font-bold uppercase tracking-wider text-[#0F1B2D] mb-1.5"
+                        >
+                          1. Elige tu entidad federativa
+                        </label>
+                        <p className="text-xs text-[#5A6474] font-sans mb-3">
+                          Tu dalia sumará al mapa interactivo de tu estado y aumentará el florecimiento ciudadano.
+                        </p>
+                        <div className="relative">
+                          <select
+                            id="registro-estado-select"
+                            value={effectiveStateId}
+                            onChange={(e) => onSelectState(e.target.value)}
+                            className="w-full bg-[#FFFFFF] border border-[#D5CDC3] text-[#0F1B2D] font-serif text-lg font-bold py-3 px-4 pr-10 rounded-[3px] appearance-none focus:outline-none focus:ring-2 focus:ring-dalia-600 cursor-pointer shadow-sm"
+                          >
+                            {STATE_LIST.map((state) => (
+                              <option key={state.id} value={state.id}>
+                                {state.name}
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown className="w-5 h-5 text-black/40 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
+
+                        {/* Metadatos oficiales del INE para este estado */}
+                        <div className="mt-3 flex flex-wrap items-center gap-3 text-xs font-mono text-[#5A6474]">
+                          <span className="flex items-center gap-1.5">
+                            <MapPin className="w-3.5 h-3.5 text-dalia-600" />
+                            <strong className="text-[#0F1B2D]">{selectedStateName}</strong>
+                          </span>
+                          {stateTurnout && (
+                            <span className="text-[11px] bg-[#EFEAE2] px-2 py-0.5 rounded-[2px] text-[#2C384A]">
+                              Participación 18-29 años (2024): <strong>{stateTurnout}%</strong>
+                            </span>
+                          )}
+                          {currentCount > 0 && (
+                            <span className="text-[11px] text-dalia-700 font-semibold">
+                              {currentCount.toLocaleString('es-MX')} dalias registradas
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Botón de Acción Principal: Plantar Dalia */}
+                    <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <button
+                        type="submit"
+                        className="inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-[2px] bg-dalia-600 hover:bg-dalia-500 active:bg-dalia-700 text-white font-mono font-bold text-xs uppercase tracking-wider transition-all shadow-md shadow-dalia-600/30 hover:shadow-lg hover:shadow-dalia-600/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-dalia-600 cursor-pointer"
+                      >
+                        <Sparkles className="w-4 h-4 text-amber-200" />
+                        <span>
+                          {wantsAlerts && !alertsSaved
+                            ? `Sembrar dalia en ${selectedStateName} y activar avisos`
+                            : `Sembrar mi dalia en ${selectedStateName}`}
+                        </span>
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+
+                      <p className="text-[11px] font-mono text-[#717E91]">
+                        1 dalia por dispositivo · Sin cookies invasivas
+                      </p>
+                    </div>
+                  </form>
+                ) : (
+                  /* Estado de Confirmación / Dalia Sembrada */
+                  <div className="py-3 text-left animate-in fade-in-0 zoom-in-95 duration-300">
+                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 p-6 rounded-[4px] bg-[#F3F9F5] border border-[#CDE5D8]">
+                      {/* Flor florecida con efecto halo */}
+                      <div className="relative shrink-0 flex flex-col items-center justify-center p-3 w-28 h-28 sm:w-32 sm:h-32 rounded-[4px] bg-white border border-[#BDE0CC] shadow-sm">
+                        <div className="absolute inset-0 bg-gradient-to-t from-emerald-500/10 via-dalia-500/10 to-transparent rounded-[4px]" />
+                        <Image
+                          src={`/flowers/dahlia-4.png`}
+                          alt="Dalia florecida"
+                          width={60}
+                          height={68}
+                          className="drop-shadow-[0_8px_14px_rgba(200,0,110,0.3)] animate-pulse"
+                        />
+                        <span className="relative mt-2 text-[10px] font-mono font-bold tracking-wider text-emerald-800 uppercase">
+                          Sembrada
+                        </span>
+                      </div>
+
+                      <div className="flex-1 text-center sm:text-left">
+                        <div className="inline-flex items-center gap-2 text-emerald-800 font-mono text-xs font-bold uppercase tracking-wider bg-emerald-100/70 border border-emerald-300/60 px-2.5 py-1 rounded-[2px] mb-3">
+                          <Check className="w-4 h-4 text-emerald-700" />
+                          <span>Dalia activa en {selectedStateName}</span>
+                        </div>
+
+                        <h4 className="font-serif text-2xl sm:text-[28px] font-bold text-[#0F1B2D] leading-snug">
+                          Una flor no es un voto: es una persona que decidió prepararse.
+                        </h4>
+
+                        <p className="mt-2.5 text-xs sm:text-sm text-[#4A5568] font-sans leading-relaxed">
+                          Tu participación anónima ha quedado registrada en el mapa nacional de participación ciudadana.
+                        </p>
+
+                        <div className="mt-5 flex flex-wrap items-center gap-3">
+                          <a
+                            href="#hero-mapa"
+                            onClick={(e) => {
+                              const el = document.getElementById('hero-mapa');
+                              if (el) {
+                                e.preventDefault();
+                                el.scrollIntoView({ behavior: 'smooth' });
+                              }
+                            }}
+                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[2px] bg-emerald-700 hover:bg-emerald-600 text-white font-mono text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer shadow-sm"
+                          >
+                            <span>Ver mi dalia en el mapa ↑</span>
+                          </a>
+
+                          <button
+                            type="button"
+                            onClick={handleRelocateDalia}
+                            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-[2px] bg-white border border-[#D5CDC3] hover:bg-[#F7F4EE] text-[#4A5568] font-mono text-xs font-medium transition-colors cursor-pointer"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5 text-[#717E91]" />
+                            <span>Reubicar entidad</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* =============================================================== */}
+            {/* ACTO II: ESTAFETA DE AVISOS 2027 (Servicio Postal Cívico)       */}
+            {/* =============================================================== */}
+            <div className="lg:col-span-5 bg-[#F8F6F1] border border-[#DDD5C7] rounded-[4px] p-7 sm:p-8 shadow-[-8px_14px_28px_-6px_rgba(18,24,38,0.06)] relative overflow-hidden flex flex-col justify-between">
+              {/* Filete superior institucional azul / dalia */}
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-700 via-indigo-700 to-dalia-600" />
+
+              <div>
+                {/* Cabecera de la Cédula Postal */}
+                <div className="flex items-center justify-between gap-3 mb-5 pb-3 border-b border-black/5">
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-3.5 h-3.5 text-blue-700" />
+                    <span className="text-[10px] sm:text-[11px] font-mono font-bold tracking-[0.2em] uppercase text-blue-800">
+                      ACTO II · ESTAFETA 2027
+                    </span>
+                  </div>
+                  <span className="text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-wider text-black/50 bg-black/5 px-2 py-0.5 rounded-[2px]">
+                    100% OPCIONAL
+                  </span>
+                </div>
+
+                <h4 className="font-serif text-xl sm:text-2xl font-bold text-[#0F1B2D] leading-tight">
+                  Bitácora hacia el 6 de junio de 2027
+                </h4>
+
+                <p className="mt-2 text-xs sm:text-[13px] text-[#4A5568] font-sans leading-relaxed">
+                  Si quieres avisos para las fechas clave, solo pedimos un correo, y nunca enviamos mensajes de partidos. Antes de una elección recibirás recordatorios para revisar tu credencial, con enlaces a los portales oficiales del INE.
+                </p>
+
+                {/* Síntesis visual de las 3 Paradas del Metro hacia 2027 */}
+                <div className="mt-4 p-3.5 rounded-[3px] bg-white/70 border border-[#E2DAD0] space-y-2 text-xs font-sans text-[#2C384A]">
+                  <div className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-dalia-600 shrink-0" />
+                    <span><strong className="font-mono text-[#0F1B2D]">Ene 2026:</strong> Revisa la vigencia de tu credencial</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0" />
+                    <span><strong className="font-mono text-[#0F1B2D]">Ene 2027:</strong> Fecha límite para cambio de domicilio</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" />
+                    <span><strong className="font-mono text-[#0F1B2D]">Jun 2027:</strong> Ubicación de casilla y jornada electoral</span>
                   </div>
                 </div>
 
-                {/* Checkbox opcional de avisos */}
-                <div className="pt-3 border-t border-black/5">
-                  <label className="flex items-start gap-3 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={wantsAlerts}
-                      onChange={(e) => {
-                        setWantsAlerts(e.target.checked);
-                        if (!e.target.checked) setEmailError(null);
-                      }}
-                      className="mt-1 w-4 h-4 rounded border-gray-300 text-dalia-600 focus:ring-dalia-600"
-                    />
-                    <span className="text-xs sm:text-sm text-[#0F1B2D] font-medium leading-relaxed font-sans">
-                      Deseo activar avisos para las fechas clave rumbo al 6 de junio de 2027.
-                    </span>
-                  </label>
+                {/* Formulario o Estado de Avisos */}
+                <div className="mt-5 pt-4 border-t border-black/5">
+                  {!alertsSaved ? (
+                    <div className="space-y-4">
+                      {/* Checkbox de Activación */}
+                      <label className="flex items-start gap-3 p-3 rounded-[3px] bg-white border border-[#D5CDC3] hover:border-dalia-600/50 cursor-pointer select-none transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={wantsAlerts}
+                          onChange={(e) => {
+                            setWantsAlerts(e.target.checked);
+                            if (!e.target.checked) setEmailError(null);
+                          }}
+                          className="mt-0.5 w-4 h-4 rounded border-gray-300 text-dalia-600 focus:ring-dalia-600 cursor-pointer"
+                        />
+                        <div className="text-xs font-sans text-[#0F1B2D] leading-relaxed">
+                          <span className="font-bold">Deseo activar avisos por correo</span>
+                          <span className="block text-[#5A6474] text-[11px] mt-0.5">
+                            Solo 3 correos en 2 años. Cero spam, cero partidos.
+                          </span>
+                        </div>
+                      </label>
 
-                  {/* Campo de correo electrónico (aparece si el checkbox está activo) */}
-                  {wantsAlerts && (
-                    <div className="mt-4 pl-7 space-y-2 animate-in fade-in-0 duration-200">
-                      <p className="text-xs text-[#5A6474] font-sans leading-relaxed">
-                        Si quieres avisos para las fechas clave, solo pedimos un correo, y nunca enviamos mensajes de
-                        partidos. Antes de una elección recibirás recordatorios para revisar tu credencial, con enlaces a
-                        los portales oficiales del INE.
-                      </p>
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="tu.correo@ejemplo.com"
-                        className="w-full bg-[#F5F2EC] border border-[#D5CDC3] text-[#0F1B2D] text-sm py-2.5 px-3.5 rounded-[3px] focus:outline-none focus:ring-2 focus:ring-dalia-600"
-                      />
-                      {emailError && (
-                        <p className="text-xs text-rose-600 font-sans font-medium">{emailError}</p>
+                      {/* Input de correo si el checkbox está activo */}
+                      {wantsAlerts && (
+                        <div className="space-y-3 animate-in fade-in-0 duration-200 pt-1">
+                          <div>
+                            <label
+                              htmlFor="estafeta-email-input"
+                              className="block text-[11px] font-mono font-bold uppercase tracking-wider text-[#0F1B2D] mb-1.5"
+                            >
+                              Tu correo electrónico oficial
+                            </label>
+                            <div className="relative">
+                              <input
+                                id="estafeta-email-input"
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="tu.correo@ejemplo.com"
+                                className="w-full bg-white border border-[#D5CDC3] text-[#0F1B2D] font-mono text-xs py-3 px-3.5 pl-9 rounded-[3px] focus:outline-none focus:ring-2 focus:ring-dalia-600 shadow-sm"
+                              />
+                              <Mail className="w-4 h-4 text-black/40 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            </div>
+                            {emailError && (
+                              <p className="mt-1.5 text-xs text-rose-600 font-sans font-medium flex items-center gap-1">
+                                <span>⚠</span> {emailError}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Si la dalia ya fue sembrada, botón individual para guardar alertas */}
+                          {isPlanted && (
+                            <button
+                              type="button"
+                              onClick={handleSaveAlertsStandalone}
+                              className="w-full py-2.5 px-4 rounded-[2px] bg-blue-700 hover:bg-blue-600 text-white font-mono text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer shadow-sm"
+                            >
+                              Programar avisos 2027
+                            </button>
+                          )}
+                        </div>
                       )}
+
+                      {/* Desplegable de Privacidad */}
+                      <div className="pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsPrivacyOpen(!isPrivacyOpen)}
+                          className="flex items-center gap-1.5 text-[11px] font-mono text-[#5A6474] hover:text-[#0F1B2D] underline underline-offset-2 transition-colors cursor-pointer"
+                        >
+                          <Lock className="w-3 h-3 text-[#717E91]" />
+                          <span>Aviso de Privacidad Simplificado</span>
+                          {isPrivacyOpen ? (
+                            <ChevronUp className="w-3 h-3" />
+                          ) : (
+                            <ChevronDown className="w-3 h-3" />
+                          )}
+                        </button>
+
+                        {isPrivacyOpen && (
+                          <div className="mt-2.5 p-3 rounded-[3px] bg-white/90 border border-black/10 text-[11px] font-sans text-[#5A6474] leading-relaxed animate-in fade-in-0 duration-150">
+                            <p>
+                              <strong>Responsable:</strong> Proyecto Reto 3 Hackathon INE.
+                            </p>
+                            <p className="mt-1">
+                              <strong>Finalidad:</strong> Tu correo se utilizará de forma exclusiva para enviar los 3 recordatorios cívicos oficiales hacia el 6 de junio de 2027 con enlaces a portales del INE.
+                            </p>
+                            <p className="mt-1">
+                              <strong>Cero Spam:</strong> Jamás se comparte con partidos políticos, candidaturas ni empresas privadas. Cancelación en un clic desde cualquier mensaje.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    /* Confirmación de Avisos Programados */
+                    <div className="p-4 rounded-[3px] bg-white border border-[#CDE5D8] space-y-2 text-left animate-in fade-in-0 duration-200">
+                      <div className="flex items-center gap-2 text-emerald-800 font-mono text-xs font-bold uppercase tracking-wider">
+                        <Check className="w-4 h-4 text-emerald-700" />
+                        <span>Avisos oficiales programados</span>
+                      </div>
+                      <p className="text-xs text-[#4A5568] font-sans">
+                        Te enviaremos los recordatorios a <strong>{email}</strong> con enlaces directos a las herramientas oficiales del INE.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAlertsSaved(false);
+                          setWantsAlerts(true);
+                        }}
+                        className="text-[11px] font-mono text-blue-700 hover:text-blue-900 underline underline-offset-2 mt-1 cursor-pointer"
+                      >
+                        Cambiar dirección de correo
+                      </button>
                     </div>
                   )}
                 </div>
-
-                {/* Botón de plantar dalia */}
-                <div className="pt-4 border-t border-black/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <button
-                    type="submit"
-                    className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-[2px] bg-dalia-600 hover:bg-dalia-500 text-white font-mono font-bold text-xs uppercase tracking-wider transition-colors shadow-md shadow-dalia-600/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-dalia-600 cursor-pointer"
-                  >
-                    <span>
-                      {wantsAlerts ? 'Plantar mi dalia y activar avisos' : 'Plantar mi dalia'}
-                    </span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-
-                  <p className="text-[11px] font-mono text-[#717E91]">
-                    Se reflejará en el mapa interactivo
-                  </p>
-                </div>
-              </form>
-            ) : (
-              /* Estado de Confirmación tras plantar la dalia */
-              <div className="py-4 text-left animate-in fade-in-0 zoom-in-95 duration-200">
-                <div className="flex items-center gap-3 text-emerald-700 font-mono text-xs font-bold uppercase tracking-wider mb-2">
-                  <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center">
-                    <Check className="w-4 h-4 text-emerald-700" />
-                  </div>
-                  <span>Dalia plantada en {selectedStateName}</span>
-                </div>
-
-                <h4 className="font-serif text-2xl sm:text-3xl font-bold text-[#0F1B2D] mt-2 leading-snug">
-                  Una flor no es un voto: es una persona que decidió prepararse.
-                </h4>
-
-                <p className="mt-3 text-xs sm:text-sm text-[#4A5568] font-sans leading-relaxed">
-                  {wantsAlerts
-                    ? `Guardamos tu correo. Te enviaremos recordatorios oportunos para revisar tu credencial con enlaces a los portales oficiales del INE rumbo al 6 de junio de 2027.`
-                    : `Tu participación quedó registrada de forma anónima en el mapa de ${selectedStateName}.`}
-                </p>
-
-                <div className="mt-6 pt-4 border-t border-black/5 flex items-center gap-2 text-xs font-mono text-dalia-700">
-                  <Sparkles className="w-4 h-4" />
-                  <span>Tu dalia se ha sumado al mapa de México.</span>
-                </div>
               </div>
-            )}
+            </div>
           </div>
         </section>
 

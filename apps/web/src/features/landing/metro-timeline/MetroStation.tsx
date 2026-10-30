@@ -21,6 +21,7 @@ interface MetroStationProps {
   isActive?: boolean;
   /** Slot para el tren (posicionado con TRAIN_DOCKED dentro de esta caja) */
   children?: React.ReactNode;
+  onClick?: () => void;
   className?: string;
 }
 
@@ -29,10 +30,31 @@ interface MetroStationProps {
  * unidades `cqw` (container query width), de modo que letrero, panel, luces,
  * riel y tren escalan de forma idéntica a la referencia en cualquier ancho.
  */
-export function MetroStation({ numero, rotulo, isActive = false, children, className }: MetroStationProps) {
+export function MetroStation({
+  numero,
+  rotulo,
+  isActive = false,
+  children,
+  onClick,
+  className,
+}: MetroStationProps) {
   return (
     <div
-      className={cn('relative w-full [container-type:inline-size]', className)}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (onClick && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      aria-label={onClick ? `Parada ${numero}: ${rotulo}` : undefined}
+      className={cn(
+        'relative w-full [container-type:inline-size]',
+        onClick && 'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-dalia-600 rounded-lg',
+        className
+      )}
       style={{ aspectRatio: STATION_ASPECT }}
     >
       {/* Sombra de contacto sobre el papel */}
