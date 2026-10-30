@@ -47,21 +47,24 @@ function GitHubMarkIcon({ className }: { className?: string }) {
 }
 
 const EXPLORA_LINKS = [
-  { label: 'Mapa interactivo', href: '/#hero-mapa' },
-  { label: 'Narrativa', href: '/#modulos' },
-  { label: 'Modo juego', href: '/juego' },
+  { label: 'Mapa interactivo', href: '/#hero-mapa', external: false },
+  { label: 'Narrativa y brecha', href: '/#modulos', external: false },
+  { label: 'Siembra tu dalia', href: '/#registro-dalia', external: false },
+  { label: 'Práctica de casilla', href: '/juego', external: false },
 ] as const;
 
 const DATOS_LINKS = [
-  { label: 'Dashboard CCPC', href: '/datos', external: false },
+  { label: 'Explorador CCPC', href: '/datos', external: false },
   { label: 'Metodología', href: '/datos#metodologia', external: false },
-  { label: 'Glosario', href: 'https://www.ine.mx/cultura-civica/', external: true },
+  { label: 'Plataforma CCPC (INE)', href: 'https://www.ine.mx/cultura-civica/', external: true },
+  { label: 'Contexto ENOE (INEGI)', href: 'https://www.inegi.org.mx/programas/enoe/15ymas/', external: true },
 ] as const;
 
 const ACERCA_LINKS = [
   { label: 'Sobre el proyecto', href: '/#modulos', external: false },
-  { label: 'Privacidad', href: '/#registro-dalia', external: false },
-  { label: 'Contacto', href: 'https://www.ine.mx/', external: true },
+  { label: 'Privacidad Cero PII', href: '/#registro-dalia', external: false },
+  { label: 'Vigencia de credencial', href: 'https://listanominal.ine.mx/', external: true },
+  { label: 'Portal oficial INE', href: 'https://www.ine.mx/', external: true },
 ] as const;
 
 /**
@@ -319,9 +322,9 @@ export function LandingFooter({ className, children }: LandingFooterProps) {
               </div>
             </div>
 
-            {/* Párrafo Editorial en Newsreader (Serif) */}
-            <p className="mt-3 sm:mt-3.5 font-serif text-[15px] sm:text-[16.5px] lg:text-[17.5px] leading-[1.38] text-[#263040] font-normal max-w-[350px]">
-              Una plataforma para que más personas se informen, participen y hagan florecer un México más fuerte.
+            {/* Párrafo Editorial en Newsreader (Serif) alineado al Guion Narrativo */}
+            <p className="mt-3 sm:mt-3.5 font-serif text-[15px] sm:text-[16.5px] lg:text-[17.5px] leading-[1.38] text-[#263040] font-normal max-w-[360px]">
+              Tu grupo pesa más en las decisiones cuando aparece. Una flor no es un voto: es una persona que decidió prepararse rumbo al 6 de junio de 2027.
             </p>
 
             {/* Filete corto de acento Rosa Dalia */}
@@ -329,8 +332,8 @@ export function LandingFooter({ className, children }: LandingFooterProps) {
 
             {/* Descriptores en IBM Plex Mono */}
             <div className="font-mono text-[9px] sm:text-[10px] tracking-[0.18em] uppercase text-[#4B5563] leading-[1.75]">
-              <p>DATOS &nbsp;·&nbsp; PARTICIPACIÓN &nbsp;·&nbsp; COMUNIDAD</p>
-              <p>EDUCACIÓN CÍVICA &nbsp;·&nbsp; TERRITORIO &nbsp;·&nbsp; IMPACTO</p>
+              <p>DATOS CCPC &nbsp;·&nbsp; CONTEXTO ENOE &nbsp;·&nbsp; JUVENTUDES</p>
+              <p>EDUCACIÓN CÍVICA &nbsp;·&nbsp; TERRITORIO &nbsp;·&nbsp; CERO PII</p>
             </div>
           </div>
 
@@ -397,7 +400,7 @@ export function LandingFooter({ className, children }: LandingFooterProps) {
 
             {/* Columna ACERCA */}
             <nav
-              aria-label="Acerca del proyecto y privacidad"
+              aria-label="Acerca del proyecto y trámites oficiales"
               className="sm:border-l sm:border-[#2C3545]/25 sm:pl-5 lg:pl-6 py-0.5 flex flex-col justify-between min-h-[104px]"
             >
               <div>
@@ -433,10 +436,10 @@ export function LandingFooter({ className, children }: LandingFooterProps) {
             {/* Columna GITHUB */}
             <div className="border-l border-[#2C3545]/25 pl-5 lg:pl-6 py-0.5 flex flex-col justify-center min-h-[104px]">
               <a
-                href="https://github.com"
+                href="https://github.com/Betto-RZE/sadaPops"
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Ver código fuente del proyecto en GitHub"
+                aria-label="Ver código fuente de sadaPops en GitHub"
                 className="group inline-flex flex-col items-start gap-2.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C8006E] rounded-sm"
               >
                 <GitHubMarkIcon className="w-8 h-8 transition-transform duration-200 group-hover:scale-105 group-hover:text-[#C8006E]" />
@@ -464,10 +467,10 @@ export function LandingFooter({ className, children }: LandingFooterProps) {
         <div className="relative z-10 pt-2.5 pb-1">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-1.5 text-[#4B5563]">
             <p className="font-sans text-[10.5px] sm:text-[11px] tracking-wide">
-              © 2026 Mapa de Dalias. Todos los derechos reservados.
+              © 2026 Mapa de Dalias · Proyecto independiente para el Hackathon INE.
             </p>
             <p className="font-mono text-[9.5px] sm:text-[10.5px] tracking-[0.2em] uppercase text-[#263040]">
-              DISEÑADO PARA UNA CIUDADANÍA INFORMADA.
+              TU PARTICIPACIÓN HACE FLORECER A MÉXICO.
             </p>
           </div>
 
