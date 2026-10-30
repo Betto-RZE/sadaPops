@@ -59,7 +59,7 @@ export function ModuleCards() {
   };
 
   return (
-    <section id="modulos" className="w-full bg-transparent pt-0 pb-32 scroll-mt-12 select-none">
+    <section id="modulos" className="w-full bg-transparent pt-0 pb-32 scroll-mt-12 select-none overflow-x-clip">
       <div className="mx-auto max-w-[1440px] px-6 lg:px-12 relative">
         
         {/* ========================================================================= */}
@@ -184,16 +184,17 @@ export function ModuleCards() {
             onToggleCard={handleToggleCard}
           />
         </div>
+      </div>
 
-        {/* ========================================================================= */}
-        {/* FASE 2: PUENTE CONSTITUCIONAL Y LA BRECHA GENERACIONAL (CCPC 2024)        */}
-        {/* ========================================================================= */}
-        <CivicBridgeAndGapSection
-          selectedStateId={selectedStateId}
-          onSelectState={setSelectedStateId}
-          className="mb-24"
-        />
+      {/* ========================================================================= */}
+      {/* FASE 2: PUENTE CONSTITUCIONAL Y LA BRECHA GENERACIONAL (CCPC 2024)        */}
+      {/* ========================================================================= */}
+      <CivicBridgeAndGapSection
+        selectedStateId={selectedStateId}
+        onSelectState={setSelectedStateId}
+      />
 
+      <div className="mx-auto max-w-[1440px] px-6 lg:px-12 relative">
         {/* ========================================================================= */}
         {/* COMPONENTES TEMPORALES DE NAVEGACIÓN HACIA DATOS Y JUEGO                   */}
         {/* (Se integrarán completamente en las Fases 2, 3 y 4 del recorrido)         */}
