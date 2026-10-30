@@ -65,6 +65,136 @@ const ACERCA_LINKS = [
 ] as const;
 
 /**
+ * Borde de papel rasgado con regla (Deckle / Ruler-Torn Paper Edge):
+ * Mantiene la línea horizontal 100% recta de extremo a extremo, pero hace
+ * claramente visibles las dos capas físicas del papel roto:
+ * 1) La pulpa interior blanca/marfil deslaminada con filamentos y pelusa de celulosa.
+ * 2) El borde micro-astillado de la capa satinada superior y su sombra de contacto.
+ */
+function PaperFiberTornEdge() {
+  // Generamos una serie determinista de micro-mechones sobre una línea horizontal recta (y base = 18 dentro de viewBox 0..36)
+  const pointsCount = 240;
+  const pulpPoints: string[] = ['0,36', '0,16'];
+  const coatPoints: string[] = ['0,36', '0,23'];
+
+  for (let i = 0; i <= pointsCount; i++) {
+    const x = (i / pointsCount) * 1440;
+    // Variación de alta frecuencia (fibras cortas y mechones de celulosa) sin curvar la horizontal general
+    const fiberSpike =
+      Math.sin(i * 1.9) * 2.8 +
+      Math.cos(i * 4.7) * 2.2 +
+      Math.sin(i * 11.3) * 1.8 +
+      (i % 7 === 0 ? -3.2 : 0) +
+      (i % 13 === 0 ? 2.6 : 0);
+
+    const coatSpike =
+      Math.cos(i * 2.3 + 0.8) * 2.0 +
+      Math.sin(i * 5.9) * 1.6 +
+      Math.cos(i * 13.1) * 1.2 +
+      (i % 9 === 0 ? -2.2 : 0);
+
+    const yPulp = Math.max(4, Math.min(24, 14 + fiberSpike));
+    const yCoat = Math.max(12, Math.min(30, 22 + coatSpike));
+
+    pulpPoints.push(`${x.toFixed(1)},${yPulp.toFixed(1)}`);
+    coatPoints.push(`${x.toFixed(1)},${yCoat.toFixed(1)}`);
+  }
+
+  pulpPoints.push('1440,16', '1440,36');
+  coatPoints.push('1440,23', '1440,36');
+
+  return (
+    <div
+      aria-hidden="true"
+      className="absolute -top-[22px] inset-x-0 h-[34px] pointer-events-none select-none z-30 overflow-visible"
+    >
+      <svg
+        viewBox="0 0 1440 36"
+        preserveAspectRatio="none"
+        className="w-full h-full overflow-visible block"
+      >
+        <defs>
+          {/* Filtro de turbulencia fibrosa para deshilachar la celulosa blanca (pelusa real de papel) */}
+          <filter id="footer-paper-pulp-fuzz" x="-2%" y="-30%" width="104%" height="160%">
+            <feTurbulence
+              type="fractalNoise"
+              baseFrequency="0.25 0.08"
+              numOctaves="4"
+              seed="19"
+              result="noise"
+            />
+            <feDisplacementMap
+              in="SourceGraphic"
+              in2="noise"
+              scale="6.5"
+              xChannelSelector="R"
+              yChannelSelector="G"
+              result="frayed"
+            />
+            <feDropShadow
+              dx="0"
+              dy="-2.5"
+              stdDeviation="2.2"
+              floodColor="#141A26"
+              floodOpacity="0.24"
+            />
+          </filter>
+
+          {/* Filtro para el borde rasgado del estucado satinado sobre la pulpa */}
+          <filter id="footer-paper-coat-edge" x="-2%" y="-30%" width="104%" height="160%">
+            <feTurbulence
+              type="turbulence"
+              baseFrequency="0.18 0.06"
+              numOctaves="3"
+              seed="42"
+              result="coatNoise"
+            />
+            <feDisplacementMap
+              in="SourceGraphic"
+              in2="coatNoise"
+              scale="4.5"
+              xChannelSelector="R"
+              yChannelSelector="G"
+            />
+            <feDropShadow
+              dx="0"
+              dy="-1.2"
+              stdDeviation="0.8"
+              floodColor="#2B241D"
+              floodOpacity="0.28"
+            />
+          </filter>
+        </defs>
+
+        {/* CAPA 1 (Superior): Pulpa de algodón/celulosa blanca deslaminada expuesta al rasgar */}
+        <polygon
+          points={pulpPoints.join(' ')}
+          fill="#FCFBF8"
+          filter="url(#footer-paper-pulp-fuzz)"
+        />
+
+        {/* Filamentos sueltos intermedios de fibra cruda para dar textura de papel en capas */}
+        <polyline
+          points={pulpPoints.slice(2, -2).join(' ')}
+          fill="none"
+          stroke="#FFFFFF"
+          strokeWidth="1.4"
+          strokeDasharray="3 2 1 4 6 2"
+          opacity="0.95"
+        />
+
+        {/* CAPA 2 (Inferior): Borde del pliego de revista (#E5E0D5) donde inicia la hoja satinada */}
+        <polygon
+          points={coatPoints.join(' ')}
+          fill="#E5E0D5"
+          filter="url(#footer-paper-coat-edge)"
+        />
+      </svg>
+    </div>
+  );
+}
+
+/**
  * Footer Cívico/Institucional con efecto de pliego de revista satinado y marcas de imprenta
  * Reto 3 Hackathon INE 2026 — «Mapa de Dalias y Participación Ciudadana»
  */
@@ -74,73 +204,79 @@ export function LandingFooter({ className, children }: LandingFooterProps) {
       role="contentinfo"
       aria-label="Pie de página cívico institucional"
       className={cn(
-        'relative w-full overflow-hidden bg-[#E5E0D5] text-brand-navy select-none',
+        'relative w-full overflow-x-clip bg-[#E5E0D5] text-brand-navy select-none',
         'pt-6 sm:pt-8 pb-4 sm:pb-6',
-        // Sombra física superior y filo de luz de hoja de revista satinada
-        'shadow-[0_-10px_28px_rgba(18,22,32,0.09),inset_0_1.5px_0_rgba(255,255,255,0.85)]',
         className
       )}
     >
+      {/* Cenefa de fibras de papel roto sobresaliendo sobre la línea horizontal recta */}
+      <PaperFiberTornEdge />
+
       {/* ========================================================================= */}
       {/* 1. LIENZO FÍSICO: PAPEL DE REVISTA SATINADO / BRILLOSO DE ALTO CONTRASTE */}
       {/* ========================================================================= */}
-      {/* Capa base fotográfica alineada al borde inferior/izquierdo donde están los pliegues reales */}
-      <Image
-        src="/assets/cards-narrativa/glossy-magazine-sheet.jpg"
-        alt=""
-        aria-hidden="true"
-        fill
-        sizes="100vw"
-        className="object-cover object-bottom pointer-events-none select-none z-0 contrast-[1.22] brightness-[0.98]"
-      />
-
-      {/* Segunda capa de textura rotada para proyectar los reflejos de bordes superiores sobre todo el ancho */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 pointer-events-none select-none z-0 opacity-75 mix-blend-lighten"
-        style={{
-          backgroundImage: "url('/assets/cards-narrativa/glossy-magazine-sheet.jpg')",
-          backgroundSize: '100% 180%',
-          backgroundPosition: 'right top',
-          filter: 'contrast(1.35) brightness(1.06)',
-        }}
-      />
+        className="absolute inset-0 overflow-hidden pointer-events-none select-none z-0"
+      >
+        {/* Capa base fotográfica alineada al borde inferior/izquierdo donde están los pliegues reales */}
+        <Image
+          src="/assets/cards-narrativa/glossy-magazine-sheet.jpg"
+          alt=""
+          aria-hidden="true"
+          fill
+          sizes="100vw"
+          className="object-cover object-bottom pointer-events-none select-none z-0 contrast-[1.22] brightness-[0.98]"
+        />
 
-      {/* Reflejos especulares de revista brillante (pliegue diagonal inferior izquierdo + brillos verticales) */}
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 pointer-events-none select-none z-0"
-        style={{
-          background: `
-            linear-gradient(36deg,
-              rgba(28, 24, 20, 0.14) 0%,
-              rgba(28, 24, 20, 0.05) 11%,
-              rgba(255, 255, 255, 0.82) 15.5%,
-              rgba(255, 255, 255, 0.25) 19%,
-              transparent 28%
-            ),
-            linear-gradient(102deg,
-              rgba(255, 255, 255, 0.55) 0%,
-              transparent 8%,
-              transparent 53%,
-              rgba(255, 255, 255, 0.68) 57.5%,
-              rgba(35, 30, 25, 0.05) 61%,
-              transparent 67%,
-              transparent 79%,
-              rgba(255, 255, 255, 0.85) 83.5%,
-              rgba(255, 255, 255, 0.25) 87%,
-              rgba(35, 30, 25, 0.07) 94%,
-              rgba(255, 255, 255, 0.5) 100%
-            )
-          `,
-        }}
-      />
+        {/* Segunda capa de textura rotada para proyectar los reflejos de bordes superiores sobre todo el ancho */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 pointer-events-none select-none z-0 opacity-75 mix-blend-lighten"
+          style={{
+            backgroundImage: "url('/assets/cards-narrativa/glossy-magazine-sheet.jpg')",
+            backgroundSize: '100% 180%',
+            backgroundPosition: 'right top',
+            filter: 'contrast(1.35) brightness(1.06)',
+          }}
+        />
 
-      {/* Textura micro-impresa sutil de pliego satinado */}
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 pointer-events-none select-none z-0 shadow-[inset_0_0_45px_rgba(30,25,20,0.08)]"
-      />
+        {/* Reflejos especulares de revista brillante (pliegue diagonal inferior izquierdo + brillos verticales) */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 pointer-events-none select-none z-0"
+          style={{
+            background: `
+              linear-gradient(36deg,
+                rgba(28, 24, 20, 0.14) 0%,
+                rgba(28, 24, 20, 0.05) 11%,
+                rgba(255, 255, 255, 0.82) 15.5%,
+                rgba(255, 255, 255, 0.25) 19%,
+                transparent 28%
+              ),
+              linear-gradient(102deg,
+                rgba(255, 255, 255, 0.55) 0%,
+                transparent 8%,
+                transparent 53%,
+                rgba(255, 255, 255, 0.68) 57.5%,
+                rgba(35, 30, 25, 0.05) 61%,
+                transparent 67%,
+                transparent 79%,
+                rgba(255, 255, 255, 0.85) 83.5%,
+                rgba(255, 255, 255, 0.25) 87%,
+                rgba(35, 30, 25, 0.07) 94%,
+                rgba(255, 255, 255, 0.5) 100%
+              )
+            `,
+          }}
+        />
+
+        {/* Textura micro-impresa sutil de pliego satinado */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 pointer-events-none select-none z-0 shadow-[inset_0_0_45px_rgba(30,25,20,0.08)]"
+        />
+      </div>
 
       {/* ========================================================================= */}
       {/* 2. CONTENIDO EDITORIAL RESTRINGIDO A LA RETÍCULA (1440px, COMPACTO)      */}
