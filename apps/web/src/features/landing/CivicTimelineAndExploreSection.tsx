@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -59,6 +59,30 @@ export function CivicTimelineAndExploreSection({
   const [emailError, setEmailError] = useState<string | null>(null);
   const [alertsSaved, setAlertsSaved] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+
+  // Estado del carrusel horizontal en móvil para "Explora los datos" (estilo "Tu día a día")
+  const exploreCarouselRef = useRef<HTMLDivElement>(null);
+  const [activeExploreSlide, setActiveExploreSlide] = useState(0);
+
+  const handleExploreScroll = () => {
+    if (!exploreCarouselRef.current) return;
+    const el = exploreCarouselRef.current;
+    const scrollLeft = el.scrollLeft;
+    const itemWidth = el.offsetWidth * 0.82;
+    const nextIndex = Math.min(Math.max(Math.round(scrollLeft / itemWidth), 0), 1);
+    if (nextIndex !== activeExploreSlide) {
+      setActiveExploreSlide(nextIndex);
+    }
+  };
+
+  const scrollToExploreSlide = (index: number) => {
+    if (!exploreCarouselRef.current) return;
+    const el = exploreCarouselRef.current;
+    const cards = el.querySelectorAll<HTMLElement>('[data-explore-slide]');
+    if (cards[index]) {
+      cards[index].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  };
 
   // Restaurar dalia previa por dispositivo (1 dalia por sesión anónima)
   useEffect(() => {
@@ -545,280 +569,309 @@ export function CivicTimelineAndExploreSection({
             </p>
           </div>
 
-          {/* Composición en Zig-Zag Editorial: Polaroids Voxel + Fichas de Archivo */}
-          <div className="space-y-10 sm:space-y-12 lg:space-y-14">
-            {/* ================================================================= */}
-            {/* FILA 01: Polaroid Izquierda + Ficha de Archivo Derecha (CCPC)     */}
-            {/* ================================================================= */}
-            <Link
-              href="/datos"
-              className="group block focus:outline-none"
+          {/* Carrusel horizontal con snap en mobile (< lg) / Composición Zig-Zag en desktop (>= lg) */}
+          <div className="relative w-full">
+            <div
+              ref={exploreCarouselRef}
+              onScroll={handleExploreScroll}
+              className={cn(
+                'flex overflow-x-auto snap-x snap-mandatory gap-6 -mx-6 px-6 pt-2 pb-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+                'lg:space-y-14 lg:overflow-visible lg:mx-0 lg:px-0 lg:pt-0 lg:pb-0 lg:block'
+              )}
             >
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-7 sm:gap-8 lg:gap-10 items-center">
-                {/* Columna Izquierda: Polaroid Voxel CCPC */}
-                <div className="relative w-full aspect-[1536/1024] select-none transition-transform duration-500 ease-out group-hover:scale-[1.018] md:group-hover:-rotate-[0.6deg]">
-                  {/* Sombra de contacto suave sobre el papel */}
-                  <div
-                    aria-hidden
-                    className="absolute left-[12%] right-[12%] bottom-[6%] h-[12%] rounded-[50%] bg-[#0F1B2D]/12 blur-md"
-                  />
-
-                  {/* Fotografía interior (card-dashboard.jpeg) encajada en las coordenadas calibradas */}
-                  <div
-                    className="absolute overflow-hidden rounded-[2px]"
-                    style={{
-                      left: '16.08%',
-                      right: '15.69%',
-                      top: '20.90%',
-                      bottom: '25.88%',
-                    }}
-                  >
-                    <Image
-                      src="/card-dashboard.jpeg"
-                      alt="Ilustración pixel art del explorador de datos CCPC del INE"
-                      fill
-                      sizes="(min-width: 1024px) 45vw, 92vw"
-                      className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                    />
-                    {/* Bisel interior para profundidad 3D */}
+              {/* ================================================================= */}
+              {/* FILA / SLIDE 01: Polaroid Izquierda + Ficha Derecha (CCPC)        */}
+              {/* ================================================================= */}
+              <Link
+                href="/datos"
+                data-explore-slide
+                className="group block focus:outline-none shrink-0 snap-center w-[88vw] sm:w-[78vw] max-w-[480px] lg:w-full lg:max-w-none lg:shrink"
+              >
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6 lg:gap-10 items-center">
+                  {/* Columna Izquierda: Polaroid Voxel CCPC */}
+                  <div className="relative w-full aspect-[1536/1024] select-none transition-transform duration-500 ease-out group-hover:scale-[1.018] md:group-hover:-rotate-[0.6deg]">
+                    {/* Sombra de contacto suave sobre el papel */}
                     <div
                       aria-hidden
-                      className="absolute inset-0 pointer-events-none shadow-[inset_0_2px_6px_rgba(15,27,45,0.22)]"
+                      className="absolute left-[12%] right-[12%] bottom-[6%] h-[12%] rounded-[50%] bg-[#0F1B2D]/12 blur-md"
                     />
-                  </div>
 
-                  {/* Marco Polaroid con cinta adhesiva rosa sobrepuesta */}
-                  <div className="absolute inset-0 pointer-events-none select-none">
-                    <Image
-                      src="/Pink-Taped Polaroid Frame.png"
-                      alt=""
-                      aria-hidden
-                      fill
-                      sizes="(min-width: 1024px) 48vw, 95vw"
-                      className="object-contain drop-shadow-[0_12px_24px_rgba(18,24,38,0.12)]"
-                    />
-                  </div>
+                    {/* Fotografía interior (card-dashboard.jpeg) encajada en las coordenadas calibradas */}
+                    <div
+                      className="absolute overflow-hidden rounded-[2px]"
+                      style={{
+                        left: '16.08%',
+                        right: '15.69%',
+                        top: '20.90%',
+                        bottom: '25.88%',
+                      }}
+                    >
+                      <Image
+                        src="/card-dashboard.jpeg"
+                        alt="Ilustración pixel art del explorador de datos CCPC del INE"
+                        fill
+                        sizes="(min-width: 1024px) 45vw, 92vw"
+                        className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                      />
+                      {/* Bisel interior para profundidad 3D */}
+                      <div
+                        aria-hidden
+                        className="absolute inset-0 pointer-events-none shadow-[inset_0_2px_6px_rgba(15,27,45,0.22)]"
+                      />
+                    </div>
 
-                  {/* Barbilla inferior de la Polaroid: Rótulo editorial */}
-                  <div
-                    className="absolute z-10 flex items-center justify-between px-3 pointer-events-none"
-                    style={{
-                      left: '16.08%',
-                      right: '15.69%',
-                      top: '78%',
-                      height: '11%',
-                    }}
-                  >
-                    <span className="font-mono text-[9px] sm:text-[11px] font-bold tracking-[0.16em] uppercase text-[#6E6277]">
-                      FIG. 01 · CENSO CCPC
-                    </span>
-                    <span className="font-mono text-[9px] sm:text-[10px] text-[#8E8099] tracking-wider uppercase">
-                      INE MÉXICO
-                    </span>
-                  </div>
-                </div>
+                    {/* Marco Polaroid con cinta adhesiva rosa sobrepuesta */}
+                    <div className="absolute inset-0 pointer-events-none select-none">
+                      <Image
+                        src="/Pink-Taped Polaroid Frame.png"
+                        alt=""
+                        aria-hidden
+                        fill
+                        sizes="(min-width: 1024px) 48vw, 95vw"
+                        className="object-contain drop-shadow-[0_12px_24px_rgba(18,24,38,0.12)]"
+                      />
+                    </div>
 
-                {/* Columna Derecha: Ficha de Archivo Editorial CCPC */}
-                <div className="bg-[#F8F5EE] border border-[#E2DBD0] rounded-[4px] p-6 sm:p-8 lg:p-9 shadow-[0_8px_22px_rgba(20,24,35,0.06),0_2px_6px_rgba(20,24,35,0.04)] group-hover:shadow-[0_12px_28px_rgba(20,24,35,0.09)] transition-shadow duration-300">
-                  {/* Encabezado de la Ficha */}
-                  <div className="flex items-center justify-between text-xs font-mono">
-                    <div className="flex items-center gap-1.5 sm:gap-2">
-                      <span className="font-bold text-[#18181B] border-b border-black/70 pb-[1px]">01</span>
-                      <span className="text-black/30">/</span>
-                      <span className="font-bold tracking-[0.16em] uppercase text-[#4B5563] text-[10px] sm:text-[11px]">
-                        EXPEDIENTE · DATOS CCPC
+                    {/* Barbilla inferior de la Polaroid: Rótulo editorial */}
+                    <div
+                      className="absolute z-10 flex items-center justify-between px-3 pointer-events-none"
+                      style={{
+                        left: '16.08%',
+                        right: '15.69%',
+                        top: '78%',
+                        height: '11%',
+                      }}
+                    >
+                      <span className="font-mono text-[9px] sm:text-[11px] font-bold tracking-[0.16em] uppercase text-[#6E6277]">
+                        FIG. 01 · CENSO CCPC
+                      </span>
+                      <span className="font-mono text-[9px] sm:text-[10px] text-[#8E8099] tracking-wider uppercase">
+                        INE MÉXICO
                       </span>
                     </div>
-                    <span className="text-[10px] sm:text-[11px] font-mono tracking-wider text-[#71717A] uppercase">
-                      REF. INE-CCPC-2024
-                    </span>
                   </div>
 
-                  {/* Línea divisoria superior */}
-                  <div className="w-full h-px bg-black/10 mt-3.5 mb-4 sm:mb-5" />
-
-                  {/* Titular en Newsreader */}
-                  <h4 className="font-serif font-bold text-2xl sm:text-[28px] lg:text-[32px] text-[#0F1B2D] tracking-tight leading-[1.14] group-hover:text-blue-900 transition-colors">
-                    Dashboard interactivo guiado por preguntas
-                  </h4>
-
-                  {/* Descripción editorial */}
-                  <p className="mt-2.5 text-xs sm:text-[13.5px] text-[#52525B] leading-relaxed font-sans">
-                    Gráficas según el tipo de dato, filtros por entidad y grupo de edad, y explicaciones cortas para responder con datos oficiales.
-                  </p>
-
-                  {/* Línea divisoria media */}
-                  <div className="w-full h-px bg-black/10 my-4 sm:my-5" />
-
-                  {/* Lista de preguntas con pastillas A.1, A.2, A.3 */}
-                  <ul className="space-y-2.5 sm:space-y-3 font-sans text-xs sm:text-[13px] text-[#1F2937]">
-                    <li className="flex items-center gap-3">
-                      <span className="inline-flex items-center justify-center font-mono font-bold text-[10px] sm:text-[11px] text-[#374151] bg-[#E8E2D8]/80 border border-[#D8D0C3] rounded-[3px] px-2 py-0.5 min-w-[2.4rem] shrink-0">
-                        A.1
-                      </span>
-                      <span className="font-medium text-[#18181B]">¿Cuánto vota mi estado?</span>
-                    </li>
-                    <li className="flex items-center gap-3">
-                      <span className="inline-flex items-center justify-center font-mono font-bold text-[10px] sm:text-[11px] text-[#374151] bg-[#E8E2D8]/80 border border-[#D8D0C3] rounded-[3px] px-2 py-0.5 min-w-[2.4rem] shrink-0">
-                        A.2
-                      </span>
-                      <span className="font-medium text-[#18181B]">¿Ha cambiado la participación de mi edad desde 2009?</span>
-                    </li>
-                    <li className="flex items-center gap-3">
-                      <span className="inline-flex items-center justify-center font-mono font-bold text-[10px] sm:text-[11px] text-[#374151] bg-[#E8E2D8]/80 border border-[#D8D0C3] rounded-[3px] px-2 py-0.5 min-w-[2.4rem] shrink-0">
-                        A.3
-                      </span>
-                      <span className="font-medium text-[#18181B]">¿Votan más hombres o mujeres?</span>
-                    </li>
-                  </ul>
-
-                  {/* Pie de acción CTA */}
-                  <div className="mt-6 sm:mt-7 pt-1 flex items-center gap-2">
-                    <span className="font-mono text-xs sm:text-[12px] font-bold tracking-[0.16em] uppercase text-[#D81B60] group-hover:text-[#AD1457] transition-colors flex items-center gap-2">
-                      <span>ABRIR DASHBOARD CCPC</span>
-                      <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1.5" />
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </Link>
-
-            {/* ================================================================= */}
-            {/* FILA 02: Ficha Izquierda + Polaroid Derecha (Simulador Casilla)   */}
-            {/* ================================================================= */}
-            <Link
-              href="/juego"
-              className="group block focus:outline-none"
-            >
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-7 sm:gap-8 lg:gap-10 items-center">
-                {/* Columna Izquierda (en desktop) / Ficha de Archivo Simulador */}
-                <div className="order-2 lg:order-1 bg-[#F8F5EE] border border-[#E2DBD0] rounded-[4px] p-6 sm:p-8 lg:p-9 shadow-[0_8px_22px_rgba(20,24,35,0.06),0_2px_6px_rgba(20,24,35,0.04)] group-hover:shadow-[0_12px_28px_rgba(20,24,35,0.09)] transition-shadow duration-300">
-                  {/* Encabezado de la Ficha */}
-                  <div className="flex items-center justify-between text-xs font-mono">
-                    <div className="flex items-center gap-1.5 sm:gap-2">
-                      <span className="font-bold text-[#18181B] border-b border-black/70 pb-[1px]">02</span>
-                      <span className="text-black/30">/</span>
-                      <span className="font-bold tracking-[0.16em] uppercase text-[#4B5563] text-[10px] sm:text-[11px]">
-                        EXPEDIENTE · MODO PRÁCTICA
+                  {/* Columna Derecha: Ficha de Archivo Editorial CCPC */}
+                  <div className="bg-[#F8F5EE] border border-[#E2DBD0] rounded-[4px] p-5 sm:p-7 lg:p-9 shadow-[0_8px_22px_rgba(20,24,35,0.06),0_2px_6px_rgba(20,24,35,0.04)] group-hover:shadow-[0_12px_28px_rgba(20,24,35,0.09)] transition-shadow duration-300">
+                    {/* Encabezado de la Ficha */}
+                    <div className="flex items-center justify-between text-xs font-mono">
+                      <div className="flex items-center gap-1.5 sm:gap-2">
+                        <span className="font-bold text-[#18181B] border-b border-black/70 pb-[1px]">01</span>
+                        <span className="text-black/30">/</span>
+                        <span className="font-bold tracking-[0.16em] uppercase text-[#4B5563] text-[10px] sm:text-[11px]">
+                          EXPEDIENTE · DATOS CCPC
+                        </span>
+                      </div>
+                      <span className="text-[10px] sm:text-[11px] font-mono tracking-wider text-[#71717A] uppercase">
+                        REF. INE-CCPC-2024
                       </span>
                     </div>
-                    <span className="text-[10px] sm:text-[11px] font-mono tracking-wider text-[#71717A] uppercase">
-                      SIMULADOR NEUTRAL
-                    </span>
-                  </div>
 
-                  {/* Línea divisoria superior */}
-                  <div className="w-full h-px bg-black/10 mt-3.5 mb-4 sm:mb-5" />
+                    {/* Línea divisoria superior */}
+                    <div className="w-full h-px bg-black/10 mt-3 sm:mt-3.5 mb-3.5 sm:mb-5" />
 
-                  {/* Titular en Newsreader */}
-                  <h4 className="font-serif font-bold text-2xl sm:text-[28px] lg:text-[32px] text-[#0F1B2D] tracking-tight leading-[1.14] group-hover:text-[#5E2CE6] transition-colors">
-                    Práctica de procedimiento en casilla
-                  </h4>
+                    {/* Titular en Newsreader */}
+                    <h4 className="font-serif font-bold text-xl sm:text-2xl lg:text-[32px] text-[#0F1B2D] tracking-tight leading-[1.14] group-hover:text-blue-900 transition-colors">
+                      Dashboard interactivo guiado por preguntas
+                    </h4>
 
-                  {/* Descripción editorial */}
-                  <p className="mt-2.5 text-xs sm:text-[13.5px] text-[#52525B] leading-relaxed font-sans">
-                    Usa datos reales de la CCPC y permite practicar el procedimiento en una casilla con una boleta de práctica, sin partidos ni colores partidistas.
-                  </p>
+                    {/* Descripción editorial */}
+                    <p className="mt-2 text-xs sm:text-[13.5px] text-[#52525B] leading-relaxed font-sans">
+                      Gráficas según el tipo de dato, filtros por entidad y grupo de edad, y explicaciones cortas para responder con datos oficiales.
+                    </p>
 
-                  {/* Línea divisoria media */}
-                  <div className="w-full h-px bg-black/10 my-4 sm:my-5" />
+                    {/* Línea divisoria media */}
+                    <div className="w-full h-px bg-black/10 my-3.5 sm:my-5" />
 
-                  {/* Lista de características con pastillas B.1, B.2, B.3 */}
-                  <ul className="space-y-2.5 sm:space-y-3 font-sans text-xs sm:text-[13px] text-[#1F2937]">
-                    <li className="flex items-center gap-3">
-                      <span className="inline-flex items-center justify-center font-mono font-bold text-[10px] sm:text-[11px] text-[#374151] bg-[#E8E2D8]/80 border border-[#D8D0C3] rounded-[3px] px-2 py-0.5 min-w-[2.4rem] shrink-0">
-                        B.1
+                    {/* Lista de preguntas con pastillas A.1, A.2, A.3 */}
+                    <ul className="space-y-2 sm:space-y-3 font-sans text-xs sm:text-[13px] text-[#1F2937]">
+                      <li className="flex items-center gap-2.5 sm:gap-3">
+                        <span className="inline-flex items-center justify-center font-mono font-bold text-[10px] sm:text-[11px] text-[#374151] bg-[#E8E2D8]/80 border border-[#D8D0C3] rounded-[3px] px-1.5 sm:px-2 py-0.5 min-w-[2.2rem] sm:min-w-[2.4rem] shrink-0">
+                          A.1
+                        </span>
+                        <span className="font-medium text-[#18181B]">¿Cuánto vota mi estado?</span>
+                      </li>
+                      <li className="flex items-center gap-2.5 sm:gap-3">
+                        <span className="inline-flex items-center justify-center font-mono font-bold text-[10px] sm:text-[11px] text-[#374151] bg-[#E8E2D8]/80 border border-[#D8D0C3] rounded-[3px] px-1.5 sm:px-2 py-0.5 min-w-[2.2rem] sm:min-w-[2.4rem] shrink-0">
+                          A.2
+                        </span>
+                        <span className="font-medium text-[#18181B]">¿Ha cambiado la participación de mi edad desde 2009?</span>
+                      </li>
+                      <li className="flex items-center gap-2.5 sm:gap-3">
+                        <span className="inline-flex items-center justify-center font-mono font-bold text-[10px] sm:text-[11px] text-[#374151] bg-[#E8E2D8]/80 border border-[#D8D0C3] rounded-[3px] px-1.5 sm:px-2 py-0.5 min-w-[2.2rem] sm:min-w-[2.4rem] shrink-0">
+                          A.3
+                        </span>
+                        <span className="font-medium text-[#18181B]">¿Votan más hombres o mujeres?</span>
+                      </li>
+                    </ul>
+
+                    {/* Pie de acción CTA */}
+                    <div className="mt-5 sm:mt-7 pt-1 flex items-center gap-2">
+                      <span className="font-mono text-xs sm:text-[12px] font-bold tracking-[0.16em] uppercase text-[#D81B60] group-hover:text-[#AD1457] transition-colors flex items-center gap-2">
+                        <span>ABRIR DASHBOARD CCPC</span>
+                        <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1.5" />
                       </span>
-                      <span className="font-medium text-[#18181B]">Desmiente mitos con datos oficiales de la CCPC</span>
-                    </li>
-                    <li className="flex items-center gap-3">
-                      <span className="inline-flex items-center justify-center font-mono font-bold text-[10px] sm:text-[11px] text-[#374151] bg-[#E8E2D8]/80 border border-[#D8D0C3] rounded-[3px] px-2 py-0.5 min-w-[2.4rem] shrink-0">
-                        B.2
-                      </span>
-                      <span className="font-medium text-[#18181B]">Práctica táctil de marcado, doblado y depósito en urna</span>
-                    </li>
-                    <li className="flex items-center gap-3">
-                      <span className="inline-flex items-center justify-center font-mono font-bold text-[10px] sm:text-[11px] text-[#374151] bg-[#E8E2D8]/80 border border-[#D8D0C3] rounded-[3px] px-2 py-0.5 min-w-[2.4rem] shrink-0">
-                        B.3
-                      </span>
-                      <span className="font-medium text-[#18181B]">Simulación cívica neutral sin partidos ni sesgos</span>
-                    </li>
-                  </ul>
-
-                  {/* Pie de acción CTA con línea horizontal guía */}
-                  <div className="mt-6 sm:mt-7 pt-1 flex items-center gap-3">
-                    <span className="font-mono text-xs sm:text-[12px] font-bold tracking-[0.16em] uppercase text-[#D81B60] group-hover:text-[#AD1457] transition-colors flex items-center gap-2 shrink-0">
-                      <span>ENTRAR A PRACTICAR</span>
-                      <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1.5" />
-                    </span>
-                    <div className="flex-1 h-px bg-black/10" />
+                    </div>
                   </div>
                 </div>
+              </Link>
 
-                {/* Columna Derecha (en desktop, primero en mobile) / Polaroid Voxel Juego */}
-                <div className="order-1 lg:order-2 relative w-full aspect-[1536/1024] select-none transition-transform duration-500 ease-out group-hover:scale-[1.018] md:group-hover:rotate-[0.6deg]">
-                  {/* Sombra de contacto suave sobre el papel */}
-                  <div
-                    aria-hidden
-                    className="absolute left-[12%] right-[12%] bottom-[6%] h-[12%] rounded-[50%] bg-[#0F1B2D]/12 blur-md"
-                  />
+              {/* ================================================================= */}
+              {/* FILA / SLIDE 02: Ficha Izquierda + Polaroid Derecha (Simulador)   */}
+              {/* ================================================================= */}
+              <Link
+                href="/juego"
+                data-explore-slide
+                className="group block focus:outline-none shrink-0 snap-center w-[88vw] sm:w-[78vw] max-w-[480px] lg:w-full lg:max-w-none lg:shrink"
+              >
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6 lg:gap-10 items-center">
+                  {/* Columna Izquierda (en desktop) / Ficha de Archivo Simulador */}
+                  <div className="order-2 lg:order-1 bg-[#F8F5EE] border border-[#E2DBD0] rounded-[4px] p-5 sm:p-7 lg:p-9 shadow-[0_8px_22px_rgba(20,24,35,0.06),0_2px_6px_rgba(20,24,35,0.04)] group-hover:shadow-[0_12px_28px_rgba(20,24,35,0.09)] transition-shadow duration-300">
+                    {/* Encabezado de la Ficha */}
+                    <div className="flex items-center justify-between text-xs font-mono">
+                      <div className="flex items-center gap-1.5 sm:gap-2">
+                        <span className="font-bold text-[#18181B] border-b border-black/70 pb-[1px]">02</span>
+                        <span className="text-black/30">/</span>
+                        <span className="font-bold tracking-[0.16em] uppercase text-[#4B5563] text-[10px] sm:text-[11px]">
+                          EXPEDIENTE · MODO PRÁCTICA
+                        </span>
+                      </div>
+                      <span className="text-[10px] sm:text-[11px] font-mono tracking-wider text-[#71717A] uppercase">
+                        SIMULADOR NEUTRAL
+                      </span>
+                    </div>
 
-                  {/* Fotografía interior (card-juego.jpeg) encajada en las coordenadas calibradas */}
-                  <div
-                    className="absolute overflow-hidden rounded-[2px]"
-                    style={{
-                      left: '16.08%',
-                      right: '15.69%',
-                      top: '20.90%',
-                      bottom: '25.88%',
-                    }}
-                  >
-                    <Image
-                      src="/card-juego.jpeg"
-                      alt="Ilustración pixel art del simulador de práctica en casilla del INE"
-                      fill
-                      sizes="(min-width: 1024px) 45vw, 92vw"
-                      className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                    />
-                    {/* Bisel interior para profundidad 3D */}
+                    {/* Línea divisoria superior */}
+                    <div className="w-full h-px bg-black/10 mt-3 sm:mt-3.5 mb-3.5 sm:mb-5" />
+
+                    {/* Titular en Newsreader */}
+                    <h4 className="font-serif font-bold text-xl sm:text-2xl lg:text-[32px] text-[#0F1B2D] tracking-tight leading-[1.14] group-hover:text-[#5E2CE6] transition-colors">
+                      Práctica de procedimiento en casilla
+                    </h4>
+
+                    {/* Descripción editorial */}
+                    <p className="mt-2 text-xs sm:text-[13.5px] text-[#52525B] leading-relaxed font-sans">
+                      Usa datos reales de la CCPC y permite practicar el procedimiento en una casilla con una boleta de práctica, sin partidos ni colores partidistas.
+                    </p>
+
+                    {/* Línea divisoria media */}
+                    <div className="w-full h-px bg-black/10 my-3.5 sm:my-5" />
+
+                    {/* Lista de características con pastillas B.1, B.2, B.3 */}
+                    <ul className="space-y-2 sm:space-y-3 font-sans text-xs sm:text-[13px] text-[#1F2937]">
+                      <li className="flex items-center gap-2.5 sm:gap-3">
+                        <span className="inline-flex items-center justify-center font-mono font-bold text-[10px] sm:text-[11px] text-[#374151] bg-[#E8E2D8]/80 border border-[#D8D0C3] rounded-[3px] px-1.5 sm:px-2 py-0.5 min-w-[2.2rem] sm:min-w-[2.4rem] shrink-0">
+                          B.1
+                        </span>
+                        <span className="font-medium text-[#18181B]">Desmiente mitos con datos oficiales de la CCPC</span>
+                      </li>
+                      <li className="flex items-center gap-2.5 sm:gap-3">
+                        <span className="inline-flex items-center justify-center font-mono font-bold text-[10px] sm:text-[11px] text-[#374151] bg-[#E8E2D8]/80 border border-[#D8D0C3] rounded-[3px] px-1.5 sm:px-2 py-0.5 min-w-[2.2rem] sm:min-w-[2.4rem] shrink-0">
+                          B.2
+                        </span>
+                        <span className="font-medium text-[#18181B]">Práctica táctil de marcado, doblado y depósito en urna</span>
+                      </li>
+                      <li className="flex items-center gap-2.5 sm:gap-3">
+                        <span className="inline-flex items-center justify-center font-mono font-bold text-[10px] sm:text-[11px] text-[#374151] bg-[#E8E2D8]/80 border border-[#D8D0C3] rounded-[3px] px-1.5 sm:px-2 py-0.5 min-w-[2.2rem] sm:min-w-[2.4rem] shrink-0">
+                          B.3
+                        </span>
+                        <span className="font-medium text-[#18181B]">Simulación cívica neutral sin partidos ni sesgos</span>
+                      </li>
+                    </ul>
+
+                    {/* Pie de acción CTA con línea horizontal guía */}
+                    <div className="mt-5 sm:mt-7 pt-1 flex items-center gap-3">
+                      <span className="font-mono text-xs sm:text-[12px] font-bold tracking-[0.16em] uppercase text-[#D81B60] group-hover:text-[#AD1457] transition-colors flex items-center gap-2 shrink-0">
+                        <span>ENTRAR A PRACTICAR</span>
+                        <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1.5" />
+                      </span>
+                      <div className="flex-1 h-px bg-black/10" />
+                    </div>
+                  </div>
+
+                  {/* Columna Derecha (en desktop, primero en mobile) / Polaroid Voxel Juego */}
+                  <div className="order-1 lg:order-2 relative w-full aspect-[1536/1024] select-none transition-transform duration-500 ease-out group-hover:scale-[1.018] md:group-hover:rotate-[0.6deg]">
+                    {/* Sombra de contacto suave sobre el papel */}
                     <div
                       aria-hidden
-                      className="absolute inset-0 pointer-events-none shadow-[inset_0_2px_6px_rgba(15,27,45,0.22)]"
+                      className="absolute left-[12%] right-[12%] bottom-[6%] h-[12%] rounded-[50%] bg-[#0F1B2D]/12 blur-md"
                     />
-                  </div>
 
-                  {/* Marco Polaroid con cinta adhesiva rosa sobrepuesta */}
-                  <div className="absolute inset-0 pointer-events-none select-none">
-                    <Image
-                      src="/Pink-Taped Polaroid Frame.png"
-                      alt=""
-                      aria-hidden
-                      fill
-                      sizes="(min-width: 1024px) 48vw, 95vw"
-                      className="object-contain drop-shadow-[0_12px_24px_rgba(18,24,38,0.12)]"
-                    />
-                  </div>
+                    {/* Fotografía interior (card-juego.jpeg) encajada en las coordenadas calibradas */}
+                    <div
+                      className="absolute overflow-hidden rounded-[2px]"
+                      style={{
+                        left: '16.08%',
+                        right: '15.69%',
+                        top: '20.90%',
+                        bottom: '25.88%',
+                      }}
+                    >
+                      <Image
+                        src="/card-juego.jpeg"
+                        alt="Ilustración pixel art del simulador de práctica en casilla del INE"
+                        fill
+                        sizes="(min-width: 1024px) 45vw, 92vw"
+                        className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                      />
+                      {/* Bisel interior para profundidad 3D */}
+                      <div
+                        aria-hidden
+                        className="absolute inset-0 pointer-events-none shadow-[inset_0_2px_6px_rgba(15,27,45,0.22)]"
+                      />
+                    </div>
 
-                  {/* Barbilla inferior de la Polaroid: Rótulo editorial */}
-                  <div
-                    className="absolute z-10 flex items-center justify-between px-3 pointer-events-none"
-                    style={{
-                      left: '16.08%',
-                      right: '15.69%',
-                      top: '78%',
-                      height: '11%',
-                    }}
-                  >
-                    <span className="font-mono text-[9px] sm:text-[11px] font-bold tracking-[0.16em] uppercase text-[#6E6277]">
-                      FIG. 02 · SIMULADOR CASILLA
-                    </span>
-                    <span className="font-mono text-[9px] sm:text-[10px] text-[#8E8099] tracking-wider uppercase">
-                      RETRO PIXEL ART
-                    </span>
+                    {/* Marco Polaroid con cinta adhesiva rosa sobrepuesta */}
+                    <div className="absolute inset-0 pointer-events-none select-none">
+                      <Image
+                        src="/Pink-Taped Polaroid Frame.png"
+                        alt=""
+                        aria-hidden
+                        fill
+                        sizes="(min-width: 1024px) 48vw, 95vw"
+                        className="object-contain drop-shadow-[0_12px_24px_rgba(18,24,38,0.12)]"
+                      />
+                    </div>
+
+                    {/* Barbilla inferior de la Polaroid: Rótulo editorial */}
+                    <div
+                      className="absolute z-10 flex items-center justify-between px-3 pointer-events-none"
+                      style={{
+                        left: '16.08%',
+                        right: '15.69%',
+                        top: '78%',
+                        height: '11%',
+                      }}
+                    >
+                      <span className="font-mono text-[9px] sm:text-[11px] font-bold tracking-[0.16em] uppercase text-[#6E6277]">
+                        FIG. 02 · SIMULADOR CASILLA
+                      </span>
+                      <span className="font-mono text-[9px] sm:text-[10px] text-[#8E8099] tracking-wider uppercase">
+                        RETRO PIXEL ART
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Link>
+              </Link>
+            </div>
+
+            {/* Indicadores de paginación interactivos exclusivos para móvil (estilo "Tu día a día") */}
+            <div className="flex lg:hidden items-center justify-center gap-2 mt-5 select-none">
+              {[0, 1].map((idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => scrollToExploreSlide(idx)}
+                  aria-label={`Ver expediente 0${idx + 1}`}
+                  className={cn(
+                    'transition-all duration-300 rounded-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-dalia-600',
+                    activeExploreSlide === idx
+                      ? 'w-7 h-2 bg-[#D81B60]'
+                      : 'w-2 h-2 bg-black/20 hover:bg-black/40'
+                  )}
+                />
+              ))}
+            </div>
           </div>
         </section>
       </div>
