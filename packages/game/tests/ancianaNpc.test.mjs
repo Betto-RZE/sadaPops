@@ -64,19 +64,19 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
     test("getAncianaFrameSrc resuelve rutas exactas con padding de dos dígitos", () => {
       assert.equal(
         getAncianaFrameSrc("side", 0),
-        "/assets/juego/personajes/anciana/side/anciana-side00086400.png",
+        "/assets/juego/personajes/anciana/side/anciana-side00086400.webp",
       );
       assert.equal(
         getAncianaFrameSrc("side", 35),
-        "/assets/juego/personajes/anciana/side/anciana-side00086435.png",
+        "/assets/juego/personajes/anciana/side/anciana-side00086435.webp",
       );
       assert.equal(
         getAncianaFrameSrc("front", 0),
-        "/assets/juego/personajes/anciana/front/anciana-front00086400.png",
+        "/assets/juego/personajes/anciana/front/anciana-front00086400.webp",
       );
       assert.equal(
         getAncianaFrameSrc("back", 0),
-        "/assets/juego/personajes/anciana/back/anciana-back00086400.png",
+        "/assets/juego/personajes/anciana/back/anciana-back00086400.webp",
       );
     });
   });
@@ -485,7 +485,7 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
       );
       assert.equal(
         triviaMsgEs.portraitOverride?.leftSrc,
-        "/assets/juego/dialogos/retrato-inecito-pregunta.png",
+        "/assets/juego/dialogos/retrato-inecito-pregunta.webp",
       );
       assert.ok(triviaMsgEs.trivia, "Debe contener el objeto de trivia");
       assert.equal(triviaMsgEs.trivia.options.length, 3, "Debe contener 3 opciones de respuesta");
@@ -509,7 +509,7 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
       assert.equal(ABUELA_CONVERSATION_MESSAGES_NAH[16].speaker, "Inecito Cívica");
       assert.equal(
         ABUELA_CONVERSATION_MESSAGES_NAH[16].portraitOverride?.leftSrc,
-        "/assets/juego/dialogos/retrato-inecito-pregunta.png",
+        "/assets/juego/dialogos/retrato-inecito-pregunta.webp",
       );
       assert.equal(ABUELA_CONVERSATION_MESSAGES_NAH[16].trivia?.options.length, 3);
       assert.equal(ABUELA_CONVERSATION_MESSAGES_NAH[17].speaker, "Tenantzin Carmen");
@@ -576,12 +576,12 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
 
       assert.equal(
         ABUELA_CONVERSATION_PORTRAITS.left.src,
-        "/assets/juego/dialogos/retrato-inecito.png",
+        "/assets/juego/dialogos/retrato-inecito.webp",
         "Ruta del retrato de Inecito",
       );
       assert.equal(
         ABUELA_CONVERSATION_PORTRAITS.right.src,
-        "/assets/juego/dialogos/retrato-carmen.png",
+        "/assets/juego/dialogos/retrato-carmen.webp",
         "Ruta del retrato de Doña Carmen",
       );
     });
@@ -656,7 +656,7 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
       assert.equal(triviaLine.target, "user");
       assert.equal(
         triviaLine.portraitOverride?.leftSrc,
-        "/assets/juego/dialogos/retrato-inecito-pregunta.png",
+        "/assets/juego/dialogos/retrato-inecito-pregunta.webp",
         "El retrato debe cambiar a la imagen frontal de pregunta",
       );
       assert.ok(triviaLine.trivia, "Debe tener objeto trivia");
@@ -735,23 +735,23 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
     test("las rutas de los retratos de los 5 personajes corresponden a los archivos canónicos", () => {
       assert.equal(
         NARRATIVE_CHARACTERS_CONFIG.anciana.portraitSrc,
-        "/assets/juego/dialogos/retrato-carmen.png",
+        "/assets/juego/dialogos/retrato-carmen.webp",
       );
       assert.equal(
         NARRATIVE_CHARACTERS_CONFIG.joven.portraitSrc,
-        "/assets/juego/dialogos/retrato-joven.png",
+        "/assets/juego/dialogos/retrato-joven.webp",
       );
       assert.equal(
         NARRATIVE_CHARACTERS_CONFIG.indigena.portraitSrc,
-        "/assets/juego/dialogos/retrato-indigena.png",
+        "/assets/juego/dialogos/retrato-indigena.webp",
       );
       assert.equal(
         NARRATIVE_CHARACTERS_CONFIG.transgenero.portraitSrc,
-        "/assets/juego/dialogos/retrato-trans.png",
+        "/assets/juego/dialogos/retrato-trans.webp",
       );
       assert.equal(
         NARRATIVE_CHARACTERS_CONFIG.discapacitado.portraitSrc,
-        "/assets/juego/dialogos/retrato-discapacitado.png",
+        "/assets/juego/dialogos/retrato-discapacitado.webp",
       );
     });
 
@@ -763,7 +763,7 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
 
         assert.equal(
           portraits.left.src,
-          "/assets/juego/dialogos/retrato-inecito.png",
+          "/assets/juego/dialogos/retrato-inecito.webp",
           "Inecito debe ser el retrato izquierdo en todos los diálogos",
         );
         assert.equal(
@@ -919,7 +919,7 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
         assert.equal(triviaLine.target, "user", "Inecito debe dirigirse al usuario en la trivia");
         assert.equal(
           triviaLine.portraitOverride?.leftSrc,
-          "/assets/juego/dialogos/retrato-inecito-pregunta.png",
+          "/assets/juego/dialogos/retrato-inecito-pregunta.webp",
           "Inecito debe usar el retrato frontal con manos abiertas",
         );
 
@@ -1187,74 +1187,74 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
       // Anciana (Abuela)
       assert.equal(
         getNarrativeCharacterSideFrameSrc("anciana", 0),
-        "/assets/juego/personajes/anciana/side/anciana-side00086400.png",
+        "/assets/juego/personajes/anciana/side/anciana-side00086400.webp",
       );
       assert.equal(
         getNarrativeCharacterSideFrameSrc("anciana", 35),
-        "/assets/juego/personajes/anciana/side/anciana-side00086435.png",
+        "/assets/juego/personajes/anciana/side/anciana-side00086435.webp",
       );
 
       // Joven (Mateo / Chavo)
       assert.equal(
         getNarrativeCharacterSideFrameSrc("joven", 0),
-        "/assets/juego/personajes/joven/side/chavo-side00086400.png",
+        "/assets/juego/personajes/joven/side/chavo-side00086400.webp",
       );
       assert.equal(
         getNarrativeCharacterSideFrameSrc("joven", 28),
-        "/assets/juego/personajes/joven/side/chavo-side00086428.png",
+        "/assets/juego/personajes/joven/side/chavo-side00086428.webp",
       );
 
       // Indígena (María / Citlali)
       assert.equal(
         getNarrativeCharacterSideFrameSrc("indigena", 0),
-        "/assets/juego/personajes/indigena/side/indigena-side00086400.png",
+        "/assets/juego/personajes/indigena/side/indigena-side00086400.webp",
       );
       assert.equal(
         getNarrativeCharacterSideFrameSrc("indigena", 31),
-        "/assets/juego/personajes/indigena/side/indigena-side00086431.png",
+        "/assets/juego/personajes/indigena/side/indigena-side00086431.webp",
       );
 
       // Transgénero (Alex / Morgan)
       assert.equal(
         getNarrativeCharacterSideFrameSrc("transgenero", 0),
-        "/assets/juego/personajes/trans/side/trans-side00086400.png",
+        "/assets/juego/personajes/trans/side/trans-side00086400.webp",
       );
       assert.equal(
         getNarrativeCharacterSideFrameSrc("transgenero", 33),
-        "/assets/juego/personajes/trans/side/trans-side00086433.png",
+        "/assets/juego/personajes/trans/side/trans-side00086433.webp",
       );
 
       // Discapacitado (Don Roberto)
       assert.equal(
         getNarrativeCharacterSideFrameSrc("discapacitado", 0),
-        "/assets/juego/personajes/discapacitado/side/discapacitado00086400.png",
+        "/assets/juego/personajes/discapacitado/side/discapacitado00086400.webp",
       );
       assert.equal(
         getNarrativeCharacterSideFrameSrc("discapacitado", 39),
-        "/assets/juego/personajes/discapacitado/side/discapacitado00086439.png",
+        "/assets/juego/personajes/discapacitado/side/discapacitado00086439.webp",
       );
     });
 
     test("getNarrativeCharacterIdleSrc resuelve las posiciones IDLE oficiales en la mesa", () => {
       assert.equal(
         getNarrativeCharacterIdleSrc("anciana"),
-        "/assets/juego/personajes/anciana/anciana-idle.png",
+        "/assets/juego/personajes/anciana/anciana-idle.webp",
       );
       assert.equal(
         getNarrativeCharacterIdleSrc("joven"),
-        "/assets/juego/personajes/joven/joven-idle.png",
+        "/assets/juego/personajes/joven/joven-idle.webp",
       );
       assert.equal(
         getNarrativeCharacterIdleSrc("indigena"),
-        "/assets/juego/personajes/indigena/indigena-idle.png",
+        "/assets/juego/personajes/indigena/indigena-idle.webp",
       );
       assert.equal(
         getNarrativeCharacterIdleSrc("transgenero"),
-        "/assets/juego/personajes/trans/trans-idle.png",
+        "/assets/juego/personajes/trans/trans-idle.webp",
       );
       assert.equal(
         getNarrativeCharacterIdleSrc("discapacitado"),
-        "/assets/juego/personajes/discapacitado/side/discapacitado00086400.png",
+        "/assets/juego/personajes/discapacitado/side/discapacitado00086400.webp",
       );
     });
 
@@ -1330,7 +1330,7 @@ describe("Personaje Narrativo: La Anciana (Abuela) - Capítulo 2", () => {
 
       // 2. En la mesa: el personaje cambia a IDLE
       const idleSrc = getNarrativeCharacterIdleSrc("joven");
-      assert.equal(idleSrc, "/assets/juego/personajes/joven/joven-idle.png");
+      assert.equal(idleSrc, "/assets/juego/personajes/joven/joven-idle.webp");
 
       // 3. Al concluir la conversación: se retira hacia la derecha (x: 26 -> 102)
       let exitedScene = false;

@@ -49,23 +49,23 @@ describe("Sistema de NPCs Genéricos - Pruebas de Integración y Ciclo de Vida",
     test("getGenericNpcFrameSrc genera las rutas exactas con padding correcto", () => {
       assert.equal(
         getGenericNpcFrameSrc("back", 0),
-        "/assets/juego/personajes/generico/back/generico-back00086400.png",
+        "/assets/juego/personajes/generico/back/generico-back00086400.webp",
       );
       assert.equal(
         getGenericNpcFrameSrc("back", 22),
-        "/assets/juego/personajes/generico/back/generico-back00086422.png",
+        "/assets/juego/personajes/generico/back/generico-back00086422.webp",
       );
       assert.equal(
         getGenericNpcFrameSrc("front", 0),
-        "/assets/juego/personajes/generico/front/generico-front00086400.png",
+        "/assets/juego/personajes/generico/front/generico-front00086400.webp",
       );
       assert.equal(
         getGenericNpcFrameSrc("front", 27),
-        "/assets/juego/personajes/generico/front/generico-front00086427.png",
+        "/assets/juego/personajes/generico/front/generico-front00086427.webp",
       );
       assert.equal(
         getGenericNpcFrameSrc("idle", 0),
-        "/assets/juego/personajes/generico/generico-idle.png",
+        "/assets/juego/personajes/generico/generico-idle.webp",
       );
     });
   });

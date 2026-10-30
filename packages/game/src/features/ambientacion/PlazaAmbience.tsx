@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Sunbeams } from "./Sunbeams";
 import { AmbientParticles } from "./AmbientParticles";
 import { FallingPetals } from "./FallingPetals";
@@ -33,6 +33,14 @@ export const PlazaAmbience: React.FC<PlazaAmbienceProps> = React.memo(
     showButterflies = true,
     showPetals = true,
   }: PlazaAmbienceProps) {
+    const [lightweight, setLightweight] = useState(false);
+    useEffect(() => {
+      const media = window.matchMedia("(pointer: coarse), (prefers-reduced-motion: reduce)");
+      const update = () => setLightweight(media.matches);
+      update();
+      media.addEventListener("change", update);
+      return () => media.removeEventListener("change", update);
+    }, []);
     if (hidden) return null;
 
   return (
@@ -285,16 +293,16 @@ export const PlazaAmbience: React.FC<PlazaAmbienceProps> = React.memo(
       `}</style>
 
       {/* 1. RAYOS DE SOL (GOD RAYS) */}
-      {showSunbeams && <Sunbeams isPaused={isPaused} />}
+      {showSunbeams && !lightweight && <Sunbeams isPaused={isPaused} />}
 
       {/* 2. PARTÍCULAS AMBIENTALES DE POLEN Y POLVO DORADO */}
-      {showParticles && <AmbientParticles isPaused={isPaused} />}
+      {showParticles && !lightweight && <AmbientParticles isPaused={isPaused} />}
 
       {/* 3. PÉTALOS DE DALIA FLOTANTES */}
       {showPetals && <FallingPetals isPaused={isPaused} />}
 
       {/* 4. MARIPOSITAS VOLANDO EN ÁREAS VERDES */}
-      {showButterflies && <ButterfliesLayer isPaused={isPaused} />}
+      {showButterflies && !lightweight && <ButterfliesLayer isPaused={isPaused} />}
     </div>
   );
 });

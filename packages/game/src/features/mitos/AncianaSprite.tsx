@@ -28,7 +28,7 @@ export interface AncianaSpriteProps {
  * Componente visual para renderizar el sprite animado de la Anciana (Abuela).
  *
  * Reproduce las secuencias PNG a 24 FPS (~41.67ms por frame).
- * Cuando isWalking es false y está en la mesa, muestra el sprite oficial anciana-idle.png.
+ * Cuando isWalking es false y está en la mesa, muestra el sprite oficial anciana-idle.webp.
  */
 export const AncianaSprite = React.memo(function AncianaSprite({
   animation = "side",
@@ -45,8 +45,8 @@ export const AncianaSprite = React.memo(function AncianaSprite({
 
   // Precarga inicial de las animaciones en memoria
   useEffect(() => {
-    preloadAncianaImages();
-  }, []);
+    if (animation !== "idle") preloadAncianaImages(animation);
+  }, [animation]);
 
   // Reinicia el índice al cambiar de animación
   useEffect(() => {
@@ -69,10 +69,10 @@ export const AncianaSprite = React.memo(function AncianaSprite({
     return () => clearInterval(interval);
   }, [animation, isWalking, totalFrames, isPaused]);
 
-  // Si no está caminando en vista lateral o está en idle, cambia a anciana-idle.png
+  // Si no está caminando en vista lateral o está en idle, cambia a anciana-idle.webp
   const imageSrc =
     animation === "idle" || (animation === "side" && !isWalking)
-      ? "/assets/juego/personajes/anciana/anciana-idle.png"
+      ? "/assets/juego/personajes/anciana/anciana-idle.webp"
       : getAncianaFrameSrc(animation as AncianaAnimation, frameIndex);
 
   return (

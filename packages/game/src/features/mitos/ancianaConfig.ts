@@ -7,9 +7,9 @@ export type AncianaAnimation = "side" | "front" | "back";
 
 /**
  * Cantidad exacta de cuadros (frames) por animación de la anciana:
- * - side: 36 frames (anciana-side00086400.png a ...00086435.png)
- * - front: 29 frames (anciana-front00086400.png a ...00086428.png)
- * - back: 28 frames (anciana-back00086400.png a ...00086427.png)
+ * - side: 36 frames (anciana-side00086400.webp a ...00086435.webp)
+ * - front: 29 frames (anciana-front00086400.webp a ...00086428.webp)
+ * - back: 28 frames (anciana-back00086400.webp a ...00086427.webp)
  */
 export const ANCIANA_FRAME_COUNTS: Record<AncianaAnimation, number> = {
   side: 36,
@@ -25,7 +25,7 @@ export function getAncianaFrameSrc(
   frameIndex: number,
 ): string {
   const paddedIndex = String(frameIndex).padStart(2, "0");
-  return `/assets/juego/personajes/anciana/${animation}/anciana-${animation}000864${paddedIndex}.png`;
+  return `/assets/juego/personajes/anciana/${animation}/anciana-${animation}000864${paddedIndex}.webp`;
 }
 
 /**
@@ -43,10 +43,10 @@ export const PRELOADED_ANCIANA_IMAGES: Record<
 /**
  * Precarga en segundo plano los frames de las animaciones de la anciana.
  */
-export function preloadAncianaImages(): void {
+export function preloadAncianaImages(animation?: AncianaAnimation): void {
   if (typeof window === "undefined") return;
 
-  const animations: AncianaAnimation[] = ["side", "front", "back"];
+  const animations: AncianaAnimation[] = animation ? [animation] : ["side", "front", "back"];
   for (const anim of animations) {
     if (PRELOADED_ANCIANA_IMAGES[anim].length > 0) continue;
 
@@ -469,7 +469,7 @@ export const ABUELA_CONVERSATION_MESSAGES_ES: DialogueLine[] = [
     text: "Ahora dime tú: ¿qué sucede con el derecho al voto cuando una persona envejece?",
     target: "user",
     portraitOverride: {
-      leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.png",
+      leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.webp",
       dimRight: true,
     },
     trivia: {
@@ -627,7 +627,7 @@ export const ABUELA_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
     text: "Axan xinechilui tehuatzin: ¿tlen pano ika derecho al voto kuak se maseual moueuetia?",
     target: "user",
     portraitOverride: {
-      leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.png",
+      leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.webp",
       dimRight: true,
     },
     trivia: {
@@ -710,12 +710,12 @@ export interface PixelSpeechBubblePortraits {
  */
 export const ABUELA_CONVERSATION_PORTRAITS: PixelSpeechBubblePortraits = {
   left: {
-    src: "/assets/juego/dialogos/retrato-inecito.png",
+    src: "/assets/juego/dialogos/retrato-inecito.webp",
     alt: "Inecito",
     speakerNames: ["Inecito", "Inecito Cívica", "Inecito Civica"],
   },
   right: {
-    src: "/assets/juego/dialogos/retrato-carmen.png",
+    src: "/assets/juego/dialogos/retrato-carmen.webp",
     alt: "Doña Carmen",
     speakerNames: ["Doña Carmen", "Tenantzin Carmen", "Carmen", "Abuela"],
   },
@@ -817,11 +817,11 @@ export interface NarrativeCharacterAnimationInfo {
 
 /**
  * Configuración de animaciones de caminata lateral e imagen IDLE de los 5 personajes narrativos:
- * - anciana: 36 frames (anciana-side), idle en anciana-idle.png
- * - joven: 29 frames (chavo-side), idle en joven-idle.png
- * - indigena: 32 frames (indigena-side), idle en indigena-idle.png
- * - transgenero: 34 frames (trans-side), idle en trans-idle.png
- * - discapacitado: 40 frames (discapacitado00086400 a ...00086439), idle en discapacitado00086400.png
+ * - anciana: 36 frames (anciana-side), idle en anciana-idle.webp
+ * - joven: 29 frames (chavo-side), idle en joven-idle.webp
+ * - indigena: 32 frames (indigena-side), idle en indigena-idle.webp
+ * - transgenero: 34 frames (trans-side), idle en trans-idle.webp
+ * - discapacitado: 40 frames (discapacitado00086400 a ...00086439), idle en discapacitado00086400.webp
  */
 export const NARRATIVE_CHARACTERS_ANIMATION_CONFIG: Record<
   NarrativeCharacterId,
@@ -831,31 +831,31 @@ export const NARRATIVE_CHARACTERS_ANIMATION_CONFIG: Record<
     folder: "anciana",
     filePrefix: "anciana-side",
     frameCount: 36,
-    idleSrc: "/assets/juego/personajes/anciana/anciana-idle.png",
+    idleSrc: "/assets/juego/personajes/anciana/anciana-idle.webp",
   },
   joven: {
     folder: "joven",
     filePrefix: "chavo-side",
     frameCount: 29,
-    idleSrc: "/assets/juego/personajes/joven/joven-idle.png",
+    idleSrc: "/assets/juego/personajes/joven/joven-idle.webp",
   },
   indigena: {
     folder: "indigena",
     filePrefix: "indigena-side",
     frameCount: 32,
-    idleSrc: "/assets/juego/personajes/indigena/indigena-idle.png",
+    idleSrc: "/assets/juego/personajes/indigena/indigena-idle.webp",
   },
   transgenero: {
     folder: "trans",
     filePrefix: "trans-side",
     frameCount: 34,
-    idleSrc: "/assets/juego/personajes/trans/trans-idle.png",
+    idleSrc: "/assets/juego/personajes/trans/trans-idle.webp",
   },
   discapacitado: {
     folder: "discapacitado",
     filePrefix: "discapacitado",
     frameCount: 40,
-    idleSrc: "/assets/juego/personajes/discapacitado/side/discapacitado00086400.png",
+    idleSrc: "/assets/juego/personajes/discapacitado/side/discapacitado00086400.webp",
   },
 };
 
@@ -870,7 +870,7 @@ export function getNarrativeCharacterSideFrameSrc(
   if (!config || config.frameCount <= 0) return "";
   const safeIndex = Math.max(0, Math.min(frameIndex, config.frameCount - 1));
   const paddedIndex = String(safeIndex).padStart(2, "0");
-  return `/assets/juego/personajes/${config.folder}/side/${config.filePrefix}000864${paddedIndex}.png`;
+  return `/assets/juego/personajes/${config.folder}/side/${config.filePrefix}000864${paddedIndex}.webp`;
 }
 
 /**
@@ -931,10 +931,10 @@ export const PRELOADED_NARRATIVE_IMAGES: Record<
 /**
  * Precarga en segundo plano los frames y sprites idle de los personajes narrativos.
  */
-export function preloadNarrativeCharactersImages(): void {
+export function preloadNarrativeCharactersImages(characterId?: NarrativeCharacterId): void {
   if (typeof window === "undefined") return;
 
-  const charIds = Object.keys(
+  const charIds = characterId ? [characterId] : Object.keys(
     NARRATIVE_CHARACTERS_ANIMATION_CONFIG,
   ) as NarrativeCharacterId[];
   for (const charId of charIds) {
@@ -1148,7 +1148,7 @@ export const JOVEN_CONVERSATION_MESSAGES_ES: DialogueLine[] = [
     text: "Si somos millones de personas, ¿por qué importa participar en las elecciones?",
     target: "user",
     portraitOverride: {
-      leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.png",
+      leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.webp",
       dimRight: true,
     },
     trivia: {
@@ -1243,7 +1243,7 @@ export const JOVEN_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
     text: "Xikita tehuatzin... ¿Tleka moneki timotlapejpenis itech tlapejpenalistli?",
     target: "user",
     portraitOverride: {
-      leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.png",
+      leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.webp",
       dimRight: true,
     },
     trivia: {
@@ -1459,7 +1459,7 @@ export const INDIGENA_CONVERSATION_MESSAGES_ES: DialogueLine[] = [
     text: "¡Ahora te toca a ti! ¿Los votos de las comunidades indígenas tienen menos valor que los de las grandes ciudades?",
     target: "user",
     portraitOverride: {
-      leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.png",
+      leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.webp",
       dimRight: true,
     },
     trivia: {
@@ -1554,7 +1554,7 @@ export const INDIGENA_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
     text: "¿In votos de maseualaltepemeh kachi tepiton valor kipiah que de uey altepemeh?",
     target: "user",
     portraitOverride: {
-      leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.png",
+      leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.webp",
       dimRight: true,
     },
     trivia: {
@@ -1760,7 +1760,7 @@ export const TRANS_CONVERSATION_MESSAGES_ES: DialogueLine[] = [
     text: "¿Qué sucede si la apariencia de una persona trans no coincide con la fotografía de su credencial para votar?",
     target: "user",
     portraitOverride: {
-      leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.png",
+      leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.webp",
       dimRight: true,
     },
     trivia: {
@@ -1855,7 +1855,7 @@ export const TRANS_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
     text: "¿Uelis kintsakuiliseh in voto in maseualmeh trans?",
     target: "user",
     portraitOverride: {
-      leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.png",
+      leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.webp",
       dimRight: true,
     },
     trivia: {
@@ -2066,7 +2066,7 @@ export const DISCAPACITADO_CONVERSATION_MESSAGES_ES: DialogueLine[] = [
     text: "¡Ahora quiero comprobar lo que aprendiste! Si una persona utiliza silla de ruedas, ¿qué debemos hacer para que pueda votar?",
     target: "user",
     portraitOverride: {
-      leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.png",
+      leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.webp",
       dimRight: true,
     },
     trivia: {
@@ -2161,7 +2161,7 @@ export const DISCAPACITADO_CONVERSATION_MESSAGES_NAH: DialogueLine[] = [
     text: "¿Tlen tlamantli kipia INE pampa accesibilidad?",
     target: "user",
     portraitOverride: {
-      leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.png",
+      leftSrc: "/assets/juego/dialogos/retrato-inecito-pregunta.webp",
       dimRight: true,
     },
     trivia: {
@@ -2233,7 +2233,7 @@ export const NARRATIVE_CHARACTERS_CONFIG: Record<
     nameEs: "Doña Carmen",
     nameNah: "Tenantzin Carmen",
     speakerColor: DIALOGUE_SPEAKER_COLORS.carmen,
-    portraitSrc: "/assets/juego/dialogos/retrato-carmen.png",
+    portraitSrc: "/assets/juego/dialogos/retrato-carmen.webp",
     altText: "Doña Carmen",
     speakerNames: ["Doña Carmen", "Tenantzin Carmen", "Carmen", "Abuela"],
     arrivalMessagesEs: ANCIANA_ARRIVAL_MESSAGES_ES,
@@ -2246,7 +2246,7 @@ export const NARRATIVE_CHARACTERS_CONFIG: Record<
     nameEs: "Mateo",
     nameNah: "Telpokatl Mateo",
     speakerColor: DIALOGUE_SPEAKER_COLORS.joven,
-    portraitSrc: "/assets/juego/dialogos/retrato-joven.png",
+    portraitSrc: "/assets/juego/dialogos/retrato-joven.webp",
     altText: "Mateo",
     speakerNames: [
       "Mateo",
@@ -2265,7 +2265,7 @@ export const NARRATIVE_CHARACTERS_CONFIG: Record<
     nameEs: "María",
     nameNah: "Maseualsiuatl María",
     speakerColor: DIALOGUE_SPEAKER_COLORS.indigena,
-    portraitSrc: "/assets/juego/dialogos/retrato-indigena.png",
+    portraitSrc: "/assets/juego/dialogos/retrato-indigena.webp",
     altText: "María",
     speakerNames: [
       "María",
@@ -2287,7 +2287,7 @@ export const NARRATIVE_CHARACTERS_CONFIG: Record<
     nameEs: "Alex",
     nameNah: "Alex",
     speakerColor: DIALOGUE_SPEAKER_COLORS.transgenero,
-    portraitSrc: "/assets/juego/dialogos/retrato-trans.png",
+    portraitSrc: "/assets/juego/dialogos/retrato-trans.webp",
     altText: "Alex",
     speakerNames: [
       "Alex",
@@ -2307,7 +2307,7 @@ export const NARRATIVE_CHARACTERS_CONFIG: Record<
     nameEs: "Don Roberto",
     nameNah: "Tlacatl Roberto",
     speakerColor: DIALOGUE_SPEAKER_COLORS.discapacitado,
-    portraitSrc: "/assets/juego/dialogos/retrato-discapacitado.png",
+    portraitSrc: "/assets/juego/dialogos/retrato-discapacitado.webp",
     altText: "Don Roberto",
     speakerNames: [
       "Don Roberto",
@@ -2333,7 +2333,7 @@ export function getNarrativeCharacterPortraits(
   const config = NARRATIVE_CHARACTERS_CONFIG[characterId];
   return {
     left: {
-      src: "/assets/juego/dialogos/retrato-inecito.png",
+      src: "/assets/juego/dialogos/retrato-inecito.webp",
       alt: "Inecito",
       speakerNames: ["Inecito", "Inecito Cívica", "Inecito Civica"],
     },

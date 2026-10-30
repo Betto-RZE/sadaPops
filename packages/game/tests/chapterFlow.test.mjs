@@ -50,21 +50,21 @@ describe("Registro de capitulos", () => {
   });
 
   test("los tres recuadros tienen su arte final asignado", () => {
-    assert.equal(CHAPTERS[0].cardImage?.src, "/assets/juego/capitulos/capitulo-1.png");
-    assert.equal(CHAPTERS[1].cardImage?.src, "/assets/juego/capitulos/capitulo-2.png");
-    assert.equal(CHAPTERS[2].cardImage?.src, "/assets/juego/capitulos/capitulo-3.png");
+    assert.equal(CHAPTERS[0].cardImage?.src, "/assets/juego/capitulos/capitulo-1.webp");
+    assert.equal(CHAPTERS[1].cardImage?.src, "/assets/juego/capitulos/capitulo-2.webp");
+    assert.equal(CHAPTERS[2].cardImage?.src, "/assets/juego/capitulos/capitulo-3.webp");
   });
 
   test("preparacion para imagenes futuras: acepta cardImage sin alterar navegacion", () => {
     // Demuestra que asignar una imagen en el futuro es puramente declarativo
     const customImage = {
-      src: "/assets/juego/capitulos/capitulo-1.png",
+      src: "/assets/juego/capitulos/capitulo-1.webp",
       alt: "Mamparas y plaza",
       fit: "cover",
       position: "center top",
     };
     const chapterWithImage = { ...CHAPTERS[0], cardImage: customImage };
-    assert.equal(chapterWithImage.cardImage.src, "/assets/juego/capitulos/capitulo-1.png");
+    assert.equal(chapterWithImage.cardImage.src, "/assets/juego/capitulos/capitulo-1.webp");
     assert.equal(resolveChapterCompletion(GAME_MODES.SINGLE_CHAPTER, chapterWithImage.id).kind, "RETURN_TO_MENU");
   });
 

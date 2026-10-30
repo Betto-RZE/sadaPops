@@ -1218,9 +1218,9 @@ export default function Chapter2Scene({
             }}
             className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
           >
-            <CastShadow src="/assets/juego/casilla.png" preset="tall" />
+            <CastShadow src="/assets/juego/casilla.webp" preset="tall" />
             <img
-              src="/assets/juego/casilla.png"
+              src="/assets/juego/casilla.webp"
               alt={`Casilla Electoral ${index + 1}`}
               className="relative z-10 w-full h-auto object-contain"
               style={{ imageRendering: "pixelated" }}
@@ -1244,9 +1244,9 @@ export default function Chapter2Scene({
           }}
           className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
         >
-          <CastShadow src="/assets/juego/mesa.png" preset="mesa" />
+          <CastShadow src="/assets/juego/mesa.webp" preset="mesa" />
           <img
-            src="/assets/juego/mesa.png"
+            src="/assets/juego/mesa.webp"
             alt="Mesa Directiva de Casilla"
             className="relative z-10 w-full h-auto object-contain"
             style={{ imageRendering: "pixelated" }}
@@ -1285,7 +1285,7 @@ export default function Chapter2Scene({
               className="relative flex items-center justify-center pointer-events-auto"
             >
               <img
-                src="/assets/juego/exclamacion.png"
+                src="/assets/juego/exclamacion.webp"
                 alt="Conversar con el votante"
                 className="w-full h-auto object-contain drop-shadow-[0_2px_5px_rgba(0,0,0,0.6)]"
                 style={{ imageRendering: "pixelated" }}
@@ -1372,7 +1372,7 @@ export default function Chapter2Scene({
               className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
             >
               <img
-                src="/assets/juego/boleta.png"
+                src="/assets/juego/boleta.webp"
                 alt={`Boleta Electoral ${index + 1}`}
                 className="relative z-10 w-full h-auto object-contain"
                 style={{ imageRendering: "pixelated" }}
@@ -1383,14 +1383,14 @@ export default function Chapter2Scene({
 
         {/* ARBUSTOS EN PRIMER PLANO */}
         <img
-          src="/assets/juego/arbusto-izquierda.png"
+          src="/assets/juego/arbusto-izquierda.webp"
           alt=""
           aria-hidden="true"
           className="absolute bottom-0 left-0 w-[30.6%] h-auto object-contain pointer-events-none select-none z-30"
           style={{ imageRendering: "pixelated" }}
         />
         <img
-          src="/assets/juego/arbusto-derecha.png"
+          src="/assets/juego/arbusto-derecha.webp"
           alt=""
           aria-hidden="true"
           className="absolute bottom-0 right-0 w-[26%] h-auto object-contain pointer-events-none select-none z-30"

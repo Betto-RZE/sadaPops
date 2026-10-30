@@ -13,6 +13,7 @@ export function PixelFullscreenButton({
     <button
       onClick={onToggle}
       type="button"
+      aria-pressed={isFullscreen}
       title={isFullscreen ? 'Salir de pantalla completa (F)' : 'Pantalla completa (F)'}
       aria-label={
         isFullscreen ? 'Salir de pantalla completa (F)' : 'Pantalla completa (F)'

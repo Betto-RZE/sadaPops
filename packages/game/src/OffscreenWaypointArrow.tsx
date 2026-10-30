@@ -68,7 +68,7 @@ export const OffscreenWaypointArrow = React.memo(
           className="flex items-center justify-center filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.7)]"
         >
           <img
-            src="/assets/juego/flecha-rosa.png"
+            src="/assets/juego/flecha-rosa.webp"
             alt="Flecha indicadora de objetivo"
             className="w-[clamp(28px,4.2cqw,96px)] h-[clamp(28px,4.2cqw,96px)] object-contain select-none pointer-events-none"
             style={{ imageRendering: "pixelated" }}

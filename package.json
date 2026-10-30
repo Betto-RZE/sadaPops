@@ -9,7 +9,8 @@
     "build-map": "tsx scripts/build-map.ts",
     "build-flowers": "tsx scripts/build-flowers.ts",
     "build-petals": "tsx scripts/build-petals.ts",
-    "compare-map": "tsx scripts/compare-map.ts"
+    "compare-map": "tsx scripts/compare-map.ts",
+    "optimize-game-assets": "node scripts/optimize-game-assets.mjs"
   },
   "devDependencies": {
     "@types/d3-geo": "^3.1.1",

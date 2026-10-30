@@ -22,7 +22,7 @@ export function preloadPlayerFolder(folder: string) {
   const count = PLAYER_FRAME_COUNTS[folder] || 20;
   for (let i = 0; i < count; i++) {
     const img = new Image();
-    img.src = `/assets/juego/player/${folder}/${i}.png`;
+    img.src = `/assets/juego/player/${folder}/${i}.webp`;
     PRELOADED_PLAYER_IMAGES[folder].push(img);
   }
 }
@@ -67,13 +67,14 @@ export const AnimatedPlayerSprite = React.memo(function AnimatedPlayerSprite({
   useEffect(() => {
     const fps24Interval = 1000 / 24;
     const interval = setInterval(() => {
+      if (document.hidden) return;
       setFrameIndex((prev) => (prev + 1) % totalFrames);
     }, fps24Interval);
 
     return () => clearInterval(interval);
   }, [currentFolder, totalFrames]);
 
-  const imageSrc = `/assets/juego/player/${currentFolder}/${frameIndex}.png`;
+  const imageSrc = `/assets/juego/player/${currentFolder}/${frameIndex}.webp`;
 
   return (
     <div className="relative flex flex-col items-center justify-center w-full shrink-0">

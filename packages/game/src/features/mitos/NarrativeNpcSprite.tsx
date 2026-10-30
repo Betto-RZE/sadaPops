@@ -44,22 +44,8 @@ export const NarrativeNpcSprite = React.memo(function NarrativeNpcSprite({
 }: NarrativeNpcSpriteProps) {
   // Precarga inicial de sprites en memoria
   useEffect(() => {
-    preloadNarrativeCharactersImages();
-  }, []);
-
-  if (characterId === "anciana") {
-    return (
-      <AncianaSprite
-        animation="side"
-        isWalking={isWalking}
-        facingDirection={facingDirection}
-        isPaused={isPaused}
-        className={className}
-        style={style}
-        altText={altText || "Doña Carmen"}
-      />
-    );
-  }
+    if (characterId !== "anciana") preloadNarrativeCharactersImages(characterId);
+  }, [characterId]);
 
   const animConfig = NARRATIVE_CHARACTERS_ANIMATION_CONFIG[characterId];
   const charConfig = NARRATIVE_CHARACTERS_CONFIG[characterId];
@@ -87,6 +73,20 @@ export const NarrativeNpcSprite = React.memo(function NarrativeNpcSprite({
 
     return () => clearInterval(interval);
   }, [characterId, isWalking, totalFrames, isPaused]);
+
+  if (characterId === "anciana") {
+    return (
+      <AncianaSprite
+        animation="side"
+        isWalking={isWalking}
+        facingDirection={facingDirection}
+        isPaused={isPaused}
+        className={className}
+        style={style}
+        altText={altText || "Doña Carmen"}
+      />
+    );
+  }
 
   // Si cuenta con frames de caminata o sprite idle oficial (joven, indigena, transgenero)
   if (animConfig && (totalFrames > 0 || animConfig.idleSrc)) {

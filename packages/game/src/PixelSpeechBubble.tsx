@@ -406,7 +406,7 @@ export function PixelSpeechBubble({
 
       {/* Pixel Art Dialogue Balloon Image Asset (Cropped to exact border) */}
       <img
-        src="/assets/juego/globo-texto.png"
+        src="/assets/juego/globo-texto.webp"
         alt="Globo de Texto"
         className="absolute inset-0 w-full h-full object-fill pointer-events-none z-10 drop-shadow-[0_8px_20px_rgba(0,0,0,0.65)]"
         style={{ imageRendering: "pixelated" }}

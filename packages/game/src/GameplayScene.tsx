@@ -87,28 +87,28 @@ export const DECORACIONES_LIST = [
     id: "cartel-1",
     key: "cartel1" as const,
     name: "Cartel Informativo 1",
-    sprite: "/assets/juego/cartel-1.png",
+    sprite: "/assets/juego/cartel-1.webp",
     width: DECORACIONES_SIZES.cartel1,
   },
   {
     id: "cartel-2",
     key: "cartel2" as const,
     name: "Cartel Informativo 2",
-    sprite: "/assets/juego/cartel-2.png",
+    sprite: "/assets/juego/cartel-2.webp",
     width: DECORACIONES_SIZES.cartel2,
   },
   {
     id: "folleto",
     key: "folleto" as const,
     name: "Folleto Cívico",
-    sprite: "/assets/juego/folleto.png",
+    sprite: "/assets/juego/folleto.webp",
     width: DECORACIONES_SIZES.folleto,
   },
   {
     id: "cartel-3",
     key: "cartel3" as const,
     name: "Letrero de Votación",
-    sprite: "/assets/juego/cartel-3.png",
+    sprite: "/assets/juego/cartel-3.webp",
     width: DECORACIONES_SIZES.cartel3,
   },
 ];
@@ -1645,7 +1645,7 @@ export default function GameplayScene({
                 }}
               >
                 <img
-                  src="/assets/juego/exclamacion.png"
+                  src="/assets/juego/exclamacion.webp"
                   alt="Interacción disponible"
                   className="w-full h-auto object-contain drop-shadow-[0_2px_5px_rgba(0,0,0,0.6)]"
                   style={{ imageRendering: "pixelated" }}
@@ -1679,12 +1679,12 @@ export default function GameplayScene({
               </div>
             )}
 
-            {/* Sprite de la caja (caja-1.png hasta caja-5.png) */}
+            {/* Sprite de la caja (caja-1.webp hasta caja-5.webp) */}
             <img
-              src={`/assets/juego/caja-${boxStage}.png`}
+              src={`/assets/juego/caja-${boxStage}.webp`}
               onError={(e) => {
-                // Fallback a caja-1.png si la imagen de la fase aún no existe en la carpeta
-                e.currentTarget.src = "/assets/juego/caja-1.png";
+                // Fallback a caja-1.webp si la imagen de la fase aún no existe en la carpeta
+                e.currentTarget.src = "/assets/juego/caja-1.webp";
               }}
               alt={`Caja Minijuego Fase ${boxStage}`}
               className="relative z-10 w-full h-auto object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]"
@@ -1726,7 +1726,7 @@ export default function GameplayScene({
                   }}
                 >
                   <img
-                    src="/assets/juego/exclamacion.png"
+                    src="/assets/juego/exclamacion.webp"
                     alt="Ubicación disponible"
                     className="w-full h-auto object-contain drop-shadow-[0_2px_5px_rgba(0,0,0,0.6)]"
                     style={{ imageRendering: "pixelated" }}
@@ -1793,7 +1793,7 @@ export default function GameplayScene({
                   }}
                 >
                   <img
-                    src="/assets/juego/exclamacion.png"
+                    src="/assets/juego/exclamacion.webp"
                     alt="Ubicación disponible"
                     className="w-full h-auto object-contain drop-shadow-[0_2px_5px_rgba(0,0,0,0.6)]"
                     style={{ imageRendering: "pixelated" }}
@@ -1859,7 +1859,7 @@ export default function GameplayScene({
                   }}
                 >
                   <img
-                    src="/assets/juego/exclamacion.png"
+                    src="/assets/juego/exclamacion.webp"
                     alt="Ubicación disponible"
                     className="w-full h-auto object-contain drop-shadow-[0_2px_5px_rgba(0,0,0,0.6)]"
                     style={{ imageRendering: "pixelated" }}
@@ -1924,7 +1924,7 @@ export default function GameplayScene({
                   }}
                 >
                   <img
-                    src="/assets/juego/exclamacion.png"
+                    src="/assets/juego/exclamacion.webp"
                     alt="Ubicación disponible"
                     className="w-full h-auto object-contain drop-shadow-[0_2px_5px_rgba(0,0,0,0.6)]"
                     style={{ imageRendering: "pixelated" }}
@@ -1991,7 +1991,7 @@ export default function GameplayScene({
                   }}
                 >
                   <img
-                    src="/assets/juego/exclamacion.png"
+                    src="/assets/juego/exclamacion.webp"
                     alt="Hablar con funcionarios de mesa"
                     className="w-full h-auto object-contain drop-shadow-[0_2px_5px_rgba(0,0,0,0.6)]"
                     style={{ imageRendering: "pixelated" }}
@@ -2049,9 +2049,9 @@ export default function GameplayScene({
               className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
             >
               {/* Sprite pixel art de la casilla electoral + sombra proyectada con su silueta */}
-              <CastShadow src="/assets/juego/casilla.png" preset="tall" />
+              <CastShadow src="/assets/juego/casilla.webp" preset="tall" />
               <img
-                src="/assets/juego/casilla.png"
+                src="/assets/juego/casilla.webp"
                 alt={`Casilla Electoral ${index + 1}`}
                 className="relative z-10 w-full h-auto object-contain"
                 style={{ imageRendering: "pixelated" }}
@@ -2078,9 +2078,9 @@ export default function GameplayScene({
             className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
           >
             {/* Sprite pixel art de la mesa de votación + sombra en el suelo */}
-            <CastShadow src="/assets/juego/mesa.png" preset="mesa" />
+            <CastShadow src="/assets/juego/mesa.webp" preset="mesa" />
             <img
-              src="/assets/juego/mesa.png"
+              src="/assets/juego/mesa.webp"
               alt="Mesa Directiva de Casilla"
               className="relative z-10 w-full h-auto object-contain"
               style={{ imageRendering: "pixelated" }}
@@ -2159,7 +2159,7 @@ export default function GameplayScene({
             >
               {/* Sprite pixel art de la boleta electoral */}
               <img
-                src="/assets/juego/boleta.png"
+                src="/assets/juego/boleta.webp"
                 alt={`Boleta Electoral ${index + 1}`}
                 className="relative z-10 w-full h-auto object-contain"
                 style={{ imageRendering: "pixelated" }}
@@ -2170,13 +2170,13 @@ export default function GameplayScene({
 
         {/* FOREGROUND BUSH OVERLAYS (Positioned at z-30 above player so character walks behind them) */}
         <img
-          src="/assets/juego/arbusto-izquierda.png"
+          src="/assets/juego/arbusto-izquierda.webp"
           alt="Arbustos Izquierda"
           className="absolute bottom-0 left-0 w-[30.6%] h-auto object-contain pointer-events-none select-none z-30"
           style={{ imageRendering: "pixelated" }}
         />
         <img
-          src="/assets/juego/arbusto-derecha.png"
+          src="/assets/juego/arbusto-derecha.webp"
           alt="Arbustos Derecha"
           className="absolute bottom-0 right-0 w-[26%] h-auto object-contain pointer-events-none select-none z-30"
           style={{ imageRendering: "pixelated" }}

@@ -27,8 +27,8 @@ const loadStoryScenes = () => import("./StoryChapterScenes");
 const StoryChapterScenes = lazy(loadStoryScenes);
 
 /** Empieza a descargar el chunk del capitulo mientras se cierra el iris. */
-export function preloadChapterScene(chapterId: ChapterId): void {
-  if (chapterId === 1 || chapterId === 2 || chapterId === 3) void loadStoryScenes();
+export async function preloadChapterScene(chapterId: ChapterId): Promise<void> {
+  if (chapterId === 1 || chapterId === 2 || chapterId === 3) await loadStoryScenes();
 }
 
 /**

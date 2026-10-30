@@ -33,7 +33,7 @@ export function RotateDeviceOverlay({
     let mql: MediaQueryList | null = null;
     if (typeof window !== "undefined" && window.matchMedia) {
       mql = window.matchMedia("(orientation: portrait)");
-      const handler = () => checkOrientation();
+      const handler = checkOrientation;
       if (mql.addEventListener) {
         mql.addEventListener("change", handler);
       } else {

@@ -166,8 +166,9 @@ export function VirtualGamepad({
       `}</style>
 
       {/* D-PAD (CRUCETA) EN ESQUINA INFERIOR IZQUIERDA */}
-      <div className="absolute bottom-[4%] left-[3.5%] pointer-events-auto flex items-center justify-center">
-        <div className="relative w-28 h-28 sm:w-32 sm:h-32 bg-[#12151c]/70 p-1 rounded-2xl border-2 border-black/80 backdrop-blur-xs shadow-[4px_4px_0px_rgba(0,0,0,0.6)]">
+      <div className="absolute bottom-[4%] left-[3.5%] pointer-events-auto flex items-center justify-center"
+        style={{ transform: "scale(var(--gamepad-scale, 1))", transformOrigin: "bottom left" }}>
+        <div className="relative w-[var(--gamepad-pad-size,144px)] h-[var(--gamepad-pad-size,144px)] bg-[#12151c]/70 p-1 rounded-2xl border-2 border-black/80 backdrop-blur-xs shadow-[4px_4px_0px_rgba(0,0,0,0.6)]">
           {/* Botón Arriba */}
           <button
             type="button"
@@ -176,7 +177,7 @@ export function VirtualGamepad({
             onPointerUp={(e) => handleDirEnd("up", e)}
             onPointerCancel={(e) => handleDirEnd("up", e)}
             onPointerLeave={(e) => handleDirEnd("up", e)}
-            className={`gamepad-touch-btn absolute top-1 left-1/2 -translate-x-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-t-lg border-2 border-black flex items-center justify-center font-black text-xs text-white transition-transform ${
+            className={`gamepad-touch-btn absolute top-1 left-1/2 -translate-x-1/2 w-[var(--gamepad-direction-size,44px)] h-[var(--gamepad-direction-size,44px)] rounded-t-lg border-2 border-black flex items-center justify-center font-black text-base text-white transition-transform ${
               activeDirections.up
                 ? "bg-[#E3007E] scale-95 shadow-inner"
                 : "bg-[#282d37] hover:bg-[#343b47] shadow-[0_2px_0_#000]"
@@ -193,7 +194,7 @@ export function VirtualGamepad({
             onPointerUp={(e) => handleDirEnd("left", e)}
             onPointerCancel={(e) => handleDirEnd("left", e)}
             onPointerLeave={(e) => handleDirEnd("left", e)}
-            className={`gamepad-touch-btn absolute left-1 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-l-lg border-2 border-black flex items-center justify-center font-black text-xs text-white transition-transform ${
+            className={`gamepad-touch-btn absolute left-1 top-1/2 -translate-y-1/2 w-[var(--gamepad-direction-size,44px)] h-[var(--gamepad-direction-size,44px)] rounded-l-lg border-2 border-black flex items-center justify-center font-black text-base text-white transition-transform ${
               activeDirections.left
                 ? "bg-[#E3007E] scale-95 shadow-inner"
                 : "bg-[#282d37] hover:bg-[#343b47] shadow-[0_2px_0_#000]"
@@ -203,7 +204,7 @@ export function VirtualGamepad({
           </button>
 
           {/* Centro decorativo neutro */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 bg-[#1e222a] border-black flex items-center justify-center pointer-events-none">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[var(--gamepad-direction-size,44px)] h-[var(--gamepad-direction-size,44px)] bg-[#1e222a] border-black flex items-center justify-center pointer-events-none">
             <div className="w-2.5 h-2.5 rounded-full bg-black/60" />
           </div>
 
@@ -215,7 +216,7 @@ export function VirtualGamepad({
             onPointerUp={(e) => handleDirEnd("right", e)}
             onPointerCancel={(e) => handleDirEnd("right", e)}
             onPointerLeave={(e) => handleDirEnd("right", e)}
-            className={`gamepad-touch-btn absolute right-1 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-r-lg border-2 border-black flex items-center justify-center font-black text-xs text-white transition-transform ${
+            className={`gamepad-touch-btn absolute right-1 top-1/2 -translate-y-1/2 w-[var(--gamepad-direction-size,44px)] h-[var(--gamepad-direction-size,44px)] rounded-r-lg border-2 border-black flex items-center justify-center font-black text-base text-white transition-transform ${
               activeDirections.right
                 ? "bg-[#E3007E] scale-95 shadow-inner"
                 : "bg-[#282d37] hover:bg-[#343b47] shadow-[0_2px_0_#000]"
@@ -232,7 +233,7 @@ export function VirtualGamepad({
             onPointerUp={(e) => handleDirEnd("down", e)}
             onPointerCancel={(e) => handleDirEnd("down", e)}
             onPointerLeave={(e) => handleDirEnd("down", e)}
-            className={`gamepad-touch-btn absolute bottom-1 left-1/2 -translate-x-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-b-lg border-2 border-black flex items-center justify-center font-black text-xs text-white transition-transform ${
+            className={`gamepad-touch-btn absolute bottom-1 left-1/2 -translate-x-1/2 w-[var(--gamepad-direction-size,44px)] h-[var(--gamepad-direction-size,44px)] rounded-b-lg border-2 border-black flex items-center justify-center font-black text-base text-white transition-transform ${
               activeDirections.down
                 ? "bg-[#E3007E] scale-95 shadow-inner"
                 : "bg-[#282d37] hover:bg-[#343b47] shadow-[0_2px_0_#000]"
@@ -244,7 +245,8 @@ export function VirtualGamepad({
       </div>
 
       {/* BOTÓN DE ACCIÓN "E" EN ESQUINA INFERIOR DERECHA */}
-      <div className="absolute bottom-[5%] right-[4%] pointer-events-auto flex flex-col items-center">
+      <div className="absolute bottom-[5%] right-[4%] pointer-events-auto flex flex-col items-center"
+        style={{ transform: "scale(var(--gamepad-scale, 1))", transformOrigin: "bottom right" }}>
         <button
           type="button"
           aria-label="Interactuar (Tecla E)"
@@ -252,7 +254,7 @@ export function VirtualGamepad({
           onPointerUp={handleActionEnd}
           onPointerCancel={handleActionEnd}
           onPointerLeave={handleActionEnd}
-          className={`gamepad-touch-btn w-13 h-13 sm:w-15 sm:h-15 rounded-full border-3 border-black flex items-center justify-center font-black text-xl text-white transition-all shadow-[4px_4px_0px_#000] cursor-pointer ${
+          className={`gamepad-touch-btn w-[var(--gamepad-action-size,76px)] h-[var(--gamepad-action-size,76px)] rounded-full border-[3px] border-black flex items-center justify-center font-black text-[length:var(--gamepad-action-font,24px)] text-white transition-all shadow-[4px_4px_0px_#000] cursor-pointer ${
             isActionPressed
               ? "bg-[#940d57] scale-95 translate-x-1 translate-y-1 shadow-none"
               : "bg-gradient-to-b from-[#E3007E] to-[#b5146c] hover:brightness-105 active:scale-95"
@@ -262,7 +264,7 @@ export function VirtualGamepad({
           E
         </button>
         <span
-          className="text-[8px] sm:text-[9px] font-mono font-bold text-white uppercase mt-1 tracking-wider [text-shadow:1px_1px_0_#000]"
+          className="text-[length:var(--gamepad-label-font,10px)] font-mono font-bold text-white uppercase mt-1 tracking-wider [text-shadow:1px_1px_0_#000]"
           style={{ fontFamily: "'Pixelify Sans', sans-serif" }}
         >
           INTERACTUAR

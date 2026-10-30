@@ -35,7 +35,7 @@ export type ChapterId = 1 | 2 | 3;
 
 /** Imagen de fondo del recuadro de un capitulo en la pantalla de seleccion. */
 export interface ChapterCardImage {
-  /** Ruta publica, p. ej. "/assets/juego/capitulos/capitulo-1.png" */
+  /** Ruta publica, p. ej. "/assets/juego/capitulos/capitulo-1.webp" */
   src: string;
   /** Texto alternativo para lectores de pantalla */
   alt: string;
@@ -63,7 +63,7 @@ export const CHAPTERS: readonly ChapterDefinition[] = [
     number: 1,
     title: "Funcionario de casilla",
     cardImage: {
-      src: "/assets/juego/capitulos/capitulo-1.png",
+      src: "/assets/juego/capitulos/capitulo-1.webp",
       alt: "Capítulo 1: Funcionario de casilla preparando material electoral",
       fit: "cover",
       position: "center",
@@ -74,7 +74,7 @@ export const CHAPTERS: readonly ChapterDefinition[] = [
     number: 2,
     title: "Desmintiendo mitos",
     cardImage: {
-      src: "/assets/juego/capitulos/capitulo-2.png",
+      src: "/assets/juego/capitulos/capitulo-2.webp",
       alt: "Capítulo 2: Desmintiendo mitos con la ciudadanía",
       fit: "cover",
       position: "center",
@@ -85,7 +85,7 @@ export const CHAPTERS: readonly ChapterDefinition[] = [
     number: 3,
     title: "Aprende a votar",
     cardImage: {
-      src: "/assets/juego/capitulos/capitulo-3.png",
+      src: "/assets/juego/capitulos/capitulo-3.webp",
       alt: "Capítulo 3: Aprende a votar",
       fit: "cover",
       position: "center",

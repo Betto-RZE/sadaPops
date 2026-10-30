@@ -93,7 +93,7 @@ export type PostVotingPhase =
 export const URNA_POSITION = { x: 17.5, y: 56.0 };
 export const URNA_EXCLAMATION_POSITION = { x: 17.5, y: 49.0 };
 
-/** Márgenes del papel dentro de la imagen boleta-electoral.png */
+/** Márgenes del papel dentro de la imagen boleta-electoral.webp */
 const BALLOT_PAPER_INSET_X = "2.8%";
 const BALLOT_PAPER_INSET_TOP = "2.2%";
 const BALLOT_PAPER_INSET_BOTTOM = "2.1%";
@@ -472,7 +472,7 @@ const isPositionWalkable = (x: number, y: number): boolean => {
 
 export default function Chapter3Scene({
   language = "es",
-  stageImageUrl = "/assets/juego/escenario.png",
+  stageImageUrl = "/assets/juego/escenario.webp",
   isFullscreen,
   isTransitioning,
   isPaused,
@@ -1350,9 +1350,9 @@ export default function Chapter3Scene({
             }}
             className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
           >
-            <CastShadow src="/assets/juego/casilla.png" preset="tall" />
+            <CastShadow src="/assets/juego/casilla.webp" preset="tall" />
             <img
-              src="/assets/juego/casilla.png"
+              src="/assets/juego/casilla.webp"
               alt={`Mampara Electoral ${index + 1}`}
               className="relative z-10 w-full h-auto object-contain"
               style={{ imageRendering: "pixelated" }}
@@ -1376,9 +1376,9 @@ export default function Chapter3Scene({
           }}
           className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
         >
-          <CastShadow src="/assets/juego/mesa.png" preset="mesa" />
+          <CastShadow src="/assets/juego/mesa.webp" preset="mesa" />
           <img
-            src="/assets/juego/mesa.png"
+            src="/assets/juego/mesa.webp"
             alt="Mesa Directiva de Casilla"
             className="relative z-10 w-full h-auto object-contain"
             style={{ imageRendering: "pixelated" }}
@@ -1437,7 +1437,7 @@ export default function Chapter3Scene({
               className="absolute pointer-events-none flex flex-col items-center select-none shrink-0"
             >
               <img
-                src="/assets/juego/boleta.png"
+                src="/assets/juego/boleta.webp"
                 alt={`Boleta Electoral ${index + 1}`}
                 className="relative z-10 w-full h-auto object-contain"
                 style={{ imageRendering: "pixelated" }}
@@ -1448,14 +1448,14 @@ export default function Chapter3Scene({
 
         {/* ARBUSTOS DEL PRIMER PLANO */}
         <img
-          src="/assets/juego/arbusto-izquierda.png"
+          src="/assets/juego/arbusto-izquierda.webp"
           alt="Arbustos Izquierda"
           aria-hidden="true"
           className="absolute bottom-0 left-0 w-[30.6%] h-auto object-contain pointer-events-none select-none z-30"
           style={{ imageRendering: "pixelated" }}
         />
         <img
-          src="/assets/juego/arbusto-derecha.png"
+          src="/assets/juego/arbusto-derecha.webp"
           alt="Arbustos Derecha"
           aria-hidden="true"
           className="absolute bottom-0 right-0 w-[26%] h-auto object-contain pointer-events-none select-none z-30"
@@ -1506,7 +1506,7 @@ export default function Chapter3Scene({
                   title={`Mampara electoral ${index + 1}`}
                 >
                   <img
-                    src="/assets/juego/exclamacion.png"
+                    src="/assets/juego/exclamacion.webp"
                     alt={`Elegir Mampara ${index + 1}`}
                     className="w-full h-auto object-contain drop-shadow-[0_2px_5px_rgba(0,0,0,0.6)]"
                     style={{ imageRendering: "pixelated" }}
@@ -1568,7 +1568,7 @@ export default function Chapter3Scene({
                   title="Depositar boleta en la urna"
                 >
                   <img
-                    src="/assets/juego/exclamacion.png"
+                    src="/assets/juego/exclamacion.webp"
                     alt="Depositar boleta en la urna"
                     className="w-full h-auto object-contain drop-shadow-[0_2px_5px_rgba(0,0,0,0.6)]"
                     style={{ imageRendering: "pixelated" }}
@@ -1731,7 +1731,7 @@ export default function Chapter3Scene({
         >
           {/* IMAGEN POV DE LA MAMPARA CON TRANSICIÓN DE DESENFOQUE (BLUR) */}
           <img
-            src="/assets/juego/simulador-voto/mampara-pov.png"
+            src="/assets/juego/simulador-voto/mampara-pov.webp"
             alt={`Mampara electoral ${selectedMamparaIndex + 1} - Vista POV`}
             className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none transition-[filter,transform] duration-700 ease-out"
             style={{
@@ -2086,7 +2086,7 @@ export default function Chapter3Scene({
               className="select-none active:scale-95 relative"
             >
               <img
-                src="/assets/juego/simulador-voto/boleta-electoral.png"
+                src="/assets/juego/simulador-voto/boleta-electoral.webp"
                 alt="Boleta Electoral 2024"
                 className="w-full h-full object-contain pointer-events-none select-none"
                 style={{
@@ -2138,7 +2138,7 @@ export default function Chapter3Scene({
                       style={{ height: "200%" }}
                     >
                       <img
-                        src="/assets/juego/simulador-voto/boleta-electoral.png"
+                        src="/assets/juego/simulador-voto/boleta-electoral.webp"
                         alt=""
                         className="w-full h-full object-contain pointer-events-none select-none"
                         style={{ imageRendering: "pixelated" }}

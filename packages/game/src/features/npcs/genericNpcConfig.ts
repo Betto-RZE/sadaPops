@@ -6,9 +6,9 @@ import type {
 
 /**
  * Cantidad exacta de cuadros (frames) por animación del personaje genérico.
- * - back: 23 frames (generico-back00086400.png a ...00086422.png)
- * - front: 28 frames (generico-front00086400.png a ...00086427.png)
- * - idle: 1 frame estático (generico-idle.png)
+ * - back: 23 frames (generico-back00086400.webp a ...00086422.webp)
+ * - front: 28 frames (generico-front00086400.webp a ...00086427.webp)
+ * - idle: 1 frame estático (generico-idle.webp)
  */
 export const GENERIC_NPC_FRAME_COUNTS: Record<GenericNpcAnimation, number> = {
   back: 23,
@@ -24,15 +24,15 @@ export function getGenericNpcFrameSrc(
   frameIndex: number,
 ): string {
   if (animation === "idle") {
-    return "/assets/juego/personajes/generico/generico-idle.png";
+    return "/assets/juego/personajes/generico/generico-idle.webp";
   }
 
   const paddedIndex = String(frameIndex).padStart(2, "0");
   if (animation === "back") {
-    return `/assets/juego/personajes/generico/back/generico-back000864${paddedIndex}.png`;
+    return `/assets/juego/personajes/generico/back/generico-back000864${paddedIndex}.webp`;
   }
 
-  return `/assets/juego/personajes/generico/front/generico-front000864${paddedIndex}.png`;
+  return `/assets/juego/personajes/generico/front/generico-front000864${paddedIndex}.webp`;
 }
 
 /**

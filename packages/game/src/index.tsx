@@ -6,6 +6,10 @@ import React, {
   useReducer,
   Suspense,
 } from "react";
+import { useGameFullscreen } from "./features/fullscreen/useGameFullscreen";
+import { FullscreenHelp } from "./features/fullscreen/FullscreenHelp";
+import { loadImages } from "./features/loading/loadImages";
+import { GAME_ASSET_PATHS } from "./features/loading/gameAssets";
 import { PixelFullscreenButton } from "./PixelFullscreenButton";
 import { RotateDeviceOverlay } from "./RotateDeviceOverlay";
 import { VirtualGamepad } from "./VirtualGamepad";
@@ -52,7 +56,7 @@ export interface GameProps {
 function PixelBallotBoxIcon({ isFullscreen }: { isFullscreen?: boolean }) {
   return (
     <div
-      className={`relative shrink-0 flex items-center justify-center select-none ${isFullscreen ? "w-10 h-10" : "w-8 h-8"}`}
+      className={`relative shrink-0 flex items-center justify-center select-none ${isFullscreen ? "w-[4cqw] h-[4cqw]" : "w-8 h-8"}`}
     >
       <svg
         width={isFullscreen ? "40" : "32"}
@@ -60,7 +64,7 @@ function PixelBallotBoxIcon({ isFullscreen }: { isFullscreen?: boolean }) {
         viewBox="0 0 24 24"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        className={isFullscreen ? "w-10 h-10" : "w-8 h-8"}
+        className={isFullscreen ? "w-[4cqw] h-[4cqw]" : "w-8 h-8"}
         style={{ imageRendering: "pixelated" }}
       >
         {/* White ballot dropping into box */}
@@ -159,7 +163,7 @@ function PixelQuestionDocIcon({ isFullscreen }: { isFullscreen?: boolean }) {
 function PixelChaptersIcon({ isFullscreen }: { isFullscreen?: boolean }) {
   return (
     <div
-      className={`relative shrink-0 flex items-center justify-center select-none ${isFullscreen ? "w-10 h-10" : "w-8 h-8"}`}
+      className={`relative shrink-0 flex items-center justify-center select-none ${isFullscreen ? "w-[4cqw] h-[4cqw]" : "w-8 h-8"}`}
     >
       <svg
         width={isFullscreen ? "40" : "32"}
@@ -167,7 +171,7 @@ function PixelChaptersIcon({ isFullscreen }: { isFullscreen?: boolean }) {
         viewBox="0 0 24 24"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        className={isFullscreen ? "w-10 h-10" : "w-8 h-8"}
+        className={isFullscreen ? "w-[4cqw] h-[4cqw]" : "w-8 h-8"}
         style={{ imageRendering: "pixelated" }}
       >
         {/* Tres recuadros de capitulo en fila */}
@@ -182,8 +186,8 @@ function PixelChaptersIcon({ isFullscreen }: { isFullscreen?: boolean }) {
 export function PixiGameCanvas({
   onModuleComplete,
   language = "es",
-  splashImageUrl = "/assets/juego/menu.png",
-  stageImageUrl = "/assets/juego/escenario.png",
+  splashImageUrl = "/assets/juego/menu.webp",
+  stageImageUrl = "/assets/juego/escenario.webp",
 }: GameProps) {
   const [currentScreen, setCurrentScreen] = useState<GameScreen>("splash");
   // Sesion de juego: modalidad (FULL_GAME / SINGLE_CHAPTER) y capitulo actual
@@ -191,23 +195,39 @@ export function PixiGameCanvas({
     gameSessionReducer,
     INITIAL_SESSION_STATE,
   );
-  const [isFullscreen, setIsFullscreen] = useState(false);
+
   const [irisRadius, setIrisRadius] = useState<number | null>(null);
   // Pantalla destino de la transicion en curso (null si no hay transicion)
   const [transitionTarget, setTransitionTarget] = useState<GameScreen | null>(
     null,
   );
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [resourceLoading, setResourceLoading] = useState(false);
+  const [loadProgress, setLoadProgress] = useState(0);
+  const [loadError, setLoadError] = useState(false);
+  const retryLoadRef = useRef<(() => void) | null>(null);
+  const resourceControllerRef = useRef<AbortController | null>(null);
+  const gameMountedRef = useRef(false);
+  useEffect(() => {
+    gameMountedRef.current = true;
+    return () => {
+      gameMountedRef.current = false;
+      resourceControllerRef.current?.abort();
+      retryLoadRef.current = null;
+    };
+  }, []);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const displayRef = useRef<HTMLDivElement>(null);
+  const inlineFrameRef = useRef<HTMLDivElement>(null);
   // Evita iniciar dos transiciones a la vez (doble clic, eventos simultaneos)
   const transitionLockRef = useRef(false);
 
   // Retro Circle (Iris Wipe) Screen Transition Handler with SVG Mask
   // `onMidpoint` se ejecuta con la pantalla 100% negra (p. ej. iniciar la sesion).
   const changeScreenWithTransition = useCallback(
-    (targetScreen: GameScreen, onMidpoint?: () => void) => {
+    (targetScreen: GameScreen, onMidpoint?: () => void, prepare?: () => Promise<void>) => {
       if (transitionLockRef.current) return;
       transitionLockRef.current = true;
       setTransitionTarget(targetScreen);
@@ -219,6 +239,7 @@ export function PixiGameCanvas({
 
       // Step 1: Shrink circle from 800 down to 0 (to center)
       const animateShrink = (now: number) => {
+        if (!gameMountedRef.current) return;
         const elapsed = now - startTime;
         const progress = Math.min(1, elapsed / shrinkDuration);
         const ease =
@@ -234,40 +255,60 @@ export function PixiGameCanvas({
         } else {
           // Midpoint: Screen is 100% solid black
           setIrisRadius(0);
-          setCurrentScreen(targetScreen);
-          if (targetScreen === "splash") {
-            // Regreso al menu: se descarta la sesion y el capitulo se DESMONTA por completo
-            // (se cancelan su bucle, timers, dialogos y listeners). La proxima partida
-            // o capitulo se monta desde cero.
-            setShowExitConfirm(false);
-            dispatchSession({ type: "RESET" });
-          }
-          onMidpoint?.();
-
-          setTimeout(() => {
-            // Step 2: Grow circle from 0 up to 800
-            const openStartTime = performance.now();
-            const animateGrow = (openNow: number) => {
-              const openElapsed = openNow - openStartTime;
-              const openProgress = Math.min(1, openElapsed / growDuration);
-              const openEase =
-                openProgress < 0.5
-                  ? 2 * openProgress * openProgress
-                  : 1 - Math.pow(-2 * openProgress + 2, 2) / 2;
-
-              const growR = 800 * openEase;
-              setIrisRadius(growR);
-
-              if (openProgress < 1) {
-                requestAnimationFrame(animateGrow);
-              } else {
-                setIrisRadius(null);
-                setTransitionTarget(null);
-                transitionLockRef.current = false;
+          const revealWhenReady = async () => {
+            retryLoadRef.current = null;
+            if (prepare) {
+              setResourceLoading(true);
+              setLoadError(false);
+              try { await prepare(); }
+              catch {
+                if (!gameMountedRef.current) return;
+                setLoadError(true);
+                retryLoadRef.current = () => { void revealWhenReady(); };
+                return;
               }
-            };
-            requestAnimationFrame(animateGrow);
-          }, blackHoldTime);
+              if (!gameMountedRef.current) return;
+              setResourceLoading(false);
+              retryLoadRef.current = null;
+            }
+            setCurrentScreen(targetScreen);
+            if (targetScreen === "splash") {
+              // Regreso al menu: se descarta la sesion y el capitulo se DESMONTA por completo
+              // (se cancelan su bucle, timers, dialogos y listeners). La proxima partida
+              // o capitulo se monta desde cero.
+              setShowExitConfirm(false);
+              dispatchSession({ type: "RESET" });
+            }
+            onMidpoint?.();
+
+            setTimeout(() => {
+              if (!gameMountedRef.current) return;
+              // Step 2: Grow circle from 0 up to 800
+              const openStartTime = performance.now();
+              const animateGrow = (openNow: number) => {
+                if (!gameMountedRef.current) return;
+                const openElapsed = openNow - openStartTime;
+                const openProgress = Math.min(1, openElapsed / growDuration);
+                const openEase =
+                  openProgress < 0.5
+                    ? 2 * openProgress * openProgress
+                    : 1 - Math.pow(-2 * openProgress + 2, 2) / 2;
+
+                const growR = 800 * openEase;
+                setIrisRadius(growR);
+
+                if (openProgress < 1) {
+                  requestAnimationFrame(animateGrow);
+                } else {
+                  setIrisRadius(null);
+                  setTransitionTarget(null);
+                  transitionLockRef.current = false;
+                }
+              };
+              requestAnimationFrame(animateGrow);
+            }, blackHoldTime);
+          };
+          void revealWhenReady();
         }
       };
 
@@ -276,26 +317,45 @@ export function PixiGameCanvas({
     [],
   );
 
+  const prepareGameResources = useCallback(async (chapterId?: ChapterId) => {
+    resourceControllerRef.current?.abort();
+    const controller = new AbortController();
+    resourceControllerRef.current = controller;
+    setLoadProgress(0);
+    const paths = GAME_ASSET_PATHS.filter(src => {
+      if (!chapterId || chapterId === 3) return true;
+      if (src.includes("/simulador-voto/")) return false;
+      if (chapterId === 1 && src.includes("/personajes/")) return false;
+      return true;
+    });
+    await Promise.all([
+      preloadChapterScene(chapterId || 1),
+      loadImages([...paths, stageImageUrl, splashImageUrl], (loaded, total) => {
+        if (gameMountedRef.current && !controller.signal.aborted) {
+          setLoadProgress(total ? Math.round(loaded / total * 100) : 100);
+        }
+      }, undefined, controller.signal),
+    ]);
+  }, [stageImageUrl, splashImageUrl]);
+
   // ---- Inicio de sesiones -------------------------------------------------
   // Modalidad A ("JUGAR"): historia completa y lineal desde el Capitulo 1.
   const startFullGame = useCallback(() => {
-    preloadChapterScene(1);
     changeScreenWithTransition("gameplay", () => {
       clearChapterHandoff();
       dispatchSession({ type: "START_FULL_GAME" });
-    });
-  }, [changeScreenWithTransition]);
+    }, () => prepareGameResources());
+  }, [changeScreenWithTransition, prepareGameResources]);
 
   // Modalidad B ("CAPITULOS"): solo el capitulo elegido.
   const startSingleChapter = useCallback(
     (chapterId: ChapterId) => {
-      preloadChapterScene(chapterId);
       changeScreenWithTransition("gameplay", () => {
         clearChapterHandoff();
         dispatchSession({ type: "START_CHAPTER", chapterId });
-      });
+      }, () => prepareGameResources(chapterId));
     },
-    [changeScreenWithTransition],
+    [changeScreenWithTransition, prepareGameResources],
   );
 
   const goToChapters = useCallback(
@@ -332,69 +392,46 @@ export function PixiGameCanvas({
 
   // El capitulo se congela con el modal de salida abierto y mientras se regresa al menu,
   // para que no siga corriendo nada del capitulo terminado durante el cierre del iris.
+  const { isFullscreen, toggleFullscreen, fullscreenHelpOpen, closeFullscreenHelp } = useGameFullscreen(containerRef);
   const isChapterPaused =
+    fullscreenHelpOpen ||
     showExitConfirm ||
     session.status === "returning_to_menu" ||
     transitionTarget === "splash";
 
-  // Synchronize state with HTML5 Fullscreen API events
+
+  // Preserve the approved inline control size; fullscreen scales the entire control
+  // (including text, borders and touch targets) by the same ratio as the game.
   useEffect(() => {
-    const handleFullscreenChange = () => {
-      const isCurrentlyFullscreen = Boolean(document.fullscreenElement);
-      setIsFullscreen(isCurrentlyFullscreen);
+    const display = displayRef.current;
+    if (!display) return;
+    const updateScale = () => {
+      const width = display.getBoundingClientRect().width;
+      if (width <= 0) return;
+      const inlineWidth = inlineFrameRef.current?.getBoundingClientRect().width || width;
+      const large = window.matchMedia("(min-width: 640px)").matches;
+        display.style.setProperty("--gamepad-pad-size", large ? "160px" : "144px");
+        display.style.setProperty("--gamepad-direction-size", large ? "48px" : "44px");
+        display.style.setProperty("--gamepad-action-size", large ? "88px" : "76px");
+        display.style.setProperty("--gamepad-action-font", large ? "30px" : "24px");
+        display.style.setProperty("--gamepad-label-font", large ? "11px" : "10px");
+      display.style.setProperty("--gamepad-scale", String(width / inlineWidth));
     };
-
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
-    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
-    document.addEventListener("mozfullscreenchange", handleFullscreenChange);
-    document.addEventListener("MSFullscreenChange", handleFullscreenChange);
-
+    updateScale();
+    const observer = new ResizeObserver(updateScale);
+    observer.observe(display);
+    if (inlineFrameRef.current) observer.observe(inlineFrameRef.current);
+    window.addEventListener("resize", updateScale);
     return () => {
-      document.removeEventListener("fullscreenchange", handleFullscreenChange);
-      document.removeEventListener(
-        "webkitfullscreenchange",
-        handleFullscreenChange,
-      );
-      document.removeEventListener(
-        "mozfullscreenchange",
-        handleFullscreenChange,
-      );
-      document.removeEventListener(
-        "MSFullscreenChange",
-        handleFullscreenChange,
-      );
+      observer.disconnect();
+      window.removeEventListener("resize", updateScale);
     };
-  }, []);
-
-  const toggleFullscreen = useCallback(async () => {
-    if (!containerRef.current) return;
-
-    try {
-      if (!document.fullscreenElement) {
-        if (containerRef.current.requestFullscreen) {
-          await containerRef.current.requestFullscreen();
-        } else if ((containerRef.current as any).webkitRequestFullscreen) {
-          await (containerRef.current as any).webkitRequestFullscreen();
-        } else if ((containerRef.current as any).msRequestFullscreen) {
-          await (containerRef.current as any).msRequestFullscreen();
-        }
-      } else {
-        if (document.exitFullscreen) {
-          await document.exitFullscreen();
-        } else if ((document as any).webkitExitFullscreen) {
-          await (document as any).webkitExitFullscreen();
-        } else if ((document as any).msExitFullscreen) {
-          await (document as any).msExitFullscreen();
-        }
-      }
-    } catch (err) {
-      console.error("Error al cambiar a pantalla completa:", err);
-    }
-  }, []);
+  }, [isFullscreen]);
 
   // Atajo de teclado: Tecla 'F' para pantalla completa y prevención de scroll nativo al jugar
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (fullscreenHelpOpen) return;
       // Ignorar si el usuario está interactuando con un campo de texto
       const target = e.target as HTMLElement | null;
       if (
@@ -429,7 +466,7 @@ export function PixiGameCanvas({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [toggleFullscreen]);
+  }, [toggleFullscreen, fullscreenHelpOpen]);
 
   // Draw splash background on canvas when in splash mode
   useEffect(() => {
@@ -476,8 +513,25 @@ export function PixiGameCanvas({
   ];
 
   return (
+    <div ref={inlineFrameRef} className="w-full max-w-5xl mx-auto aspect-video">
+    <FullscreenHelp open={fullscreenHelpOpen} onClose={closeFullscreenHelp} />
     <div
       ref={containerRef}
+      style={isFullscreen ? {
+        position: "fixed",
+        top: "var(--game-viewport-top, 0px)",
+        left: "var(--game-viewport-left, 0px)",
+        right: "auto",
+        bottom: "auto",
+        width: "var(--game-viewport-width, 100vw)",
+        height: "var(--game-viewport-height, 100dvh)",
+        maxWidth: "none",
+        zIndex: 10000,
+        paddingTop: "env(safe-area-inset-top)",
+        paddingBottom: "env(safe-area-inset-bottom)",
+        paddingLeft: "env(safe-area-inset-left)",
+        paddingRight: "env(safe-area-inset-right)",
+      } : undefined}
       className={`relative w-full max-w-5xl mx-auto select-none ${
         isFullscreen
           ? "fixed inset-0 z-50 max-w-none rounded-none border-0 p-0 ring-0 shadow-none flex flex-col justify-center items-center bg-slate-950 overflow-hidden"
@@ -492,10 +546,17 @@ export function PixiGameCanvas({
 
       {/* Game Display Container */}
       <div
-        style={{ containerType: "inline-size" }}
+          ref={displayRef}
+          style={{
+            containerType: "inline-size",
+            ...(isFullscreen ? {
+              width: "min(100%, calc((var(--game-viewport-height, 100dvh) - env(safe-area-inset-top) - env(safe-area-inset-bottom)) * 1.777777778))",
+              flexShrink: 0,
+            } : {}),
+          }}
         className={`relative overflow-hidden flex items-center justify-center bg-slate-950 ${
           isFullscreen
-            ? "aspect-video w-full max-w-[177.78vh] h-auto max-h-screen rounded-none shadow-2xl"
+            ? "aspect-video h-auto rounded-none"
             : "aspect-video w-full rounded-xl"
         }`}
       >
@@ -528,6 +589,13 @@ export function PixiGameCanvas({
               mask="url(#irisApertureMask)"
             />
           </svg>
+        )}
+
+        {resourceLoading && (
+          <div className="absolute inset-0 z-[60] flex flex-col items-center justify-center gap-3 text-white font-mono text-center p-4" role="status" aria-live="polite">
+            <p>{loadError ? "No se pudieron cargar todos los recursos." : `Cargando recursos… ${loadProgress}%`}</p>
+            {loadError && <button type="button" className="bg-[#b5146c] border-2 border-white rounded px-4 py-2" onClick={() => retryLoadRef.current?.()}>Reintentar</button>}
+          </div>
         )}
 
         {/* Splash Menu Screen with Large Unboxed Top-Centered Pixel Title */}
@@ -598,7 +666,7 @@ export function PixiGameCanvas({
             <div
               className={`absolute bottom-[7%] left-1/2 -translate-x-1/2 flex flex-col items-center justify-center z-20 ${
                 isFullscreen
-                  ? "w-[36%] min-w-[300px] max-w-[480px] gap-5"
+                  ? "w-[36%] gap-[1.5cqw]"
                   : "w-[30%] min-w-[220px] max-w-[320px] gap-3"
               }`}
             >
@@ -609,14 +677,14 @@ export function PixiGameCanvas({
                 type="button"
                 className={`w-full px-4 bg-[#f9d7ea] hover:bg-[#f6c2e0] rounded-md ring-2 ring-white ring-inset transition-colors flex items-center justify-between cursor-pointer group shrink-0 ${
                   isFullscreen
-                    ? "h-[64px] sm:h-[72px] border-[5px] border-[#b5146c] shadow-[6px_6px_0px_0px_#7a0c47] active:translate-x-[3px] active:translate-y-[3px]"
+                    ? "h-[7cqw] border-[0.5cqw] border-[#b5146c] shadow-[6px_6px_0px_0px_#7a0c47] active:translate-x-[3px] active:translate-y-[3px]"
                     : "h-[48px] sm:h-[52px] border-[4px] border-[#b5146c] shadow-[4px_4px_0px_0px_#7a0c47] active:translate-x-[2px] active:translate-y-[2px]"
                 } active:shadow-none`}
               >
                 <span
                   className={`font-mono font-black text-black tracking-widest uppercase flex-1 text-center drop-shadow-[0_1px_0_rgba(255,255,255,0.8)] select-none ${
                     isFullscreen
-                      ? "text-2xl sm:text-3xl pl-8"
+                      ? "text-[3cqw] pl-[3cqw]"
                       : "text-lg sm:text-xl pl-6"
                   }`}
                 >
@@ -632,14 +700,14 @@ export function PixiGameCanvas({
                 type="button"
                 className={`w-full px-4 bg-white hover:bg-[#fdeef6] rounded-md ring-2 ring-[#f9d7ea] ring-inset transition-colors flex items-center justify-between cursor-pointer group shrink-0 ${
                   isFullscreen
-                    ? "h-[64px] sm:h-[72px] border-[5px] border-[#b5146c] shadow-[6px_6px_0px_0px_#7a0c47] active:translate-x-[3px] active:translate-y-[3px]"
+                    ? "h-[7cqw] border-[0.5cqw] border-[#b5146c] shadow-[6px_6px_0px_0px_#7a0c47] active:translate-x-[3px] active:translate-y-[3px]"
                     : "h-[48px] sm:h-[52px] border-[4px] border-[#b5146c] shadow-[4px_4px_0px_0px_#7a0c47] active:translate-x-[2px] active:translate-y-[2px]"
                 } active:shadow-none`}
               >
                 <span
                   className={`font-mono font-black text-black tracking-widest uppercase flex-1 text-center drop-shadow-[0_1px_0_rgba(255,255,255,0.8)] select-none ${
                     isFullscreen
-                      ? "text-2xl sm:text-3xl pl-8"
+                      ? "text-[3cqw] pl-[3cqw]"
                       : "text-lg sm:text-xl pl-6"
                   }`}
                 >
@@ -822,6 +890,7 @@ export function PixiGameCanvas({
           />
         </div>
       </div>
+    </div>
     </div>
   );
 }
