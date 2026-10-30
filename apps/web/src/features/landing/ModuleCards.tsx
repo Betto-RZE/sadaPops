@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { BarChart3, Gamepad2, ArrowRight } from 'lucide-react';
+import { BarChart3, Gamepad2, ArrowRight, X } from 'lucide-react';
 import { DayToDayFlipCards, DayToDayCardItem } from './DayToDayFlipCards';
 import { cn } from '@/shared/utils';
 
@@ -13,6 +13,27 @@ export function ModuleCards() {
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   // Estado sincronizado desde el mapa del Hero (vía evento dalias:state-selected)
   const [selectedStateId, setSelectedStateId] = useState<string | null>(null);
+  // Estado para la nota cultural interactiva de la palabra "dalia"
+  const [isDaliaNoteOpen, setIsDaliaNoteOpen] = useState(false);
+  const daliaNoteRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isDaliaNoteOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsDaliaNoteOpen(false);
+    };
+    const handleClickOutside = (e: MouseEvent) => {
+      if (daliaNoteRef.current && !daliaNoteRef.current.contains(e.target as Node)) {
+        setIsDaliaNoteOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDaliaNoteOpen]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -52,14 +73,66 @@ export function ModuleCards() {
         </div>
 
         {/* ========================================================================= */}
-        {/* 2. FRASE PRINCIPAL EDITORIAL                                              */}
+        {/* 2. FRASE PRINCIPAL EDITORIAL CON MICRO-INTERACCIÓN DE "DALIA"             */}
         {/* ========================================================================= */}
-        <div className="mb-6 text-center max-w-2xl mx-auto px-4">
+        <div className="mb-6 text-center max-w-2xl mx-auto px-4 relative">
           <h2 className="font-serif text-2xl sm:text-3xl md:text-[34px] lg:text-[38px] leading-[1.25] text-brand-navy font-normal tracking-tight">
-            Una <span className="font-semibold text-brand-navy">flor</span> no es un voto:
+            Una{' '}
+            <button
+              type="button"
+              onClick={() => setIsDaliaNoteOpen((prev) => !prev)}
+              aria-expanded={isDaliaNoteOpen}
+              aria-controls="dalia-cultural-note"
+              className="inline font-semibold text-brand-navy underline decoration-dotted decoration-dalia-600/60 underline-offset-4 hover:text-dalia-600 hover:decoration-dalia-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-dalia-600 rounded transition-colors cursor-pointer"
+              title="Toca para conocer por qué la dalia nos representa"
+            >
+              dalia
+            </button>{' '}
+            no es un voto:
             <br />
             es una persona que decidió prepararse.
           </h2>
+
+          {/* Nota al pie flotante y elegante (símbolo nacional y significado en la plataforma) */}
+          {isDaliaNoteOpen && (
+            <div
+              id="dalia-cultural-note"
+              ref={daliaNoteRef}
+              role="region"
+              aria-label="Significado de la dalia como flor nacional"
+              className="mt-4 p-5 sm:p-6 rounded-2xl bg-[#FDFCFA] border border-black/10 shadow-lg max-w-md mx-auto text-left animate-in fade-in-0 zoom-in-95 duration-150 relative z-30"
+            >
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <div>
+                  <span className="text-[10px] font-mono tracking-[0.2em] uppercase font-bold text-[#8C7D70] block">
+                    Flor Nacional de México • Decreto de 1963
+                  </span>
+                  <h4 className="font-serif text-base font-bold text-brand-navy mt-0.5">
+                    La Dalia <span className="font-sans text-xs font-normal text-brand-navy/60">(Acocoxóchitl)</span>
+                  </h4>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsDaliaNoteOpen(false)}
+                  aria-label="Cerrar nota sobre la dalia"
+                  className="p-1 rounded-lg text-brand-navy/40 hover:text-brand-navy hover:bg-black/5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-dalia-600"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <p className="text-xs text-brand-navy/80 leading-relaxed font-sans mb-3">
+                Declarada oficialmente <strong>Flor Nacional de México</strong> el 12 de mayo de 1963 por decreto presidencial,
+                representa la diversidad cultural y botánica del país. Posee raíces tubulares resistentes que se adaptan,
+                se reproducen y florecen en comunidad.
+              </p>
+
+              <div className="pt-2.5 border-t border-black/5 flex items-center gap-2 text-[11px] text-dalia-700 font-medium font-sans">
+                <span className="w-1.5 h-1.5 rounded-full bg-dalia-600 shrink-0" />
+                <span>En esta plataforma, cada dalia representa a una persona que decidió informarse.</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Separador fino sutil entre la frase y el aviso editorial */}
