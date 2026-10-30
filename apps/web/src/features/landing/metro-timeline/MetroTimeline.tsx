@@ -26,24 +26,15 @@ interface MetroTimelineProps {
 /* -------------------------------------------------------------------------- */
 /* Coreografía del scroll                                                     */
 /* -------------------------------------------------------------------------- */
-/**
- * Progreso del scroll (0→1) → posición del tren expresada en «índice de estación».
- *   -1.6 = fuera de cuadro a la izquierda · 0 / 1 / 2 = estacionado en cada andén.
- * Los tramos planos (plateaus) son las paradas: el tren se detiene mientras
- * la persona lee, y vuelve a arrancar al seguir haciendo scroll.
- */
 const SCROLL_STOPS = [0, 0.1, 0.28, 0.42, 0.6, 0.74, 1];
 const TRAIN_POSITIONS = [-1.6, 0, 0, 1, 1, 2, 2];
 
-const arrive = cubicBezier(0.16, 1, 0.3, 1); // entrada desacelerando hasta el andén
-const travel = cubicBezier(0.65, 0, 0.35, 1); // arranque y frenado suaves entre andenes
+const arrive = cubicBezier(0.16, 1, 0.3, 1);
+const travel = cubicBezier(0.65, 0, 0.35, 1);
 const hold = (t: number) => t;
 const SEGMENT_EASING = [arrive, hold, travel, hold, travel, hold];
 
-/** Tolerancia (en índice de estación) para considerar que el tren ya llegó. */
 const DOCK_EPSILON = 0.015;
-
-/** Hueco entre andenes en desktop (debe coincidir con `lg:gap-8`). */
 const DESKTOP_GAP = '2rem';
 
 function useIsDesktop() {
@@ -59,12 +50,10 @@ function useIsDesktop() {
 }
 
 /**
- * Escenario ferroviario voxel: tres andenes unidos por un riel continuo.
- *
- * Cada vez que el tren llega a una estación, se abre su tarjeta voxel informativa
- * (`card-parada.png`) con el contenido y enlaces oficiales aprobados del Borrador 3.
- *
- * Cumple con WCAG 2.1 AA: semántica estructurada, contraste y accesibilidad por teclado.
+ * Escenario ferroviario voxel con vitrina focal (Opción A):
+ * - Vía superior con 3 andenes unidos por riel continuo y tren en movimiento
+ * - Vitrina inferior centrada (max-w-2xl ~ 672px) donde abre la tarjeta voxel activa
+ *   con el tamaño perfecto para lucir la tipografía y los detalles 3D.
  */
 export function MetroTimeline({ className }: MetroTimelineProps) {
   const isDesktop = useIsDesktop();
@@ -79,7 +68,6 @@ export function MetroTimeline({ className }: MetroTimelineProps) {
     offset: ['start start', 'end end'],
   });
 
-  // Suavizado sin rebote: el tren «pesa» y no sobrepasa el andén
   const smoothProgress = useSpring(scrollYProgress, {
     stiffness: 140,
     damping: 32,
@@ -91,7 +79,6 @@ export function MetroTimeline({ className }: MetroTimelineProps) {
     ease: SEGMENT_EASING,
   });
 
-  // El 100% de translateX es el ancho del propio carril (= ancho de un andén)
   const trainTransform = useMotionTemplate`translateX(calc(${trainStation} * (100% + ${DESKTOP_GAP})))`;
 
   function syncActive(value: number) {
@@ -105,12 +92,13 @@ export function MetroTimeline({ className }: MetroTimelineProps) {
     if (isScrollDriven) syncActive(value);
   });
 
-  // Al entrar/salir del modo scroll, sincroniza la parada activa con la posición real del tren
   useEffect(() => {
     if (isScrollDriven) syncActive(trainStation.get());
     else setActiveIndex(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isScrollDriven]);
+
+  const activeParada = activeIndex !== null ? PARADAS[activeIndex] : null;
 
   return (
     <div
@@ -118,8 +106,8 @@ export function MetroTimeline({ className }: MetroTimelineProps) {
       className={cn('relative', isScrollDriven && 'h-[320vh]', className)}
     >
       <div className={cn(isScrollDriven && 'sticky top-0 h-screen flex flex-col justify-center')}>
-        <div className="relative">
-          {/* Contenido accesible completo para lectores de pantalla (WCAG 2.1 AA) */}
+        <div className="relative w-full max-w-5xl mx-auto">
+          {/* Contenido accesible para lectores de pantalla (WCAG 2.1 AA) */}
           <div className="sr-only">
             <h4>Tres paradas hacia el 6 de junio de 2027</h4>
             <ol>
@@ -136,85 +124,89 @@ export function MetroTimeline({ className }: MetroTimelineProps) {
             </ol>
           </div>
 
-          {/* Escenario visual: 3 andenes y tarjetas voxel */}
-          <ol
-            aria-label="Tres paradas hacia el 6 de junio de 2027"
-            className={cn(
-              // Móvil: carrusel horizontal con snap; Desktop: tres andenes alineados en la misma vía
-              'flex gap-6 overflow-x-auto snap-x snap-mandatory -mx-6 px-6 pt-4 pb-6',
-              'lg:grid lg:grid-cols-3 lg:gap-8 lg:overflow-visible lg:mx-0 lg:px-0',
-              '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
-            )}
-          >
-            {PARADAS.map((parada, index) => {
-              const isActive = index === activeIndex;
-              return (
-                <li
-                  key={parada.id}
-                  aria-current={isActive ? 'step' : undefined}
-                  className="relative shrink-0 w-[86%] sm:w-[65%] lg:w-auto snap-center flex flex-col"
-                >
-                  {/* Estación Voxel con soporte de clic/teclado */}
-                  <MetroStation
-                    numero={parada.numero}
-                    rotulo={parada.rotulo}
-                    isActive={isActive}
-                    onClick={() => setActiveIndex(index)}
-                  >
-                    {/* Modo estático: el tren vive dentro del andén 01 */}
-                    {isDesktop !== null && !isScrollDriven && index === activeIndex && <MetroTrain />}
-                  </MetroStation>
-
-                  {/* Tarjeta Voxel Informativa (`card-parada.png`) */}
-                  <div
-                    className={cn(
-                      'mt-3 sm:mt-4 min-h-[240px] sm:min-h-[290px] relative flex flex-col justify-start z-30',
-                      index === 0 && 'lg:w-[115%]',
-                      index === 1 && 'lg:w-[115%] lg:-ml-[7.5%]',
-                      index === 2 && 'lg:w-[115%] lg:-ml-[15%]'
-                    )}
-                  >
-                    <AnimatePresence mode="wait">
-                      {isActive ? (
-                        <MetroCard key={parada.id} parada={parada} />
-                      ) : (
-                        <motion.div
-                          key={`closed-${parada.id}`}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          className="pt-2 text-center"
-                        >
-                          <button
-                            type="button"
-                            onClick={() => setActiveIndex(index)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1 text-[10px] font-mono font-semibold uppercase tracking-wider text-black/45 hover:text-[#211B39] border border-dashed border-black/15 hover:border-black/30 rounded transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5E2CE6] cursor-pointer"
-                          >
-                            <span>Abrir parada {parada.numero}</span>
-                          </button>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
-
-          {/* Modo scroll: carril del tren con la misma caja que un andén (top = pt-4 del <ol>) */}
-          {isScrollDriven && (
-            <motion.div
-              aria-hidden
-              className="absolute left-0 top-4 z-20 pointer-events-none [container-type:inline-size] will-change-transform"
-              style={{
-                width: `calc((100% - 2 * ${DESKTOP_GAP}) / 3)`,
-                aspectRatio: STATION_ASPECT,
-                transform: trainTransform,
-              }}
+          {/* VÍA SUPERIOR: Las 3 Estaciones Voxel alineadas */}
+          <div className="relative">
+            <ol
+              aria-label="Estaciones del recorrido hacia el 6 de junio de 2027"
+              className={cn(
+                'flex gap-6 overflow-x-auto snap-x snap-mandatory -mx-6 px-6 pt-2 pb-4',
+                'lg:grid lg:grid-cols-3 lg:gap-8 lg:overflow-visible lg:mx-0 lg:px-0',
+                '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
+              )}
             >
-              <MetroTrain />
-            </motion.div>
-          )}
+              {PARADAS.map((parada, index) => {
+                const isActive = index === activeIndex;
+                return (
+                  <li
+                    key={parada.id}
+                    aria-current={isActive ? 'step' : undefined}
+                    className="relative shrink-0 w-[84%] sm:w-[62%] lg:w-auto snap-center flex flex-col items-center"
+                  >
+                    <MetroStation
+                      numero={parada.numero}
+                      rotulo={parada.rotulo}
+                      isActive={isActive}
+                      onClick={() => setActiveIndex(index)}
+                    >
+                      {isDesktop !== null && !isScrollDriven && index === activeIndex && <MetroTrain />}
+                    </MetroStation>
+
+                    {/* Botón selector de estación bajo el andén */}
+                    <button
+                      type="button"
+                      onClick={() => setActiveIndex(index)}
+                      className={cn(
+                        'mt-2 sm:mt-3 inline-flex items-center gap-1.5 px-3 py-0.5 text-[10px] font-mono font-semibold uppercase tracking-wider rounded-full transition-all cursor-pointer',
+                        isActive
+                          ? 'bg-[#211B39] text-white shadow-sm ring-2 ring-[#5E2CE6]/30'
+                          : 'text-[#565273]/70 hover:text-[#211B39] hover:bg-black/5'
+                      )}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-current opacity-60" />
+                      <span>{parada.numero} · {parada.cuando}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+
+            {/* Tren animado con scroll (Desktop) */}
+            {isScrollDriven && (
+              <motion.div
+                aria-hidden
+                className="absolute left-0 top-2 z-20 pointer-events-none [container-type:inline-size] will-change-transform"
+                style={{
+                  width: `calc((100% - 2 * ${DESKTOP_GAP}) / 3)`,
+                  aspectRatio: STATION_ASPECT,
+                  transform: trainTransform,
+                }}
+              >
+                <MetroTrain />
+              </motion.div>
+            )}
+          </div>
+
+          {/* VITRINA FOCAL (Opción A): Tarjeta Voxel Amplia y Elegante */}
+          <div className="mt-4 sm:mt-6 w-full flex justify-center px-4">
+            <div className="w-full max-w-2xl min-h-[290px] sm:min-h-[350px] relative flex items-center justify-center">
+              <AnimatePresence mode="wait">
+                {activeParada ? (
+                  <MetroCard key={activeParada.id} parada={activeParada} />
+                ) : (
+                  <motion.div
+                    key="en-transito"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex items-center gap-2 text-xs font-mono tracking-widest text-[#796DAA] uppercase py-12"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-[#5E2CE6] animate-pulse" />
+                    <span>En tránsito hacia la siguiente parada...</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
         </div>
       </div>
     </div>
