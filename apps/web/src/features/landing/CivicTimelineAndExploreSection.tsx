@@ -545,16 +545,18 @@ export function CivicTimelineAndExploreSection({
             </p>
           </div>
 
-          {/* Grid de 2 Expedientes Editoriales con Polaroids Voxel Libres (Sin card de fondo) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 lg:gap-14 items-start">
-            {/* Expediente A: Dashboard interactivo guiado por preguntas */}
+          {/* Composición en Zig-Zag Editorial: Polaroids Voxel + Fichas de Archivo */}
+          <div className="space-y-10 sm:space-y-12 lg:space-y-14">
+            {/* ================================================================= */}
+            {/* FILA 01: Polaroid Izquierda + Ficha de Archivo Derecha (CCPC)     */}
+            {/* ================================================================= */}
             <Link
               href="/datos"
-              className="group flex flex-col justify-between focus:outline-none"
+              className="group block focus:outline-none"
             >
-              <div>
-                {/* Escenario Polaroid Voxel Flotante (Directo sobre el papel satinado) */}
-                <div className="relative w-full aspect-[1536/1024] select-none transition-transform duration-500 ease-out group-hover:scale-[1.018] md:group-hover:-rotate-[0.8deg]">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-7 sm:gap-8 lg:gap-10 items-center">
+                {/* Columna Izquierda: Polaroid Voxel CCPC */}
+                <div className="relative w-full aspect-[1536/1024] select-none transition-transform duration-500 ease-out group-hover:scale-[1.018] md:group-hover:-rotate-[0.6deg]">
                   {/* Sombra de contacto suave sobre el papel */}
                   <div
                     aria-hidden
@@ -597,7 +599,7 @@ export function CivicTimelineAndExploreSection({
                     />
                   </div>
 
-                  {/* Barbilla inferior de la Polaroid: Rótulo editorial estilo catálogo */}
+                  {/* Barbilla inferior de la Polaroid: Rótulo editorial */}
                   <div
                     className="absolute z-10 flex items-center justify-between px-3 pointer-events-none"
                     style={{
@@ -610,71 +612,151 @@ export function CivicTimelineAndExploreSection({
                     <span className="font-mono text-[9px] sm:text-[11px] font-bold tracking-[0.16em] uppercase text-[#6E6277]">
                       FIG. 01 · CENSO CCPC
                     </span>
-                    <span className="font-mono text-[9px] sm:text-[10px] text-[#8E8099] tracking-wider">
+                    <span className="font-mono text-[9px] sm:text-[10px] text-[#8E8099] tracking-wider uppercase">
                       INE MÉXICO
                     </span>
                   </div>
                 </div>
 
-                {/* Cuaderno de Campo: Filete de imprenta tipográfico y registro de archivo */}
-                <div className="mt-8 pt-4 border-t border-black/15 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 bg-blue-600 rounded-none rotate-45 shrink-0" />
-                    <span className="font-mono text-[11px] font-bold tracking-[0.2em] uppercase text-blue-700">
-                      EXPEDIENTE 01 · DATOS CCPC
+                {/* Columna Derecha: Ficha de Archivo Editorial CCPC */}
+                <div className="bg-[#F8F5EE] border border-[#E2DBD0] rounded-[4px] p-6 sm:p-8 lg:p-9 shadow-[0_8px_22px_rgba(20,24,35,0.06),0_2px_6px_rgba(20,24,35,0.04)] group-hover:shadow-[0_12px_28px_rgba(20,24,35,0.09)] transition-shadow duration-300">
+                  {/* Encabezado de la Ficha */}
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <div className="flex items-center gap-1.5 sm:gap-2">
+                      <span className="font-bold text-[#18181B] border-b border-black/70 pb-[1px]">01</span>
+                      <span className="text-black/30">/</span>
+                      <span className="font-bold tracking-[0.16em] uppercase text-[#4B5563] text-[10px] sm:text-[11px]">
+                        EXPEDIENTE · DATOS CCPC
+                      </span>
+                    </div>
+                    <span className="text-[10px] sm:text-[11px] font-mono tracking-wider text-[#71717A] uppercase">
+                      REF. INE-CCPC-2024
                     </span>
                   </div>
-                  <span className="font-mono text-[10px] text-black/40 tracking-wider">
-                    REF. INE-CCPC-2024
-                  </span>
-                </div>
 
-                {/* Titular en Newsreader */}
-                <h4 className="mt-3.5 font-serif text-2xl sm:text-[30px] font-bold text-[#0F1B2D] group-hover:text-blue-900 transition-colors leading-[1.14]">
-                  Dashboard interactivo guiado por preguntas
-                </h4>
+                  {/* Línea divisoria superior */}
+                  <div className="w-full h-px bg-black/10 mt-3.5 mb-4 sm:mb-5" />
 
-                <p className="mt-2.5 text-sm sm:text-[15px] text-[#4A5568] leading-relaxed font-sans">
-                  Gráficas según el tipo de dato, filtros por entidad y grupo de edad, y explicaciones cortas para responder con datos oficiales:
-                </p>
+                  {/* Titular en Newsreader */}
+                  <h4 className="font-serif font-bold text-2xl sm:text-[28px] lg:text-[32px] text-[#0F1B2D] tracking-tight leading-[1.14] group-hover:text-blue-900 transition-colors">
+                    Dashboard interactivo guiado por preguntas
+                  </h4>
 
-                {/* Notas de campo numeradas estilo expediente */}
-                <ul className="mt-4 space-y-2.5 font-mono text-xs sm:text-[13px] text-[#2C384A]">
-                  <li className="flex items-baseline gap-2.5">
-                    <span className="font-bold text-blue-600 text-[11px] shrink-0 font-mono">[A.1]</span>
-                    <span className="font-sans font-medium italic text-[#1E293B]">¿Cuánto vota mi estado?</span>
-                  </li>
-                  <li className="flex items-baseline gap-2.5">
-                    <span className="font-bold text-blue-600 text-[11px] shrink-0 font-mono">[A.2]</span>
-                    <span className="font-sans font-medium italic text-[#1E293B]">¿Ha cambiado la participación de mi edad desde 2009?</span>
-                  </li>
-                  <li className="flex items-baseline gap-2.5">
-                    <span className="font-bold text-blue-600 text-[11px] shrink-0 font-mono">[A.3]</span>
-                    <span className="font-sans font-medium italic text-[#1E293B]">¿Votan más hombres o mujeres?</span>
-                  </li>
-                </ul>
-              </div>
+                  {/* Descripción editorial */}
+                  <p className="mt-2.5 text-xs sm:text-[13.5px] text-[#52525B] leading-relaxed font-sans">
+                    Gráficas según el tipo de dato, filtros por entidad y grupo de edad, y explicaciones cortas para responder con datos oficiales.
+                  </p>
 
-              {/* Enlace de acción editorial de imprenta */}
-              <div className="mt-7 pt-4 border-t border-black/10 flex items-center justify-between">
-                <span className="text-xs font-mono font-bold tracking-[0.18em] uppercase text-blue-700 group-hover:text-blue-950 transition-colors">
-                  ABRIR DASHBOARD CCPC
-                </span>
-                <div className="flex items-center gap-1.5 text-blue-700 group-hover:text-blue-950 transition-colors">
-                  <span className="text-xs font-mono font-semibold tracking-wider">CONSULTAR</span>
-                  <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1.5" />
+                  {/* Línea divisoria media */}
+                  <div className="w-full h-px bg-black/10 my-4 sm:my-5" />
+
+                  {/* Lista de preguntas con pastillas A.1, A.2, A.3 */}
+                  <ul className="space-y-2.5 sm:space-y-3 font-sans text-xs sm:text-[13px] text-[#1F2937]">
+                    <li className="flex items-center gap-3">
+                      <span className="inline-flex items-center justify-center font-mono font-bold text-[10px] sm:text-[11px] text-[#374151] bg-[#E8E2D8]/80 border border-[#D8D0C3] rounded-[3px] px-2 py-0.5 min-w-[2.4rem] shrink-0">
+                        A.1
+                      </span>
+                      <span className="font-medium text-[#18181B]">¿Cuánto vota mi estado?</span>
+                    </li>
+                    <li className="flex items-center gap-3">
+                      <span className="inline-flex items-center justify-center font-mono font-bold text-[10px] sm:text-[11px] text-[#374151] bg-[#E8E2D8]/80 border border-[#D8D0C3] rounded-[3px] px-2 py-0.5 min-w-[2.4rem] shrink-0">
+                        A.2
+                      </span>
+                      <span className="font-medium text-[#18181B]">¿Ha cambiado la participación de mi edad desde 2009?</span>
+                    </li>
+                    <li className="flex items-center gap-3">
+                      <span className="inline-flex items-center justify-center font-mono font-bold text-[10px] sm:text-[11px] text-[#374151] bg-[#E8E2D8]/80 border border-[#D8D0C3] rounded-[3px] px-2 py-0.5 min-w-[2.4rem] shrink-0">
+                        A.3
+                      </span>
+                      <span className="font-medium text-[#18181B]">¿Votan más hombres o mujeres?</span>
+                    </li>
+                  </ul>
+
+                  {/* Pie de acción CTA */}
+                  <div className="mt-6 sm:mt-7 pt-1 flex items-center gap-2">
+                    <span className="font-mono text-xs sm:text-[12px] font-bold tracking-[0.16em] uppercase text-[#D81B60] group-hover:text-[#AD1457] transition-colors flex items-center gap-2">
+                      <span>ABRIR DASHBOARD CCPC</span>
+                      <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1.5" />
+                    </span>
+                  </div>
                 </div>
               </div>
             </Link>
 
-            {/* Expediente B: Modo Juego de práctica en casilla */}
+            {/* ================================================================= */}
+            {/* FILA 02: Ficha Izquierda + Polaroid Derecha (Simulador Casilla)   */}
+            {/* ================================================================= */}
             <Link
               href="/juego"
-              className="group flex flex-col justify-between focus:outline-none"
+              className="group block focus:outline-none"
             >
-              <div>
-                {/* Escenario Polaroid Voxel Flotante (Directo sobre el papel satinado) */}
-                <div className="relative w-full aspect-[1536/1024] select-none transition-transform duration-500 ease-out group-hover:scale-[1.018] md:group-hover:rotate-[0.8deg]">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-7 sm:gap-8 lg:gap-10 items-center">
+                {/* Columna Izquierda (en desktop) / Ficha de Archivo Simulador */}
+                <div className="order-2 lg:order-1 bg-[#F8F5EE] border border-[#E2DBD0] rounded-[4px] p-6 sm:p-8 lg:p-9 shadow-[0_8px_22px_rgba(20,24,35,0.06),0_2px_6px_rgba(20,24,35,0.04)] group-hover:shadow-[0_12px_28px_rgba(20,24,35,0.09)] transition-shadow duration-300">
+                  {/* Encabezado de la Ficha */}
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <div className="flex items-center gap-1.5 sm:gap-2">
+                      <span className="font-bold text-[#18181B] border-b border-black/70 pb-[1px]">02</span>
+                      <span className="text-black/30">/</span>
+                      <span className="font-bold tracking-[0.16em] uppercase text-[#4B5563] text-[10px] sm:text-[11px]">
+                        EXPEDIENTE · MODO PRÁCTICA
+                      </span>
+                    </div>
+                    <span className="text-[10px] sm:text-[11px] font-mono tracking-wider text-[#71717A] uppercase">
+                      SIMULADOR NEUTRAL
+                    </span>
+                  </div>
+
+                  {/* Línea divisoria superior */}
+                  <div className="w-full h-px bg-black/10 mt-3.5 mb-4 sm:mb-5" />
+
+                  {/* Titular en Newsreader */}
+                  <h4 className="font-serif font-bold text-2xl sm:text-[28px] lg:text-[32px] text-[#0F1B2D] tracking-tight leading-[1.14] group-hover:text-[#5E2CE6] transition-colors">
+                    Práctica de procedimiento en casilla
+                  </h4>
+
+                  {/* Descripción editorial */}
+                  <p className="mt-2.5 text-xs sm:text-[13.5px] text-[#52525B] leading-relaxed font-sans">
+                    Usa datos reales de la CCPC y permite practicar el procedimiento en una casilla con una boleta de práctica, sin partidos ni colores partidistas.
+                  </p>
+
+                  {/* Línea divisoria media */}
+                  <div className="w-full h-px bg-black/10 my-4 sm:my-5" />
+
+                  {/* Lista de características con pastillas B.1, B.2, B.3 */}
+                  <ul className="space-y-2.5 sm:space-y-3 font-sans text-xs sm:text-[13px] text-[#1F2937]">
+                    <li className="flex items-center gap-3">
+                      <span className="inline-flex items-center justify-center font-mono font-bold text-[10px] sm:text-[11px] text-[#374151] bg-[#E8E2D8]/80 border border-[#D8D0C3] rounded-[3px] px-2 py-0.5 min-w-[2.4rem] shrink-0">
+                        B.1
+                      </span>
+                      <span className="font-medium text-[#18181B]">Desmiente mitos con datos oficiales de la CCPC</span>
+                    </li>
+                    <li className="flex items-center gap-3">
+                      <span className="inline-flex items-center justify-center font-mono font-bold text-[10px] sm:text-[11px] text-[#374151] bg-[#E8E2D8]/80 border border-[#D8D0C3] rounded-[3px] px-2 py-0.5 min-w-[2.4rem] shrink-0">
+                        B.2
+                      </span>
+                      <span className="font-medium text-[#18181B]">Práctica táctil de marcado, doblado y depósito en urna</span>
+                    </li>
+                    <li className="flex items-center gap-3">
+                      <span className="inline-flex items-center justify-center font-mono font-bold text-[10px] sm:text-[11px] text-[#374151] bg-[#E8E2D8]/80 border border-[#D8D0C3] rounded-[3px] px-2 py-0.5 min-w-[2.4rem] shrink-0">
+                        B.3
+                      </span>
+                      <span className="font-medium text-[#18181B]">Simulación cívica neutral sin partidos ni sesgos</span>
+                    </li>
+                  </ul>
+
+                  {/* Pie de acción CTA con línea horizontal guía */}
+                  <div className="mt-6 sm:mt-7 pt-1 flex items-center gap-3">
+                    <span className="font-mono text-xs sm:text-[12px] font-bold tracking-[0.16em] uppercase text-[#D81B60] group-hover:text-[#AD1457] transition-colors flex items-center gap-2 shrink-0">
+                      <span>ENTRAR A PRACTICAR</span>
+                      <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1.5" />
+                    </span>
+                    <div className="flex-1 h-px bg-black/10" />
+                  </div>
+                </div>
+
+                {/* Columna Derecha (en desktop, primero en mobile) / Polaroid Voxel Juego */}
+                <div className="order-1 lg:order-2 relative w-full aspect-[1536/1024] select-none transition-transform duration-500 ease-out group-hover:scale-[1.018] md:group-hover:rotate-[0.6deg]">
                   {/* Sombra de contacto suave sobre el papel */}
                   <div
                     aria-hidden
@@ -717,7 +799,7 @@ export function CivicTimelineAndExploreSection({
                     />
                   </div>
 
-                  {/* Barbilla inferior de la Polaroid: Rótulo editorial estilo catálogo */}
+                  {/* Barbilla inferior de la Polaroid: Rótulo editorial */}
                   <div
                     className="absolute z-10 flex items-center justify-between px-3 pointer-events-none"
                     style={{
@@ -730,61 +812,10 @@ export function CivicTimelineAndExploreSection({
                     <span className="font-mono text-[9px] sm:text-[11px] font-bold tracking-[0.16em] uppercase text-[#6E6277]">
                       FIG. 02 · SIMULADOR CASILLA
                     </span>
-                    <span className="font-mono text-[9px] sm:text-[10px] text-[#8E8099] tracking-wider">
+                    <span className="font-mono text-[9px] sm:text-[10px] text-[#8E8099] tracking-wider uppercase">
                       RETRO PIXEL ART
                     </span>
                   </div>
-                </div>
-
-                {/* Cuaderno de Campo: Filete de imprenta tipográfico y registro de archivo */}
-                <div className="mt-8 pt-4 border-t border-black/15 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 bg-[#5E2CE6] rounded-none rotate-45 shrink-0" />
-                    <span className="font-mono text-[11px] font-bold tracking-[0.2em] uppercase text-[#5E2CE6]">
-                      EXPEDIENTE 02 · MODO PRÁCTICA
-                    </span>
-                  </div>
-                  <span className="font-mono text-[10px] text-black/40 tracking-wider">
-                    SIMULADOR NEUTRAL
-                  </span>
-                </div>
-
-                {/* Titular en Newsreader */}
-                <h4 className="mt-3.5 font-serif text-2xl sm:text-[30px] font-bold text-[#0F1B2D] group-hover:text-[#5E2CE6] transition-colors leading-[1.14]">
-                  Práctica de procedimiento en casilla
-                </h4>
-
-                <p className="mt-2.5 text-sm sm:text-[15px] text-[#4A5568] leading-relaxed font-sans">
-                  Usa datos reales de la CCPC y permite practicar el procedimiento en una casilla (cómo marcar, doblar y
-                  depositar la boleta) con una boleta de práctica de opciones neutrales, sin partidos, candidaturas ni
-                  colores partidistas.
-                </p>
-
-                {/* Notas de campo numeradas estilo expediente */}
-                <ul className="mt-4 space-y-2.5 font-mono text-xs sm:text-[13px] text-[#2C384A]">
-                  <li className="flex items-baseline gap-2.5">
-                    <span className="font-bold text-[#5E2CE6] text-[11px] shrink-0 font-mono">[B.1]</span>
-                    <span className="font-sans font-medium text-[#1E293B]">Desmiente mitos con datos oficiales de la CCPC</span>
-                  </li>
-                  <li className="flex items-baseline gap-2.5">
-                    <span className="font-bold text-[#5E2CE6] text-[11px] shrink-0 font-mono">[B.2]</span>
-                    <span className="font-sans font-medium text-[#1E293B]">Práctica táctil de marcado, doblado y depósito en urna</span>
-                  </li>
-                  <li className="flex items-baseline gap-2.5">
-                    <span className="font-bold text-[#5E2CE6] text-[11px] shrink-0 font-mono">[B.3]</span>
-                    <span className="font-sans font-medium text-[#1E293B]">Simulación cívica neutral sin partidos ni sesgos</span>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Enlace de acción editorial de imprenta */}
-              <div className="mt-7 pt-4 border-t border-black/10 flex items-center justify-between">
-                <span className="text-xs font-mono font-bold tracking-[0.18em] uppercase text-[#5E2CE6] group-hover:text-dalia-700 transition-colors">
-                  ENTRAR A PRACTICAR
-                </span>
-                <div className="flex items-center gap-1.5 text-[#5E2CE6] group-hover:text-dalia-700 transition-colors">
-                  <span className="text-xs font-mono font-semibold tracking-wider">JUGAR</span>
-                  <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1.5" />
                 </div>
               </div>
             </Link>
