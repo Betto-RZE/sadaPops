@@ -159,32 +159,42 @@ export function Navbar({ className, revealOnMobileMap = false }: NavbarProps = {
                 </Link>
               );
             })}
-
-            {/* Agrega tu Dalia (debajo en la sidebar vertical) */}
-            <div
-              className="flex items-center gap-1.5 text-brand-navy/60 hover:text-brand-navy text-[11px] lg:text-xs font-bold tracking-tight cursor-default select-none pt-1"
-              title="Completa un módulo para desbloquear"
-            >
-              <Lock className="w-3 h-3 text-dalia-600" />
-              <span>Agrega tu Dalia</span>
-            </div>
           </nav>
 
-          {/* Botón Móvil (Sidebar Toggle) */}
+          {/* Botón Móvil (Sidebar Toggle) translúcido y redondeado */}
           <button
-            className="md:hidden p-2 text-brand-navy rounded-lg bg-white/80 hover:bg-white shadow-sm border border-brand-navy/10 backdrop-blur-sm transition-colors cursor-pointer"
+            className="md:hidden p-2.5 text-brand-navy rounded-full bg-white/40 hover:bg-white/70 shadow-sm border border-black/10 backdrop-blur-md transition-all active:scale-95 cursor-pointer"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-label={isMobileMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
           >
-            {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            {isMobileMenuOpen ? <X className="h-5 w-5 text-brand-navy" /> : <Menu className="h-5 w-5 text-brand-navy" />}
           </button>
         </div>
       </div>
 
-      {/* Menú Móvil */}
+      {/* Fondo borroso ambiental cuando el menú móvil está desplegado */}
       {isMobileMenuOpen && (
-        <div className="md:hidden mt-3 rounded-2xl bg-[#EEEDEA]/95 backdrop-blur-md border border-black/5 p-4 shadow-xl pointer-events-auto animate-in slide-in-from-top-2 duration-150">
-          <div className="flex flex-col space-y-2">
+        <div
+          aria-hidden="true"
+          className="md:hidden fixed inset-0 bg-[#1C2541]/15 backdrop-blur-md pointer-events-auto z-40 animate-in fade-in duration-200"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Menú Móvil flotante, redondeado y translúcido */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden relative z-50 mt-3 rounded-2xl bg-[#FDFCF9]/80 backdrop-blur-xl border border-white/80 p-4 shadow-[0_18px_38px_rgba(28,37,65,0.16),0_2px_8px_rgba(28,37,65,0.06)] pointer-events-auto animate-in slide-in-from-top-2 fade-in-50 duration-200">
+          {/* Cabecera sutil */}
+          <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-black/5">
+            <span className="font-mono text-[9.5px] font-bold tracking-[0.2em] uppercase text-[#6E7887]">
+              NAVEGACIÓN CÍVICA
+            </span>
+            <span className="font-mono text-[9.5px] text-[#A0AAB8] tracking-widest uppercase">
+              INE 2026
+            </span>
+          </div>
+
+          <div className="flex flex-col space-y-1.5">
             {navLinks.map((link) => {
               const isActive =
                 link.href === '/'
@@ -196,21 +206,33 @@ export function Navbar({ className, revealOnMobileMap = false }: NavbarProps = {
                   href={link.href}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={cn(
-                    'px-3 py-2 text-sm font-bold tracking-wider rounded-lg transition-colors flex items-center justify-between',
+                    'px-3.5 py-2.5 rounded-xl transition-all flex items-center justify-between',
                     isActive
-                      ? 'bg-dalia-600/10 text-dalia-600 font-extrabold'
-                      : 'text-brand-navy hover:bg-black/5'
+                      ? 'bg-white/90 border border-black/5 text-dalia-600 font-black shadow-sm'
+                      : 'text-brand-navy hover:bg-white/50 font-bold'
                   )}
                 >
-                  {link.name}
-                  {isActive && <div className="w-1.5 h-1.5 rounded-full bg-dalia-600" />}
+                  <span className="font-serif text-[16px] tracking-wide">
+                    {link.name === 'INICIO'
+                      ? 'Inicio · Mapa y Dalias'
+                      : link.name === 'DATOS'
+                      ? 'Datos · Explorador CCPC'
+                      : 'Juego · Práctica en Casilla'}
+                  </span>
+                  {isActive ? (
+                    <div className="w-2 h-2 rounded-full bg-dalia-600 animate-pulse" />
+                  ) : (
+                    <span className="font-mono text-xs text-[#8C96A5]">↗</span>
+                  )}
                 </Link>
               );
             })}
-            <div className="pt-2 border-t border-black/5 flex items-center gap-2 px-3 py-1 text-xs text-brand-navy/60">
-              <Lock className="w-3.5 h-3.5 text-dalia-600" />
-              <span className="font-semibold">Agrega tu Dalia (Bloqueado)</span>
-            </div>
+          </div>
+
+          {/* Micro-lema de pie de menú */}
+          <div className="mt-3.5 pt-2.5 border-t border-black/5 flex items-center justify-between text-[10px] font-mono text-[#6E7887]">
+            <span>MÉXICO 2026-2027</span>
+            <span className="text-[#C8006E] font-bold tracking-wider">CULTURA CÍVICA</span>
           </div>
         </div>
       )}
