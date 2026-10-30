@@ -5,7 +5,8 @@
 - Fecha: 30 de octubre de 2026.
 - Fase 1 completada: especificación de composición, textos y cinco temas.
 - Fase 2 completada: recursos de los cinco temas preparados en `apps/web/public/form/themes/`; inventario en `manifest.json` y notas de uso en `README.md`.
-- Fases 3–6 pendientes. Esperar confirmación del usuario antes de maquetar o integrar.
+- Fase 3 completada: maquetación local en `src/features/landing/registro-dalia/`, integrada en la sección existente.
+- Fases 4–6 pendientes. Esperar confirmación del usuario antes de continuar con la integración avanzada.
 - La fase 1 fue documental; la fase 2 incorpora imágenes sin cambiar la interfaz.
 - Referencia visual única: `docs/referencias/Formulario Deja una Dalia.png`.
 - Recursos originales: `apps/web/public/form/`; conservarlos sin sobrescribir.
@@ -167,4 +168,19 @@ La migración de IDs antiguos a los nuevos temas debe ser explícita y tolerante
 - Papelería entregada como atlas: nota a la izquierda y boleto a la derecha. Usar el corte registrado por archivo, no asumir mitades iguales.
 - Cinta independiente de la hoja, filetes, estrellas, cuadrícula y textura sutil de fondo se resolverán con CSS/SVG en fase 3, como se acordó; la cinta de la polaroid y la de la nota ya están integradas en sus imágenes.
 - Revisión visual realizada sobre los recursos generados; alfa, dimensiones y peso verificados durante la exportación. La comparación de la composición completa y el contraste sobre texturas corresponden a las fases 5–6.
-- [ ] Confirmación del usuario para comenzar la fase 3.
+- [x] Confirmación del usuario para comenzar la fase 3.
+
+### Entrega de fase 3
+
+- Componente de presentación `DahliaRegistrationSection.tsx`, CSS Module acotado y catálogo local de cinco temas. El componente principal conserva los handlers de entidad, avisos y siembra y delega la presentación.
+- Hoja central con título aprobado, flor estática, círculos con radios nativos, nota/boleto con texto HTML y polaroid con rombo gris; recursos preparados conectados por tema.
+- Fondo teñido y textura existente, cinta, cuadrícula, ornamentos y flecha. Las leyendas decorativas eliminadas no se reincorporan.
+- Reglas de maquetación para escritorio, tableta y móvil incluidas; la validación responsive exhaustiva sigue pendiente de fase 5.
+- Textos del componente externalizados en `src/i18n/es.json`. No se inventaron traducciones al náhuatl: ese diccionario y su conexión requieren la futura integración de idioma del proyecto.
+- IBM Plex Mono cargada mediante el mecanismo de fuentes existente de Next.js. Newsreader falló en el cargador de Next 14; la descarga alternativa fue rechazada por el usuario. Titulares usan la pila `Newsreader, Georgia, Times New Roman, serif`, con Georgia como alternativa local hasta disponer del archivo Newsreader autorizado.
+- Campos y confirmación adaptados al mismo diseño. El correo se identifica como preferencia local, sin prometer mensajes que el componente no envía.
+- Verificación: TypeScript sin errores, `git diff --check` limpio y compilación de desarrollo de la ruta correcta. Inspección inicial de la composición en navegador a un ancho aproximado de 658 px; no constituye la revisión de escritorio ni de todos los temas.
+- El usuario pidió no acceder al navegador salvo necesidad. Se suspendió la revisión por navegador y se cerró la fase con verificaciones de código. El último ajuste de la fuente serif no se volvió a inspeccionar visualmente.
+- `Hero.tsx`, el visor 3D original, el dataset INE y las secciones adyacentes permanecen sin cambios. El contrato `dalias:add-dahlia` con `{ stateId }` se conserva.
+- Pendiente en fase 4: migración explícita de IDs de colores antiguos, precarga/transiciones de recursos, persistencia robusta y auditoría de avisos/edición/confirmación. Los nuevos IDs ya se guardan mediante los handlers existentes.
+- [ ] Confirmación del usuario para comenzar la fase 4.

@@ -1,0 +1,38 @@
+{
+  "dahliaRegistration": {
+    "section": "Tu dalia y tus avisos",
+    "titleFirst": "Florece",
+    "titleSecond": "en comunidad",
+    "introduction": "Representa tu compromiso de participar con información",
+    "thanks": "Gracias por ser parte",
+    "ticketFirst": "Te informas tú",
+    "ticketSecond": "crecemos juntos",
+    "stateLabel": "1. Elige tu entidad federativa",
+    "turnout": "Participación · 18–29 años",
+    "turnoutSource": "INE CCPC 2024",
+    "count": "dalias en tu entidad",
+    "colorLabel": "2. Elige tu color",
+    "alertsQuestion": "¿Quieres que te recordemos cada parada?",
+    "optional": "Opcional",
+    "emailLabel": "Correo para avisos",
+    "emailPlaceholder": "tu.correo@ejemplo.com",
+    "alertsHelp": "Fechas clave y enlaces a herramientas del INE. Sin mensajes partidistas.",
+    "localEmail": "Por ahora, tu correo se guarda solo en este dispositivo. No se envían avisos todavía.",
+    "details": "Las paradas y tu privacidad",
+    "stops": [
+      { "title": "Hoy", "text": "Revisa la vigencia de tu credencial y consulta los plazos oficiales para actualizar tus datos." },
+      { "title": "Más adelante", "text": "Conoce qué se elige y consulta tu casilla cuando el INE publique su ubicación." },
+      { "title": "6 de junio de 2027", "text": "Llega con información a la jornada electoral." }
+    ],
+    "privacy": "Tu registro es anónimo. El correo es opcional y se guarda localmente para la preferencia de avisos, sin mostrarse en el mapa. Esta plataforma es un proyecto independiente del Hackathon INE.",
+    "definition": "Cada dalia representa un registro voluntario de preparación en esta plataforma. No representa un voto, una persona verificada en el padrón ni participación electoral oficial.",
+    "submit": "Dejar mi dalia",
+    "anonymous": "Registro anónimo · Sin cuenta",
+    "disclaimer": "Tu dalia representa preparación, no un voto.",
+    "planted": "Tu compromiso ya está en el mapa",
+    "plantedDetail": "Dalia registrada de forma anónima en",
+    "localSaved": "La preferencia de avisos quedó guardada en este dispositivo.",
+    "viewMap": "Ver en el mapa",
+    "edit": "Reubicar o cambiar color"
+  }
+}
