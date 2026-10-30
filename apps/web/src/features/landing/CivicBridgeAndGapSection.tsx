@@ -28,23 +28,23 @@ const AGE_ROWS = [
     cohort: '18 a 19 años',
     tag: 'PRIMER VOTO',
     turnout: 56.8,
-    note: 'Al comenzar la vida cívica, más de la mitad acude a votar.',
+    note: 'Más de la mitad acude a votar (56.8%).',
   },
   {
     id: '20-29',
     number: '02',
     cohort: '20 a 29 años',
-    tag: 'LA CAÍDA MÁS MARCADA',
+    tag: '20 A 29 AÑOS',
     turnout: 47.8,
-    note: 'Menos de la mitad. El tramo etario con menor participación.',
+    note: 'Menos de la mitad acude a votar (47.8%).',
   },
   {
     id: '60+',
     number: '03',
     cohort: '60 años y más (60+)',
-    tag: 'HÁBITO CONSTANTE',
+    tag: '60 AÑOS Y MÁS',
     turnout: 71.4,
-    note: 'Más de siete de cada diez personas acuden a las urnas.',
+    note: 'Más de siete de cada diez acuden a las urnas (71.4%).',
   },
 ];
 
@@ -315,16 +315,16 @@ export function CivicBridgeAndGapSection({
                 </span>
               </div>
 
-              <p className="mt-4 text-xs sm:text-sm text-white/65 font-sans leading-relaxed max-w-3xl">
+              <p className="mt-5 text-sm sm:text-base text-white/85 font-sans leading-relaxed max-w-3xl">
                 Quienes compiten por el voto tienen razones para pensar, sobre todo, en quienes sí votan.
-                Es uno de varios factores.
+                Es uno de varios factores. Votar no garantiza que se resuelva algo, pero hace que un grupo sea más difícil de pasar por alto.
               </p>
             </div>
 
             {/* ========================================================================= */}
             {/* PERSONALIZACIÓN POR ESTADO (Integrada al pie del bloque)                  */}
             {/* ========================================================================= */}
-            <div className="mt-6 pt-6 border-t border-white/10">
+            <div className="mt-8 pt-6 border-t border-white/10">
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div className="flex-1 max-w-md">
                   <label
@@ -353,7 +353,15 @@ export function CivicBridgeAndGapSection({
 
                 {stateBenchmark && (
                   <div className="flex-1 text-left md:text-right">
-                    <div className="inline-flex items-center gap-2 mb-1">
+                    <p className="text-xs sm:text-[13px] text-white/80 font-sans mb-2 leading-relaxed">
+                      En <strong className="text-white">{stateName}</strong>, quienes tienen entre 18 y 29 años votaron{' '}
+                      <strong className="text-white">{stateBenchmark.turnoutYouthPercent}%</strong> en 2024,{' '}
+                      <span className={stateBenchmark.diff >= 0 ? 'text-white font-semibold' : 'text-[#B8A8FF] font-semibold'}>
+                        {stateBenchmark.diffLabel}
+                      </span>{' '}
+                      del promedio nacional de 18 a 29 años (49.1%, INE CCPC 2024).
+                    </p>
+                    <div className="inline-flex items-center gap-2">
                       <span className="font-serif text-3xl sm:text-4xl text-white font-bold leading-none">
                         {stateBenchmark.turnoutYouthPercent}%
                       </span>
@@ -373,9 +381,6 @@ export function CivicBridgeAndGapSection({
                         {stateBenchmark.diffLabel}
                       </span>
                     </div>
-                    <p className="text-xs text-white/50 font-mono tracking-wide">
-                      vs. promedio nacional de 18 a 29 años (49.1%)
-                    </p>
                   </div>
                 )}
               </div>

@@ -29,12 +29,12 @@ export const DAY_TO_DAY_CARDS: readonly DayToDayCardItem[] = [
     imageSrc: '/assets/cards-narrativa/Voxel Flower Stack of Books.png',
     imageAlt: 'Libros voxel con dalia rosa y pétalos sobre papel satinado',
     statText:
-      'De los 31 millones de personas de 15 a 29 años, 14.2 millones estaban fuera de la actividad económica; entre quienes están fuera de la actividad económica y no disponibles para trabajar (86.1%), 64 de cada 100 no trabajaba por estudiar.',
+      'De cada 100 jóvenes fuera del mercado laboral y no disponibles para trabajar, 64 no trabajaban por estudiar.',
     statPeriod: '1T 2024',
-    statSource: 'INEGI, Comunicado núm. 481/24, ENOE (p. 2)',
+    statSource: 'INEGI, ENOE 1T 2024, Comunicado 481/24',
     sourceUrl: 'https://www.inegi.org.mx/programas/enoe/15ymas/',
     contextText:
-      'Entre quienes tienen de 15 a 29 años y están fuera de la actividad económica y no disponibles para trabajar, estudiar es la razón principal.',
+      'Cifra oficial descriptiva de personas de 15 a 29 años, sin atribuir causas ni responsables.',
   },
   {
     id: 'busco-trabajo',
@@ -45,12 +45,12 @@ export const DAY_TO_DAY_CARDS: readonly DayToDayCardItem[] = [
     imageSrc: '/assets/cards-narrativa/Violet Voxel Briefcase with Pink Petals.png',
     imageAlt: 'Portafolio voxel violeta con cerradura rosa y pétalos',
     statText:
-      'De las 30.4 millones de personas jóvenes (15 a 29 años), 15.9 millones (52.3%) son económicamente activas. En este grupo, la tasa de desocupación es de 4.8% y la tasa de informalidad laboral es de 58.8%.',
+      'De 15.9 millones de jóvenes económicamente activos (52.3% de 30.4 millones), la desocupación es 4.8% y la informalidad laboral, 58.8%.',
     statPeriod: '1T 2025',
-    statSource: 'INEGI, Comunicado núm. 116/25, ENOE (pp. 1 y 2)',
+    statSource: 'INEGI, ENOE 1T 2025, Comunicado 116/25',
     sourceUrl: 'https://www.inegi.org.mx/programas/enoe/15ymas/',
     contextText:
-      '95 de cada 100 jóvenes económicamente activos están ocupados, aunque casi seis de cada diez de ellos trabajan en la informalidad laboral.',
+      'Cifra oficial descriptiva de personas de 15 a 29 años, sin atribuir causas ni responsables.',
   },
   {
     id: 'ya-trabajo',
@@ -60,12 +60,12 @@ export const DAY_TO_DAY_CARDS: readonly DayToDayCardItem[] = [
     imageSrc: '/assets/cards-narrativa/Voxel Laptop, Mug, and Pixel Flowers.png',
     imageAlt: 'Laptop voxel con flor en pantalla, taza de café y pétalos',
     statText:
-      'Entre las personas de 15 a 29 años con un trabajo subordinado y remunerado (81.3% de las ocupadas), 48.5% recibió un contrato por escrito, 48.1% tuvo acceso a servicios de salud por su trabajo y 59.3% contó con vacaciones y aguinaldo u otras prestaciones.',
+      'Entre jóvenes con trabajo subordinado y remunerado (81.3% de los ocupados): 48.5% tiene contrato escrito, 48.1% acceso a salud y 59.3% vacaciones y aguinaldo u otras prestaciones.',
     statPeriod: '1T 2024',
-    statSource: 'INEGI, Comunicado núm. 481/24, ENOE (pp. 4 y 5)',
+    statSource: 'INEGI, ENOE 1T 2024, Comunicado 481/24',
     sourceUrl: 'https://www.inegi.org.mx/programas/enoe/15ymas/',
     contextText:
-      'Ocho de cada diez jóvenes ocupados tienen un empleo subordinado y remunerado: casi la mitad tiene contrato por escrito o acceso a salud, y casi seis de cada diez, vacaciones y aguinaldo u otras prestaciones.',
+      'Cifra oficial descriptiva de personas de 15 a 29 años, sin atribuir causas ni responsables.',
   },
 ];
 

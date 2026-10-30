@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
-import { BarChart3, Gamepad2, ArrowRight, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { DayToDayFlipCards, DayToDayCardItem } from './DayToDayFlipCards';
 import { CivicBridgeAndGapSection } from './CivicBridgeAndGapSection';
+import { CivicTimelineAndExploreSection } from './CivicTimelineAndExploreSection';
 import { cn } from '@/shared/utils';
 
 export function ModuleCards() {
@@ -147,7 +147,7 @@ export function ModuleCards() {
             Aquí no te decimos por quién votar. Solo mostramos datos oficiales y cómo prepararte.
           </p>
           <p className="mt-1.5 text-[11px] sm:text-xs text-brand-navy/45 font-normal">
-            Proyecto independiente de estudiantes para el Hackathon INE; no es un portal oficial del INE.
+            Proyecto independiente de estudiantes para el Hackathon INE; no es un portal oficial del INE ni del INEGI.
           </p>
         </div>
 
@@ -172,7 +172,10 @@ export function ModuleCards() {
             <h3 className="font-serif font-bold text-3xl sm:text-4xl lg:text-[42px] text-[#0F1B2D] tracking-tight leading-[1.1]">
               Lo que vives todos los días
             </h3>
-            <p className="mt-2.5 text-sm sm:text-[15px] text-[#4A5568] max-w-2xl leading-relaxed font-sans">
+            <p className="mt-2 text-base sm:text-lg font-serif italic text-brand-navy/80">
+              «Antes de hablar de votar, hablemos de tu día a día.»
+            </p>
+            <p className="mt-2 text-sm sm:text-[15px] text-[#4A5568] max-w-2xl leading-relaxed font-sans">
               Tres situaciones cotidianas que conoces de cerca, contrastadas con cifras oficiales de la
               Encuesta Nacional de Ocupación y Empleo (ENOE) del INEGI. Toca una tarjeta para descubrir el dato.
             </p>
@@ -194,75 +197,13 @@ export function ModuleCards() {
         onSelectState={setSelectedStateId}
       />
 
-      <div className="mx-auto max-w-[1440px] px-6 lg:px-12 relative">
-        {/* ========================================================================= */}
-        {/* COMPONENTES TEMPORALES DE NAVEGACIÓN HACIA DATOS Y JUEGO                   */}
-        {/* (Se integrarán completamente en las Fases 2, 3 y 4 del recorrido)         */}
-        {/* ========================================================================= */}
-        <div className="pt-8 border-t border-black/5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-            <div>
-              <p className="text-[11px] font-mono font-bold tracking-wider uppercase text-brand-navy/40">
-                Siguientes secciones en desarrollo
-              </p>
-              <h3 className="text-lg font-bold text-brand-navy">
-                Explora los módulos a profundidad
-              </h3>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Datos Card */}
-            <Link
-              href="/datos"
-              className="group block rounded-3xl bg-[#F0F7FF] border border-blue-100 overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 h-[240px] relative"
-            >
-              <div className="p-8 pb-0 h-full flex flex-col justify-between">
-                <div>
-                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-white text-blue-500 shadow-sm">
-                    <BarChart3 className="h-5 w-5" />
-                  </div>
-                  <h4 className="mb-2 text-xl font-bold text-brand-navy">Explora los Datos CCPC</h4>
-                  <p className="text-xs sm:text-sm font-medium text-brand-navy/70 leading-relaxed max-w-[280px]">
-                    Visualiza estadísticas censales de participación electoral por edad, sexo y evolución histórica.
-                  </p>
-                </div>
-                
-                <div className="mt-4 pb-6">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/70 text-brand-navy transition-colors group-hover:bg-white shadow-sm">
-                    <ArrowRight className="h-4 w-4" />
-                  </div>
-                </div>
-              </div>
-            </Link>
-            
-            {/* Juego Card */}
-            <Link
-              href="/juego"
-              className="group block rounded-3xl bg-brand-navy border border-brand-navy/20 overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-brand-navy/20 hover:-translate-y-1 h-[240px] relative"
-            >
-              <div className="p-8 pb-0 h-full flex flex-col justify-between relative z-10">
-                <div>
-                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white shadow-sm">
-                    <Gamepad2 className="h-5 w-5" />
-                  </div>
-                  <h4 className="mb-2 text-xl font-bold text-white">Modo Juego Pixel Art</h4>
-                  <p className="text-xs sm:text-sm font-medium text-white/70 leading-relaxed max-w-[280px]">
-                    Desmiente mitos con datos del INE y practica en el simulador de proceso de votación en casilla.
-                  </p>
-                </div>
-                
-                <div className="mt-4 pb-6">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white transition-colors group-hover:bg-white/20 shadow-sm">
-                    <ArrowRight className="h-4 w-4" />
-                  </div>
-                </div>
-              </div>
-            </Link>
-          </div>
-        </div>
-
-      </div>
+      {/* ========================================================================= */}
+      {/* FASES 3 Y 4: RESPIRO Y LÍNEA DE TIEMPO, TU DALIA Y AVISOS, Y EXPLORACIÓN   */}
+      {/* ========================================================================= */}
+      <CivicTimelineAndExploreSection
+        selectedStateId={selectedStateId}
+        onSelectState={setSelectedStateId}
+      />
     </section>
   );
 }
