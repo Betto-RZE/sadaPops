@@ -1,25 +1,12 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Inter, Plus_Jakarta_Sans, Newsreader, IBM_Plex_Mono } from 'next/font/google';
+import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700', '800'],
   variable: '--font-heading',
-  display: 'swap',
-});
-const newsreader = Newsreader({
-  subsets: ['latin'],
-  style: ['normal', 'italic'],
-  variable: '--font-serif',
-  display: 'swap',
-  adjustFontFallback: false,
-});
-const ibmPlexMono = IBM_Plex_Mono({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-mono',
   display: 'swap',
 });
 
@@ -43,7 +30,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className={`${inter.variable} ${plusJakarta.variable} ${newsreader.variable} ${ibmPlexMono.variable} font-sans antialiased selection:bg-dalia-600 selection:text-white bg-[#EEEDEA] text-brand-navy`}>
+      <body className={`${inter.variable} ${plusJakarta.variable} font-sans antialiased selection:bg-dalia-600 selection:text-white bg-[#EEEDEA] text-brand-navy`}>
         {children}
       </body>
     </html>

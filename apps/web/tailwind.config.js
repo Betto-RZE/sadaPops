@@ -38,14 +38,15 @@ module.exports = {
       fontFamily: {
         sans: ['var(--font-heading)', 'var(--font-inter)', 'sans-serif'],
         heading: ['var(--font-heading)', 'sans-serif'],
-        serif: ['var(--font-serif)', 'Georgia', 'Cambria', 'Times New Roman', 'serif'],
+        serif: ['Georgia', 'Cambria', '"Times New Roman"', 'Times', 'serif'],
         mono: [
-          'var(--font-mono)',
           'ui-monospace',
           'SFMono-Regular',
           'Menlo',
           'Monaco',
           'Consolas',
+          '"Liberation Mono"',
+          '"Courier New"',
           'monospace',
         ],
       },
