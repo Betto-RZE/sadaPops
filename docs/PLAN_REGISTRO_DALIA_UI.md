@@ -4,8 +4,9 @@
 
 - Fecha: 30 de octubre de 2026.
 - Fase 1 completada: especificación de composición, textos y cinco temas.
-- Fases 2–6 pendientes. Esperar confirmación del usuario antes de preparar recursos o implementar.
-- Esta entrega es documental: no cambia la interfaz ni genera variantes de imágenes.
+- Fase 2 completada: recursos de los cinco temas preparados en `apps/web/public/form/themes/`; inventario en `manifest.json` y notas de uso en `README.md`.
+- Fases 3–6 pendientes. Esperar confirmación del usuario antes de maquetar o integrar.
+- La fase 1 fue documental; la fase 2 incorpora imágenes sin cambiar la interfaz.
 - Referencia visual única: `docs/referencias/Formulario Deja una Dalia.png`.
 - Recursos originales: `apps/web/public/form/`; conservarlos sin sobrescribir.
 - Alcance: `#registro-dalia` en `CivicTimelineAndExploreSection.tsx` y recursos/componentes locales asociados.
@@ -105,7 +106,7 @@ Cada tema cambia simultáneamente:
 - Flor principal y cada imagen u objeto decorativo: papelería, cinta, boleto, nota, pétalos y ornamentos de la polaroid.
 - Botón, relieve, estados hover/active y sombras cromáticas.
 
-Cambiar de familia de color no significa pintar cada píxel del mismo color: conservar blanco del papel, tinta legible, centro dorado de la flor, hojas y volumen. En la polaroid preservar el contenido legible del INE, cambiando su entorno y adornos. No aplicar un filtro global que distorsione texto, logotipo o contraste.
+Cambiar de familia de color no significa pintar cada píxel del mismo color: conservar blanco del papel, tinta legible, centro dorado de la flor, hojas y volumen. En la polaroid preservar el contenido legible del INE, cambiando su entorno y adornos. Por indicación posterior del usuario, el rombo central del logo será gris neutro en los cinco temas, según su imagen de referencia; la ranura y las letras permanecen negras. No aplicar un filtro global que distorsione texto, logotipo o contraste.
 
 Las cinco muestras del selector conservan siempre su propio color para permitir comparar opciones; solo el indicador activo cambia con la selección. La selección actual se reconoce por aro doble y marca, no únicamente por color. Mostrar el nombre del color elegido junto a la leyenda del grupo.
 
@@ -155,4 +156,15 @@ La migración de IDs antiguos a los nuevos temas debe ser explícita y tolerante
 - [x] Estados inicial, avisos, error, confirmación y edición descritos.
 - [x] Contraste de los tokens principales calculado.
 - [x] Límites de alcance y entregables siguientes documentados.
-- [ ] Confirmación del usuario para comenzar la fase 2.
+- [x] Confirmación del usuario para comenzar la fase 2.
+
+### Entrega de fase 2
+
+- 20 imágenes WebP con alfa: flor, papelería (nota y boleto), polaroid y pétalo, para cada uno de los cinco temas.
+- Imágenes editadas con la herramienta integrada ImageGen; originales conservados. Exportación WebP y reducción de tamaño mediante Sharp, sin recoloreado por código.
+- Prompts finales y metadatos registrados en el inventario. El intento del pétalo lila con halo se descartó y se sustituyó por un recorte limpio.
+- Textos de nota y boleto reservados para HTML; no están incrustados en las imágenes.
+- Papelería entregada como atlas: nota a la izquierda y boleto a la derecha. Usar el corte registrado por archivo, no asumir mitades iguales.
+- Cinta independiente de la hoja, filetes, estrellas, cuadrícula y textura sutil de fondo se resolverán con CSS/SVG en fase 3, como se acordó; la cinta de la polaroid y la de la nota ya están integradas en sus imágenes.
+- Revisión visual realizada sobre los recursos generados; alfa, dimensiones y peso verificados durante la exportación. La comparación de la composición completa y el contraste sobre texturas corresponden a las fases 5–6.
+- [ ] Confirmación del usuario para comenzar la fase 3.
