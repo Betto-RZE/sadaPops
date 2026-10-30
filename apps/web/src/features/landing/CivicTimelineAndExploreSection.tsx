@@ -104,7 +104,7 @@ export function CivicTimelineAndExploreSection({
           </div>
 
           {/* Tres Paradas: escenario ferroviario voxel (tren + andenes) */}
-          <MetroTimeline dockedAt={0} />
+          <MetroTimeline />
         </section>
 
         {/* ========================================================================= */}
