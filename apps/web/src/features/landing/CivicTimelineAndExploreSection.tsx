@@ -380,7 +380,7 @@ export function CivicTimelineAndExploreSection({
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             placeholder="tu.correo@ejemplo.com"
-                            className="w-full bg-white border border-[#D5CDC3] text-[#0F1B2D] font-mono text-xs py-3 px-3.5 pl-9 rounded-[3px] focus:outline-none focus:ring-2 focus:ring-dalia-600 shadow-sm"
+                            className="w-full bg-white border border-[#D5CDC3] text-[#0F1B2D] font-mono text-base sm:text-xs py-3 px-3.5 pl-9 rounded-[3px] focus:outline-none focus:ring-2 focus:ring-dalia-600 shadow-sm"
                           />
                           <Mail className="w-4 h-4 text-black/40 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                         </div>
