@@ -91,6 +91,10 @@ export function useDahliaRegistration(stateId: string) {
     setStorageWarning(!result.persisted || !themePersisted);
   };
 
+  const onCinematicReveal = useCallback(() => {
+    if (pendingPlantResult.current) setPlantedStateId(pendingPlantResult.current.stateId);
+  }, []);
+
   const onCinematicComplete = useCallback(() => {
     if (pendingPlantResult.current) {
       setPlantedStateId(pendingPlantResult.current.stateId);
@@ -102,7 +106,7 @@ export function useDahliaRegistration(stateId: string) {
   return {
     theme, pendingTheme, themeError, ready, plantedStateId, isPlanted: Boolean(plantedStateId),
     isCinematicActive,
-    onCinematicComplete,
+    onCinematicComplete, onCinematicReveal,
     wantsAlerts, email, emailError, alertsSaved, storageWarning, detailsOpen,
     onThemeChange,
     onSubmit,

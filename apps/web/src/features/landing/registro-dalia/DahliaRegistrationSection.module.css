@@ -282,3 +282,19 @@
 @media (prefers-reduced-motion: reduce) {
   .sheetHidden, .adornmentHidden { visibility: hidden; }
 }
+
+/* A short pause after the falling map separates the two vertical movements. */
+.sheetSuccess { margin-top: var(--success-offset-y, 0px); }
+.sheetEntering { animation: successRise .85s cubic-bezier(.22, .8, .3, 1) .1s both; }
+.adornmentEntering { animation: adornmentReturn .7s ease-out .3s both; }
+@keyframes successRise {
+  0% { translate: 0 110vh; opacity: 0; }
+  72% { translate: 0 -12px; opacity: 1; }
+  88% { translate: 0 4px; opacity: 1; }
+  100% { translate: 0 0; opacity: 1; }
+}
+@keyframes adornmentReturn { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .sheetEntering { animation: adornmentReturn .4s ease-out both !important; }
+  .adornmentEntering { animation: adornmentReturn .4s ease-out both !important; }
+}

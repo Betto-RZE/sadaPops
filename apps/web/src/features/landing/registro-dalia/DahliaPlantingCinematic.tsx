@@ -15,6 +15,7 @@ interface Props {
   stateName: string;
   startPoint: DahliaStartPoint | null;
   onComplete: () => void;
+  onReveal?: () => void;
 }
 
 const PETALS = [
@@ -26,11 +27,11 @@ const PETALS = [
   { x: '-75px', y: '-15px', rotation: '-110deg' },
 ];
 
-export function DahliaPlantingCinematic({ theme, stateId, stateName, startPoint, onComplete }: Props) {
+export function DahliaPlantingCinematic({ theme, stateId, stateName, startPoint, onComplete, onReveal }: Props) {
   const reducedMotion = useReducedMotion();
   const [viewport, setViewport] = useState<{ width: number; height: number } | null>(null);
-  const [phase, setPhase] = useState<'clearing' | 'center' | 'map' | 'impact'>('clearing');
-  const impacted = phase === 'impact';
+  const [phase, setPhase] = useState<'clearing' | 'center' | 'map' | 'impact' | 'falling' | 'revealing'>('clearing');
+  const impacted = ['impact', 'falling', 'revealing'].includes(phase);
   const skip = useRef<HTMLButtonElement>(null);
   const anchor = getStateCinematicAnchor(stateId);
 
@@ -47,12 +48,21 @@ export function DahliaPlantingCinematic({ theme, stateId, stateName, startPoint,
   }, []);
 
   useEffect(() => {
-    const center = window.setTimeout(() => setPhase('center'), 1550);
-    const map = window.setTimeout(() => setPhase('map'), 2100);
-    const impact = window.setTimeout(() => setPhase('impact'), reducedMotion ? 0 : 3150);
-    const complete = window.setTimeout(onComplete, reducedMotion ? 900 : 4250);
-    return () => { window.clearTimeout(center); window.clearTimeout(map); window.clearTimeout(impact); window.clearTimeout(complete); };
-  }, [onComplete, reducedMotion]);
+    // Let the map clear the viewport before mounting the rising success card.
+    const revealSuccess = () => { setPhase('revealing'); onReveal?.(); };
+    const timers = reducedMotion ? [
+      window.setTimeout(revealSuccess, 0),
+      window.setTimeout(onComplete, 850),
+    ] : [
+      window.setTimeout(() => setPhase('center'), 1550),
+      window.setTimeout(() => setPhase('map'), 2100),
+      window.setTimeout(() => setPhase('impact'), 3150),
+      window.setTimeout(() => setPhase('falling'), 3650),
+      window.setTimeout(revealSuccess, 4400),
+      window.setTimeout(onComplete, 5500),
+    ];
+    return () => timers.forEach(window.clearTimeout);
+  }, [onComplete, onReveal, reducedMotion]);
 
   useEffect(() => { if (viewport) skip.current?.focus({ preventScroll: true }); }, [viewport]);
 
@@ -79,19 +89,21 @@ export function DahliaPlantingCinematic({ theme, stateId, stateName, startPoint,
       <div className={styles.revealBackground} />
       <button ref={skip} type="button" className={styles.skipButton} onClick={onComplete}>Saltar animación ✕</button>
       <p className={styles.srOnly} role="status">{impacted ? `Tu dalia florece en ${stateName}.` : phase === 'center' ? 'Tu dalia florece en comunidad.' : phase === 'map' ? `Destino: ${stateName}.` : `Plantando tu dalia en ${stateName}.`}</p>
-      <div className={`${styles.mapWrapper} ${impacted ? styles.mapImpacted : ''}`} style={{ width: mapWidth, height: mapHeight }}>
-        <NextImage src="/data/map-base.png" alt="Mapa de México" width={660} height={435} className={styles.mapBase} unoptimized priority />
-        <div className={styles.targetBeacon} style={{ left: `${anchor.pctX}%`, top: `${anchor.pctY}%` }} aria-hidden="true" />
+      <div className={styles.camera}>
+        <div className={`${styles.mapWrapper} ${impacted ? styles.mapImpacted : ''}`} style={{ width: mapWidth, height: mapHeight }}>
+          <NextImage src="/data/map-base.png" alt="Mapa de México" width={660} height={435} className={styles.mapBase} unoptimized priority />
+          <div className={styles.targetBeacon} style={{ left: `${anchor.pctX}%`, top: `${anchor.pctY}%` }} aria-hidden="true" />
+        </div>
+        {!impacted && <div className={styles.flyingDahlia} aria-hidden="true">
+          <NextImage src={`/form/themes/dahlia-${theme.id}.webp`} alt="" width={720} height={607} className={styles.dahliaSprite} unoptimized priority />
+        </div>}
+        {impacted && <div className={styles.impact} style={{ left: targetX, top: targetY, '--pin-shift': `${Math.min(width - 88, Math.max(88, targetX)) - targetX}px` } as CSSProperties}>
+          <div className={styles.shockwave} aria-hidden="true" />
+          <NextImage src={`/form/themes/dahlia-${theme.id}.webp`} alt="" width={52} height={44} className={styles.plantedDahlia} unoptimized />
+          {PETALS.map((petal, index) => <NextImage key={index} src={`/form/themes/petal-${theme.id}.webp`} alt="" width={24} height={22} className={styles.burstPetal} style={{ '--dx': petal.x, '--dy': petal.y, '--rotation': petal.rotation } as CSSProperties} unoptimized />)}
+          <span className={styles.impactPin}>✦ {stateName || anchor.name}</span>
+        </div>}
       </div>
-      {!impacted && <div className={styles.flyingDahlia} aria-hidden="true">
-        <NextImage src={`/form/themes/dahlia-${theme.id}.webp`} alt="" width={720} height={607} className={styles.dahliaSprite} unoptimized priority />
-      </div>}
-      {impacted && <div className={styles.impact} style={{ left: targetX, top: targetY, '--pin-shift': `${Math.min(width - 88, Math.max(88, targetX)) - targetX}px` } as CSSProperties}>
-        <div className={styles.shockwave} aria-hidden="true" />
-        <NextImage src={`/form/themes/dahlia-${theme.id}.webp`} alt="" width={52} height={44} className={styles.plantedDahlia} unoptimized />
-        {PETALS.map((petal, index) => <NextImage key={index} src={`/form/themes/petal-${theme.id}.webp`} alt="" width={24} height={22} className={styles.burstPetal} style={{ '--dx': petal.x, '--dy': petal.y, '--rotation': petal.rotation } as CSSProperties} unoptimized />)}
-        <span className={styles.impactPin}>✦ {stateName || anchor.name}</span>
-      </div>}
     </div>, document.body,
   );
 }

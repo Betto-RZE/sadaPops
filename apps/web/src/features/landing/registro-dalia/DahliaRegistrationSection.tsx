@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import NextImage, { type ImageProps } from 'next/image';
 import { IBM_Plex_Mono } from 'next/font/google';
 import { ArrowRight, Check, ShieldCheck, Plus } from 'lucide-react';
@@ -29,6 +29,7 @@ interface Props {
   isPlanted: boolean;
   isCinematicActive?: boolean;
   onCinematicComplete?: () => void;
+  onCinematicReveal?: () => void;
   wantsAlerts: boolean;
   email: string;
   emailError: string | null;
@@ -68,8 +69,25 @@ export function DahliaRegistrationSection(props: Props) {
   const [startPoint, setStartPoint] = useState<DahliaStartPoint | null>(null);
 
   useEffect(() => {
-    if (props.isPlanted) confirmationHeading.current?.focus({ preventScroll: true });
-  }, [props.isPlanted]);
+    if (props.isPlanted && !props.isCinematicActive) confirmationHeading.current?.focus({ preventScroll: true });
+  }, [props.isPlanted, props.isCinematicActive]);
+
+  useLayoutEffect(() => {
+    if (props.isPlanted && props.isCinematicActive) {
+      // Center the layout box, ignoring the entrance animation's translate.
+      const sheet = sceneRef.current?.querySelector<HTMLElement>('[data-cinematic-sheet]');
+      if (sheet) {
+        sheet.style.setProperty('--success-offset-y', '0px');
+        let top = 0;
+        for (let node: HTMLElement | null = sheet; node; node = node.offsetParent as HTMLElement | null) top += node.offsetTop;
+        // At the top of a short mobile page, negative scrolling cannot center
+        // the card. Add the missing layout space instead of shifting the animation.
+        const extraTop = Math.max(0, window.innerHeight / 2 - top - sheet.offsetHeight / 2);
+        sheet.style.setProperty('--success-offset-y', `${extraTop}px`);
+        window.scrollTo({ top: Math.max(0, top + extraTop + sheet.offsetHeight / 2 - window.innerHeight / 2), behavior: 'instant' });
+      }
+    }
+  }, [props.isPlanted, props.isCinematicActive]);
 
   const handleFormSubmit = (event: FormEvent) => {
     if (flowerRef.current && sceneRef.current) {
@@ -105,7 +123,7 @@ export function DahliaRegistrationSection(props: Props) {
         <div className={`${styles.wash} ${styles.washTop}`} aria-hidden="true" />
         <div className={`${styles.wash} ${styles.washRight}`} aria-hidden="true" />
         <div className={`${styles.wash} ${styles.washBottom}`} aria-hidden="true" />
-        <div data-cinematic-decor className={`${styles.sceneGrid} ${props.isCinematicActive ? styles.adornmentHidden : ''}`} aria-hidden="true" />
+        <div data-cinematic-decor className={`${styles.sceneGrid} ${props.isCinematicActive ? (props.isPlanted ? styles.adornmentEntering : styles.adornmentHidden) : ''}`} aria-hidden="true" />
 
         {/* Cinemática de plantado de dalia hacia el mapa de México */}
         {props.isCinematicActive && (
@@ -114,22 +132,23 @@ export function DahliaRegistrationSection(props: Props) {
             stateId={props.stateId}
             stateName={displayName}
             startPoint={startPoint}
+            onReveal={props.onCinematicReveal}
             onComplete={props.onCinematicComplete ?? (() => {})}
           />
         )}
 
-        <div data-cinematic-decor className={`${styles.polaroid} ${props.isCinematicActive ? styles.adornmentHidden : ''}`} aria-hidden="true">
+        <div data-cinematic-decor className={`${styles.polaroid} ${props.isCinematicActive ? (props.isPlanted ? styles.adornmentEntering : styles.adornmentHidden) : ''}`} aria-hidden="true">
           <Image src={`/form/themes/polaroid-ine-${theme.id}.webp`} alt="" width={640} height={684} sizes="(min-width: 1280px) 225px, 120px" />
         </div>
         {Array.from({ length: 18 }, (_, index) => index).map(index => (
-          <div data-cinematic-decor key={index} className={`${styles.petal} ${styles[`petal${index}`]} ${props.isCinematicActive ? styles.adornmentHidden : ''}`} aria-hidden="true">
+          <div data-cinematic-decor key={index} className={`${styles.petal} ${styles[`petal${index}`]} ${props.isCinematicActive ? (props.isPlanted ? styles.adornmentEntering : styles.adornmentHidden) : ''}`} aria-hidden="true">
             <Image src={`/form/themes/petal-${theme.id}.webp`} alt="" width={256} height={234} sizes="(min-width: 1024px) 105px, 58px" />
           </div>
         ))}
-        <Plus data-cinematic-decor key={`first-${theme.id}`} className={`${styles.ornament} ${styles.ornamentOne} ${props.isCinematicActive ? styles.adornmentHidden : ''}`} aria-hidden="true" />
-        <Plus data-cinematic-decor key={`second-${theme.id}`} className={`${styles.ornament} ${styles.ornamentTwo} ${props.isCinematicActive ? styles.adornmentHidden : ''}`} aria-hidden="true" />
+        <Plus data-cinematic-decor key={`first-${theme.id}`} className={`${styles.ornament} ${styles.ornamentOne} ${props.isCinematicActive ? (props.isPlanted ? styles.adornmentEntering : styles.adornmentHidden) : ''}`} aria-hidden="true" />
+        <Plus data-cinematic-decor key={`second-${theme.id}`} className={`${styles.ornament} ${styles.ornamentTwo} ${props.isCinematicActive ? (props.isPlanted ? styles.adornmentEntering : styles.adornmentHidden) : ''}`} aria-hidden="true" />
 
-        <div data-cinematic-sheet className={`${styles.sheet} ${props.isCinematicActive ? styles.sheetHidden : ''}`} aria-hidden={props.isCinematicActive || undefined}>
+        <div data-cinematic-sheet className={`${styles.sheet} ${props.isPlanted ? styles.sheetSuccess : ''} ${props.isCinematicActive ? (props.isPlanted ? styles.sheetEntering : styles.sheetHidden) : ''}`} aria-hidden={(props.isCinematicActive && !props.isPlanted) || undefined}>
           <div key={theme.id} className={styles.tape} aria-hidden="true" />
           <header className={styles.heading}>
             <div className={styles.headingCopy}>
@@ -138,7 +157,7 @@ export function DahliaRegistrationSection(props: Props) {
               </h3>
               <p className={styles.introduction}>{copy.introduction}</p>
             </div>
-            <div ref={flowerRef} className={`${styles.flower} ${props.isCinematicActive ? styles.flowerInFlight : ''}`} aria-hidden="true">
+            <div ref={flowerRef} className={`${styles.flower} ${props.isCinematicActive && !props.isPlanted ? styles.flowerInFlight : ''}`} aria-hidden="true">
               <Image src={`/form/themes/dahlia-${theme.id}.webp`} alt="" width={720} height={607}
                 sizes="(min-width: 768px) 310px, 180px" />
             </div>
@@ -220,8 +239,8 @@ export function DahliaRegistrationSection(props: Props) {
           <p className={styles.disclaimer}>{copy.disclaimer}</p>
           <div className={styles.closingRule} aria-hidden="true"><span />✦<span /></div>
         </div>
-        <div data-cinematic-decor className={`${styles.notePosition} ${props.isCinematicActive ? styles.adornmentHidden : ''}`}><Stationery theme={theme} /></div>
-        <div data-cinematic-decor className={`${styles.ticketPosition} ${props.isCinematicActive ? styles.adornmentHidden : ''}`}><Stationery theme={theme} ticket /></div>
+        <div data-cinematic-decor className={`${styles.notePosition} ${props.isCinematicActive ? (props.isPlanted ? styles.adornmentEntering : styles.adornmentHidden) : ''}`}><Stationery theme={theme} /></div>
+        <div data-cinematic-decor className={`${styles.ticketPosition} ${props.isCinematicActive ? (props.isPlanted ? styles.adornmentEntering : styles.adornmentHidden) : ''}`}><Stationery theme={theme} ticket /></div>
       </div>
     </section>
   );

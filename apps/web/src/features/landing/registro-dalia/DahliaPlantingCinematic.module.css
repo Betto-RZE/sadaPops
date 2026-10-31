@@ -27,3 +27,17 @@
 .reducedMotion .flyingDahlia { display: none; }
 .reducedMotion .plantedDahlia, .reducedMotion .shockwave, .reducedMotion .burstPetal { animation: none; }
 .reducedMotion .shockwave, .reducedMotion .burstPetal { display: none; }
+
+/* The complete map and its planted flower fall together, accelerating downward. */
+.camera { position: absolute; inset: 0; }
+.cinematicOverlay[data-phase='falling'] .camera { animation: mapFall .65s cubic-bezier(.55, .02, .95, .45) forwards; }
+@keyframes mapFall {
+  0% { transform: translateY(0); opacity: 1; }
+  35% { opacity: .95; }
+  100% { transform: translateY(115vh); opacity: 0; }
+}
+.cinematicOverlay[data-phase='revealing'] .camera { visibility: hidden; }
+.cinematicOverlay[data-phase='revealing'] .revealBackground { animation: backgroundFade .3s ease-out forwards; }
+@keyframes backgroundFade { from { opacity: 1; } to { opacity: 0; } }
+.cinematicOverlay[data-phase='revealing'] .skipButton { visibility: hidden; }
+.reducedMotion .camera { transform: none !important; animation: none !important; }
