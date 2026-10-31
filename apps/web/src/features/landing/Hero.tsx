@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { PixelMap, DahliaLayer, DahliaStoreProvider, StateHologramCard } from '@/features/mapa-dalias';
+import { ChevronDown } from 'lucide-react';
+import { PixelMap, DahliaLayer, DahliaStoreProvider, StateHologramCard, FloatingPetals } from '@/features/mapa-dalias';
 import { PaperTearOverlay } from './PaperTearOverlay';
 import { MobileMapHud } from './MobileMapHud';
 
@@ -25,6 +26,7 @@ export function Hero() {
   //   quitando por completo las letras y descubriendo el mapa debajo ya con zoom en Baja California.
   const [ascentProgress, setAscentProgress] = useState(0);
   const [hasReachedPlace, setHasReachedPlace] = useState(false);
+  const [showMobileScrollHint, setShowMobileScrollHint] = useState(true);
 
   // Fase 3: Progreso de paneo horizontal acoplado a la diagonal de México en Mobile [0 = Baja California .. 1 = Yucatán]
   const [mobilePanProgress, setMobilePanProgress] = useState(0);
@@ -34,6 +36,25 @@ export function Hero() {
   const targetProgressRef = useRef(0);
   const currentProgressRef = useRef(0);
   const reachedRef = useRef(false);
+
+  useEffect(() => {
+    const hideHint = () => {
+      setShowMobileScrollHint(false);
+    };
+    const hideAfterPageScroll = () => { if (window.scrollY > 16) hideHint(); };
+
+    if (window.scrollY > 16) {
+      setShowMobileScrollHint(false);
+      return;
+    }
+
+    window.addEventListener('scroll', hideAfterPageScroll, { passive: true });
+    window.addEventListener('wheel', hideHint, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', hideAfterPageScroll);
+      window.removeEventListener('wheel', hideHint);
+    };
+  }, []);
 
   const targetPanRef = useRef(0);
   const currentPanRef = useRef(0);
@@ -441,6 +462,16 @@ export function Hero() {
           </div>
         </div>
       </div>
+      <FloatingPetals />
+      {showMobileScrollHint && (
+        <div
+          aria-hidden="true"
+          className="fixed bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] left-1/2 z-[70] flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/90 bg-white/85 px-4 py-2 text-xs font-medium tracking-wide text-brand-navy shadow-md backdrop-blur-sm md:hidden"
+        >
+          <span>Desliza para explorar</span>
+          <ChevronDown size={15} strokeWidth={2} />
+        </div>
+      )}
     </section>
   );
 }

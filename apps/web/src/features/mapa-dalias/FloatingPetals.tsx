@@ -35,7 +35,6 @@ export function FloatingPetals({
 }: FloatingPetalsProps) {
   const [hasStarted, setHasStarted] = useState(false);
   const [isSettled, setIsSettled] = useState(false);
-  const [anchorTopPx, setAnchorTopPx] = useState(0);
   const [offsets, setOffsets] = useState<Record<number, PetalOffset>>({});
   const petalRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
@@ -68,16 +67,9 @@ export function FloatingPetals({
     let settleTimer = 0;
     let triggered = false;
 
-    const handleDropStart = (ev: Event) => {
+    const handleDropStart = () => {
       if (triggered) return;
       triggered = true;
-
-      const customEv = ev as CustomEvent<{ scrollY?: number }>;
-      const dropScrollY =
-        typeof customEv.detail?.scrollY === 'number'
-          ? customEv.detail.scrollY
-          : window.scrollY;
-      setAnchorTopPx(Math.max(0, Math.round(dropScrollY)));
 
       startTimer = window.setTimeout(() => {
         setHasStarted(true);
@@ -160,10 +152,9 @@ export function FloatingPetals({
     <div
       aria-hidden="true"
       className={cn(
-        'hidden md:block absolute inset-x-0 h-screen supports-[height:100svh]:h-[100svh] min-h-[720px] pointer-events-none overflow-hidden select-none z-[60]',
+        'hidden md:block absolute inset-x-0 top-0 h-screen supports-[height:100svh]:h-[100svh] min-h-[720px] pointer-events-none overflow-hidden select-none z-[60]',
         className
       )}
-      style={{ top: `${anchorTopPx}px` }}
     >
       <style>{`
         /* ==================================================================== */

@@ -91,27 +91,6 @@
 .note .paperMessage { top: 55px; left: 46px; width: 120px; transform: rotate(15deg); }
 .ticket .paperMessage { top: 57%; left: 29%; width: 44%; margin: 0; font-size: 12px; font-weight: 600; line-height: 1.2; transform: translateY(-50%) rotate(-13deg); }
 .ticket .paperMessage span { display: inline-block; margin-top: 4px; }
-.petal { position: absolute; z-index: 3; pointer-events: none; width: 90px; }
-.petal img { width: 100%; height: auto; object-fit: contain; filter: drop-shadow(0 8px 6px #17253620); }
-/* The reference arrangement, enriched with smaller petals in the outer gaps. */
-.petal0 { right: calc(50% + var(--sheet-width) / 2 + 52px); top: 55px; width: 100px; transform: rotate(-20deg); }
-.petal1 { right: calc(50% + var(--sheet-width) / 2 + 30px); top: 43%; width: 105px; transform: rotate(8deg); }
-.petal2 { right: calc(50% + var(--sheet-width) / 2 - 20px); top: 70%; width: 70px; transform: rotate(28deg); }
-.petal3 { left: calc(50% + var(--sheet-width) / 2 - 265px); top: 270px; width: 55px; transform: rotate(-16deg); }
-.petal4 { left: calc(50% + var(--sheet-width) / 2 - 170px); top: 315px; width: 42px; transform: rotate(10deg); }
-.petal5 { left: calc(50% + var(--sheet-width) / 2 - 68px); top: 105px; width: 86px; transform: rotate(10deg); }
-.petal6 { left: calc(50% + var(--sheet-width) / 2 - 34px); top: 350px; width: 88px; transform: rotate(-15deg); }
-.petal7 { left: calc(50% + var(--sheet-width) / 2 + 108px); top: 57%; width: 80px; transform: rotate(-24deg); }
-.petal8 { left: calc(50% + var(--sheet-width) / 2 + 172px); top: 78%; width: 34px; transform: rotate(20deg); }
-.petal9 { left: calc(50% + var(--sheet-width) / 2 + 85px); bottom: 65px; width: 94px; transform: rotate(8deg); }
-.petal10 { right: calc(50% + var(--sheet-width) / 2 + 185px); top: 26%; width: 40px; transform: rotate(40deg); }
-.petal11 { right: calc(50% + var(--sheet-width) / 2 + 135px); top: 51%; width: 55px; transform: rotate(-35deg); }
-.petal12 { right: calc(50% + var(--sheet-width) / 2 + 28px); bottom: 55px; width: 55px; transform: rotate(25deg); }
-.petal13 { right: calc(50% + var(--sheet-width) / 2 + 155px); bottom: 16px; width: 80px; transform: rotate(-18deg); }
-.petal14 { left: calc(50% + var(--sheet-width) / 2 + 115px); top: 60px; width: 55px; transform: rotate(30deg); }
-.petal15 { left: calc(50% + var(--sheet-width) / 2 + 65px); top: 45%; width: 45px; transform: rotate(-35deg); }
-.petal16 { left: calc(50% + var(--sheet-width) / 2 + 25px); top: 70%; width: 62px; transform: rotate(25deg); }
-.petal17 { left: calc(50% + var(--sheet-width) / 2 - 18px); bottom: 20px; width: 40px; transform: rotate(-30deg); }
 .ornament { position: absolute; color: var(--dahlia-swatch); stroke-width: 4px; width: 34px; height: 34px; }
 .ornamentOne { left: 0; top: 390px; transform: rotate(12deg); }
 .ornamentTwo { right: 3%; bottom: 220px; transform: rotate(-12deg); }
@@ -119,6 +98,30 @@
 .confirmationCheck { color: var(--dahlia-accent); border: 1px solid var(--dahlia-border); background: var(--dahlia-scene); border-radius: 50%; padding: 10px; }
 .confirmation h4 { font-family: 'Newsreader', Georgia, 'Times New Roman', serif; font-size: 33px; line-height: 1.15; margin: 0; font-weight: 600; }
 .confirmation p { color: #4b5563; line-height: 1.6; margin: 0; font-size: 14px; }
+.confirmation .shareButton { margin-top: 6px; }
+.shareFeedback { min-height: 1.4em; color: #4b5563; font-size: 12px !important; }
+.shareSpinner { animation: shareSpin 1s linear infinite; }
+@keyframes shareSpin { to { transform: rotate(360deg); } }
+.storyDialog { position: fixed; width: min(92vw, 880px); height: min(90dvh, 1000px); max-width: none; max-height: 92dvh; margin: auto; padding: 0; overflow: hidden; border: 1px solid var(--dahlia-border); border-radius: 20px; background: var(--dahlia-paper); color: #172536; box-shadow: 0 28px 90px #11182755; }
+.storyDialog[open] { display: grid; grid-template-rows: auto auto minmax(0, 1fr); }
+.storyDialog::backdrop { background: #172536aa; backdrop-filter: blur(7px); }
+.storyDialogHeader { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding: 18px 20px 14px; }
+.storyDialogEyebrow { margin: 0 0 4px; color: var(--dahlia-accent); font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+.storyDialogHeader h5 { margin: 0; font: 600 22px/1.2 'Newsreader', Georgia, serif; }
+.storyClose { display: grid; place-items: center; flex: 0 0 42px; width: 42px; height: 42px; border: 1px solid var(--dahlia-border); border-radius: 50%; background: white; color: #172536; cursor: pointer; }
+.storyModes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 0 20px 14px; }
+.storyModes button { display: flex; min-width: 0; min-height: 64px; flex-direction: column; justify-content: center; gap: 4px; padding: 9px 12px; border: 1px solid var(--dahlia-border); border-radius: 12px; background: #fff; color: #172536; text-align: left; cursor: pointer; }
+.storyModes button[aria-pressed='true'] { border-color: var(--dahlia-accent); background: var(--dahlia-scene); box-shadow: inset 0 0 0 1px var(--dahlia-accent); }
+.storyModes button span { font-size: 12px; font-weight: 600; line-height: 1.2; }
+.storyModes button small { color: #626B7C; font-size: 10px; line-height: 1.2; }
+.storyModes button:disabled { cursor: wait; opacity: .6; }
+.storyPreviewContent { display: grid; min-height: 0; grid-template-columns: minmax(0, 1fr) 210px; align-items: center; gap: 16px; padding: 0 20px 18px; }
+.storyPreviewImage { display: block; width: auto; height: auto; max-width: 100%; max-height: 100%; min-height: 0; margin: auto; object-fit: contain; border: 1px solid #17253616; border-radius: 10px; background: #f6f1ec; }
+.storyDialogActions { display: flex; flex-direction: column; align-items: stretch; justify-content: center; gap: 12px; width: 100%; padding: 0; }
+.storySecondaryButton { min-height: 48px; padding: 10px 14px; border: 1px solid var(--dahlia-border); border-radius: 24px; background: transparent; color: #4b5563; font: inherit; cursor: pointer; }
+.storyDialogActions > .storySecondaryButton,
+.storyDialogActions > .storyDownload { flex: 0 0 auto; min-width: 0; width: 100%; min-height: 52px; margin: 0; padding: 10px clamp(10px, 2.5vw, 18px); }
+.storyDialogActions .storyDownload { font-size: clamp(10px, 2.3vw, 12px); letter-spacing: .045em; white-space: nowrap; }
 .section :is(select, button, a, input):focus-visible { outline: 2px solid #172536; outline-offset: 4px; }
 .fieldHelp, .themeStatus { color: #4b5563; font-size: 11px; line-height: 1.5; margin: 8px 0 0; }
 .themeStatus { min-height: 17px; margin-top: 9px; }
@@ -132,7 +135,7 @@
 .submit:disabled { transform: none; }
 .sheet, .title span, .label, .paperMessage, .ornament, .selectWrap > svg, .tape { transition: color .2s, background-color .2s, border-color .2s; }
 /* Animate the cutouts, not the atlas crops or their positioning transforms. */
-.polaroid img, .flower img, .petal img, .note, .ticket, .tape, .ornament {
+.polaroid img, .flower img, .note, .ticket, .tape, .ornament {
   animation: themePop .52s cubic-bezier(.2, .7, .25, 1) both;
   transform-origin: center;
 }
@@ -155,11 +158,6 @@
   .ticket .paperMessage { position: relative; inset: auto; width: 100%; margin: 10px 0 0; font-size: 12px; line-height: 1.5; transform: none; }
   .title { font-size: clamp(64px, 6.4vw, 80px); }
   .title span { font-size: .72em; }
-  .petal10, .petal11, .petal13 { right: calc(50% + var(--sheet-width) / 2 + 50px); }
-  .petal14 { left: calc(50% + var(--sheet-width) / 2 + 30px); }
-  .petal7 { left: calc(50% + var(--sheet-width) / 2 + 35px); }
-  .petal8 { left: calc(50% + var(--sheet-width) / 2 + 70px); }
-  .petal9 { left: calc(50% + var(--sheet-width) / 2 + 15px); }
 }
 /* Compact collage: omit decorations that would need a separate row. */
 @media (max-width: 1023px) {
@@ -172,19 +170,6 @@
   .note .paperMessage { top: 40px; left: 34px; width: 88px; font-size: 12px; }
   .note::after { content: ''; position: absolute; top: 8px; left: 24px; width: 58px; height: 19px; transform: rotate(-18deg); background: color-mix(in srgb, var(--dahlia-swatch) 30%, transparent); clip-path: polygon(0 7%, 97% 0, 100% 94%, 3% 100%); }
 
-  .polaroid, .ticketPosition, .sceneGrid, .ornament, .petal { display: none; }
-  .petal0, .petal1, .petal2, .petal3, .petal4, .petal5, .petal8, .petal10, .petal12, .petal14, .petal17 { display: block; }
-  .petal1 { inset: 34% auto auto -6px; width: 27px; }
-  .petal2 { inset: 61% auto auto -5px; width: 25px; }
-  .petal8 { inset: 48% -5px auto auto; width: 24px; }
-  .petal10 { inset: 76% -4px auto auto; width: 28px; }
-  .petal12 { inset: auto auto 50px 15%; width: 32px; }
-  .petal14 { inset: auto 12% 80px auto; width: 38px; }
-  .petal0 { inset: 80px auto auto -4px; width: 32px; }
-  .petal3 { inset: 220px 25% auto auto; width: 26px; }
-  .petal4 { inset: 245px 5% auto auto; width: 30px; }
-  .petal5 { inset: 52px 0 auto auto; width: 34px; }
-  .petal17 { inset: auto 0 25px auto; width: 32px; }
   .tape { top: -12px; right: auto; left: -10px; width: 85px; height: 30px; transform: rotate(-16deg); }
   .washTop { left: auto; right: -75px; top: -70px; width: 220px; height: 330px; }
   .washRight { display: none; }
@@ -230,11 +215,20 @@
   .submit { min-height: 52px; padding: 12px 14px; font-size: 12px; gap: 12px; letter-spacing: .08em; }
   .assurances { justify-content: center; text-align: center; gap: 7px; }
   .disclaimer { font-size: 11px; }
-  .petal0 { top: 75px; width: 25px; }
-  .petal3 { top: 145px; right: 24%; width: 22px; }
-  .petal4 { top: 170px; right: 5%; width: 25px; }
-  .petal5 { top: 55px; width: 28px; }
   .confirmation h4 { font-size: 28px; }
+  .storyDialog { width: min(92vw, 420px); height: min(90dvh, 820px); border-radius: 16px; }
+  .storyPreviewContent { display: flex; min-height: 0; flex-direction: column; align-items: stretch; gap: 10px; padding: 0 12px 12px; }
+  .storyDialogHeader { padding: 14px 14px 10px; }
+  .storyModes { gap: 7px; padding: 0 12px 10px; }
+  .storyModes button { min-height: 58px; padding: 8px; }
+  .storyModes button span { font-size: 11px; }
+  .storyModes button small { font-size: 9px; }
+  .storyPreviewImage { flex: 1 1 0; max-width: calc(100% - 24px); width: auto; height: 0; max-height: 100%; }
+  .storyDialogActions { flex: 0 0 auto; flex-direction: column-reverse; gap: 9px; padding: 0; }
+  .storyDialogActions > .storySecondaryButton,
+  .storyDialogActions > .storyDownload { flex: 0 0 auto; width: 100%; min-height: 46px; }
+  .storySecondaryButton { padding: 8px 10px; font-size: 12px; }
+  .storyDialogActions .storyDownload { padding: 8px 12px; font-size: 11px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .section *, .section *::before, .section *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }

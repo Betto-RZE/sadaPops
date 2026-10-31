@@ -3,12 +3,13 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import NextImage, { type ImageProps } from 'next/image';
 import { IBM_Plex_Mono } from 'next/font/google';
-import { ArrowRight, Check, ShieldCheck, Plus } from 'lucide-react';
+import { ArrowRight, Check, ShieldCheck, Plus, Share2, Loader2, X, Download } from 'lucide-react';
 import messages from '@/i18n/es.json';
 import { REGISTRATION_THEMES, type RegistrationTheme } from './themes';
 import { StateSelect } from './StateSelect';
 import { PrivacyDialog } from './PrivacyDialog';
 import { DahliaPlantingCinematic, type DahliaStartPoint } from './DahliaPlantingCinematic';
+import { createDahliaStory, type DahliaStoryMode } from './createDahliaStory';
 import styles from './DahliaRegistrationSection.module.css';
 
 const mono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500', '600'], display: 'swap' });
@@ -63,10 +64,54 @@ function Stationery({ theme, ticket = false }: { theme: RegistrationTheme; ticke
 
 export function DahliaRegistrationSection(props: Props) {
   const { theme } = props;
+  const selectedState = props.states.find(s => s.id === props.stateId);
+  const displayName = selectedState ? selectedState.name : props.stateName;
   const confirmationHeading = useRef<HTMLHeadingElement>(null);
   const sceneRef = useRef<HTMLDivElement>(null);
   const flowerRef = useRef<HTMLDivElement>(null);
   const [startPoint, setStartPoint] = useState<DahliaStartPoint | null>(null);
+  const [sharing, setSharing] = useState(false);
+  const [shareFeedback, setShareFeedback] = useState('');
+  const [storyPreviewUrl, setStoryPreviewUrl] = useState<string | null>(null);
+  const [storyFile, setStoryFile] = useState<File | null>(null);
+  const [storyMode, setStoryMode] = useState<DahliaStoryMode>('flower');
+  const storyDialog = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    if (storyPreviewUrl && storyDialog.current && !storyDialog.current.open) storyDialog.current.showModal();
+  }, [storyPreviewUrl]);
+
+  const shareDahlia = async (mode: DahliaStoryMode = storyMode) => {
+    if (sharing) return;
+    setSharing(true);
+    setStoryMode(mode);
+    setShareFeedback('');
+    try {
+      const url = 'https://florece.vercel.app';
+      const file = await createDahliaStory({ stateId: props.stateId, stateName: displayName, theme, url, mode });
+      setStoryFile(file);
+      const nextPreviewUrl = URL.createObjectURL(file);
+      setStoryPreviewUrl(current => {
+        if (current) URL.revokeObjectURL(current);
+        return nextPreviewUrl;
+      });
+      setShareFeedback(copy.sharePreviewReady);
+    } catch (error) {
+      setShareFeedback(copy.shareError);
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  const closeStoryPreview = () => {
+    if (storyDialog.current?.open) storyDialog.current.close();
+  };
+
+  const clearStoryPreview = () => {
+    if (storyPreviewUrl) URL.revokeObjectURL(storyPreviewUrl);
+    setStoryPreviewUrl(null);
+    setStoryFile(null);
+  };
 
   useEffect(() => {
     if (props.isPlanted && !props.isCinematicActive) confirmationHeading.current?.focus({ preventScroll: true });
@@ -104,9 +149,6 @@ export function DahliaRegistrationSection(props: Props) {
     props.onSubmit(event);
   };
 
-  const selectedState = props.states.find(s => s.id === props.stateId);
-  const displayName = selectedState ? selectedState.name : props.stateName;
-
   const variables = {
     '--dahlia-swatch': theme.hex, '--dahlia-scene': theme.scene, '--dahlia-paper': theme.paper,
     '--dahlia-accent': theme.accent, '--dahlia-border': theme.border,
@@ -140,11 +182,6 @@ export function DahliaRegistrationSection(props: Props) {
         <div data-cinematic-decor className={`${styles.polaroid} ${props.isCinematicActive ? (props.isPlanted ? styles.adornmentEntering : styles.adornmentHidden) : ''}`} aria-hidden="true">
           <Image src={`/form/themes/polaroid-ine-${theme.id}.webp`} alt="" width={640} height={684} sizes="(min-width: 1280px) 225px, 120px" />
         </div>
-        {Array.from({ length: 18 }, (_, index) => index).map(index => (
-          <div data-cinematic-decor key={index} className={`${styles.petal} ${styles[`petal${index}`]} ${props.isCinematicActive ? (props.isPlanted ? styles.adornmentEntering : styles.adornmentHidden) : ''}`} aria-hidden="true">
-            <Image src={`/form/themes/petal-${theme.id}.webp`} alt="" width={256} height={234} sizes="(min-width: 1024px) 105px, 58px" />
-          </div>
-        ))}
         <Plus data-cinematic-decor key={`first-${theme.id}`} className={`${styles.ornament} ${styles.ornamentOne} ${props.isCinematicActive ? (props.isPlanted ? styles.adornmentEntering : styles.adornmentHidden) : ''}`} aria-hidden="true" />
         <Plus data-cinematic-decor key={`second-${theme.id}`} className={`${styles.ornament} ${styles.ornamentTwo} ${props.isCinematicActive ? (props.isPlanted ? styles.adornmentEntering : styles.adornmentHidden) : ''}`} aria-hidden="true" />
 
@@ -231,7 +268,37 @@ export function DahliaRegistrationSection(props: Props) {
               <h4 ref={confirmationHeading} tabIndex={-1}>{copy.planted}</h4>
               <p>{copy.plantedDetail} <strong>{props.stateName}</strong>.</p>
               {props.alertsSaved && <p>{copy.localSaved}</p>}
-              <a href="#mapa-interactivo" className={`${styles.submit} ${mono.className}`}>{copy.viewMap}<ArrowRight size={22} aria-hidden="true" /></a>
+              <button type="button" onClick={() => void shareDahlia()} disabled={sharing} className={`${styles.submit} ${styles.shareButton} ${mono.className}`}>
+                {sharing ? <Loader2 size={21} className={styles.shareSpinner} aria-hidden="true" /> : <Share2 size={21} aria-hidden="true" />}
+                {sharing ? copy.shareCreating : copy.shareDahlia}
+              </button>
+              <p className={styles.shareFeedback} role="status" aria-live="polite">{shareFeedback}</p>
+              <dialog ref={storyDialog} className={styles.storyDialog} aria-labelledby="dahlia-story-title" onClose={clearStoryPreview}>
+                <div className={styles.storyDialogHeader}>
+                  <div>
+                    <p className={`${styles.storyDialogEyebrow} ${mono.className}`}>{copy.sharePreviewEyebrow}</p>
+                    <h5 id="dahlia-story-title">{copy.sharePreviewTitle}</h5>
+                  </div>
+                  <button type="button" className={styles.storyClose} onClick={closeStoryPreview} aria-label={copy.shareClose}><X size={22} /></button>
+                </div>
+                <div className={styles.storyModes} aria-label={copy.shareChooseStyle}>
+                  <button type="button" disabled={sharing} aria-pressed={storyMode === 'flower'} onClick={() => void shareDahlia('flower')}>
+                    <span>{copy.sharePrivateStyle}</span><small>{copy.sharePrivateDetail}</small>
+                  </button>
+                  <button type="button" disabled={sharing} aria-pressed={storyMode === 'map'} onClick={() => void shareDahlia('map')}>
+                    <span>{copy.shareMapStyle}</span><small>{copy.shareMapDetail}</small>
+                  </button>
+                </div>
+                <div className={styles.storyPreviewContent}>
+                  {storyPreviewUrl && <Image className={styles.storyPreviewImage} src={storyPreviewUrl} alt={storyMode === 'map' ? `${copy.shareMapPreviewAlt} ${displayName}` : copy.sharePrivatePreviewAlt} width={1080} height={1920} />}
+                  <div className={styles.storyDialogActions}>
+                    <button type="button" className={styles.storySecondaryButton} onClick={closeStoryPreview}>{copy.shareClose}</button>
+                    {storyPreviewUrl && storyFile && <a className={`${styles.submit} ${styles.storyDownload} ${mono.className}`} href={storyPreviewUrl} download={storyFile.name}>
+                      <Download size={19} aria-hidden="true" />{copy.shareDownload}
+                    </a>}
+                  </div>
+                </div>
+              </dialog>
             </div>
           )}
           {props.storageWarning && <p role="status" className={styles.fieldHelp}>{copy.storageWarning}</p>}

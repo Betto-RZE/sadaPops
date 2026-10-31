@@ -1,6 +1,7 @@
 # Node dependencies & builds
 node_modules/
 .next/
+apps/web/.next-dev/
 dist/
 build/
 .turbo/
