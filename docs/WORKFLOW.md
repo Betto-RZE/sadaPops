@@ -54,20 +54,69 @@ python etl/ccpc_ingest.py --file ../data/raw/ccpc_ine_official.zip
 
 ---
 
-## Fase 2: Motor del Mapa de Dalias y Narrativa (Días 6 - 11)
+## Fase 2: Motor del Mapa de Dalias, Holograma Voxel 3D y Experiencia Visual (Días 6 - 11)
 
 ### Objetivos
-- Construir el mapa SVG interactivo de México utilizando `react-simple-maps` y d3.
-- Implementar los niveles de Zoom 1, 2 y 3 (Nacional $\to$ Estatal $\to$ Municipal).
-- Aplicar la Regla 02 de umbral ($N=5$) en el Zoom 3 para evitar la re-identificación.
-- Implementar el flujo de la Narrativa (problemas $\to$ mecanismo $\to$ reflexión $\to$ electores foráneos).
+- Construir el mapa interactivo de México con estética pixel art / isométrica y proyección holográfica 3D.
+- Integrar siluetas voxel amplificadas de los 32 estados de la República Mexicana.
+- Implementar la card HUD de participación estatal con datos oficiales de participación juvenil INE 2024.
+- Normalizar nombres oficiales directos en hover y mapa (Veracruz, Coahuila, Michoacán, Estado de México).
+- Calibrar la física de caída y planeo natural de pétalos flotantes en el Hero.
 
-### Lista de Tareas
-- [ ] Cargar mapas GeoJSON del INEGI en `apps/web/public/geojson/`.
-- [ ] Crear componentes en `features/mapa-dalias` (NationalMap, StateMap, DaliaCard).
-- [ ] Implementar el endpoint `GET /api/v1/dalias/aggregate` en FastAPI retornando conteos agregados por estado/municipio.
-- [ ] Construir componentes en `features/narrativa` con tarjetas interactivas de reflexión.
-- [ ] Implementar hook de estado de desbloqueo `useProgresoSesion`.
+### Estado de Tareas
+- [x] Motor volumétrico de mapa en canvas con bisel y elevación (`PixelMap.tsx`).
+- [x] Siluetas voxel 3D de los 32 estados horneadas con paleta índigo oficial (`/data/holo/state-*.png`).
+- [x] Cono de proyección simétrico de alta precisión sin costo de blur en GPU.
+- [x] Chasis voxel 3D con bisel escalonado, canal hundido y botón cápsula voxel (`StateHologramCard.tsx`).
+- [x] Tipografía sans serif moderna en dos niveles (`CIUDAD DE` / `MÉXICO`) con `Plus Jakarta Sans` y escalado dinámico.
+- [x] Indicador de participación juvenil INE 2024 con icono vectorial `BarChart` cian luminoso.
+- [x] Contador voxel 3D con atlas numérico recortado de alta definición (`numerosV2`).
+- [x] Desfases dinámicos calibrados para CDMX (`09`) y Puebla (`21`).
+- [x] Normalización de nombres de estado oficiales en hover y mapa.
+- [x] Copy actualizado: *"personas que ya dieron el primer paso"*.
+- [x] Caída de pétalos con planeo y deriva natural sin bloqueos ni doble freno (`FloatingPetals.tsx`).
+- [x] **Calibración de tamaños de dalias:**\r\n  - Ajuste de jerarquía y proporciones de escala en DahliaLayer (computeLevels.ts, tamaños por nivel 1 a 4).\r\n  - Balance visual para estados de alta y baja densidad geográfica con factor 0.80x para micro-estados.\r\n  - Recolocación óptica de Puebla () e Hidalgo () hacia Veracruz.\r\n- [x] **Optimización y funcionamiento mobile (< 768px):**\r\n  - Layout editorial responsivo: titular compacto y nítido arriba, mapa protagonista limpio sobre fondo pergamino abajo.\r\n  - Posicionamiento y escalado adaptativo de la card holográfica en pantallas pequeñas (< 768px), sin desborde.\r\n  - Botón accesible de cierre táctil ✕ (WCAG 2.1 AA) en el chasis de la tarjeta.\r\n  - Interacciones táctiles mejoradas: diferenciador tap vs scroll (prevención de secuestro de scroll al deslizar la página).\r\n  - Hitbox asistido ampliado en micro-estados para toques con el pulgar.\r\n  - Rendimiento a 60 FPS garantizado: supresión de brisa pointermove en pantallas táctiles y optimización de pétalos perimetrales.\r\n\r\n### Comandos de Verificación
+```bash
+# Verificar infraestructura local
+docker compose up -d
+
+# Verificar conexión a base de datos y migraciones en backend
+cd backend && pytest tests/test_db_connection.py
+
+# Verificar resultados de la ingesta ETL
+python etl/ccpc_ingest.py --file ../data/raw/ccpc_ine_official.zip
+```
+
+---
+
+## Fase 2: Motor del Mapa de Dalias, Holograma Voxel 3D y Experiencia Visual (Días 6 - 11)
+
+### Objetivos
+- Construir el mapa interactivo de México con estética pixel art / isométrica y proyección holográfica 3D.
+- Integrar siluetas voxel amplificadas de los 32 estados de la República Mexicana.
+- Implementar la card HUD de participación estatal con datos oficiales de participación juvenil INE 2024.
+- Normalizar nombres oficiales directos en hover y mapa (Veracruz, Coahuila, Michoacán, Estado de México).
+- Calibrar la física de caída y planeo natural de pétalos flotantes en el Hero.
+
+### Estado de Tareas
+- [x] Motor volumétrico de mapa en canvas con bisel y elevación (`PixelMap.tsx`).
+- [x] Siluetas voxel 3D de los 32 estados horneadas con paleta índigo oficial (`/data/holo/state-*.png`).
+- [x] Cono de proyección simétrico de alta precisión sin costo de blur en GPU.
+- [x] Chasis voxel 3D con bisel escalonado, canal hundido y botón cápsula voxel (`StateHologramCard.tsx`).
+- [x] Tipografía sans serif moderna en dos niveles (`CIUDAD DE` / `MÉXICO`) con `Plus Jakarta Sans` y escalado dinámico.
+- [x] Indicador de participación juvenil INE 2024 con icono vectorial `BarChart` cian luminoso.
+- [x] Contador voxel 3D con atlas numérico recortado de alta definición (`numerosV2`).
+- [x] Desfases dinámicos calibrados para CDMX (`09`) y Puebla (`21`).
+- [x] Normalización de nombres de estado oficiales en hover y mapa.
+- [x] Copy actualizado: *"personas que ya dieron el primer paso"*.
+- [x] Caída de pétalos con planeo y deriva natural sin bloqueos ni doble freno (`FloatingPetals.tsx`).
+- [ ] **Próxima sesión — Calibración de tamaños de dalias:**
+  - Ajuste de jerarquía y proporciones de escala en `DahliaLayer` (`computeLevels.ts`, tamaños por nivel 1 a 4).
+  - Balance visual para estados de alta y baja densidad geográfica.
+- [ ] **Próxima sesión — Optimización y funcionamiento mobile:**
+  - Posicionamiento y escalado adaptativo de la card holográfica en pantallas pequeñas (< 768px).
+  - Interacciones táctiles (`touch-manipulation`), tap targets y prevención de zooms accidentales.
+  - Comportamiento responsive de la capa de pétalos y siluetas en viewports móviles.
 
 ### Comandos de Verificación
 ```bash

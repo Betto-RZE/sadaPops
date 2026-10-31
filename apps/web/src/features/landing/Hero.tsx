@@ -1,148 +1,444 @@
-import { ArrowRight, Flower2, TrendingUp } from 'lucide-react';
-import { cn } from '@/shared/utils';
+'use client';
+
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { PixelMap, DahliaLayer, DahliaStoreProvider, StateHologramCard } from '@/features/mapa-dalias';
+import { PaperTearOverlay } from './PaperTearOverlay';
+import { MobileMapHud } from './MobileMapHud';
+
+// Constantes de la cámara con zoom (2.45x) en Mobile (< md):
+// - En panProgress = 0: encuadre inmersivo en Baja California, Mar de Cortés y Noroeste (+66%, +56%)
+// - En panProgress = 1: recorrido diagonal acoplado hasta el Sureste y Península de Yucatán (-64%, -37%)
+const MOBILE_ZOOM_SCALE = 2.45;
+const MOBILE_START_TX = 66;
+const MOBILE_END_TX = -64;
+const MOBILE_START_TY = 56;
+const MOBILE_END_TY = -37;
 
 export function Hero() {
+  // Inicialización neutral: ningún estado seleccionado al cargar la landing
+  const [selectedStateId, setSelectedStateId] = useState<string | null>(null);
+  const [hoveredStateId, setHoveredStateId] = useState<string | null>(null);
+
+  // Progreso [0..1] impulsado por gesto de scroll sin desplazar el documento:
+  // - En Desktop (>= md): el mapa sube de abajo hacia arriba mientras las letras pasan a gris.
+  // - En Mobile (< md): la hoja de papel se rompe irregularmente de abajo al centro hacia arriba,
+  //   quitando por completo las letras y descubriendo el mapa debajo ya con zoom en Baja California.
+  const [ascentProgress, setAscentProgress] = useState(0);
+  const [hasReachedPlace, setHasReachedPlace] = useState(false);
+
+  // Fase 3: Progreso de paneo horizontal acoplado a la diagonal de México en Mobile [0 = Baja California .. 1 = Yucatán]
+  const [mobilePanProgress, setMobilePanProgress] = useState(0);
+  // Fase 4: Alternar escala entre Zoom inmersivo (2.45x) y Vista completa (1.0x)
+  const [isMobileZoomed, setIsMobileZoomed] = useState(true);
+
+  const targetProgressRef = useRef(0);
+  const currentProgressRef = useRef(0);
+  const reachedRef = useRef(false);
+
+  const targetPanRef = useRef(0);
+  const currentPanRef = useRef(0);
+  const panRafRef = useRef(0);
+  const panGestureRef = useRef<{
+    startX: number;
+    startY: number;
+    lastX: number;
+    lockedAxis: 'horizontal' | 'vertical' | null;
+  } | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      targetProgressRef.current = 1;
+      currentProgressRef.current = 1;
+      reachedRef.current = true;
+      setAscentProgress(1);
+      setHasReachedPlace(true);
+      return;
+    }
+
+    // Si el navegador restaura una posición de scroll ya avanzada, completar de inmediato
+    if (window.scrollY > 40) {
+      targetProgressRef.current = 1;
+      currentProgressRef.current = 1;
+      reachedRef.current = true;
+      setAscentProgress(1);
+      setHasReachedPlace(true);
+      return;
+    }
+
+    let rafId = 0;
+    let lastTouchY: number | null = null;
+    // Distancia virtual de gesto (en px de rueda/touch) para completar el ascenso o rasgado
+    const VIRTUAL_SCROLL_DISTANCE = 620;
+
+    const animateProgress = () => {
+      const target = targetProgressRef.current;
+      const current = currentProgressRef.current;
+      const diff = target - current;
+
+      if (Math.abs(diff) > 0.0015) {
+        const next = current + diff * 0.18;
+        currentProgressRef.current = next;
+        setAscentProgress(next);
+        rafId = window.requestAnimationFrame(animateProgress);
+      } else {
+        currentProgressRef.current = target;
+        setAscentProgress(target);
+        rafId = 0;
+
+        if (target >= 1 && !reachedRef.current) {
+          reachedRef.current = true;
+          setHasReachedPlace(true);
+        }
+      }
+    };
+
+    const startSmoothLoop = () => {
+      if (!rafId) {
+        rafId = window.requestAnimationFrame(animateProgress);
+      }
+    };
+
+    const advanceByDelta = (deltaY: number) => {
+      const nextTarget = Math.min(
+        1,
+        Math.max(0, targetProgressRef.current + deltaY / VIRTUAL_SCROLL_DISTANCE)
+      );
+      targetProgressRef.current = nextTarget;
+      startSmoothLoop();
+    };
+
+    const handleWheel = (e: WheelEvent) => {
+      if (reachedRef.current) return;
+
+      // Mientras la transición no haya concluido, interceptamos el scroll en el tope
+      // para que ni la Navbar ni el escenario se desplacen
+      if (window.scrollY <= 5 && (e.deltaY > 0 || targetProgressRef.current > 0)) {
+        e.preventDefault();
+        advanceByDelta(e.deltaY);
+      }
+    };
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (reachedRef.current || e.touches.length !== 1) return;
+      lastTouchY = e.touches[0].clientY;
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (reachedRef.current || lastTouchY === null || e.touches.length !== 1) return;
+      const currentY = e.touches[0].clientY;
+      const deltaY = (lastTouchY - currentY) * 1.35;
+      lastTouchY = currentY;
+
+      if (window.scrollY <= 5 && (deltaY > 0 || targetProgressRef.current > 0)) {
+        if (e.cancelable) e.preventDefault();
+        advanceByDelta(deltaY);
+      }
+    };
+
+    const handleTouchEnd = () => {
+      lastTouchY = null;
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (reachedRef.current || window.scrollY > 5) return;
+      if (e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') {
+        e.preventDefault();
+        advanceByDelta(e.key === 'ArrowDown' ? 110 : 260);
+      } else if (e.key === 'ArrowUp' && targetProgressRef.current > 0) {
+        e.preventDefault();
+        advanceByDelta(-110);
+      }
+    };
+
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('touchend', handleTouchEnd, { passive: true });
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
+      window.removeEventListener('keydown', handleKeyDown);
+      if (rafId) window.cancelAnimationFrame(rafId);
+    };
+  }, []);
+
+  // Limpieza del loop de paneo horizontal en desmontaje
+  useEffect(() => {
+    return () => {
+      if (panRafRef.current) {
+        window.cancelAnimationFrame(panRafRef.current);
+      }
+    };
+  }, []);
+
+  const tickMobilePan = useCallback(() => {
+    const target = targetPanRef.current;
+    const current = currentPanRef.current;
+    const diff = target - current;
+
+    if (Math.abs(diff) > 0.001) {
+      const next = current + diff * 0.22;
+      currentPanRef.current = next;
+      setMobilePanProgress(next);
+      panRafRef.current = window.requestAnimationFrame(tickMobilePan);
+    } else {
+      currentPanRef.current = target;
+      setMobilePanProgress(target);
+      panRafRef.current = 0;
+    }
+  }, []);
+
+  const handleMapTouchStart = useCallback(
+    (e: React.TouchEvent<HTMLDivElement>) => {
+      if (!hasReachedPlace || e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      panGestureRef.current = {
+        startX: touch.clientX,
+        startY: touch.clientY,
+        lastX: touch.clientX,
+        lockedAxis: null,
+      };
+    },
+    [hasReachedPlace]
+  );
+
+  const handleMapTouchMove = useCallback(
+    (e: React.TouchEvent<HTMLDivElement>) => {
+      if (!hasReachedPlace || !panGestureRef.current || e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      const gesture = panGestureRef.current;
+
+      const totalDx = touch.clientX - gesture.startX;
+      const totalDy = touch.clientY - gesture.startY;
+
+      if (!gesture.lockedAxis) {
+        if (Math.abs(totalDx) < 6 && Math.abs(totalDy) < 6) return;
+        gesture.lockedAxis =
+          Math.abs(totalDx) > Math.abs(totalDy) ? 'horizontal' : 'vertical';
+      }
+
+      // Si el gesto es vertical, dejamos que el navegador ejecute el scroll normal de la página (pan-y)
+      if (gesture.lockedAxis === 'vertical') return;
+
+      const stepDx = touch.clientX - gesture.lastX;
+      gesture.lastX = touch.clientX;
+
+      // Arrastrar hacia la izquierda (stepDx < 0) avanza hacia el Sureste (panProgress -> 1)
+      const PAN_RANGE_PX = 290;
+      const nextTarget = Math.min(
+        1,
+        Math.max(0, targetPanRef.current - stepDx / PAN_RANGE_PX)
+      );
+      targetPanRef.current = nextTarget;
+
+      if (!panRafRef.current) {
+        panRafRef.current = window.requestAnimationFrame(tickMobilePan);
+      }
+    },
+    [hasReachedPlace, tickMobilePan]
+  );
+
+  const handleMapTouchEnd = useCallback(() => {
+    panGestureRef.current = null;
+  }, []);
+
+  // Progreso final [0..1]: se bloquea en 1 cuando el mapa llega a su lugar / termina de romperse la hoja
+  const effectiveProgress = hasReachedPlace ? 1 : ascentProgress;
+
+  // En Desktop: el mapa inicia 115vh abajo (100% fuera de pantalla) y oculto hasta que inicia el scroll
+  const mapTranslateYVh = Number(((1 - effectiveProgress) * 115).toFixed(2));
+  const isDesktopMapVisible = effectiveProgress > 0.002 || hasReachedPlace;
+
+  // En Mobile (< md): cálculo de cámara con zoom (1.85x) iniciando en Baja California (panProgress = 0)
+  const mobileTxPct = Number(
+    (MOBILE_START_TX + (MOBILE_END_TX - MOBILE_START_TX) * mobilePanProgress).toFixed(2)
+  );
+  const mobileTyPct = Number(
+    (MOBILE_START_TY + (MOBILE_END_TY - MOBILE_START_TY) * mobilePanProgress).toFixed(2)
+  );
+  const initialBajaTransform = `translate3d(${MOBILE_START_TX}%, ${MOBILE_START_TY}%, 0) scale(${MOBILE_ZOOM_SCALE})`;
+  const activeMobileCameraTransform = isMobileZoomed
+    ? `translate3d(${mobileTxPct}%, ${mobileTyPct}%, 0) scale(${MOBILE_ZOOM_SCALE})`
+    : 'translate3d(0%, 0%, 0) scale(1)';
+
+  // Transición progresiva de las letras monumentales de Desktop hacia gris marca de agua editorial (0.90 -> 0.30)
+  const navyLetterMultiplier = Number((1 - effectiveProgress * (1 - 0.333)).toFixed(3));
+  const navyGrayscalePct = Math.round(effectiveProgress * 55);
+  const magentaLetterMultiplier = Number((1 - effectiveProgress * (1 - 0.82)).toFixed(3));
+
   return (
-    <section className="relative w-full bg-white overflow-hidden py-16 md:py-20 border-b border-gray-100">
-      
-      {/* Decorative background elements (compass lines / petals) */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {/* Subtle grid/compass lines */}
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full border border-gray-100/50" />
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[1200px] h-[1200px] rounded-full border border-gray-100/50" />
-        <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gray-100/50" />
-        <div className="absolute top-1/2 left-0 right-0 h-px bg-gray-100/50" />
-        
-        {/* Decorative Petals */}
-        <div className="absolute top-10 left-[20%] w-8 h-8 bg-dalia-200 rounded-full blur-sm opacity-50 rotate-45 rounded-tr-none" />
-        <div className="absolute top-1/3 left-[40%] w-12 h-12 bg-dalia-400 rounded-full blur-sm opacity-30 -rotate-12 rounded-tr-none" />
-        <div className="absolute bottom-20 left-[10%] w-10 h-10 bg-dalia-300 rounded-full blur-[2px] opacity-60 rotate-90 rounded-tr-none" />
-        <div className="absolute top-[20%] right-[10%] w-14 h-14 bg-dalia-200 rounded-full blur-md opacity-40 -rotate-45 rounded-tr-none" />
-      </div>
+    <section className="relative w-full bg-transparent overflow-x-clip pt-0 pb-0 md:pb-8 select-none">
+      <div className="mx-auto max-w-[1440px] px-0 md:px-6 lg:px-10 relative z-10 overflow-visible">
+        {/* Contenedor principal del escenario: en móvil altura compactada (84dvh con espacio para Navbar arriba y sin hueco muerto abajo) */}
+        <div
+          onTouchStart={handleMapTouchStart}
+          onTouchMove={handleMapTouchMove}
+          onTouchEnd={handleMapTouchEnd}
+          onTouchCancel={handleMapTouchEnd}
+          className="relative flex flex-col items-center justify-center h-[84dvh] pt-12 pb-2 md:pt-0 md:pb-0 md:h-auto md:min-h-[560px] lg:min-h-[620px] w-full px-0 md:px-0 max-md:overflow-hidden touch-pan-y"
+        >
+          {/* HUD de instrucciones y control de zoom: vive exclusivamente en la esquina inferior izquierda del Hero */}
+          {hasReachedPlace && (
+            <MobileMapHud
+              isZoomed={isMobileZoomed}
+              onToggleZoom={() => setIsMobileZoomed((z) => !z)}
+              panProgress={mobilePanProgress}
+            />
+          )}
+          {/* ========================================================================= */}
+          {/* CAPA PORTADA MÓVIL (< md): HOJA DE PAPEL CON LETRAS Y SOMBRA CON ZOOM     */}
+          {/* ========================================================================= */}
+          <PaperTearOverlay
+            progress={effectiveProgress}
+            isComplete={hasReachedPlace}
+            initialMapTransform={initialBajaTransform}
+          />
 
-      <div className="mx-auto max-w-[1440px] px-6 lg:px-12 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-          
-          {/* Left Column: Copy */}
-          <div className="flex flex-col items-start pt-10">
-            <span className="text-xs font-bold tracking-[0.2em] text-gray-400 mb-6 uppercase">
-              Participación Ciudadana
-            </span>
-            
-            <h1 className="text-5xl md:text-6xl lg:text-[72px] font-black tracking-tighter text-brand-navy leading-[1.05] mb-6">
-              Tu participación <br />
-              <span className="text-dalia-600">
-                hace florecer
+          {/* ========================================================================= */}
+          {/* CAPA 1-DESKTOP: TITULAR MONUMENTAL DE FONDO EDITORIAL (>= md)             */}
+          {/* ========================================================================= */}
+          <div
+            aria-hidden="true"
+            className="hidden md:flex absolute inset-0 z-0 flex-col justify-between py-1 sm:py-2 md:py-3 pointer-events-none select-none"
+          >
+            {/* Bloque Superior Izquierdo: "Tu" (0.10s) + "participación" (0.35s) */}
+            <div
+              className="w-full flex justify-start pl-2 sm:pl-6 md:pl-10 lg:pl-12 will-change-[opacity,filter]"
+              style={{
+                opacity: navyLetterMultiplier,
+                filter: `grayscale(${navyGrayscalePct}%)`,
+              }}
+            >
+              <span className="text-[clamp(2.4rem,6.8vw,6.4rem)] font-black tracking-tighter leading-[0.88] text-brand-navy uppercase font-sans flex flex-wrap gap-x-3 sm:gap-x-4 md:gap-x-6">
+                <span className="hero-word" style={{ animationDelay: '0.10s' }}>
+                  Tu
+                </span>
+                <span className="hero-word" style={{ animationDelay: '0.35s' }}>
+                  participación
+                </span>
               </span>
-              <br /> a México.
-            </h1>
-            
-            <p className="text-lg md:text-xl text-brand-navy/70 mb-10 max-w-md font-medium leading-relaxed">
-              Explora el mapa, conoce los datos, descubre historias y sé parte de una ciudadanía que transforma.
-            </p>
-            
-            <button className="group flex items-center gap-3 rounded-full bg-dalia-600 px-8 py-4 text-base font-bold text-white transition-all hover:bg-dalia-700 hover:scale-105 shadow-xl shadow-dalia-600/30">
-              <div className="bg-white/20 p-1.5 rounded-full">
-                 <Flower2 className="w-5 h-5 text-white" />
-              </div>
-              Explorar el mapa
-              <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-            </button>
-            
-            <div className="mt-20 flex items-center gap-4">
-              <div className="h-12 w-1 bg-gray-200 rounded-full" />
-              <p className="text-[10px] font-bold tracking-[0.2em] text-gray-400 leading-tight">
-                MÉXICO <br />
-                SE CONSTRUYE <br />
-                CON SU GENTE
-              </p>
+            </div>
+
+            {/* Bloque Medio Asimétrico: "hace" (0.65s) + "florecer" (0.95s, magenta INE) */}
+            <div className="w-full flex justify-between items-center px-1 sm:px-3 md:px-6 -my-3 sm:-my-5">
+              <span
+                className="text-[clamp(2.4rem,7vw,6.6rem)] font-black tracking-tighter leading-[0.88] text-brand-navy uppercase font-sans will-change-[opacity,filter]"
+                style={{
+                  opacity: navyLetterMultiplier,
+                  filter: `grayscale(${navyGrayscalePct}%)`,
+                }}
+              >
+                <span className="hero-word" style={{ animationDelay: '0.65s' }}>
+                  hace
+                </span>
+              </span>
+              <span
+                className="text-[clamp(2.6rem,7.4vw,7rem)] font-black tracking-tighter leading-[0.88] text-dalia-600 uppercase font-sans will-change-[opacity]"
+                style={{ opacity: magentaLetterMultiplier }}
+              >
+                <span className="hero-word-magenta" style={{ animationDelay: '0.95s' }}>
+                  florecer
+                </span>
+              </span>
+            </div>
+
+            {/* Bloque Inferior Derecho: "a" (1.25s) + "México." (1.45s) */}
+            <div
+              className="w-full flex justify-end pr-2 sm:pr-8 md:pr-14 lg:pr-16 pb-4 sm:pb-6 will-change-[opacity,filter]"
+              style={{
+                opacity: navyLetterMultiplier,
+                filter: `grayscale(${navyGrayscalePct}%)`,
+              }}
+            >
+              <span className="text-[clamp(2.6rem,7.2vw,6.8rem)] font-black tracking-tighter leading-[0.88] text-brand-navy uppercase font-sans flex flex-wrap gap-x-3 sm:gap-x-4 md:gap-x-6">
+                <span className="hero-word" style={{ animationDelay: '1.25s' }}>
+                  a
+                </span>
+                <span className="hero-word" style={{ animationDelay: '1.45s' }}>
+                  México.
+                </span>
+              </span>
             </div>
           </div>
-          
-          {/* Right Column: Visual Placeholder */}
-          <div className="relative h-[600px] w-full flex items-center justify-center">
-            
-            {/* The Map mock - We'll use a CSS shape + dalia icons for now to simulate the dark map */}
-            <div className="absolute inset-0 flex items-center justify-center w-[120%] -ml-[10%]">
-               {/* Simulating the map shape with an SVG placeholder */}
-               <svg viewBox="0 0 800 600" className="w-full h-full opacity-90 drop-shadow-2xl">
-                 <path d="M150 100 Q 300 150, 400 300 T 700 500 Q 600 600, 450 450 T 200 400 Z" fill="#1C2541" />
-                 {/* Dalias scattered on map */}
-                 <circle cx="200" cy="200" r="10" fill="#E3007E" />
-                 <circle cx="350" cy="250" r="25" fill="#E3007E" />
-                 <circle cx="500" cy="400" r="15" fill="#E3007E" />
-                 <circle cx="450" cy="300" r="30" fill="#E3007E" />
-                 <circle cx="250" cy="350" r="12" fill="#E3007E" />
-                 <circle cx="600" cy="480" r="18" fill="#E3007E" />
-               </svg>
+
+          {/* Encabezado accesible real para lectores de pantalla y SEO */}
+          <h1 className="sr-only">
+            Tu participación hace florecer a México.
+          </h1>
+
+          {/* ========================================================================= */}
+          {/* CAPA 2 & 3: SOMBRA ESTACIONARIA + MAPA ISOMÉTRICO                         */}
+          {/* - En Mobile (< md): cámara con zoom 1.85x en Baja California y pan lateral*/}
+          {/* - En Desktop (>= md): sube desde +115vh hasta encajar sobre su sombra     */}
+          {/* ========================================================================= */}
+          <div
+            id="mapa-interactivo"
+            className="relative z-20 w-full max-w-[780px] sm:max-w-[920px] md:max-w-[1040px] lg:max-w-[1140px] xl:max-w-[1220px] mt-0 md:-mt-5 origin-center will-change-transform [transform:var(--mobile-cam-transform)] md:[transform:none]"
+            style={
+              {
+                '--mobile-cam-transform': activeMobileCameraTransform,
+              } as React.CSSProperties
+            }
+          >
+            {/* Sombra estacionaria: en Mobile viaja solidaria con la cámara 1.85x; en Desktop permanece fija esperando al mapa */}
+            <div
+              aria-hidden="true"
+              className="hero-shadow-delayed-enter pointer-events-none select-none w-full max-w-5xl mx-auto"
+              style={{ aspectRatio: '660 / 435' }}
+            >
+              <img
+                src="/data/map-shadow.webp"
+                alt=""
+                className="w-full h-full object-contain pointer-events-none select-none"
+                loading="eager"
+              />
             </div>
 
-            {/* Top Right Floating Card */}
-            <div className="absolute top-10 right-0 bg-white/95 backdrop-blur-md p-5 rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] border border-white/50 animate-in fade-in slide-in-from-top-4 duration-1000 z-20 min-w-[280px]">
-              <div className="flex justify-between items-start mb-2">
-                <div className="flex items-center gap-2">
-                  <Flower2 className="text-dalia-600 w-6 h-6" />
-                  <h3 className="text-sm font-semibold text-brand-navy">México está floreciendo</h3>
-                </div>
-              </div>
-              <p className="text-4xl font-black text-brand-navy mt-3">24,582</p>
-              <div className="flex justify-between items-end mt-1">
-                <p className="text-xs text-gray-500 font-medium">Dalias plantadas</p>
-                <div className="flex gap-1 items-end">
-                   <div className="w-2 h-4 bg-gray-200 rounded-sm"></div>
-                   <div className="w-2 h-6 bg-gray-300 rounded-sm"></div>
-                   <div className="w-2 h-8 bg-gray-400 rounded-sm"></div>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-1 text-[10px] text-brand-success mt-4 bg-brand-success/10 px-2 py-1 rounded w-fit">
-                <TrendingUp className="h-3 w-3" />
-                <span className="font-bold">+8.4% respecto al mes anterior</span>
+            {/* Contenedor del mapa:
+                - Mobile (< md): ya posicionado en translate3d(0,0,0) dentro de la cámara con zoom 1.85x.
+                - Desktop (>= md): inicia oculto en +115vh y asciende con el scroll. */}
+            <div
+              className="absolute inset-0 w-full h-full map-isometric-shadow will-change-transform opacity-100 md:opacity-[var(--desktop-map-opacity)]"
+              style={
+                {
+                  '--desktop-map-opacity': isDesktopMapVisible ? 1 : 0,
+                  pointerEvents: hasReachedPlace ? 'auto' : 'none',
+                } as React.CSSProperties
+              }
+            >
+              <div
+                className="w-full h-full will-change-transform [transform:translate3d(0,0,0)] md:[transform:translate3d(0,var(--desktop-map-y),0)]"
+                style={
+                  {
+                    '--desktop-map-y': `${mapTranslateYVh}vh`,
+                  } as React.CSSProperties
+                }
+              >
+                <DahliaStoreProvider>
+                  <PixelMap
+                    selectedStateId={selectedStateId}
+                    hoveredStateId={hoveredStateId}
+                    onSelectState={setSelectedStateId}
+                    onHoverState={setHoveredStateId}
+                    readyToDrop={hasReachedPlace}
+                    hideInternalShadow={true}
+                    className="w-full"
+                  >
+                    {/* Capa de Dalias Voxel sobre los estados */}
+                    <DahliaLayer />
+                    {/* Proyección holográfica del estado activo (H5) */}
+                    <StateHologramCard />
+                  </PixelMap>
+                </DahliaStoreProvider>
               </div>
             </div>
-
-            {/* Middle Right Decorative Text */}
-            <div className="absolute top-1/2 right-0 flex gap-4 text-[9px] font-bold tracking-[0.3em] text-gray-300">
-              <div className="flex flex-col gap-8">
-                <span>GOLFO</span>
-                <span>DE MÉXICO</span>
-              </div>
-              <div className="w-px h-20 bg-gray-200"></div>
-              <div className="flex flex-col justify-between py-2 text-brand-navy">
-                 <span>CADA</span>
-                 <span className="flex items-center gap-1 before:content-[''] before:w-1.5 before:h-1.5 before:bg-brand-navy before:rounded-full">DALIA</span>
-                 <span className="text-dalia-600 border-l-2 border-dalia-600 pl-2">CUENTA</span>
-              </div>
-            </div>
-
-            {/* Floating Card for State Example (Puebla) */}
-            <div className="absolute bottom-1/4 left-1/4 bg-white p-5 rounded-[20px] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)] border border-gray-100 z-20 min-w-[240px] animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-300">
-              <h3 className="text-sm font-bold text-brand-navy mb-4">Puebla</h3>
-              
-              <div className="flex items-center gap-3 mb-4">
-                <Flower2 className="w-8 h-8 text-dalia-600" />
-                <div>
-                  <p className="text-lg font-black text-brand-navy leading-none">2,458 <span className="text-sm font-semibold">Dalias</span></p>
-                </div>
-              </div>
-              
-              <div className="border-t border-gray-100 pt-3 mb-4">
-                <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold mb-1">Participación ciudadana</p>
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-bold text-brand-navy">68.2%</p>
-                  <span className="flex items-center text-[10px] font-bold text-brand-success">
-                    <TrendingUp className="w-3 h-3 mr-0.5" /> +5.1%
-                  </span>
-                </div>
-              </div>
-
-              <button className="flex items-center gap-1 text-[11px] font-bold text-brand-navy hover:text-dalia-600 transition-colors">
-                <ArrowRight className="w-3 h-3" /> Explorar estado
-              </button>
-            </div>
-
           </div>
-          
         </div>
       </div>
     </section>

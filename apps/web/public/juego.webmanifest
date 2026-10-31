@@ -1,0 +1,20 @@
+{
+  "id": "/juego",
+  "name": "Voces en casilla",
+  "short_name": "Voces en casilla",
+  "lang": "es-MX",
+  "start_url": "/juego",
+  "scope": "/juego",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#020617",
+  "theme_color": "#020617",
+  "icons": [
+    {
+      "src": "/assets/juego/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

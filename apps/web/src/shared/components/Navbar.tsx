@@ -1,108 +1,122 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Search, Menu, Lock } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/shared/utils';
+import { LandingNavbar, type LandingNavbarProps } from './LandingNavbar';
 
-export function Navbar() {
+const navLinks = [
+  { name: 'Inicio', href: '/' },
+  { name: 'Datos', href: '/datos' },
+  { name: 'Juego', href: '/juego' },
+];
+
+function isCurrentPage(pathname: string, href: string) {
+  return href === '/' ? pathname === '/' : pathname.startsWith(href);
+}
+
+export type NavbarProps = LandingNavbarProps;
+
+export function Navbar(props: NavbarProps = {}) {
+  const pathname = usePathname();
+  return pathname === '/' ? <LandingNavbar {...props} /> : <StandardNavbar className={props.className} />;
+}
+
+function StandardNavbar({ className }: { className?: string }) {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const navLinks = [
-    { name: 'Inicio', href: '/' },
-    { name: 'Narrativa', href: '/narrativa' },
-    { name: 'Datos', href: '/datos' },
-    { name: 'Juego', href: '/juego' },
-  ];
-
   return (
-    <header className="sticky top-0 z-50 w-full bg-white">
-      <div className="mx-auto flex h-20 max-w-[1440px] items-center justify-between px-6 lg:px-12">
-        
-        {/* Logo Section */}
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            {/* INE Logo (Placeholder) */}
-            <div className="flex flex-col items-center">
-              <div className="flex items-center">
-                <span className="text-3xl font-black text-brand-navy tracking-tighter">INE</span>
-                <div className="w-4 h-4 bg-dalia-600 transform rotate-45 ml-1"></div>
-              </div>
-              <span className="text-[8px] font-semibold text-brand-navy tracking-widest mt-0.5">Instituto Nacional Electoral</span>
-            </div>
-          </div>
-          <div className="h-10 w-px bg-gray-200 hidden sm:block"></div>
-          <div className="hidden sm:flex flex-col">
-            <h1 className="text-sm font-bold text-brand-navy">Mapa de Dalias</h1>
-            <p className="text-xs text-gray-500">Participación Ciudadana</p>
-          </div>
-        </div>
+    <header className={cn("pointer-events-none relative z-50 w-full px-4 pt-4 sm:px-6 sm:pt-5 lg:px-10", className)}>
+      <div className="mx-auto max-w-[1440px]">
+        <div className="flex items-center justify-between gap-4">
+          <Link
+            href="/"
+            aria-label="INE, ir al inicio"
+            className="pointer-events-auto relative block h-12 w-32 shrink-0 rounded-md transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dalia-600 focus-visible:ring-offset-2 sm:h-14 sm:w-36"
+          >
+            <Image
+              src="/logo-ine-oficial.png"
+              alt="Instituto Nacional Electoral - INE"
+              fill
+              priority
+              sizes="144px"
+              className="object-contain object-left"
+            />
+          </Link>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-10">
-          {navLinks.map((link) => {
-            const isActive = pathname === link.href || (pathname === '/' && link.href === '/');
-            return (
-              <Link
-                key={link.name}
-                href={link.href}
-                className={cn(
-                  'relative py-2 text-sm font-semibold transition-colors',
-                  isActive ? 'text-brand-navy' : 'text-gray-500 hover:text-brand-navy'
-                )}
-              >
-                {link.name}
-                {isActive && (
-                  <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 h-1 w-6 bg-dalia-600 rounded-full" />
-                )}
-              </Link>
-            );
-          })}
-        </nav>
+          <nav
+            aria-label="Navegación principal"
+            className="pointer-events-auto hidden items-center gap-1 rounded-full border border-white/75 bg-[#F8F7F3]/85 p-1.5 shadow-[0_8px_24px_-18px_rgba(28,37,65,0.5)] backdrop-blur-sm md:flex"
+          >
+            {navLinks.map((link) => {
+              const isActive = isCurrentPage(pathname, link.href);
 
-        {/* Actions Section */}
-        <div className="hidden md:flex items-center gap-6">
-          <button className="text-brand-navy hover:text-dalia-600 transition-colors">
-            <Search className="h-5 w-5" strokeWidth={2.5} />
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  aria-current={isActive ? 'page' : undefined}
+                  className={cn(
+                    'inline-flex min-h-10 items-center gap-2 rounded-full px-4 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dalia-600 focus-visible:ring-offset-2',
+                    isActive
+                      ? 'bg-brand-navy text-white shadow-sm'
+                      : 'text-brand-navy/70 hover:bg-white/80 hover:text-brand-navy'
+                  )}
+                >
+                  {isActive && <span className="h-1.5 w-1.5 rounded-full bg-dalia-600" aria-hidden="true" />}
+                  {link.name}
+                </Link>
+              );
+            })}
+          </nav>
+
+          <button
+            type="button"
+            className="pointer-events-auto inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/80 bg-[#F8F7F3]/90 text-brand-navy shadow-sm transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dalia-600 focus-visible:ring-offset-2 md:hidden"
+            onClick={() => setIsMobileMenuOpen((open) => !open)}
+            aria-label={isMobileMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
+            aria-expanded={isMobileMenuOpen}
+            aria-controls="mobile-primary-navigation"
+          >
+            {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
-          
-          <div className="flex items-center bg-gray-100 rounded-full px-5 py-2.5 gap-3 border border-gray-200">
-            <Lock className="w-5 h-5 text-brand-navy" />
-            <div className="flex flex-col">
-              <span className="text-sm font-bold text-brand-navy leading-tight">Agrega tu Dalia</span>
-              <span className="text-[10px] text-gray-500 leading-tight">Completa un módulo para desbloquear</span>
-            </div>
-          </div>
         </div>
 
-        {/* Mobile Menu Button */}
-        <button 
-          className="md:hidden p-2 text-brand-navy"
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        <nav
+          id="mobile-primary-navigation"
+          aria-label="Navegación principal"
+          hidden={!isMobileMenuOpen}
+          className="pointer-events-auto mt-3 rounded-2xl border border-white/80 bg-[#F8F7F3]/95 p-2 shadow-[0_16px_36px_-20px_rgba(28,37,65,0.45)] backdrop-blur-sm md:hidden"
         >
-          <Menu className="h-6 w-6" />
-        </button>
-      </div>
+          <div className="flex flex-col gap-1">
+            {navLinks.map((link) => {
+              const isActive = isCurrentPage(pathname, link.href);
 
-      {/* Mobile Menu (simplified) */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden border-t border-gray-100 bg-white absolute w-full shadow-lg">
-          <div className="flex flex-col px-4 py-3">
-            {navLinks.map((link) => (
-              <Link
-                key={link.name}
-                href={link.href}
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="block px-3 py-3 text-base font-semibold text-brand-navy border-b border-gray-50"
-              >
-                {link.name}
-              </Link>
-            ))}
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  aria-current={isActive ? 'page' : undefined}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={cn(
+                    'flex min-h-11 items-center justify-between rounded-xl px-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dalia-600',
+                    isActive
+                      ? 'bg-brand-navy text-white'
+                      : 'text-brand-navy/75 hover:bg-white/80 hover:text-brand-navy'
+                  )}
+                >
+                  {link.name}
+                  {isActive && <span className="h-1.5 w-1.5 rounded-full bg-dalia-600" aria-hidden="true" />}
+                </Link>
+              );
+            })}
           </div>
-        </div>
-      )}
+        </nav>
+      </div>
     </header>
   );
 }

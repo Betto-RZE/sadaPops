@@ -1,0 +1,276 @@
+{
+  "byCode": {
+    "10": {
+      "id": "10",
+      "nombre": "Durango",
+      "alias": [
+        "Durango"
+      ]
+    },
+    "11": {
+      "id": "11",
+      "nombre": "Guanajuato",
+      "alias": [
+        "Guanajuato"
+      ]
+    },
+    "12": {
+      "id": "12",
+      "nombre": "Guerrero",
+      "alias": [
+        "Guerrero"
+      ]
+    },
+    "13": {
+      "id": "13",
+      "nombre": "Hidalgo",
+      "alias": [
+        "Hidalgo"
+      ]
+    },
+    "14": {
+      "id": "14",
+      "nombre": "Jalisco",
+      "alias": [
+        "Jalisco"
+      ]
+    },
+    "15": {
+      "id": "15",
+      "nombre": "México",
+      "alias": [
+        "México",
+        "Estado de México",
+        "Edomex"
+      ]
+    },
+    "16": {
+      "id": "16",
+      "nombre": "Michoacán de Ocampo",
+      "alias": [
+        "Michoacán de Ocampo",
+        "Michoacán"
+      ]
+    },
+    "17": {
+      "id": "17",
+      "nombre": "Morelos",
+      "alias": [
+        "Morelos"
+      ]
+    },
+    "18": {
+      "id": "18",
+      "nombre": "Nayarit",
+      "alias": [
+        "Nayarit"
+      ]
+    },
+    "19": {
+      "id": "19",
+      "nombre": "Nuevo León",
+      "alias": [
+        "Nuevo León"
+      ]
+    },
+    "20": {
+      "id": "20",
+      "nombre": "Oaxaca",
+      "alias": [
+        "Oaxaca"
+      ]
+    },
+    "21": {
+      "id": "21",
+      "nombre": "Puebla",
+      "alias": [
+        "Puebla"
+      ]
+    },
+    "22": {
+      "id": "22",
+      "nombre": "Querétaro",
+      "alias": [
+        "Querétaro"
+      ]
+    },
+    "23": {
+      "id": "23",
+      "nombre": "Quintana Roo",
+      "alias": [
+        "Quintana Roo"
+      ]
+    },
+    "24": {
+      "id": "24",
+      "nombre": "San Luis Potosí",
+      "alias": [
+        "San Luis Potosí"
+      ]
+    },
+    "25": {
+      "id": "25",
+      "nombre": "Sinaloa",
+      "alias": [
+        "Sinaloa"
+      ]
+    },
+    "26": {
+      "id": "26",
+      "nombre": "Sonora",
+      "alias": [
+        "Sonora"
+      ]
+    },
+    "27": {
+      "id": "27",
+      "nombre": "Tabasco",
+      "alias": [
+        "Tabasco"
+      ]
+    },
+    "28": {
+      "id": "28",
+      "nombre": "Tamaulipas",
+      "alias": [
+        "Tamaulipas"
+      ]
+    },
+    "29": {
+      "id": "29",
+      "nombre": "Tlaxcala",
+      "alias": [
+        "Tlaxcala"
+      ]
+    },
+    "30": {
+      "id": "30",
+      "nombre": "Veracruz de Ignacio de la Llave",
+      "alias": [
+        "Veracruz de Ignacio de la Llave",
+        "Veracruz"
+      ]
+    },
+    "31": {
+      "id": "31",
+      "nombre": "Yucatán",
+      "alias": [
+        "Yucatán"
+      ]
+    },
+    "32": {
+      "id": "32",
+      "nombre": "Zacatecas",
+      "alias": [
+        "Zacatecas"
+      ]
+    },
+    "01": {
+      "id": "01",
+      "nombre": "Aguascalientes",
+      "alias": [
+        "Aguascalientes"
+      ]
+    },
+    "02": {
+      "id": "02",
+      "nombre": "Baja California",
+      "alias": [
+        "Baja California"
+      ]
+    },
+    "03": {
+      "id": "03",
+      "nombre": "Baja California Sur",
+      "alias": [
+        "Baja California Sur"
+      ]
+    },
+    "04": {
+      "id": "04",
+      "nombre": "Campeche",
+      "alias": [
+        "Campeche"
+      ]
+    },
+    "05": {
+      "id": "05",
+      "nombre": "Coahuila de Zaragoza",
+      "alias": [
+        "Coahuila de Zaragoza",
+        "Coahuila"
+      ]
+    },
+    "06": {
+      "id": "06",
+      "nombre": "Colima",
+      "alias": [
+        "Colima"
+      ]
+    },
+    "07": {
+      "id": "07",
+      "nombre": "Chiapas",
+      "alias": [
+        "Chiapas"
+      ]
+    },
+    "08": {
+      "id": "08",
+      "nombre": "Chihuahua",
+      "alias": [
+        "Chihuahua"
+      ]
+    },
+    "09": {
+      "id": "09",
+      "nombre": "Ciudad de México",
+      "alias": [
+        "Ciudad de México",
+        "CDMX",
+        "Distrito Federal"
+      ]
+    }
+  },
+  "byName": {
+    "Aguascalientes": "01",
+    "Baja California": "02",
+    "Baja California Sur": "03",
+    "Campeche": "04",
+    "Coahuila de Zaragoza": "05",
+    "Colima": "06",
+    "Chiapas": "07",
+    "Chihuahua": "08",
+    "Ciudad de México": "09",
+    "Durango": "10",
+    "Guanajuato": "11",
+    "Guerrero": "12",
+    "Hidalgo": "13",
+    "Jalisco": "14",
+    "México": "15",
+    "Michoacán de Ocampo": "16",
+    "Morelos": "17",
+    "Nayarit": "18",
+    "Nuevo León": "19",
+    "Oaxaca": "20",
+    "Puebla": "21",
+    "Querétaro": "22",
+    "Quintana Roo": "23",
+    "San Luis Potosí": "24",
+    "Sinaloa": "25",
+    "Sonora": "26",
+    "Tabasco": "27",
+    "Tamaulipas": "28",
+    "Tlaxcala": "29",
+    "Veracruz de Ignacio de la Llave": "30",
+    "Yucatán": "31",
+    "Zacatecas": "32",
+    "CDMX": "09",
+    "Distrito Federal": "09",
+    "Coahuila": "05",
+    "Estado de México": "15",
+    "Edomex": "15",
+    "Michoacán": "16",
+    "Veracruz": "30"
+  }
+}

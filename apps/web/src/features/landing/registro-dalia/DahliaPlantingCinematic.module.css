@@ -1,0 +1,43 @@
+.cinematicOverlay { position: fixed; inset: 0; z-index: 1000; overflow: hidden; isolation: isolate; }
+.revealBackground { position: absolute; inset: 0; background: #f7f2eb url('/bg/bg-ine-hero.webp') center / 900px; opacity: 0; animation: reveal .45s ease 2.1s forwards; }
+.mapWrapper { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); opacity: 0; animation: reveal .45s ease 2.1s forwards; }
+.mapBase { display: block; width: 100%; height: 100%; filter: drop-shadow(0 18px 20px #17253625); }
+.targetBeacon { position: absolute; width: 16px; height: 16px; border: 2px solid #f59e0b; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 15px #f59e0b; }
+.mapImpacted .targetBeacon { visibility: hidden; }
+.flyingDahlia { position: absolute; left: var(--source-x); top: var(--source-y); width: var(--source-width); height: var(--source-height); transform: translate(-50%, -50%); animation: heroFlight 2.25s cubic-bezier(.3, .7, .3, 1) .9s both; }
+.dahliaSprite { display: block; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 26px #f59e0b60) drop-shadow(0 18px 18px #17253630); }
+@keyframes heroFlight {
+  0% { left: var(--source-x); top: var(--source-y); width: var(--source-width); height: var(--source-height); }
+  29%, 80% { left: var(--center-x); top: var(--center-y); width: var(--large-width); height: var(--large-height); }
+  100% { left: var(--target-x); top: var(--target-y); width: 52px; height: 44px; }
+}
+@keyframes reveal { to { opacity: 1; } }
+.impact { position: absolute; width: 0; height: 0; }
+.plantedDahlia { position: absolute; max-width: none; width: 52px; height: 44px; transform: translate(-50%, -50%); filter: drop-shadow(0 0 12px #f59e0b); animation: landing .24s ease-out both; }
+@keyframes landing { 0% { scale: .8; } 55% { scale: 1.2; } 100% { scale: 1; } }
+.shockwave { position: absolute; width: 140px; height: 140px; border: 3px solid #f59e0b; border-radius: 50%; box-shadow: 0 0 20px #f59e0b; animation: shockwave .8s ease-out both; }
+@keyframes shockwave { from { transform: translate(-50%, -50%) scale(.1); opacity: 1; } to { transform: translate(-50%, -50%) scale(1.5); opacity: 0; } }
+.burstPetal { position: absolute; max-width: none; width: 24px; height: 22px; animation: scatter .7s ease-out both; }
+@keyframes scatter { from { transform: translate(-50%, -50%) scale(.5); opacity: 1; } to { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--rotation)); opacity: 0; } }
+.impactPin { position: absolute; top: -32px; left: var(--pin-shift, 0); transform: translate(-50%, -100%); width: max-content; max-width: 160px; padding: 6px 12px; border: 1px solid #f59e0b; border-radius: 20px; background: #fffaf0; color: #172536; font-size: 12px; text-align: center; box-shadow: 0 5px 15px #17253620; }
+.skipButton { position: absolute; z-index: 2; top: max(16px, env(safe-area-inset-top)); right: 16px; min-height: 44px; padding: 8px 16px; border: 1px solid #17253625; border-radius: 24px; background: #fffaf0ee; color: #172536; font-size: 12px; cursor: pointer; }
+.skipButton:focus-visible { outline: 3px solid var(--dahlia-accent); outline-offset: 3px; }
+.srOnly { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.reducedMotion .mapWrapper, .reducedMotion .revealBackground { animation: none; opacity: 1; }
+.reducedMotion .flyingDahlia { display: none; }
+.reducedMotion .plantedDahlia, .reducedMotion .shockwave, .reducedMotion .burstPetal { animation: none; }
+.reducedMotion .shockwave, .reducedMotion .burstPetal { display: none; }
+
+/* The complete map and its planted flower fall together, accelerating downward. */
+.camera { position: absolute; inset: 0; }
+.cinematicOverlay[data-phase='falling'] .camera { animation: mapFall .65s cubic-bezier(.55, .02, .95, .45) forwards; }
+@keyframes mapFall {
+  0% { transform: translateY(0); opacity: 1; }
+  35% { opacity: .95; }
+  100% { transform: translateY(115vh); opacity: 0; }
+}
+.cinematicOverlay[data-phase='revealing'] .camera { visibility: hidden; }
+.cinematicOverlay[data-phase='revealing'] .revealBackground { animation: backgroundFade .3s ease-out forwards; }
+@keyframes backgroundFade { from { opacity: 1; } to { opacity: 0; } }
+.cinematicOverlay[data-phase='revealing'] .skipButton { visibility: hidden; }
+.reducedMotion .camera { transform: none !important; animation: none !important; }

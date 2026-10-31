@@ -1,0 +1,18 @@
+/* Rotate each flat face in the same perspective, without a nested 3D context.
+   This also prevents Safari from compositing descendants through the other face. */
+.faces { position: relative; width: 100%; height: 100%; }
+.face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transition: transform 500ms ease-out, visibility 0s linear;
+}
+.front { transform: rotateY(0deg); }
+.back { transform: rotateY(180deg); }
+.flipped .front { transform: rotateY(-180deg); }
+.flipped .back { transform: rotateY(0deg); }
+/* A second guard for browsers that paint nested content through hidden backs.
+   Keep the outgoing face until the midpoint so the first half of the turn renders. */
+.face[aria-hidden='true'] { visibility: hidden; transition: transform 500ms ease-out, visibility 0s linear 250ms; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) {
+  .face, .face[aria-hidden='true'] { transition: none; transform: none; }
+}

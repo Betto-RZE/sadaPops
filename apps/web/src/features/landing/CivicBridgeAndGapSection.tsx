@@ -1,0 +1,450 @@
+'use client';
+
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import Image from 'next/image';
+import { motion, useScroll, useTransform, useReducedMotion } from 'framer-motion';
+import {
+  INE_YOUTH_TURNOUT_2024,
+  getYouthTurnoutBenchmark,
+} from '../mapa-dalias/data/ineYouthTurnout2024';
+import { ArrowUpRight, ArrowDownRight, ChevronDown, Check } from 'lucide-react';
+import { cn } from '@/shared/utils';
+
+interface CivicBridgeAndGapSectionProps {
+  selectedStateId: string | null;
+  onSelectState: (stateId: string) => void;
+  className?: string;
+}
+
+const STATE_LIST = Object.values(INE_YOUTH_TURNOUT_2024).sort((a, b) =>
+  a.name.localeCompare(b.name, 'es')
+);
+
+// Filas de la gráfica con sus valores oficiales exactos del INE CCPC 2024
+const AGE_ROWS = [
+  {
+    id: '18-19',
+    number: '01',
+    cohort: '18 a 19 años',
+    tag: 'PRIMER VOTO',
+    turnout: 56.8,
+    note: 'Más de la mitad acude a votar (56.8%).',
+  },
+  {
+    id: '20-29',
+    number: '02',
+    cohort: '20 a 29 años',
+    tag: '20 A 29 AÑOS',
+    turnout: 47.8,
+    note: 'Menos de la mitad acude a votar (47.8%).',
+  },
+  {
+    id: '60+',
+    number: '03',
+    cohort: '60 años y más (60+)',
+    tag: '60 AÑOS Y MÁS',
+    turnout: 71.4,
+    note: 'Más de siete de cada diez acuden a las urnas (71.4%).',
+  },
+];
+
+export function CivicBridgeAndGapSection({
+  selectedStateId,
+  onSelectState,
+  className,
+}: CivicBridgeAndGapSectionProps) {
+  // Estado activo: sincronizado con el mapa o por defecto '09' (CDMX)
+  const effectiveStateId = selectedStateId || '09';
+  const stateBenchmark = useMemo(
+    () => getYouthTurnoutBenchmark(effectiveStateId),
+    [effectiveStateId]
+  );
+  const stateName = INE_YOUTH_TURNOUT_2024[effectiveStateId]?.name || 'tu estado';
+
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isDropdownOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsDropdownOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isDropdownOpen]);
+
+  const prefersReducedMotion = useReducedMotion();
+
+  // Referencia de la sección en el flujo natural de la página (sin doble scroll ni pantalla anidada)
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    // 0 = el borde superior del bloque entra por la base del viewport
+    // 1 = el bloque llegó a su posición en pantalla completa
+    offset: ['start end', 'start 0.08'],
+  });
+
+  // Expansión física del bloque negro mientras sube con el scroll natural de la página
+  const width = useTransform(
+    scrollYProgress,
+    [0.05, 0.85],
+    prefersReducedMotion ? ['100%', '100%'] : ['68%', '100%']
+  );
+  const borderRadius = useTransform(
+    scrollYProgress,
+    [0.05, 0.85],
+    prefersReducedMotion ? ['0px', '0px'] : ['44px', '0px']
+  );
+
+  // El contenido interior permanece oculto durante la expansión y solo se muestra
+  // cuando el bloque negro ya está asentado en su lugar
+  const contentOpacity = useTransform(
+    scrollYProgress,
+    [0.78, 0.98],
+    prefersReducedMotion ? [1, 1] : [0, 1]
+  );
+  const contentY = useTransform(
+    scrollYProgress,
+    [0.78, 0.98],
+    prefersReducedMotion ? ['0px', '0px'] : ['24px', '0px']
+  );
+
+  return (
+    <div className={cn('w-full', className)}>
+      {/* ========================================================================= */}
+      {/* PASO 2: PUENTE CONSTITUCIONAL Y OBJECIÓN CENTRAL                          */}
+      {/* ========================================================================= */}
+      <section
+        aria-labelledby="puente-heading"
+        className="max-w-4xl mx-auto px-4 sm:px-6 pt-4 pb-20 sm:pb-28"
+      >
+        {/* Metadato de navegación editorial */}
+        <div className="flex items-center gap-3 mb-6">
+          <div className="flex items-center gap-1 font-mono text-xs sm:text-[13px]">
+            <span className="font-bold text-[#5E4EC8]">02</span>
+            <span className="text-black/30 font-light">/</span>
+            <span className="text-black/40 font-medium">06</span>
+          </div>
+          <div className="w-12 h-px bg-[#5E4EC8]/35" />
+          <span className="text-[10px] sm:text-[11px] font-mono font-bold tracking-[0.22em] uppercase text-black/55">
+            EL MECANISMO
+          </span>
+        </div>
+
+        {/* Título editorial principal */}
+        <h3
+          id="puente-heading"
+          className="font-serif font-bold text-3xl sm:text-4xl md:text-[42px] text-[#0F1B2D] tracking-tight leading-[1.08] mb-6"
+        >
+          Quién decide y quién aparece
+        </h3>
+
+        {/* Párrafo del puente constitucional */}
+        <p className="text-sm sm:text-base text-[#3A4354] leading-[1.65] font-sans font-normal mb-8 max-w-3xl">
+          Las condiciones en las que estudias, buscas empleo o trabajas se relacionan con decisiones públicas,
+          y algunas se toman en el Congreso. En junio de 2027 se eligen las 500 diputaciones federales. Esa
+          Cámara aprueba cada año el Presupuesto de Egresos de la Federación, una facultad que le corresponde en
+          exclusiva, y que asigna recursos públicos a educación, salud y programas de empleo. Junto con el
+          Senado, el Congreso legisla en materia laboral y de seguridad social. Quiénes ocupan esas diputaciones
+          depende de lo que decidan las personas que votan.
+        </p>
+
+        {/* Declaración editorial: mayor tamaño y negritas, sin formato de card ni comillas */}
+        <div className="relative pl-6 sm:pl-8 py-2.5 border-l-[3px] border-[#5E4EC8] my-8 max-w-3xl">
+          <p className="font-serif font-bold text-2xl sm:text-3xl text-[#0F1B2D] leading-snug tracking-tight">
+            La participación comienza antes de llegar a las urnas.
+          </p>
+          <p className="font-serif font-bold text-lg sm:text-xl text-[#2C384A] leading-relaxed mt-2.5">
+            Una persona que se informa puede motivar a otra. Una comunidad que se prepara puede hacerse más visible. Y una generación que comprende cómo funcionan las decisiones públicas puede participar de manera más consciente.
+          </p>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* PASO 3: SECCIÓN NEGRA EN FLUJO NATURAL (Sin doble scroll ni corte visual) */}
+      {/* ========================================================================= */}
+      <div ref={sectionRef} className="w-full flex justify-center">
+        <motion.section
+          aria-labelledby="brecha-heading"
+          style={{
+            width,
+            borderRadius,
+          }}
+          className="bg-[#0B0C10] text-white min-h-screen supports-[height:100svh]:min-h-[100svh] flex flex-col justify-center border-y border-white/10 relative"
+        >
+          {/* El contenido mantiene su ancho fijo (100vw max-w-5xl) para nunca deformarse ni reacomodarse,
+              y aparece únicamente cuando el bloque negro ya llegó a su lugar */}
+          <motion.div
+            style={{
+              opacity: contentOpacity,
+              y: contentY,
+            }}
+            className="w-screen max-w-5xl mx-auto px-6 sm:px-10 lg:px-12 pt-16 pb-40 sm:pt-20 sm:pb-52"
+          >
+            {/* Cabecera superior: 03 / 06 LA BRECHA GENERACIONAL + INE CCPC 2024 */}
+            <div className="flex flex-wrap items-center justify-between gap-4 pb-6 mb-4 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1 font-mono text-xs sm:text-[13px]">
+                  <span className="font-bold text-[#A8A7FF]">03</span>
+                  <span className="text-white/40 font-light">/ 06</span>
+                </div>
+                <div className="w-12 h-px bg-[#5E4EC8]" />
+                <span className="text-[10px] sm:text-[11px] font-mono font-bold tracking-[0.2em] uppercase text-white/70">
+                  LA BRECHA GENERACIONAL
+                </span>
+              </div>
+
+              <span className="font-mono text-[10px] sm:text-[11px] tracking-[0.2em] uppercase text-white/40">
+                INE CCPC 2024 • ELECCIÓN FEDERAL
+              </span>
+            </div>
+
+            {/* Titular tipográfico: "Por qué importa aparecer" */}
+            <div className="max-w-3xl mb-10 sm:mb-12">
+              <h3
+                id="brecha-heading"
+                className="font-serif font-bold text-3xl sm:text-5xl lg:text-[54px] text-white tracking-tight leading-[1.04]"
+              >
+                Por qué <span className="font-serif italic font-normal text-[#B8A8FF]">importa</span> aparecer
+              </h3>
+              <p className="mt-4 text-sm sm:text-[15px] text-[#9E9EA7] leading-relaxed font-sans font-normal max-w-2xl">
+                A los 18 y 19 años, más de la mitad participa (56.8%). De los 20 a los 29, menos de la mitad (47.8%).
+                Desde los 60, más de siete de cada diez (71.4%). Estos datos muestran quién vota, no por qué.
+              </p>
+            </div>
+
+            {/* ========================================================================= */}
+            {/* GRÁFICA VISUAL 1:1 CON mockParticipacion.png                              */}
+            {/* ========================================================================= */}
+            <div className="relative pt-2 pb-6">
+              {/* Eje horizontal superior con ticks y porcentajes (0%, 25%, 50%, 75%, 100%) */}
+              <div className="relative mb-8 pb-3 hidden md:block md:mx-[152px]">
+                <div className="flex justify-between text-[10px] font-mono tracking-wider text-white/40 relative">
+                  <span className="relative">
+                    0%
+                    <span className="absolute left-1/2 -bottom-2 w-px h-1.5 bg-white/20 -translate-x-1/2" />
+                  </span>
+                  <span className="relative">
+                    25%
+                    <span className="absolute left-1/2 -bottom-2 w-px h-1.5 bg-white/20 -translate-x-1/2" />
+                  </span>
+                  <span className="relative">
+                    50%
+                    <span className="absolute left-1/2 -bottom-2 w-px h-1.5 bg-white/20 -translate-x-1/2" />
+                  </span>
+                  <span className="relative">
+                    75%
+                    <span className="absolute left-1/2 -bottom-2 w-px h-1.5 bg-white/20 -translate-x-1/2" />
+                  </span>
+                  <span className="relative">
+                    100%
+                    <span className="absolute left-1/2 -bottom-2 w-px h-1.5 bg-white/20 -translate-x-1/2" />
+                  </span>
+                </div>
+                <div className="mt-2 w-full h-px bg-white/10" />
+              </div>
+
+              {/* Contenedor relativo de las 3 filas con la línea vertical discontinua */}
+              <div className="space-y-9 sm:space-y-10 relative">
+                {/* Render de cada cohorte generacional */}
+                {AGE_ROWS.map((row) => (
+                  <div
+                    key={row.id}
+                    className="relative z-10 grid grid-cols-1 md:grid-cols-[8rem_minmax(0,1fr)_8rem] md:items-center gap-4 sm:gap-6"
+                  >
+                    {/* Columna Izquierda: Número + Urna Voxel */}
+                    <div className="flex items-center gap-3 sm:gap-4 shrink-0 md:w-32">
+                      <span className="font-serif font-bold text-base sm:text-lg text-[#A8A7FF] w-6">
+                        {row.number}
+                      </span>
+                      <div className="relative w-14 sm:w-16 h-14 sm:h-16 shrink-0">
+                        <Image
+                          src="/assets/cards-narrativa/Isometric_Purple _Ballot_Box _con.png"
+                          alt="Urna electoral voxel violeta con boleta"
+                          width={64}
+                          height={64}
+                          className="w-full h-full object-contain pointer-events-none select-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Columna Central: Título + Barra + Texto descriptivo */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-baseline gap-2 mb-2 flex-wrap">
+                        <h4 className="font-serif font-bold text-lg sm:text-xl text-white">
+                          {row.cohort}
+                        </h4>
+                        <span className="text-white/30 font-light">-</span>
+                        <span className="font-mono text-[10px] tracking-[0.18em] uppercase text-white/50">
+                          {row.tag}
+                        </span>
+                      </div>
+
+                      {/* Track de la barra horizontal */}
+                      <div className="h-7 sm:h-8 w-full rounded-[4px] bg-[#161820] border border-white/[0.06] overflow-hidden relative">
+                        <div
+                          className="h-full rounded-l-[3px] bg-gradient-to-r from-[#5E4EC8] via-[#7566E0] to-[#9988FC]"
+                          style={{ width: `${row.turnout}%` }}
+                        />
+                        <div aria-hidden="true" className="absolute inset-y-0 border-l border-dashed border-[#B8A8FF]/70 pointer-events-none" style={{ left: '59.7%' }} />
+                      </div>
+
+                      {/* Texto descriptiva al pie de la barra */}
+                      <p className="mt-1.5 text-xs text-[#8A8D98] font-sans">
+                        {row.note}
+                      </p>
+                    </div>
+
+                    {/* Columna Derecha: Porcentaje Monumental + PARTICIPACIÓN */}
+                    <div className="flex items-baseline justify-end gap-2 md:flex-col md:items-end md:justify-center md:gap-1 min-w-0 pt-1 md:pt-0">
+                      <span className="font-serif font-bold text-3xl sm:text-4xl text-white tracking-tight leading-none whitespace-nowrap tabular-nums">
+                        {row.turnout}%
+                      </span>
+                      <span className="font-mono text-[9px] tracking-[0.2em] uppercase text-white/40">
+                        PARTICIPACIÓN
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Guía explicativa al pie de la gráfica */}
+              <div className="mt-10 pt-5 border-t border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-mono text-white/60">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-0.5 bg-[#9988FC] inline-block" />
+                  <span>
+                    REFERENCIA NACIONAL · TODAS LAS EDADES:{' '}
+                    <strong className="text-white">59.7%</strong> (INE CCPC 2024)
+                  </span>
+                </div>
+                <span className="text-white/40 text-[11px]">
+                  Brecha: 23.6 puntos entre 20–29 y 60+
+                </span>
+              </div>
+
+              <p className="mt-5 text-sm sm:text-base text-white/85 font-sans leading-relaxed max-w-3xl">
+                Quienes compiten por el voto tienen razones para pensar, sobre todo, en quienes sí votan.
+                Es uno de varios factores. Votar no garantiza que se resuelva algo, pero hace que un grupo sea más difícil de pasar por alto.
+              </p>
+            </div>
+
+            {/* ========================================================================= */}
+            {/* PERSONALIZACIÓN POR ESTADO (Integrada al pie del bloque)                  */}
+            {/* ========================================================================= */}
+            <div className="mt-8 pt-6 border-t border-white/10">
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <div className="flex-1 max-w-sm" ref={dropdownRef}>
+                  <label
+                    id="state-dropdown-label"
+                    className="font-mono text-[10px] sm:text-[11px] font-bold tracking-[0.2em] uppercase text-[#B8A8FF] block mb-2"
+                  >
+                    CONSULTA TU ENTIDAD FEDERATIVA (18 A 29 AÑOS)
+                  </label>
+
+                  <div className="relative">
+                    <button
+                      type="button"
+                      aria-haspopup="listbox"
+                      aria-expanded={isDropdownOpen}
+                      aria-labelledby="state-dropdown-label"
+                      onClick={() => setIsDropdownOpen((prev) => !prev)}
+                      className="w-full bg-[#161A2B] hover:bg-[#1E2338] border border-white/20 focus:border-[#9988FC] text-white text-sm sm:text-base font-medium py-2.5 px-4 rounded-lg flex items-center justify-between transition-all focus:outline-none focus:ring-2 focus:ring-[#9988FC]/50 cursor-pointer shadow-md"
+                    >
+                      <div className="flex items-center gap-2.5 truncate">
+                        <span className="w-2 h-2 rounded-full bg-[#9988FC] shrink-0" />
+                        <span className="font-serif text-base sm:text-lg font-bold tracking-tight truncate">
+                          {stateName}
+                        </span>
+                      </div>
+                      <ChevronDown
+                        className={cn(
+                          'w-4 h-4 text-white/60 shrink-0 transition-transform duration-200',
+                          isDropdownOpen && 'rotate-180 text-[#9988FC]'
+                        )}
+                      />
+                    </button>
+
+                    {/* Menú desplegable hacia abajo con scroll limpio y tamaño contenido */}
+                    {isDropdownOpen && (
+                      <div
+                        role="listbox"
+                        className="absolute left-0 right-0 top-full mt-2 z-50 bg-[#121626] border border-white/20 rounded-lg shadow-2xl max-h-48 overflow-y-auto p-1.5 backdrop-blur-md animate-in fade-in-0 zoom-in-95 duration-150"
+                      >
+                        {STATE_LIST.map((state) => {
+                          const isSelected = state.id === effectiveStateId;
+                          return (
+                            <button
+                              key={state.id}
+                              type="button"
+                              role="option"
+                              aria-selected={isSelected}
+                              onClick={() => {
+                                onSelectState(state.id);
+                                setIsDropdownOpen(false);
+                              }}
+                              className={cn(
+                                'w-full text-left px-3.5 py-2 rounded-[4px] text-xs sm:text-sm font-sans flex items-center justify-between transition-colors cursor-pointer',
+                                isSelected
+                                  ? 'bg-[#5E4EC8] text-white font-semibold'
+                                  : 'text-white/80 hover:bg-white/10 hover:text-white'
+                              )}
+                            >
+                              <span>{state.name}</span>
+                              {isSelected && <Check className="w-3.5 h-3.5 text-white shrink-0 ml-2" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {stateBenchmark && (
+                  <div className="flex-1 text-left md:text-right">
+                    <p className="text-xs sm:text-[13px] text-white/80 font-sans mb-2 leading-relaxed">
+                      En <strong className="text-white">{stateName}</strong>, quienes tienen entre 18 y 29 años votaron{' '}
+                      <strong className="text-white">{stateBenchmark.turnoutYouthPercent}%</strong> en 2024,{' '}
+                      <span className={stateBenchmark.diff >= 0 ? 'text-white font-semibold' : 'text-[#B8A8FF] font-semibold'}>
+                        {stateBenchmark.diffLabel}
+                      </span>{' '}
+                      del promedio nacional de 18 a 29 años (49.1%, INE CCPC 2024).
+                    </p>
+                    <div className="inline-flex items-center gap-2">
+                      <span className="font-serif text-3xl sm:text-4xl text-white font-bold leading-none">
+                        {stateBenchmark.turnoutYouthPercent}%
+                      </span>
+                      <span
+                        className={cn(
+                          'inline-flex items-center gap-0.5 text-xs font-mono font-semibold px-2 py-0.5 rounded-[2px]',
+                          stateBenchmark.diff >= 0
+                            ? 'text-white bg-white/10'
+                            : 'text-[#B8A8FF] bg-[#231768] border border-[#5E4EC8]/40'
+                        )}
+                      >
+                        {stateBenchmark.diff >= 0 ? (
+                          <ArrowUpRight className="w-3.5 h-3.5 text-white" />
+                        ) : (
+                          <ArrowDownRight className="w-3.5 h-3.5 text-[#B8A8FF]" />
+                        )}
+                        {stateBenchmark.diffLabel}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        </motion.section>
+      </div>
+    </div>
+  );
+}

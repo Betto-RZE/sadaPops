@@ -3,6 +3,7 @@ module.exports = {
   content: [
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/**/*.{js,ts,jsx,tsx,mdx}",
+    "../../packages/game/src/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
@@ -27,11 +28,30 @@ module.exports = {
           green: '#20A4F3',
           success: '#10b981', // green for indicator
         },
-        background: '#FAFAFA', // Light grey/white
+        paper: {
+          DEFAULT: '#EEEDEA',
+          dark: '#E2E0DB',
+        },
+        background: '#EEEDEA', // Paper off-white fallback
         card: '#FFFFFF',
       },
       fontFamily: {
-        sans: ['var(--font-inter)', 'sans-serif'],
+        sans: ['var(--font-heading)', 'var(--font-inter)', 'sans-serif'],
+        heading: ['var(--font-heading)', 'sans-serif'],
+        serif: ['Georgia', 'Cambria', '"Times New Roman"', 'Times', 'serif'],
+        mono: [
+          'ui-monospace',
+          'SFMono-Regular',
+          'Menlo',
+          'Monaco',
+          'Consolas',
+          '"Liberation Mono"',
+          '"Courier New"',
+          'monospace',
+        ],
+      },
+      backgroundImage: {
+        'paper-pattern': "url('/bg/bg-ine-hero.webp')",
       },
     },
   },
