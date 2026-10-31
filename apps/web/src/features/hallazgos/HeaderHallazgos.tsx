@@ -27,7 +27,7 @@ export function HeaderHallazgos({ items }: { items: BloomItem[] }) {
     <header className="w-full px-3 pb-3 pt-3 sm:px-6 sm:pb-4 sm:pt-4 md:px-12 md:pt-6">
       <div className="relative mx-auto h-[560px] w-full max-w-[1200px] overflow-hidden rounded-2xl border border-[#EADFCF] bg-[#FFF9F5] shadow-[0_16px_45px_-12px_rgba(28,37,65,0.16)] sm:h-[470px] sm:rounded-3xl md:h-[500px]">
         <Image
-          src="/hallazgos/hero-background.png"
+          src="/hallazgos/hero-background.webp"
           alt=""
           fill
           priority

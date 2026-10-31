@@ -11,7 +11,7 @@ export function HeaderEvolucion() {
         
         {/* 1. Imagen base en alta resolución con posicionamiento inteligente */}
         <Image
-          src="/hero_widescreen.jpg"
+          src="/hero_widescreen.webp"
           alt="Aula cívica del INE con gráfica de dalias de participación en el pizarrón"
           fill
           priority

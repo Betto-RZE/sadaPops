@@ -13,7 +13,7 @@ export function HeaderEstados() {
     <header className="w-full px-3 pb-3 pt-3 sm:px-6 sm:pb-4 sm:pt-4 md:px-12 md:pt-6">
       <div className="relative mx-auto h-[540px] w-full max-w-[1200px] overflow-hidden rounded-2xl border border-[#F5D5E4] bg-[#FFF8F5] shadow-[0_20px_50px_-24px_rgba(194,0,106,0.35)] sm:h-[470px] sm:rounded-3xl md:h-[500px]">
         <div className="pointer-events-none absolute inset-0" aria-hidden="true">
-          <Image src="/estados/hero-background-pixel-v2.png" alt="" fill priority sizes="(max-width: 1200px) 100vw, 1200px" className="object-cover" />
+          <Image src="/estados/hero-background-pixel-v2.webp" alt="" fill priority sizes="(max-width: 1200px) 100vw, 1200px" className="object-cover" />
         </div>
 
         <motion.div
@@ -23,7 +23,7 @@ export function HeaderEstados() {
           transition={{ duration: 0.8, ease: EASE }}
         >
           <motion.div className="relative h-full w-full" animate={reduceMotion ? undefined : { y: [0, -8, 0] }} transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}>
-            <Image src="/estados/mexico-map-pixel-v2.png" alt="Mapa pixel art de México con sus divisiones estatales y marcadores magenta" fill priority unoptimized sizes="(max-width: 640px) 92vw, 680px" className="object-contain object-center drop-shadow-[0_18px_26px_rgba(28,37,65,0.14)] sm:object-right [image-rendering:pixelated]" />
+            <Image src="/estados/mexico-map-pixel-v2.webp" alt="Mapa pixel art de México con sus divisiones estatales y marcadores magenta" fill priority unoptimized sizes="(max-width: 640px) 92vw, 680px" className="object-contain object-center drop-shadow-[0_18px_26px_rgba(28,37,65,0.14)] sm:object-right [image-rendering:pixelated]" />
           </motion.div>
         </motion.div>
 

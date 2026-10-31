@@ -21,7 +21,7 @@ export function HeaderGenero() {
           transition={reduceMotion ? { duration: 0 } : { duration: 30, repeat: Infinity, ease: 'easeInOut' }}
         >
           <Image
-            src="/hero_genero_escenario_pixel.png"
+            src="/hero_genero_escenario_pixel.webp"
             alt=""
             fill
             priority
@@ -38,7 +38,7 @@ export function HeaderGenero() {
           transition={reduceMotion ? { duration: 0 } : { opacity: { duration: 0.55 }, y: { duration: 7, repeat: Infinity, ease: 'easeInOut' } }}
         >
           <Image
-            src="/hero_genero_personaje_balanza_pixel.png"
+            src="/hero_genero_personaje_balanza_pixel.webp"
             alt="Personaje del INE junto a una balanza con una niña y un niño en sus platillos."
             fill
             priority

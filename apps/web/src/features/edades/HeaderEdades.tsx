@@ -4,9 +4,9 @@ import Image from 'next/image';
 import { motion, useReducedMotion } from 'framer-motion';
 
 const HERO_CHARACTERS = [
-  { src: '/edades/personaje-joven-hombre.png', className: 'h-[220px] sm:h-[250px] md:h-[350px]', delay: 0.15 },
-  { src: '/edades/personaje-adulto-hombre.png', className: 'h-[255px] sm:h-[270px] md:h-[400px]', delay: 0 },
-  { src: '/edades/personaje-mayor.png', className: 'h-[225px] sm:h-[250px] md:h-[360px]', delay: 0.3 },
+  { src: '/edades/personaje-joven-hombre.webp', className: 'h-[220px] sm:h-[250px] md:h-[350px]', delay: 0.15 },
+  { src: '/edades/personaje-adulto-hombre.webp', className: 'h-[255px] sm:h-[270px] md:h-[400px]', delay: 0 },
+  { src: '/edades/personaje-mayor.webp', className: 'h-[225px] sm:h-[250px] md:h-[360px]', delay: 0.3 },
 ];
 
 export function HeaderEdades() {
@@ -16,7 +16,7 @@ export function HeaderEdades() {
     <header className="w-full bg-transparent px-3 pb-3 pt-3 sm:px-6 sm:pb-4 sm:pt-4 md:px-12 md:pt-6">
       <div className="relative mx-auto h-[500px] w-full max-w-[1200px] overflow-hidden rounded-2xl border border-slate-200/80 bg-[#172235] shadow-[0_16px_45px_-12px_rgba(28,37,65,0.18)] sm:h-[450px] sm:rounded-3xl md:h-[480px]">
         <div className="pointer-events-none absolute inset-0" aria-hidden="true">
-          <Image src="/edades/hero-plaza.png" alt="" fill priority unoptimized sizes="(max-width: 1200px) 100vw, 1200px" className="object-cover object-[58%_center] sm:object-center" />
+          <Image src="/edades/hero-plaza.webp" alt="" fill priority unoptimized sizes="(max-width: 1200px) 100vw, 1200px" className="object-cover object-[58%_center] sm:object-center" />
           <div className="absolute inset-0 bg-gradient-to-r from-[#172235]/35 via-[#172235]/10 to-transparent" />
           <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#172235]/50 to-transparent" />
         </div>

@@ -34,25 +34,43 @@ const CAPITULOS = [
 
 type Capitulo = (typeof CAPITULOS)[number];
 
-const GALERIA: { titulo: string; src: string | null; rot: string }[] = [
+const GALERIA: { titulo: string; descripcion?: string; src: string | null; rot: string }[] = [
   {
-    titulo: "Menú de inicio",
-    src: "/assets/juego/capturas/01-menu-inicio.webp",
+    titulo: "Montaje de casilla",
+    descripcion: "Armado de mamparas y preparación de materiales",
+    src: "/assets/juego/capturas/galeria-01.webp",
     rot: "-rotate-2",
   },
   {
-    titulo: "Selección de capítulos",
-    src: "/assets/juego/capturas/02-seleccion-capitulos.webp",
+    titulo: "Recepción de votantes",
+    descripcion: "Atención ciudadana y diálogo en las mesas de votación",
+    src: "/assets/juego/capturas/galeria-02.webp",
     rot: "rotate-1",
   },
   {
-    titulo: "Votantes en la plaza",
-    src: "/assets/juego/capturas/04-capitulo-2-votantes.webp",
+    titulo: "Mitos e inclusión CCPC",
+    descripcion: "Datos censales sobre diversidad cultural y lenguas",
+    src: "/assets/juego/capturas/galeria-03.webp",
     rot: "-rotate-1",
   },
-  { titulo: "Tu captura aquí", src: null, rot: "rotate-2" },
-  { titulo: "Tu captura aquí", src: null, rot: "-rotate-1" },
-  { titulo: "Tu captura aquí", src: null, rot: "rotate-1" },
+  {
+    titulo: "Pregunta cívica",
+    descripcion: "Casilla incluyente y mamparas accesibles",
+    src: "/assets/juego/capturas/galeria-04.webp",
+    rot: "rotate-2",
+  },
+  {
+    titulo: "Examen de la boleta",
+    descripcion: "Identificación de partidos y secciones electorales",
+    src: "/assets/juego/capturas/galeria-05.webp",
+    rot: "-rotate-1",
+  },
+  {
+    titulo: "Emisión del voto",
+    descripcion: "Marcado de boleta y validación de tu opción",
+    src: "/assets/juego/capturas/galeria-06.webp",
+    rot: "rotate-1",
+  },
 ];
 
 const PX = "shadow-[6px_6px_0_0_#1e1b4b]";
@@ -290,7 +308,7 @@ function Controles() {
           {/* Chasis base en pixel art */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/assets/juego/mando-base.png"
+            src="/assets/juego/mando-base.webp"
             alt="Control retro pixel art Inecito-Boy"
             className="absolute inset-0 w-full h-full object-contain pointer-events-none"
             style={{ imageRendering: "pixelated" }}
@@ -508,8 +526,15 @@ export function JuegoInfo() {
                   + CAPTURA
                 </div>
               )}
-              <figcaption className="py-3 text-center font-press-start text-[8px] uppercase text-brand-navy/70">
-                {g.titulo}
+              <figcaption className="py-3 px-2 text-center flex flex-col gap-1">
+                <span className="font-press-start text-[8px] uppercase text-brand-navy">
+                  {g.titulo}
+                </span>
+                {g.descripcion && (
+                  <span className="text-xs text-brand-navy/70 leading-snug">
+                    {g.descripcion}
+                  </span>
+                )}
               </figcaption>
             </figure>
           ))}
