@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Lock, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/shared/utils';
 import { LandingNavbar, type LandingNavbarProps } from './LandingNavbar';
@@ -16,23 +16,6 @@ const navLinks = [
 
 function isCurrentPage(pathname: string, href: string) {
   return href === '/' ? pathname === '/' : pathname.startsWith(href);
-}
-
-function DaliaStatus({ mobile = false }: { mobile?: boolean }) {
-  return (
-    <div
-      className={cn(
-        'flex select-none items-center gap-2 font-semibold text-brand-navy/55',
-        mobile
-          ? 'border-t border-brand-navy/10 px-3 pt-3 text-sm'
-          : 'ml-1 border-l border-brand-navy/10 pl-3 text-xs'
-      )}
-      title="Completa un módulo para desbloquear"
-    >
-      <Lock className="h-3.5 w-3.5 shrink-0 text-dalia-600/80" aria-hidden="true" />
-      <span>Agrega tu Dalia</span>
-    </div>
-  );
 }
 
 export type NavbarProps = LandingNavbarProps;
@@ -89,7 +72,6 @@ function StandardNavbar({ className }: { className?: string }) {
                 </Link>
               );
             })}
-            <DaliaStatus />
           </nav>
 
           <button
@@ -132,7 +114,6 @@ function StandardNavbar({ className }: { className?: string }) {
                 </Link>
               );
             })}
-            <DaliaStatus mobile />
           </div>
         </nav>
       </div>

@@ -1,0 +1,272 @@
+{
+  "version": 1,
+  "tool": "image_gen (built-in)",
+  "defaultTheme": "fucsia",
+  "assets": [
+    {
+      "theme": "vino",
+      "kind": "stationery",
+      "url": "/form/themes/stationery-vino.webp",
+      "width": 1200,
+      "height": 600,
+      "bytes": 101458,
+      "hasAlpha": true,
+      "transparentPercent": 49,
+      "prompt": "Use case: precise-object-edit. Asset type: transparent website stationery atlas with TWO separate objects. Edit target: supplied paper note and decorative ticket PNG. Recolor all pink paper, borders, tiny flower and ornaments to coordinated muted wine burgundy theme, reference midtone #8B174C; paper should be light tint, linework darker same family. Preserve torn folded texture, translucent tape on note, ticket notches and golden flower center. No text whatsoever. Keep large central blank areas on both items for later HTML text. Layout exactly: landscape 2:1 canvas; note centered wholly in LEFT HALF, ticket centered wholly in RIGHT HALF, each fully contained with at least 5% blank margin around, nothing crossing center divider; no divider drawn. Objects separated, isolated, true alpha transparency outside. Keep appearance and orientation close to source. No extra objects, no background rectangle, no words.",
+      "atlasSplitX": 672,
+      "atlasSplitPercent": 56
+    },
+    {
+      "theme": "vino",
+      "kind": "polaroid",
+      "url": "/form/themes/polaroid-ine-vino.webp",
+      "width": 640,
+      "height": 684,
+      "bytes": 78794,
+      "hasAlpha": true,
+      "transparentPercent": 40,
+      "prompt": "Use case: precise-object-edit. Image 1 edit target: vino themed INE polaroid. Image 2 color reference ONLY: gray ballot diamond, approximately #B3B3B3. Change ONLY the bright pink diamond/tilted ballot inside the INE logo at the CENTER of the photo to neutral medium gray matching image 2, maintaining its existing subtle 3D highlights, edges, perspective and shadows. Keep its shape and the black slot crossing it UNCHANGED. Do NOT alter pink/colorful external tape, petal, plus ornaments or strokes. Do NOT alter black INE letters or exact text 'Instituto Nacional Electoral'. Preserve entire composition, cream frame, existing alpha transparency, canvas size and object positions. Absolutely no other edits. The reference gray logo is only a color guide; do not replace the logo geometry or make the black slot gray. Output same polaroid with just gray central diamond.",
+      "editHistory": [
+        {
+          "request": "Cambiar únicamente el rombo central a gris según la referencia del usuario",
+          "previousPrompt": "Use case: precise-object-edit and background-extraction. Asset type: transparent decorative INE polaroid for civic website. Edit target: supplied INE polaroid JPEG. Remove ONLY the uniform outside off-white backdrop to actual alpha transparency; KEEP cream polaroid frame and cream photo interior. Recolor ONLY external fuchsia voxel petal, top tape, three attention strokes and two plus-shaped voxel ornaments to deep wine burgundy (#8B174C midtone with coherent light/shadow). Preserve absolutely the INE emblem INSIDE the photograph, including its original pink ballot, black box/slot, black INE letters and exact black text \"Instituto Nacional Electoral\"; no spelling or typographic changes. Preserve geometry, angle, lighting, cream frame, object layout. Entire object collection contained, no cropping or extra objects, no new text. Exterior background truly transparent, not white.",
+          "prompt": "Use case: precise-object-edit. Image 1 edit target: vino themed INE polaroid. Image 2 color reference ONLY: gray ballot diamond, approximately #B3B3B3. Change ONLY the bright pink diamond/tilted ballot inside the INE logo at the CENTER of the photo to neutral medium gray matching image 2, maintaining its existing subtle 3D highlights, edges, perspective and shadows. Keep its shape and the black slot crossing it UNCHANGED. Do NOT alter pink/colorful external tape, petal, plus ornaments or strokes. Do NOT alter black INE letters or exact text 'Instituto Nacional Electoral'. Preserve entire composition, cream frame, existing alpha transparency, canvas size and object positions. Absolutely no other edits. The reference gray logo is only a color guide; do not replace the logo geometry or make the black slot gray. Output same polaroid with just gray central diamond."
+        }
+      ]
+    },
+    {
+      "theme": "fucsia",
+      "kind": "dahlia",
+      "url": "/form/themes/dahlia-fucsia.webp",
+      "width": 720,
+      "height": 607,
+      "bytes": 107262,
+      "hasAlpha": true,
+      "transparentPercent": 28,
+      "prompt": "Use case: precise-object-edit. Asset type: transparent website dahlia sticker. Edit target: supplied original voxel dahlia PNG. Change ONLY pink petals and pink sticker halo to bright fuchsia, #E00078 midtone. Keep exact voxel geometry, shape, proportions, isometric view, golden center and green leaves, lighting and cutout white edge. Entire flower visible, centered, generous transparent margin, no crop, no text, no additional objects. True alpha transparency outside sticker; preserve crisp highlights and 3D shading. Output one fucsia flower."
+    },
+    {
+      "theme": "fucsia",
+      "kind": "stationery",
+      "url": "/form/themes/stationery-fucsia.webp",
+      "width": 1200,
+      "height": 600,
+      "bytes": 90526,
+      "hasAlpha": true,
+      "transparentPercent": 48,
+      "prompt": "Use case: precise-object-edit. Asset type: transparent website stationery atlas with TWO separate objects. Edit target: supplied paper note and decorative ticket PNG. Recolor all pink paper, borders, tiny flower and ornaments to coordinated fuchsia pink theme, reference midtone #E00078; paper should be light tint, linework darker same family. Preserve torn folded texture, translucent tape on note, ticket notches and golden flower center. No text whatsoever. Keep large central blank areas on both items for later HTML text. Layout exactly: landscape 2:1 canvas; note centered wholly in LEFT HALF, ticket centered wholly in RIGHT HALF, each fully contained with at least 5% blank margin around, nothing crossing center divider; no divider drawn. Objects separated, isolated, true alpha transparency outside. Keep appearance and orientation close to source. No extra objects, no background rectangle, no words.",
+      "atlasSplitX": 672,
+      "atlasSplitPercent": 56
+    },
+    {
+      "theme": "fucsia",
+      "kind": "polaroid",
+      "url": "/form/themes/polaroid-ine-fucsia.webp",
+      "width": 640,
+      "height": 684,
+      "bytes": 74126,
+      "hasAlpha": true,
+      "transparentPercent": 40,
+      "prompt": "Use case: precise-object-edit. Image 1 edit target: fucsia themed INE polaroid. Image 2 color reference ONLY: gray ballot diamond, approximately #B3B3B3. Change ONLY the bright pink diamond/tilted ballot inside the INE logo at the CENTER of the photo to neutral medium gray matching image 2, maintaining its existing subtle 3D highlights, edges, perspective and shadows. Keep its shape and the black slot crossing it UNCHANGED. Do NOT alter pink/colorful external tape, petal, plus ornaments or strokes. Do NOT alter black INE letters or exact text 'Instituto Nacional Electoral'. Preserve entire composition, cream frame, existing alpha transparency, canvas size and object positions. Absolutely no other edits. The reference gray logo is only a color guide; do not replace the logo geometry or make the black slot gray. Output same polaroid with just gray central diamond.",
+      "editHistory": [
+        {
+          "request": "Cambiar únicamente el rombo central a gris según la referencia del usuario",
+          "previousPrompt": "Use case: precise-object-edit and background-extraction. Asset type: transparent decorative INE polaroid for civic website. Edit target: supplied INE polaroid JPEG. Remove ONLY the uniform outside off-white backdrop to actual alpha transparency; KEEP cream polaroid frame and cream photo interior. Recolor ONLY external fuchsia voxel petal, top tape, three attention strokes and two plus-shaped voxel ornaments to bright fuchsia (#E00078 midtone with coherent light/shadow). Preserve absolutely the INE emblem INSIDE the photograph, including its original pink ballot, black box/slot, black INE letters and exact black text \"Instituto Nacional Electoral\"; no spelling or typographic changes. Preserve geometry, angle, lighting, cream frame, object layout. Entire object collection contained, no cropping or extra objects, no new text. Exterior background truly transparent, not white.",
+          "prompt": "Use case: precise-object-edit. Image 1 edit target: fucsia themed INE polaroid. Image 2 color reference ONLY: gray ballot diamond, approximately #B3B3B3. Change ONLY the bright pink diamond/tilted ballot inside the INE logo at the CENTER of the photo to neutral medium gray matching image 2, maintaining its existing subtle 3D highlights, edges, perspective and shadows. Keep its shape and the black slot crossing it UNCHANGED. Do NOT alter pink/colorful external tape, petal, plus ornaments or strokes. Do NOT alter black INE letters or exact text 'Instituto Nacional Electoral'. Preserve entire composition, cream frame, existing alpha transparency, canvas size and object positions. Absolutely no other edits. The reference gray logo is only a color guide; do not replace the logo geometry or make the black slot gray. Output same polaroid with just gray central diamond."
+        }
+      ]
+    },
+    {
+      "theme": "rosa",
+      "kind": "dahlia",
+      "url": "/form/themes/dahlia-rosa.webp",
+      "width": 720,
+      "height": 607,
+      "bytes": 74970,
+      "hasAlpha": true,
+      "transparentPercent": 37,
+      "prompt": "Use case: precise-object-edit. Asset type: transparent website dahlia sticker. Edit target: supplied original voxel dahlia PNG. Change ONLY pink petals and pink sticker halo to soft medium pink, #F28CBE midtone. Keep exact voxel geometry, shape, proportions, isometric view, golden center and green leaves, lighting and cutout white edge. Entire flower visible, centered, generous transparent margin, no crop, no text, no additional objects. True alpha transparency outside sticker; preserve crisp highlights and 3D shading. Output one rosa flower."
+    },
+    {
+      "theme": "rosa",
+      "kind": "stationery",
+      "url": "/form/themes/stationery-rosa.webp",
+      "width": 1200,
+      "height": 600,
+      "bytes": 85778,
+      "hasAlpha": true,
+      "transparentPercent": 49,
+      "prompt": "Use case: precise-object-edit. Asset type: transparent website stationery atlas with TWO separate objects. Edit target: supplied paper note and decorative ticket PNG. Recolor all pink paper, borders, tiny flower and ornaments to coordinated soft medium rose pink theme, reference midtone #F28CBE; paper should be light tint, linework darker same family. Preserve torn folded texture, translucent tape on note, ticket notches and golden flower center. No text whatsoever. Keep large central blank areas on both items for later HTML text. Layout exactly: landscape 2:1 canvas; note centered wholly in LEFT HALF, ticket centered wholly in RIGHT HALF, each fully contained with at least 5% blank margin around, nothing crossing center divider; no divider drawn. Objects separated, isolated, true alpha transparency outside. Keep appearance and orientation close to source. No extra objects, no background rectangle, no words.",
+      "atlasSplitX": 672,
+      "atlasSplitPercent": 56
+    },
+    {
+      "theme": "rosa",
+      "kind": "polaroid",
+      "url": "/form/themes/polaroid-ine-rosa.webp",
+      "width": 640,
+      "height": 684,
+      "bytes": 79712,
+      "hasAlpha": true,
+      "transparentPercent": 40,
+      "prompt": "Use case: precise-object-edit. Image 1 edit target: rosa themed INE polaroid. Image 2 color reference ONLY: gray ballot diamond, approximately #B3B3B3. Change ONLY the bright pink diamond/tilted ballot inside the INE logo at the CENTER of the photo to neutral medium gray matching image 2, maintaining its existing subtle 3D highlights, edges, perspective and shadows. Keep its shape and the black slot crossing it UNCHANGED. Do NOT alter pink/colorful external tape, petal, plus ornaments or strokes. Do NOT alter black INE letters or exact text 'Instituto Nacional Electoral'. Preserve entire composition, cream frame, existing alpha transparency, canvas size and object positions. Absolutely no other edits. The reference gray logo is only a color guide; do not replace the logo geometry or make the black slot gray. Output same polaroid with just gray central diamond.",
+      "editHistory": [
+        {
+          "request": "Cambiar únicamente el rombo central a gris según la referencia del usuario",
+          "previousPrompt": "Use case: precise-object-edit and background-extraction. Asset type: transparent decorative INE polaroid for civic website. Edit target: supplied INE polaroid JPEG. Remove ONLY the uniform outside off-white backdrop to actual alpha transparency; KEEP cream polaroid frame and cream photo interior. Recolor ONLY external fuchsia voxel petal, top tape, three attention strokes and two plus-shaped voxel ornaments to soft medium rose pink (#F28CBE midtone with coherent light/shadow). Preserve absolutely the INE emblem INSIDE the photograph, including its original pink ballot, black box/slot, black INE letters and exact black text \"Instituto Nacional Electoral\"; no spelling or typographic changes. Preserve geometry, angle, lighting, cream frame, object layout. Entire object collection contained, no cropping or extra objects, no new text. Exterior background truly transparent, not white.",
+          "prompt": "Use case: precise-object-edit. Image 1 edit target: rosa themed INE polaroid. Image 2 color reference ONLY: gray ballot diamond, approximately #B3B3B3. Change ONLY the bright pink diamond/tilted ballot inside the INE logo at the CENTER of the photo to neutral medium gray matching image 2, maintaining its existing subtle 3D highlights, edges, perspective and shadows. Keep its shape and the black slot crossing it UNCHANGED. Do NOT alter pink/colorful external tape, petal, plus ornaments or strokes. Do NOT alter black INE letters or exact text 'Instituto Nacional Electoral'. Preserve entire composition, cream frame, existing alpha transparency, canvas size and object positions. Absolutely no other edits. The reference gray logo is only a color guide; do not replace the logo geometry or make the black slot gray. Output same polaroid with just gray central diamond."
+        }
+      ]
+    },
+    {
+      "theme": "lila-claro",
+      "kind": "dahlia",
+      "url": "/form/themes/dahlia-lila-claro.webp",
+      "width": 720,
+      "height": 607,
+      "bytes": 76308,
+      "hasAlpha": true,
+      "transparentPercent": 37,
+      "prompt": "Use case: precise-object-edit. Asset type: transparent website dahlia sticker. Edit target: supplied original voxel dahlia PNG. Change ONLY pink petals and pink sticker halo to pale lavender lilac, clearly purple not pink, #D6ADE0 midtone. Keep exact voxel geometry, shape, proportions, isometric view, golden center and green leaves, lighting and cutout white edge. Entire flower visible, centered, generous transparent margin, no crop, no text, no additional objects. True alpha transparency outside sticker; preserve crisp highlights and 3D shading. Output one lila-claro flower."
+    },
+    {
+      "theme": "lila-claro",
+      "kind": "stationery",
+      "url": "/form/themes/stationery-lila-claro.webp",
+      "width": 1200,
+      "height": 600,
+      "bytes": 94500,
+      "hasAlpha": true,
+      "transparentPercent": 49,
+      "prompt": "Use case: precise-object-edit. Asset type: transparent website stationery atlas with TWO separate objects. Edit target: supplied paper note and decorative ticket PNG. Recolor all pink paper, borders, tiny flower and ornaments to coordinated pale lavender lilac, no pink theme, reference midtone #D6ADE0; paper should be light tint, linework darker same family. Preserve torn folded texture, translucent tape on note, ticket notches and golden flower center. No text whatsoever. Keep large central blank areas on both items for later HTML text. Layout exactly: landscape 2:1 canvas; note centered wholly in LEFT HALF, ticket centered wholly in RIGHT HALF, each fully contained with at least 5% blank margin around, nothing crossing center divider; no divider drawn. Objects separated, isolated, true alpha transparency outside. Keep appearance and orientation close to source. No extra objects, no background rectangle, no words.",
+      "atlasSplitX": 672,
+      "atlasSplitPercent": 56
+    },
+    {
+      "theme": "lila-claro",
+      "kind": "polaroid",
+      "url": "/form/themes/polaroid-ine-lila-claro.webp",
+      "width": 640,
+      "height": 684,
+      "bytes": 76860,
+      "hasAlpha": true,
+      "transparentPercent": 40,
+      "prompt": "Use case: precise-object-edit. Image 1 edit target: lila-claro themed INE polaroid. Image 2 color reference ONLY: gray ballot diamond, approximately #B3B3B3. Change ONLY the bright pink diamond/tilted ballot inside the INE logo at the CENTER of the photo to neutral medium gray matching image 2, maintaining its existing subtle 3D highlights, edges, perspective and shadows. Keep its shape and the black slot crossing it UNCHANGED. Do NOT alter pink/colorful external tape, petal, plus ornaments or strokes. Do NOT alter black INE letters or exact text 'Instituto Nacional Electoral'. Preserve entire composition, cream frame, existing alpha transparency, canvas size and object positions. Absolutely no other edits. The reference gray logo is only a color guide; do not replace the logo geometry or make the black slot gray. Output same polaroid with just gray central diamond.",
+      "editHistory": [
+        {
+          "request": "Cambiar únicamente el rombo central a gris según la referencia del usuario",
+          "previousPrompt": "Use case: precise-object-edit and background-extraction. Asset type: transparent decorative INE polaroid for civic website. Edit target: supplied INE polaroid JPEG. Remove ONLY the uniform outside off-white backdrop to actual alpha transparency; KEEP cream polaroid frame and cream photo interior. Recolor ONLY external fuchsia voxel petal, top tape, three attention strokes and two plus-shaped voxel ornaments to pale lavender lilac, no pink (#D6ADE0 midtone with coherent light/shadow). Preserve absolutely the INE emblem INSIDE the photograph, including its original pink ballot, black box/slot, black INE letters and exact black text \"Instituto Nacional Electoral\"; no spelling or typographic changes. Preserve geometry, angle, lighting, cream frame, object layout. Entire object collection contained, no cropping or extra objects, no new text. Exterior background truly transparent, not white.",
+          "prompt": "Use case: precise-object-edit. Image 1 edit target: lila-claro themed INE polaroid. Image 2 color reference ONLY: gray ballot diamond, approximately #B3B3B3. Change ONLY the bright pink diamond/tilted ballot inside the INE logo at the CENTER of the photo to neutral medium gray matching image 2, maintaining its existing subtle 3D highlights, edges, perspective and shadows. Keep its shape and the black slot crossing it UNCHANGED. Do NOT alter pink/colorful external tape, petal, plus ornaments or strokes. Do NOT alter black INE letters or exact text 'Instituto Nacional Electoral'. Preserve entire composition, cream frame, existing alpha transparency, canvas size and object positions. Absolutely no other edits. The reference gray logo is only a color guide; do not replace the logo geometry or make the black slot gray. Output same polaroid with just gray central diamond."
+        }
+      ]
+    },
+    {
+      "theme": "rosa-palido",
+      "kind": "dahlia",
+      "url": "/form/themes/dahlia-rosa-palido.webp",
+      "width": 720,
+      "height": 607,
+      "bytes": 62454,
+      "hasAlpha": true,
+      "transparentPercent": 38,
+      "prompt": "Use case: precise-object-edit. Asset type: transparent website dahlia sticker. Edit target: supplied original voxel dahlia PNG. Change ONLY pink petals and pink sticker halo to very pale blush pink, almost ivory pink, #EFD5DF midtone. Keep exact voxel geometry, shape, proportions, isometric view, golden center and green leaves, lighting and cutout white edge. Entire flower visible, centered, generous transparent margin, no crop, no text, no additional objects. True alpha transparency outside sticker; preserve crisp highlights and 3D shading. Output one rosa-palido flower."
+    },
+    {
+      "theme": "rosa-palido",
+      "kind": "stationery",
+      "url": "/form/themes/stationery-rosa-palido.webp",
+      "width": 1200,
+      "height": 600,
+      "bytes": 76370,
+      "hasAlpha": true,
+      "transparentPercent": 50,
+      "prompt": "Use case: precise-object-edit. Asset type: transparent website stationery atlas with TWO separate objects. Edit target: supplied paper note and decorative ticket PNG. Recolor all pink paper, borders, tiny flower and ornaments to coordinated very pale blush pink theme, reference midtone #EFD5DF; paper should be light tint, linework darker same family. Preserve torn folded texture, translucent tape on note, ticket notches and golden flower center. No text whatsoever. Keep large central blank areas on both items for later HTML text. Layout exactly: landscape 2:1 canvas; note centered wholly in LEFT HALF, ticket centered wholly in RIGHT HALF, each fully contained with at least 5% blank margin around, nothing crossing center divider; no divider drawn. Objects separated, isolated, true alpha transparency outside. Keep appearance and orientation close to source. No extra objects, no background rectangle, no words.",
+      "atlasSplitX": 672,
+      "atlasSplitPercent": 56
+    },
+    {
+      "theme": "rosa-palido",
+      "kind": "polaroid",
+      "url": "/form/themes/polaroid-ine-rosa-palido.webp",
+      "width": 640,
+      "height": 684,
+      "bytes": 78128,
+      "hasAlpha": true,
+      "transparentPercent": 39,
+      "prompt": "Use case: precise-object-edit. Image 1 edit target: rosa-palido themed INE polaroid. Image 2 color reference ONLY: gray ballot diamond, approximately #B3B3B3. Change ONLY the bright pink diamond/tilted ballot inside the INE logo at the CENTER of the photo to neutral medium gray matching image 2, maintaining its existing subtle 3D highlights, edges, perspective and shadows. Keep its shape and the black slot crossing it UNCHANGED. Do NOT alter pink/colorful external tape, petal, plus ornaments or strokes. Do NOT alter black INE letters or exact text 'Instituto Nacional Electoral'. Preserve entire composition, cream frame, existing alpha transparency, canvas size and object positions. Absolutely no other edits. The reference gray logo is only a color guide; do not replace the logo geometry or make the black slot gray. Output same polaroid with just gray central diamond.",
+      "editHistory": [
+        {
+          "request": "Cambiar únicamente el rombo central a gris según la referencia del usuario",
+          "previousPrompt": "Use case: precise-object-edit and background-extraction. Asset type: transparent decorative INE polaroid for civic website. Edit target: supplied INE polaroid JPEG. Remove ONLY the uniform outside off-white backdrop to actual alpha transparency; KEEP cream polaroid frame and cream photo interior. Recolor ONLY external fuchsia voxel petal, top tape, three attention strokes and two plus-shaped voxel ornaments to very pale blush pink (#EFD5DF midtone with coherent light/shadow). Preserve absolutely the INE emblem INSIDE the photograph, including its original pink ballot, black box/slot, black INE letters and exact black text \"Instituto Nacional Electoral\"; no spelling or typographic changes. Preserve geometry, angle, lighting, cream frame, object layout. Entire object collection contained, no cropping or extra objects, no new text. Exterior background truly transparent, not white.",
+          "prompt": "Use case: precise-object-edit. Image 1 edit target: rosa-palido themed INE polaroid. Image 2 color reference ONLY: gray ballot diamond, approximately #B3B3B3. Change ONLY the bright pink diamond/tilted ballot inside the INE logo at the CENTER of the photo to neutral medium gray matching image 2, maintaining its existing subtle 3D highlights, edges, perspective and shadows. Keep its shape and the black slot crossing it UNCHANGED. Do NOT alter pink/colorful external tape, petal, plus ornaments or strokes. Do NOT alter black INE letters or exact text 'Instituto Nacional Electoral'. Preserve entire composition, cream frame, existing alpha transparency, canvas size and object positions. Absolutely no other edits. The reference gray logo is only a color guide; do not replace the logo geometry or make the black slot gray. Output same polaroid with just gray central diamond."
+        }
+      ]
+    },
+    {
+      "theme": "vino",
+      "kind": "dahlia",
+      "url": "/form/themes/dahlia-vino.webp",
+      "width": 720,
+      "height": 607,
+      "bytes": 83964,
+      "hasAlpha": true,
+      "transparentPercent": 37,
+      "prompt": "Use case: precise-object-edit. Asset type: transparent website dahlia sticker. Edit target: supplied voxel dahlia PNG. Change ONLY pink petals and pink sticker halo to deep wine burgundy (#8B174C midtone, #72113D shadows). Keep exact voxel geometry, shape, proportions, isometric view, golden center and green leaves, lighting and cutout white edge. Entire flower visible, centered, generous transparent margin, no crop, no text, no additional objects. True alpha transparency outside sticker; preserve crisp highlights and 3D shading. Output one wine flower."
+    },
+    {
+      "theme": "vino",
+      "kind": "petal",
+      "url": "/form/themes/petal-vino.webp",
+      "width": 256,
+      "height": 205,
+      "bytes": 8152,
+      "hasAlpha": true,
+      "transparentPercent": 69,
+      "prompt": "Use case: precise-object-edit. Asset type: single decorative voxel petal cutout for website. Edit target supplied INE polaroid image: isolate ONLY the blocky voxel petal cluster at the lower-right corner. Remove the entire frame, logo, tape, plus ornaments, strokes and all other content. Keep just that single voxel petal cluster floating alone, its exact stepped geometry, isometric angle, polished highlights and volume. Recolor it deep wine burgundy (#8B174C midtone). Center this single object with at least 15% transparent margin on every side. Genuine alpha background, no white or checkerboard background. No flower center, no leaves, no text, no other objects."
+    },
+    {
+      "theme": "fucsia",
+      "kind": "petal",
+      "url": "/form/themes/petal-fucsia.webp",
+      "width": 256,
+      "height": 234,
+      "bytes": 9230,
+      "hasAlpha": true,
+      "transparentPercent": 68,
+      "prompt": "Use case: precise-object-edit. Asset type: single decorative voxel petal cutout for website. Edit target supplied INE polaroid image: isolate ONLY the blocky voxel petal cluster at the lower-right corner. Remove the entire frame, logo, tape, plus ornaments, strokes and all other content. Keep just that single voxel petal cluster floating alone, its exact stepped geometry, isometric angle, polished highlights and volume. Recolor it bright fuchsia (#E00078 midtone). Center this single object with at least 15% transparent margin on every side. Genuine alpha background, no white or checkerboard background. No flower center, no leaves, no text, no other objects."
+    },
+    {
+      "theme": "rosa",
+      "kind": "petal",
+      "url": "/form/themes/petal-rosa.webp",
+      "width": 256,
+      "height": 213,
+      "bytes": 9496,
+      "hasAlpha": true,
+      "transparentPercent": 66,
+      "prompt": "Use case: precise-object-edit. Asset type: single decorative voxel petal cutout for website. Edit target supplied INE polaroid image: isolate ONLY the blocky voxel petal cluster at the lower-right corner. Remove the entire frame, logo, tape, plus ornaments, strokes and all other content. Keep just that single voxel petal cluster floating alone, its exact stepped geometry, isometric angle, polished highlights and volume. Recolor it soft medium rose pink (#F28CBE midtone). Center this single object with at least 15% transparent margin on every side. Genuine alpha background, no white or checkerboard background. No flower center, no leaves, no text, no other objects."
+    },
+    {
+      "theme": "lila-claro",
+      "kind": "petal",
+      "url": "/form/themes/petal-lila-claro.webp",
+      "width": 256,
+      "height": 213,
+      "bytes": 9582,
+      "hasAlpha": true,
+      "transparentPercent": 66,
+      "prompt": "Use case: precise-object-edit. Change ONLY the pink color of this isolated voxel petal to pale lavender lilac #D6ADE0 with purple shadows. Keep exact object geometry, angle, lighting, canvas framing and existing transparent alpha channel unchanged. Do not add any glow, halo, background or shadows outside the object. Single clean lavender object on actual transparency, no text."
+    },
+    {
+      "theme": "rosa-palido",
+      "kind": "petal",
+      "url": "/form/themes/petal-rosa-palido.webp",
+      "width": 256,
+      "height": 216,
+      "bytes": 8454,
+      "hasAlpha": true,
+      "transparentPercent": 69,
+      "prompt": "Use case: precise-object-edit. Asset type: single decorative voxel petal cutout for website. Edit target supplied INE polaroid image: isolate ONLY the blocky voxel petal cluster at the lower-right corner. Remove the entire frame, logo, tape, plus ornaments, strokes and all other content. Keep just that single voxel petal cluster floating alone, its exact stepped geometry, isometric angle, polished highlights and volume. Recolor it very pale blush pink (#EFD5DF midtone). Center this single object with at least 15% transparent margin on every side. Genuine alpha background, no white or checkerboard background. No flower center, no leaves, no text, no other objects."
+    }
+  ]
+}

@@ -38,6 +38,17 @@ module.exports = {
       fontFamily: {
         sans: ['var(--font-heading)', 'var(--font-inter)', 'sans-serif'],
         heading: ['var(--font-heading)', 'sans-serif'],
+        serif: ['Georgia', 'Cambria', '"Times New Roman"', 'Times', 'serif'],
+        mono: [
+          'ui-monospace',
+          'SFMono-Regular',
+          'Menlo',
+          'Monaco',
+          'Consolas',
+          '"Liberation Mono"',
+          '"Courier New"',
+          'monospace',
+        ],
       },
       backgroundImage: {
         'paper-pattern': "url('/bg/bg-ine-hero.webp')",

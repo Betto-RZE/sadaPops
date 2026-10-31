@@ -98,6 +98,7 @@ sadaPops/
 5. **Accesibilidad Primero (WCAG 2.1 AA):** Todos los mapas DEBEN ofrecer una ruta narrativa/tabular equivalente para lectores de pantalla. Los ratios de contraste deben cumplir WCAG AA. Incluir soporte i18n para Náhuatl.
 6. **Sin Infraestructura Ficticia:** NO construir ubicadores de casillas ni formularios de registro de observadores propios. Enlazar siempre directamente a portales oficiales del INE.
 7. **Asistente de IA Acotado:** El endpoint del chatbot en el backend DEBE restringir los prompts exclusivamente a datos objetivos del dataset CCPC y contenido editorial de la plataforma. Rechazar debate político abierto.
+8. **Dirección de Arte y Tipografía:** Titulares y acentos editoriales en serif clásico (`Georgia`), metadatos y etiquetas en mono del sistema (`ui-monospace`, `Consolas`), papel satinado marfil, acentos en azul institucional, morado voxel (`#5E2CE6`) y dalia (`#C8006E`). Evitar estilos genéricos de SaaS.
 
 ---
 
