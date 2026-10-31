@@ -5,7 +5,7 @@ import { SourcesPanel } from '@/features/datos/SourcesPanel';
 
 export default function DatosPage() {
   return (
-    <div className="flex min-h-screen flex-col bg-background font-sans selection:bg-gray-200 selection:text-brand-navy">
+    <div className="flex min-h-screen flex-col bg-transparent font-sans selection:bg-gray-200 selection:text-brand-navy">
       <Navbar />
 
       <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-6 pb-16 sm:px-6 md:px-10 md:py-10 md:pb-24 xl:px-12">

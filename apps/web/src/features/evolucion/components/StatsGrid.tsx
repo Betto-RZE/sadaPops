@@ -138,9 +138,9 @@ export function StatsGrid({ data }: Props) {
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
       
       {/* 6. DATO PRINCIPAL */}
-      <div className="bg-white rounded-3xl p-8 md:p-12 border border-slate-200/90 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.06)] flex flex-col justify-between relative overflow-hidden">
+      <div className="bg-white rounded-3xl p-5 sm:p-8 md:p-12 border border-slate-200/90 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.06)] flex flex-col justify-between relative overflow-hidden">
         <div>
-          <div className="flex justify-between items-center mb-8">
+          <div className="flex flex-wrap justify-between items-center gap-2 mb-8">
             <span className="px-3.5 py-1.5 rounded-lg text-[10px] font-bold tracking-widest uppercase bg-[#E3007E] text-white shadow-xs">
               ELECCIÓN FEDERAL
             </span>
@@ -153,8 +153,8 @@ export function StatsGrid({ data }: Props) {
             <h4 className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-3 font-mono">
               Participación en {yearStr}
             </h4>
-            <h3 className="text-[76px] md:text-[104px] font-black text-brand-navy leading-none tracking-tighter flex items-baseline gap-1">
-              {participationRate}<span className="text-4xl md:text-5xl font-bold text-[#E3007E]">%</span>
+            <h3 className="text-6xl sm:text-[76px] md:text-[104px] font-black text-brand-navy leading-none tracking-tighter flex items-baseline gap-1">
+              {participationRate}<span className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#E3007E]">%</span>
             </h3>
             <div className="text-xl font-bold text-[#E3007E] mt-1 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#E3007E]" />
@@ -192,7 +192,7 @@ export function StatsGrid({ data }: Props) {
 
       {/* 7. REPRESENTACIÓN "X DE CADA 10" */}
       <div
-        className={`${pixelFont.className} bg-[#1A0B18] rounded-3xl p-8 md:p-12 text-white shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] flex flex-col justify-between`}
+        className={`${pixelFont.className} bg-[#1A0B18] rounded-3xl p-5 sm:p-8 md:p-12 text-white shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] flex flex-col justify-between`}
       >
         <div>
           <div className="text-xs text-[#E879F9] tracking-[0.2em] uppercase mb-4 font-mono">

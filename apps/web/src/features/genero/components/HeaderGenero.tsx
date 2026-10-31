@@ -9,7 +9,7 @@ export function HeaderGenero() {
   const reduceMotion = useReducedMotion();
 
   return (
-    <header className="relative w-full bg-[#FDFCFD] pt-3 sm:pt-4 md:pt-6 pb-2 px-3 sm:px-6 lg:px-12">
+    <header className="relative w-full bg-transparent pt-3 sm:pt-4 md:pt-6 pb-2 px-3 sm:px-6 lg:px-12">
       {/* Contenedor enmarcado del Hero: bordes redondeados y sombra idénticos a Evolución */}
       <div className="relative w-full max-w-[1200px] mx-auto h-[460px] sm:h-[480px] md:h-[500px] lg:h-[520px] rounded-xl sm:rounded-2xl overflow-hidden bg-[#FFF5FA]">
         

@@ -168,7 +168,7 @@ export function TerritoryDiorama({ year }: { year: ZoneYear }) {
   const showNoUrbana = record.values.mixta === null && record.values.rural === null && record.noUrbana !== null;
 
   return (
-    <div className="relative w-full overflow-x-auto rounded-[20px] [scrollbar-width:thin]">
+    <div className="relative w-full overflow-x-auto rounded-[20px] [scrollbar-width:thin]" role="region" aria-label={`Ilustración de participación por territorio en ${year}; desliza horizontalmente para recorrerla`} tabIndex={0}>
       <div className="relative min-w-[720px]" style={{ aspectRatio: `${W} / ${VB_H}` }}>
         <svg viewBox={`0 ${VB_TOP} ${W} ${VB_H}`} className="absolute inset-0 h-full w-full" role="img" aria-label={`Ilustración de una ciudad, una zona mixta y una zona rural. Las columnas de boletas muestran la participación de ${year} en la misma escala.`}>
           <Scenery />

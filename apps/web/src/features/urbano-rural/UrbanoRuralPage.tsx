@@ -113,7 +113,7 @@ export function UrbanoRuralPage() {
   const gap = gapFor(year);
 
   return (
-    <div className="min-h-screen bg-[#FBF9FB] font-sans text-[#1C2541]">
+    <div className="min-h-screen bg-transparent font-sans text-[#1C2541]">
       <Navbar />
       <HeaderUrbanoRural />
 

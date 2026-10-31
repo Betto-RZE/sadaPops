@@ -34,9 +34,9 @@ const SOURCES = [
 export function SourcesPanel() {
   const reduceMotion = useReducedMotion();
   return (
-    <Reveal className="rounded-3xl border border-[#E4E2DE] bg-white p-6 sm:p-8 md:p-10" aria-labelledby="sources-title">
-      <div className="mb-6 flex items-center gap-2 text-slate-500">
-        <Info className="h-5 w-5" aria-hidden="true" />
+    <Reveal className="rounded-3xl border border-[#F0C9DA] bg-gradient-to-br from-[#FFF0F6] via-[#FCEAF2] to-[#FFF4F7] p-6 shadow-[0_18px_42px_-30px_rgba(169,46,90,0.32)] sm:p-8 md:p-10" aria-labelledby="sources-title">
+      <div className="mb-6 flex items-center gap-2 text-[#8A6476]">
+        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FCE6EF] text-[#C53A72]"><Info className="h-5 w-5" aria-hidden="true" /></span>
         <h2 id="sources-title" className="text-sm font-bold uppercase tracking-widest">Fuentes de información</h2>
       </div>
       <p className="max-w-2xl font-medium leading-relaxed text-brand-navy/70">
@@ -46,7 +46,7 @@ export function SourcesPanel() {
         {SOURCES.map((source, index) => (
           <motion.li
             key={source.title}
-            className="flex flex-col rounded-2xl border border-[#E4E2DE] bg-[#F7F6F3] p-5"
+            className="flex flex-col rounded-2xl border border-[#EEE3E4] bg-white/80 p-5 transition-colors hover:border-[#E8C5D3]"
             initial={reduceMotion ? false : { opacity: 0, y: 14 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}

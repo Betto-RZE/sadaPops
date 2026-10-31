@@ -14,7 +14,7 @@ export function EvolucionPage() {
   const selectedData = PARTICIPATION_DATA.find((d) => d.year === selectedYear);
 
   return (
-    <div className="min-h-screen bg-[#FBF9FB] flex flex-col font-sans selection:bg-dalia-200 selection:text-brand-navy">
+    <div className="min-h-screen bg-transparent flex flex-col font-sans selection:bg-dalia-200 selection:text-brand-navy">
       <Navbar />
       
       {/* 1. Hero exacto a ancho completo directamente bajo el Navbar */}
