@@ -4,6 +4,7 @@ import React, { useRef, useState } from 'react';
 import Image from 'next/image';
 import { ArrowRight, ExternalLink, Undo2 } from 'lucide-react';
 import { cn } from '@/shared/utils';
+import styles from './DayToDayFlipCards.module.css';
 
 export interface DayToDayCardItem {
   id: 'estudio' | 'busco-trabajo' | 'ya-trabajo';
@@ -199,16 +200,7 @@ export function DayToDayFlipCards({
               {/* ============================================================ */}
               {/* CONTENEDOR GIRATORIO 3D (Preserva el giro exclusivo)          */}
               {/* ============================================================ */}
-              <div
-                style={{
-                  transformStyle: 'preserve-3d',
-                  WebkitTransformStyle: 'preserve-3d',
-                }}
-                className={cn(
-                  'relative w-full h-full transition-transform duration-500 ease-out',
-                  'motion-reduce:transition-none',
-                  isFlipped ? '[transform:rotateY(180deg)]' : '[transform:rotateY(0deg)]'
-                )}
+              <div className={cn(styles.faces, isFlipped && styles.flipped)}
               >
                 {/* ============================================================ */}
                 {/* CARA FRONTAL: HOJA FÍSICA SATINADA CON PLIEGUES REALES       */}
@@ -223,20 +215,19 @@ export function DayToDayFlipCards({
                       onToggleCard(card.id);
                     }
                   }}
+                  aria-hidden={isFlipped}
+                  onTransitionEnd={event => {
+                    if (event.target === event.currentTarget && event.propertyName === 'transform' && !isFlipped) event.currentTarget.focus({ preventScroll: true });
+                  }}
                   aria-expanded={isFlipped}
                   aria-controls={`card-back-${card.id}`}
-                  style={{
-                    backfaceVisibility: 'hidden',
-                    WebkitBackfaceVisibility: 'hidden',
-                  }}
                   className={cn(
                     'absolute inset-0 w-full h-full rounded-[2px] p-7 sm:p-8 flex flex-col justify-between overflow-hidden cursor-pointer text-left',
                     'bg-[#EAE5DC]',
                     // Sombra física direccional hacia abajo-izquierda + filo de luz superior derecho
                     'shadow-[-16px_22px_30px_-4px_rgba(14,18,28,0.28),0_3px_8px_rgba(14,18,28,0.10),inset_-1px_1px_0_rgba(255,255,255,0.85)]',
                     'focus:outline-none focus-visible:ring-2 focus-visible:ring-dalia-600',
-                    'motion-reduce:backface-visible',
-                    isFlipped && 'pointer-events-none motion-reduce:invisible'
+                    styles.face, styles.front
                   )}
                 >
                   {/* Textura real de hoja de revista satinada con pliegues y reflejos de luz */}
@@ -322,17 +313,15 @@ export function DayToDayFlipCards({
                 {/* ============================================================ */}
                 <div
                   id={`card-back-${card.id}`}
-                  style={{
-                    backfaceVisibility: 'hidden',
-                    WebkitBackfaceVisibility: 'hidden',
+                  aria-hidden={!isFlipped}
+                  onTransitionEnd={event => {
+                    if (event.target === event.currentTarget && event.propertyName === 'transform' && isFlipped) event.currentTarget.querySelector<HTMLButtonElement>('button')?.focus({ preventScroll: true });
                   }}
                   className={cn(
                     'absolute inset-0 w-full h-full rounded-[2px] p-7 sm:p-8 flex flex-col justify-between overflow-hidden',
                     'bg-[#EAE5DC]',
                     'shadow-[-16px_22px_30px_-4px_rgba(14,18,28,0.28),0_3px_8px_rgba(14,18,28,0.10),inset_-1px_1px_0_rgba(255,255,255,0.85)]',
-                    '[transform:rotateY(180deg)]',
-                    'motion-reduce:[transform:none]',
-                    !isFlipped && 'pointer-events-none motion-reduce:invisible'
+                    styles.face, styles.back
                   )}
                 >
                   {/* Textura real de hoja de revista satinada */}

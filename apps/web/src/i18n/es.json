@@ -12,17 +12,26 @@
     "turnoutSource": "INE CCPC 2024",
     "count": "dalias en tu entidad",
     "colorLabel": "2. Elige tu color",
-    "alertsQuestion": "¿Quieres que te recordemos cada parada?",
+    "alertsQuestion": "Quiero recibir avisos por correo.",
     "optional": "Opcional",
     "emailLabel": "Correo para avisos",
     "emailPlaceholder": "tu.correo@ejemplo.com",
-    "alertsHelp": "Fechas clave y enlaces a herramientas del INE. Sin mensajes partidistas.",
-    "localEmail": "Por ahora, tu correo se guarda solo en este dispositivo. No se envían avisos todavía.",
-    "details": "Las paradas y tu privacidad",
+    "alertsHelp": "Te avisaremos sobre fechas importantes, información electoral y herramientas oficiales del INE.",
+    "localEmail": "Tu correo es opcional y no se muestra en el mapa.",
+    "details": "Aviso de privacidad",
     "stops": [
-      { "title": "Hoy", "text": "Revisa la vigencia de tu credencial y consulta los plazos oficiales para actualizar tus datos." },
-      { "title": "Más adelante", "text": "Conoce qué se elige y consulta tu casilla cuando el INE publique su ubicación." },
-      { "title": "6 de junio de 2027", "text": "Llega con información a la jornada electoral." }
+      {
+        "title": "Hoy",
+        "text": "Revisa la vigencia de tu credencial y consulta los plazos oficiales para actualizar tus datos."
+      },
+      {
+        "title": "Más adelante",
+        "text": "Conoce qué se elige y consulta tu casilla cuando el INE publique su ubicación."
+      },
+      {
+        "title": "6 de junio de 2027",
+        "text": "Llega con información a la jornada electoral."
+      }
     ],
     "privacy": "Tu registro es anónimo. El correo es opcional y se guarda localmente para la preferencia de avisos, sin mostrarse en el mapa. Esta plataforma es un proyecto independiente del Hackathon INE.",
     "definition": "Cada dalia representa un registro voluntario de preparación en esta plataforma. No representa un voto, una persona verificada en el padrón ni participación electoral oficial.",
@@ -31,11 +40,33 @@
     "disclaimer": "Tu dalia representa preparación, no un voto.",
     "planted": "Ya dejaste tu dalia",
     "plantedDetail": "Dalia registrada de forma anónima en",
-    "localSaved": "La preferencia de avisos quedó guardada en este dispositivo.",
+    "localSaved": "Los avisos son una demostración visual. Tu correo no se ha guardado ni se enviarán correos.",
     "viewMap": "Ver en el mapa",
     "loadingTheme": "Preparando tu color…",
     "themeError": "No se pudo cargar el color. Vuelve a seleccionarlo para reintentar.",
     "storageWarning": "Algunos cambios solo se conservarán mientras esta página permanezca abierta.",
-    "emailError": "Ingresa un correo válido para guardar la preferencia de avisos."
+    "emailError": "Ingresa un correo válido o deja el campo vacío.",
+    "alertsIntroduction": "Activa los avisos y recibe recordatorios para llegar preparado al 6 de junio de 2027.",
+    "privacyTitle": "Tu privacidad importa.",
+    "privacyIntroduction": "Florece busca acercarte a la información electoral sin pedirte datos personales innecesarios.",
+    "privacyUpdated": "Última actualización: octubre de 2026.",
+    "privacySections": [
+      {
+        "title": "¿Qué información recopilamos?",
+        "text": "No solicitamos tu nombre, CURP, clave de elector ni correo electrónico para registrar tu dalia."
+      },
+      {
+        "title": "¿Cómo funcionan los avisos?",
+        "text": "La opción de recibir notificaciones es actualmente una demostración visual. Todavía no contamos con un sistema de envío de correos electrónicos."
+      },
+      {
+        "title": "¿Se almacena tu correo?",
+        "text": "No. Esta versión de Florece no recopila ni almacena correos electrónicos para gestionar notificaciones."
+      },
+      {
+        "title": "¿Quién desarrolla Florece?",
+        "text": "Somos un proyecto independiente desarrollado por estudiantes participantes del Hackathon INE. No somos un portal oficial del INE ni representamos sus comunicaciones institucionales."
+      }
+    ]
   }
 }

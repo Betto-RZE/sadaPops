@@ -12,11 +12,12 @@ function storage(initial: Record<string, string> = {}): RegistrationStorage {
   };
 }
 
-test('restaura entidad registrada, correo y tema; migra la paleta antigua', () => {
+test('restaura entidad y tema, elimina correos antiguos y migra la paleta', () => {
   const saved = storage({ [keys.state]: '14', [keys.color]: 'morado-voxel', [keys.email]: '  prueba@example.com  ' });
   const restored = restoreRegistration(saved);
   assert.equal(restored.plantedStateId, '14');
-  assert.equal(restored.email, 'prueba@example.com');
+  assert.equal(restored.email, '');
+  assert.equal(saved.getItem(keys.email), null);
   assert.equal(restored.theme.id, 'lila-claro');
   assert.equal(saved.getItem(keys.color), 'lila-claro');
 });

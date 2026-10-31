@@ -31,13 +31,14 @@ export function isValidEmail(value: string): boolean {
 
 export function restoreRegistration(storage: RegistrationStorage | null) {
   const state = readStored(storage, REGISTRATION_KEYS.state);
-  const email = readStored(storage, REGISTRATION_KEYS.email)?.trim() ?? '';
+  // La demostración no conserva correos, incluidos los de versiones anteriores.
+  writeStored(storage, REGISTRATION_KEYS.email, null);
   const storedColor = readStored(storage, REGISTRATION_KEYS.color);
   const theme = resolveRegistrationTheme(storedColor);
   if (storedColor && storedColor !== theme.id) writeStored(storage, REGISTRATION_KEYS.color, theme.id);
   return {
     plantedStateId: isStateId(state) ? state : null,
-    email: isValidEmail(email) ? email : '',
+    email: '',
     theme,
   };
 }

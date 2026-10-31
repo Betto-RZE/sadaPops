@@ -1,11 +1,14 @@
 'use client';
 
-import { useEffect, useRef, type CSSProperties, type FormEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import NextImage, { type ImageProps } from 'next/image';
 import { IBM_Plex_Mono } from 'next/font/google';
-import { ArrowRight, Check, ChevronDown, MapPin, ShieldCheck, Plus } from 'lucide-react';
+import { ArrowRight, Check, ShieldCheck, Plus } from 'lucide-react';
 import messages from '@/i18n/es.json';
 import { REGISTRATION_THEMES, type RegistrationTheme } from './themes';
+import { StateSelect } from './StateSelect';
+import { PrivacyDialog } from './PrivacyDialog';
+import { DahliaPlantingCinematic, type DahliaStartPoint } from './DahliaPlantingCinematic';
 import styles from './DahliaRegistrationSection.module.css';
 
 const mono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500', '600'], display: 'swap' });
@@ -24,6 +27,9 @@ interface Props {
   count: number;
   theme: RegistrationTheme;
   isPlanted: boolean;
+  isCinematicActive?: boolean;
+  onCinematicComplete?: () => void;
+  onCinematicReveal?: () => void;
   wantsAlerts: boolean;
   email: string;
   emailError: string | null;
@@ -43,7 +49,7 @@ interface Props {
 
 function Stationery({ theme, ticket = false }: { theme: RegistrationTheme; ticket?: boolean }) {
   return (
-    <div className={ticket ? styles.ticket : styles.note}>
+    <div key={theme.id} className={ticket ? styles.ticket : styles.note}>
       <div className={styles.paperWindow} aria-hidden="true">
         <Image src={`/form/themes/stationery-${theme.id}.webp`} alt="" width={1200} height={600}
           className={ticket ? styles.ticketAtlas : styles.noteAtlas} sizes="(min-width: 1280px) 430px, 340px" />
@@ -58,9 +64,49 @@ function Stationery({ theme, ticket = false }: { theme: RegistrationTheme; ticke
 export function DahliaRegistrationSection(props: Props) {
   const { theme } = props;
   const confirmationHeading = useRef<HTMLHeadingElement>(null);
+  const sceneRef = useRef<HTMLDivElement>(null);
+  const flowerRef = useRef<HTMLDivElement>(null);
+  const [startPoint, setStartPoint] = useState<DahliaStartPoint | null>(null);
+
   useEffect(() => {
-    if (props.isPlanted) confirmationHeading.current?.focus({ preventScroll: true });
-  }, [props.isPlanted]);
+    if (props.isPlanted && !props.isCinematicActive) confirmationHeading.current?.focus({ preventScroll: true });
+  }, [props.isPlanted, props.isCinematicActive]);
+
+  useLayoutEffect(() => {
+    if (props.isPlanted && props.isCinematicActive) {
+      // Center the layout box, ignoring the entrance animation's translate.
+      const sheet = sceneRef.current?.querySelector<HTMLElement>('[data-cinematic-sheet]');
+      if (sheet) {
+        sheet.style.setProperty('--success-offset-y', '0px');
+        let top = 0;
+        for (let node: HTMLElement | null = sheet; node; node = node.offsetParent as HTMLElement | null) top += node.offsetTop;
+        // At the top of a short mobile page, negative scrolling cannot center
+        // the card. Add the missing layout space instead of shifting the animation.
+        const extraTop = Math.max(0, window.innerHeight / 2 - top - sheet.offsetHeight / 2);
+        sheet.style.setProperty('--success-offset-y', `${extraTop}px`);
+        window.scrollTo({ top: Math.max(0, top + extraTop + sheet.offsetHeight / 2 - window.innerHeight / 2), behavior: 'instant' });
+      }
+    }
+  }, [props.isPlanted, props.isCinematicActive]);
+
+  const handleFormSubmit = (event: FormEvent) => {
+    if (flowerRef.current && sceneRef.current) {
+      const rect = flowerRef.current.getBoundingClientRect();
+      setStartPoint({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, width: rect.width, height: rect.height });
+      sceneRef.current.querySelectorAll<HTMLElement>('[data-cinematic-decor]').forEach(element => {
+        const bounds = element.getBoundingClientRect();
+        const left = bounds.left + bounds.width / 2 < window.innerWidth / 2;
+        element.style.setProperty('--exit-x', `${left ? -bounds.right - 80 : window.innerWidth - bounds.left + 80}px`);
+      });
+      const sheet = sceneRef.current.querySelector<HTMLElement>('[data-cinematic-sheet]');
+      if (sheet) sheet.style.setProperty('--exit-y', `${window.innerHeight - sheet.getBoundingClientRect().top + 80}px`);
+    }
+    props.onSubmit(event);
+  };
+
+  const selectedState = props.states.find(s => s.id === props.stateId);
+  const displayName = selectedState ? selectedState.name : props.stateName;
+
   const variables = {
     '--dahlia-swatch': theme.hex, '--dahlia-scene': theme.scene, '--dahlia-paper': theme.paper,
     '--dahlia-accent': theme.accent, '--dahlia-border': theme.border,
@@ -73,24 +119,37 @@ export function DahliaRegistrationSection(props: Props) {
         <span className={styles.markerLine} aria-hidden="true" />
         <span>{copy.section}</span>
       </div>
-      <div className={styles.scene}>
+      <div className={styles.scene} ref={sceneRef}>
         <div className={`${styles.wash} ${styles.washTop}`} aria-hidden="true" />
         <div className={`${styles.wash} ${styles.washRight}`} aria-hidden="true" />
         <div className={`${styles.wash} ${styles.washBottom}`} aria-hidden="true" />
-        <div className={styles.sceneGrid} aria-hidden="true" />
-        <div className={styles.polaroid} aria-hidden="true">
+        <div data-cinematic-decor className={`${styles.sceneGrid} ${props.isCinematicActive ? (props.isPlanted ? styles.adornmentEntering : styles.adornmentHidden) : ''}`} aria-hidden="true" />
+
+        {/* Cinemática de plantado de dalia hacia el mapa de México */}
+        {props.isCinematicActive && (
+          <DahliaPlantingCinematic
+            theme={theme}
+            stateId={props.stateId}
+            stateName={displayName}
+            startPoint={startPoint}
+            onReveal={props.onCinematicReveal}
+            onComplete={props.onCinematicComplete ?? (() => {})}
+          />
+        )}
+
+        <div data-cinematic-decor className={`${styles.polaroid} ${props.isCinematicActive ? (props.isPlanted ? styles.adornmentEntering : styles.adornmentHidden) : ''}`} aria-hidden="true">
           <Image src={`/form/themes/polaroid-ine-${theme.id}.webp`} alt="" width={640} height={684} sizes="(min-width: 1280px) 225px, 120px" />
         </div>
         {Array.from({ length: 18 }, (_, index) => index).map(index => (
-          <div key={index} className={`${styles.petal} ${styles[`petal${index}`]}`} aria-hidden="true">
+          <div data-cinematic-decor key={index} className={`${styles.petal} ${styles[`petal${index}`]} ${props.isCinematicActive ? (props.isPlanted ? styles.adornmentEntering : styles.adornmentHidden) : ''}`} aria-hidden="true">
             <Image src={`/form/themes/petal-${theme.id}.webp`} alt="" width={256} height={234} sizes="(min-width: 1024px) 105px, 58px" />
           </div>
         ))}
-        <Plus className={`${styles.ornament} ${styles.ornamentOne}`} aria-hidden="true" />
-        <Plus className={`${styles.ornament} ${styles.ornamentTwo}`} aria-hidden="true" />
+        <Plus data-cinematic-decor key={`first-${theme.id}`} className={`${styles.ornament} ${styles.ornamentOne} ${props.isCinematicActive ? (props.isPlanted ? styles.adornmentEntering : styles.adornmentHidden) : ''}`} aria-hidden="true" />
+        <Plus data-cinematic-decor key={`second-${theme.id}`} className={`${styles.ornament} ${styles.ornamentTwo} ${props.isCinematicActive ? (props.isPlanted ? styles.adornmentEntering : styles.adornmentHidden) : ''}`} aria-hidden="true" />
 
-        <div className={styles.sheet}>
-          <div className={styles.tape} aria-hidden="true" />
+        <div data-cinematic-sheet className={`${styles.sheet} ${props.isPlanted ? styles.sheetSuccess : ''} ${props.isCinematicActive ? (props.isPlanted ? styles.sheetEntering : styles.sheetHidden) : ''}`} aria-hidden={(props.isCinematicActive && !props.isPlanted) || undefined}>
+          <div key={theme.id} className={styles.tape} aria-hidden="true" />
           <header className={styles.heading}>
             <div className={styles.headingCopy}>
               <h3 id="registro-dalia-heading" className={styles.title}>
@@ -98,25 +157,17 @@ export function DahliaRegistrationSection(props: Props) {
               </h3>
               <p className={styles.introduction}>{copy.introduction}</p>
             </div>
-            <div className={styles.flower} aria-hidden="true">
+            <div ref={flowerRef} className={`${styles.flower} ${props.isCinematicActive && !props.isPlanted ? styles.flowerInFlight : ''}`} aria-hidden="true">
               <Image src={`/form/themes/dahlia-${theme.id}.webp`} alt="" width={720} height={607}
                 sizes="(min-width: 768px) 310px, 180px" />
-              <svg className={styles.flowerArrow} viewBox="0 0 90 55" fill="none"><path d="M5 43C25 15 47 12 75 15m-15-12 19 12-14 17" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" /></svg>
             </div>
           </header>
 
           {!props.isPlanted ? (
-            <form onSubmit={props.onSubmit} className={styles.form} noValidate>
+            <form onSubmit={handleFormSubmit} className={styles.form} noValidate>
               <div className={styles.field}>
                 <label htmlFor="registro-estado-select" className={`${styles.label} ${mono.className}`}>{copy.stateLabel}</label>
-                <div className={styles.selectWrap}>
-                  <MapPin size={21} aria-hidden="true" />
-                  <select id="registro-estado-select" value={props.stateId} onChange={event => props.onStateChange(event.target.value)}
-                    disabled={!props.ready}>
-                    {props.states.map(state => <option key={state.id} value={state.id}>{state.name}</option>)}
-                  </select>
-                  <ChevronDown size={20} aria-hidden="true" />
-                </div>
+                <StateSelect value={props.stateId} states={props.states} disabled={!props.ready || Boolean(props.isCinematicActive)} onChange={props.onStateChange} />
                 <div className={`${styles.metrics} ${mono.className}`}>
                   {props.turnout != null && <p>{copy.turnout}: <strong>{props.turnout}%</strong> <span>· {copy.turnoutSource}</span></p>}
                   {props.count > 0 && <p>{props.count.toLocaleString('es-MX')} {copy.count}</p>}
@@ -125,11 +176,11 @@ export function DahliaRegistrationSection(props: Props) {
 
               <fieldset className={styles.palette} aria-busy={Boolean(props.pendingTheme)}>
                 <legend className={`${styles.label} ${mono.className}`}>{copy.colorLabel}</legend>
-                <div className={styles.swatches}>
+                <div className={styles.swatches} style={{ '--selected-color-column': REGISTRATION_THEMES.findIndex(option => option.id === (props.pendingTheme ?? theme).id) + 1 } as CSSProperties}>
                   {REGISTRATION_THEMES.map(option => (
                     <label key={option.id} className={styles.swatchOption} title={option.name}>
                       <input type="radio" name="dahlia-color" value={option.id} checked={(props.pendingTheme ?? theme).id === option.id}
-                        disabled={!props.ready} onChange={() => props.onThemeChange(option)} aria-label={option.name}
+                        disabled={!props.ready || Boolean(props.isCinematicActive)} onChange={() => props.onThemeChange(option)} aria-label={option.name}
                         onClick={() => { if (props.themeError && theme.id === option.id) props.onThemeChange(option); }} />
                       <span className={styles.swatch} style={{ backgroundColor: option.hex }} aria-hidden="true">
                         {(props.pendingTheme ?? theme).id === option.id && <Check size={18} strokeWidth={3} />}
@@ -144,33 +195,35 @@ export function DahliaRegistrationSection(props: Props) {
               </fieldset>
 
               <div className={styles.alerts}>
+                <p className={styles.alertsIntroduction}>{copy.alertsIntroduction}</p>
                 <label className={styles.alertLabel}>
-                  <input type="checkbox" disabled={!props.ready} checked={props.wantsAlerts} onChange={event => props.onAlertsChange(event.target.checked)} aria-controls="registro-avisos" />
+                  <input type="checkbox" disabled={!props.ready || Boolean(props.isCinematicActive)} checked={props.wantsAlerts} onChange={event => props.onAlertsChange(event.target.checked)} aria-controls="registro-avisos" />
                   <span>{copy.alertsQuestion}</span>
                   <span className={`${styles.optional} ${mono.className}`}>{copy.optional}</span>
                 </label>
                   <div id="registro-avisos" className={styles.alertFields} hidden={!props.wantsAlerts}>
-                    <p>{copy.alertsHelp}</p>
                     <label htmlFor="registro-correo" className={`${styles.emailLabel} ${mono.className}`}>{copy.emailLabel}</label>
                     <input id="registro-correo" type="email" autoComplete="email" value={props.email}
                       onChange={event => props.onEmailChange(event.target.value)} placeholder={copy.emailPlaceholder}
-                      required={props.wantsAlerts}
-                      aria-invalid={Boolean(props.emailError)} aria-describedby={`registro-correo-help${props.emailError ? ' registro-correo-error' : ''}`} />
-                    <p id="registro-correo-help" className={styles.emailHelp}>{copy.localEmail}</p>
+                        aria-invalid={Boolean(props.emailError)} aria-describedby={`registro-correo-help${props.emailError ? ' registro-correo-error' : ''}`} />
+
                     {props.emailError && <p id="registro-correo-error" role="alert" className={styles.error}>{props.emailError}</p>}
                   </div>
+                <p className={styles.fieldHelp}>{copy.alertsHelp}</p>
+                <p id="registro-correo-help" className={styles.fieldHelp}>{copy.localEmail}</p>
+                <p className={styles.privacyLink}>Consulta nuestro <button type="button" onClick={props.onDetailsChange} aria-haspopup="dialog">{copy.details}</button>.</p>
               </div>
-              <button type="submit" disabled={!props.ready || Boolean(props.pendingTheme)} className={`${styles.submit} ${mono.className}`}>
+
+              <button
+                type="submit"
+                disabled={!props.ready || Boolean(props.pendingTheme) || props.isCinematicActive}
+                className={`${styles.submit} ${mono.className}`}
+              >
                 {copy.submit}<ArrowRight size={25} strokeWidth={1.5} aria-hidden="true" />
               </button>
               <div className={styles.assurances}>
                 <span><ShieldCheck size={15} aria-hidden="true" />{copy.anonymous}</span>
-                <button type="button" onClick={props.onDetailsChange} aria-expanded={props.detailsOpen} aria-controls="registro-detalles">{copy.details}<ChevronDown size={14} aria-hidden="true" /></button>
               </div>
-                <div id="registro-detalles" className={styles.details} hidden={!props.detailsOpen}>
-                  <ol>{copy.stops.map(stop => <li key={stop.title}><strong>{stop.title}</strong><p>{stop.text}</p></li>)}</ol>
-                  <p>{copy.privacy}</p><p>{copy.definition}</p>
-                </div>
             </form>
           ) : (
             <div className={styles.confirmation} role="status">
@@ -182,11 +235,12 @@ export function DahliaRegistrationSection(props: Props) {
             </div>
           )}
           {props.storageWarning && <p role="status" className={styles.fieldHelp}>{copy.storageWarning}</p>}
+          <PrivacyDialog open={props.detailsOpen} onClose={props.onDetailsChange} />
           <p className={styles.disclaimer}>{copy.disclaimer}</p>
           <div className={styles.closingRule} aria-hidden="true"><span />✦<span /></div>
         </div>
-        <div className={styles.notePosition}><Stationery theme={theme} /></div>
-        <div className={styles.ticketPosition}><Stationery theme={theme} ticket /></div>
+        <div data-cinematic-decor className={`${styles.notePosition} ${props.isCinematicActive ? (props.isPlanted ? styles.adornmentEntering : styles.adornmentHidden) : ''}`}><Stationery theme={theme} /></div>
+        <div data-cinematic-decor className={`${styles.ticketPosition} ${props.isCinematicActive ? (props.isPlanted ? styles.adornmentEntering : styles.adornmentHidden) : ''}`}><Stationery theme={theme} ticket /></div>
       </div>
     </section>
   );
