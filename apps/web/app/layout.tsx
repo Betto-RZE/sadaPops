@@ -11,7 +11,7 @@ const plusJakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'Mapa de Dalias y Participación Ciudadana | Hackathon INE',
+  title: 'Florece | Tu participación hace florecer a México',
   description: 'Plataforma interactiva de participación cívica basada en prueba social y datos de la CCPC del INE.',
 };
 
