@@ -227,7 +227,7 @@ export function CivicBridgeAndGapSection({
             {/* ========================================================================= */}
             <div className="relative pt-2 pb-6">
               {/* Eje horizontal superior con ticks y porcentajes (0%, 25%, 50%, 75%, 100%) */}
-              <div className="relative mb-8 pb-3 hidden md:block">
+              <div className="relative mb-8 pb-3 hidden md:block md:mx-[152px]">
                 <div className="flex justify-between text-[10px] font-mono tracking-wider text-white/40 relative">
                   <span className="relative">
                     0%
@@ -255,20 +255,11 @@ export function CivicBridgeAndGapSection({
 
               {/* Contenedor relativo de las 3 filas con la línea vertical discontinua */}
               <div className="space-y-9 sm:space-y-10 relative">
-                {/* Línea guía vertical continua a través de todas las barras (media nacional 59.7%) */}
-                <div
-                  aria-hidden="true"
-                  className="absolute top-0 bottom-0 pointer-events-none hidden md:block z-20"
-                  style={{ left: '59.7%' }}
-                >
-                  <div className="h-full w-px border-l border-dashed border-[#7866D5]/50" />
-                </div>
-
                 {/* Render de cada cohorte generacional */}
                 {AGE_ROWS.map((row) => (
                   <div
                     key={row.id}
-                    className="relative z-10 flex flex-col md:flex-row md:items-center gap-4 sm:gap-6"
+                    className="relative z-10 grid grid-cols-1 md:grid-cols-[8rem_minmax(0,1fr)_8rem] md:items-center gap-4 sm:gap-6"
                   >
                     {/* Columna Izquierda: Número + Urna Voxel */}
                     <div className="flex items-center gap-3 sm:gap-4 shrink-0 md:w-32">
@@ -304,6 +295,7 @@ export function CivicBridgeAndGapSection({
                           className="h-full rounded-l-[3px] bg-gradient-to-r from-[#5E4EC8] via-[#7566E0] to-[#9988FC]"
                           style={{ width: `${row.turnout}%` }}
                         />
+                        <div aria-hidden="true" className="absolute inset-y-0 border-l border-dashed border-[#B8A8FF]/70 pointer-events-none" style={{ left: '59.7%' }} />
                       </div>
 
                       {/* Texto descriptiva al pie de la barra */}
@@ -313,8 +305,8 @@ export function CivicBridgeAndGapSection({
                     </div>
 
                     {/* Columna Derecha: Porcentaje Monumental + PARTICIPACIÓN */}
-                    <div className="flex items-baseline justify-end gap-2 md:w-44 shrink-0 pt-1 md:pt-0">
-                      <span className="font-serif font-bold text-3xl sm:text-4xl text-white tracking-tight leading-none">
+                    <div className="flex items-baseline justify-end gap-2 md:flex-col md:items-end md:justify-center md:gap-1 min-w-0 pt-1 md:pt-0">
+                      <span className="font-serif font-bold text-3xl sm:text-4xl text-white tracking-tight leading-none whitespace-nowrap tabular-nums">
                         {row.turnout}%
                       </span>
                       <span className="font-mono text-[9px] tracking-[0.2em] uppercase text-white/40">

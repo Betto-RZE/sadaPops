@@ -35,9 +35,6 @@ export function useDahliaRegistration(stateId: string) {
     const restored = restoreRegistration(storage.current);
     sessionState.current = restored.plantedStateId;
     setPlantedStateId(restored.plantedStateId);
-    setEmail(restored.email);
-    setWantsAlerts(Boolean(restored.email));
-    setAlertsSaved(Boolean(restored.email));
     setReady(true);
     const request = ++requests.current;
     setPendingTheme(restored.theme);
@@ -73,22 +70,22 @@ export function useDahliaRegistration(stateId: string) {
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
     if (!ready || pendingTheme) return;
-    // Validar el valor actual en cada envío, aunque existiese una preferencia previa.
-    if (wantsAlerts && !isValidEmail(email)) {
+    // El campo opcional solo valida formato; nunca se guarda ni se transmite.
+    if (wantsAlerts && email.trim() && !isValidEmail(email)) {
       setEmailError(copy.emailError);
       event.currentTarget.querySelector<HTMLInputElement>('#registro-correo')?.focus();
       return;
     }
     setEmailError(null);
-    const emailPersisted = writeStored(storage.current, REGISTRATION_KEYS.email, wantsAlerts ? email.trim() : null);
-    setAlertsSaved(wantsAlerts && emailPersisted);
+    setAlertsSaved(wantsAlerts);
+    setEmail('');
     const result = plantOnce(storage.current, sessionState.current, stateId, nextStateId => {
       window.dispatchEvent(new CustomEvent('dalias:add-dahlia', { detail: { stateId: nextStateId } }));
     });
     sessionState.current = result.stateId;
     setPlantedStateId(result.stateId);
     const themePersisted = writeStored(storage.current, REGISTRATION_KEYS.color, theme.id);
-    setStorageWarning(!emailPersisted || !result.persisted || !themePersisted);
+    setStorageWarning(!result.persisted || !themePersisted);
   };
 
   return {
