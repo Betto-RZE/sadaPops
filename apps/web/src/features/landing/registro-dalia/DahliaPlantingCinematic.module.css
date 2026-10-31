@@ -1,0 +1,290 @@
+.cinematicOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  pointer-events: auto;
+  border-radius: 14px;
+}
+
+.mapWrapper {
+  position: relative;
+  width: min(700px, 94%);
+  aspect-ratio: 660 / 435;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: perspective(900px) rotateX(8deg);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+  will-change: transform;
+}
+
+.mapEnter {
+  animation: mapAppear 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes mapAppear {
+  0% {
+    opacity: 0;
+    transform: perspective(900px) rotateX(16deg) scale(0.9) translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(900px) rotateX(8deg) scale(1) translateY(0);
+  }
+}
+
+.mapShaking {
+  animation: screenShake 0.18s cubic-bezier(0.36, 0.07, 0.19, 0.97) both !important;
+}
+
+@keyframes screenShake {
+  0%, 100% { transform: perspective(900px) rotateX(8deg) translate3d(0, 0, 0); }
+  20% { transform: perspective(900px) rotateX(8deg) translate3d(-6px, 5px, 0) scale(1.015); }
+  40% { transform: perspective(900px) rotateX(8deg) translate3d(6px, -4px, 0) scale(0.995); }
+  60% { transform: perspective(900px) rotateX(8deg) translate3d(-3px, 3px, 0) scale(1.008); }
+  80% { transform: perspective(900px) rotateX(8deg) translate3d(3px, -2px, 0) scale(1); }
+}
+
+.mapShadow {
+  position: absolute;
+  inset: -3%;
+  width: 106%;
+  height: 106%;
+  object-fit: contain;
+  pointer-events: none;
+  opacity: 0.65;
+  z-index: 1;
+}
+
+.mapBase {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  z-index: 2;
+  filter: drop-shadow(0 16px 24px rgba(23, 37, 54, 0.12));
+}
+
+/* Target Beacon on the selected state */
+.targetBeacon {
+  position: absolute;
+  z-index: 8;
+  width: 32px;
+  height: 32px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.beaconDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #F59E0B;
+  box-shadow: 0 0 10px #F59E0B, 0 0 20px #FDE68A;
+}
+
+.beaconRing {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid #F59E0B;
+  animation: beaconPulse 1.1s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+}
+
+@keyframes beaconPulse {
+  0% { transform: scale(0.4); opacity: 1; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+
+/* Flying Dahlia Sprite */
+.flyingDahliaWrap {
+  position: absolute;
+  z-index: 30;
+  pointer-events: none;
+  transform-origin: center center;
+}
+
+.dahliaGlow {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.goldenHalo {
+  position: absolute;
+  width: 180%;
+  height: 180%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(254, 240, 138, 0.9) 0%, rgba(245, 158, 11, 0.55) 45%, rgba(200, 0, 110, 0.2) 72%, transparent 100%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: haloPulse 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes haloPulse {
+  0% { transform: scale(0.92); opacity: 0.8; }
+  100% { transform: scale(1.15); opacity: 1; filter: blur(2px); }
+}
+
+.dahliaSprite {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 0 16px #F59E0B) drop-shadow(0 0 32px #FDE68A) drop-shadow(0 0 45px var(--dahlia-swatch));
+}
+
+/* Shockwaves on Impact */
+.shockwaveContainer {
+  position: absolute;
+  z-index: 15;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.shockwaveGold {
+  position: absolute;
+  border-radius: 50%;
+  border: 3.5px solid #F59E0B;
+  box-shadow: 0 0 24px #F59E0B, inset 0 0 14px #FEF08A;
+  animation: shockwaveExpand 0.75s cubic-bezier(0.12, 0.8, 0.32, 1) forwards;
+}
+
+.shockwaveTheme {
+  position: absolute;
+  border-radius: 50%;
+  border: 3px solid var(--dahlia-accent);
+  box-shadow: 0 0 30px var(--dahlia-accent);
+  animation: shockwaveExpand 0.85s cubic-bezier(0.12, 0.8, 0.32, 1) 0.07s forwards;
+}
+
+@keyframes shockwaveExpand {
+  0% {
+    width: 0px;
+    height: 0px;
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.2);
+  }
+  100% {
+    width: 260px;
+    height: 260px;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* Particle burst */
+.burstPetal {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  pointer-events: none;
+  filter: drop-shadow(0 0 8px #F59E0B);
+  animation: petalScatter 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes petalScatter {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(0deg) scale(0.6);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--rot)) scale(1.1);
+  }
+}
+
+/* Pin Pop on Impact */
+.impactPin {
+  position: absolute;
+  z-index: 25;
+  transform: translate(-50%, -130%);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  background: #FAF8F5;
+  border: 1.5px solid #F59E0B;
+  border-radius: 20px;
+  box-shadow: 0 6px 18px rgba(245, 158, 11, 0.35), 0 2px 6px rgba(23, 37, 54, 0.1);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #172536;
+  white-space: nowrap;
+  animation: pinBounce 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.3) forwards;
+  pointer-events: none;
+}
+
+.pinIcon {
+  color: #F59E0B;
+  font-size: 12px;
+}
+
+@keyframes pinBounce {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -80%) scale(0.4);
+  }
+  70% {
+    transform: translate(-50%, -138%) scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -130%) scale(1);
+  }
+}
+
+/* Skip Button */
+.skipButton {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 60;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(23, 37, 54, 0.14);
+  border-radius: 20px;
+  padding: 5px 13px;
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: #4B5563;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: background 0.2s, color 0.2s, transform 0.15s;
+}
+
+.skipButton:hover {
+  background: #FFFFFF;
+  color: #172536;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 767px) {
+  .mapWrapper {
+    width: 98%;
+    transform: perspective(700px) rotateX(6deg);
+  }
+  .impactPin {
+    font-size: 11px;
+    padding: 3px 9px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mapEnter, .mapShaking, .shockwaveGold, .shockwaveTheme, .burstPetal, .impactPin, .goldenHalo {
+    animation: none !important;
+  }
+}

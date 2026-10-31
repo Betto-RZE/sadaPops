@@ -272,3 +272,8 @@
   .title span { font-size: .55em; }
   .flower { width: 110%; margin-left: 0; }
 }
+
+/* Hide the existing collage while the incoming planting cinematic runs. */
+.sheet { transition: opacity .4s ease, transform .4s ease, background-color .2s, border-color .2s; }
+.sheetHidden { opacity: 0 !important; pointer-events: none !important; transform: scale(.95) translateY(16px) !important; }
+.adornmentHidden { opacity: 0 !important; pointer-events: none !important; transition: opacity .35s ease !important; }

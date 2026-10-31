@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import messages from '@/i18n/es.json';
 import { DEFAULT_REGISTRATION_THEME, type RegistrationTheme } from './themes';
 import { prepareThemeAssets } from './themeAssets';
@@ -18,6 +18,8 @@ export function useDahliaRegistration(stateId: string) {
   const [themeError, setThemeError] = useState(false);
   const [ready, setReady] = useState(false);
   const [plantedStateId, setPlantedStateId] = useState<string | null>(null);
+  const [isCinematicActive, setIsCinematicActive] = useState(false);
+  const pendingPlantResult = useRef<{ stateId: string; persisted: boolean } | null>(null);
   const [wantsAlerts, setWantsAlerts] = useState(false);
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -69,7 +71,7 @@ export function useDahliaRegistration(stateId: string) {
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
-    if (!ready || pendingTheme) return;
+    if (!ready || pendingTheme || isCinematicActive) return;
     // El campo opcional solo valida formato; nunca se guarda ni se transmite.
     if (wantsAlerts && email.trim() && !isValidEmail(email)) {
       setEmailError(copy.emailError);
@@ -83,13 +85,24 @@ export function useDahliaRegistration(stateId: string) {
       window.dispatchEvent(new CustomEvent('dalias:add-dahlia', { detail: { stateId: nextStateId } }));
     });
     sessionState.current = result.stateId;
-    setPlantedStateId(result.stateId);
+    pendingPlantResult.current = result;
+    setIsCinematicActive(true);
     const themePersisted = writeStored(storage.current, REGISTRATION_KEYS.color, theme.id);
     setStorageWarning(!result.persisted || !themePersisted);
   };
 
+  const onCinematicComplete = useCallback(() => {
+    if (pendingPlantResult.current) {
+      setPlantedStateId(pendingPlantResult.current.stateId);
+      pendingPlantResult.current = null;
+    }
+    setIsCinematicActive(false);
+  }, []);
+
   return {
     theme, pendingTheme, themeError, ready, plantedStateId, isPlanted: Boolean(plantedStateId),
+    isCinematicActive,
+    onCinematicComplete,
     wantsAlerts, email, emailError, alertsSaved, storageWarning, detailsOpen,
     onThemeChange,
     onSubmit,
