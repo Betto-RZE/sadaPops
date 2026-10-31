@@ -74,13 +74,16 @@ export function DahliaRegistrationSection(props: Props) {
         <span>{copy.section}</span>
       </div>
       <div className={styles.scene}>
+        <div className={`${styles.wash} ${styles.washTop}`} aria-hidden="true" />
+        <div className={`${styles.wash} ${styles.washRight}`} aria-hidden="true" />
+        <div className={`${styles.wash} ${styles.washBottom}`} aria-hidden="true" />
         <div className={styles.sceneGrid} aria-hidden="true" />
         <div className={styles.polaroid} aria-hidden="true">
           <Image src={`/form/themes/polaroid-ine-${theme.id}.webp`} alt="" width={640} height={684} sizes="(min-width: 1280px) 225px, 120px" />
         </div>
-        {[0, 1, 2, 3].map(index => (
+        {Array.from({ length: 18 }, (_, index) => index).map(index => (
           <div key={index} className={`${styles.petal} ${styles[`petal${index}`]}`} aria-hidden="true">
-            <Image src={`/form/themes/petal-${theme.id}.webp`} alt="" width={256} height={234} sizes="90px" />
+            <Image src={`/form/themes/petal-${theme.id}.webp`} alt="" width={256} height={234} sizes="(min-width: 1024px) 105px, 58px" />
           </div>
         ))}
         <Plus className={`${styles.ornament} ${styles.ornamentOne}`} aria-hidden="true" />
