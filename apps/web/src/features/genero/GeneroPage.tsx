@@ -8,6 +8,7 @@ import { TugOfWarSection } from './components/TugOfWarSection';
 import { StorytellingGenero } from './components/StorytellingGenero';
 import { GENDER_MOCK_DATA } from './constants';
 import { DataFooter } from '@/shared/components/DataFooter';
+import { LandingFooter } from '@/shared/components/LandingFooter';
 
 export function GeneroPage() {
   const [selectedYear, setSelectedYear] = useState<number>(2024);
@@ -57,6 +58,8 @@ export function GeneroPage() {
         secondaryLabel="Explorar todas las historias"
         source="Fuente: Estudios Muestrales de Participación Ciudadana, Instituto Nacional Electoral."
       />
+
+      <LandingFooter />
     </div>
   );
 }

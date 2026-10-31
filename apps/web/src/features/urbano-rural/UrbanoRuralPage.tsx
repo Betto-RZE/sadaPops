@@ -5,6 +5,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Ban, ExternalLink, Info, Layers, Microscope } from 'lucide-react';
 import { Navbar } from '@/shared/components/Navbar';
 import { DataFooter } from '@/shared/components/DataFooter';
+import { LandingFooter } from '@/shared/components/LandingFooter';
 import { AnimatedNumber, EASE, Reveal } from '@/shared/components/motion';
 import type { Zone, ZoneYear } from './constants';
 import { ZONES, ZONE_DATA, ZONE_META, ZONE_YEARS, gapFor } from './constants';
@@ -217,6 +218,8 @@ export function UrbanoRuralPage() {
         source="Fuentes: Estudios muestrales sobre la participación ciudadana 2009, 2015, 2018, 2021 y 2024, y estudio censal 2012 (IFE/INE). La fuente de cada año aparece junto a la escena."
         sourceHref={record.source.href}
       />
+
+      <LandingFooter />
     </div>
   );
 }

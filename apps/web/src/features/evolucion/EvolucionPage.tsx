@@ -8,6 +8,7 @@ import { StatsGrid } from './components/StatsGrid';
 import { ChangeComparison } from './components/ChangeComparison';
 import { PARTICIPATION_DATA } from './constants';
 import { DataFooter } from '@/shared/components/DataFooter';
+import { LandingFooter } from '@/shared/components/LandingFooter';
 
 export function EvolucionPage() {
   const [selectedYear, setSelectedYear] = useState<number>(2024);
@@ -53,6 +54,8 @@ export function EvolucionPage() {
         secondaryLabel="Comparar por género"
         source="Fuente: Conteos Censales de Participación Ciudadana 2009–2024, Instituto Nacional Electoral."
       />
+
+      <LandingFooter />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Navbar } from '@/shared/components/Navbar';
 import { DataFooter } from '@/shared/components/DataFooter';
+import { LandingFooter } from '@/shared/components/LandingFooter';
 import { EASE } from '@/shared/components/motion';
 import { AGE_CURVES, AGE_GROUPS, NATIONAL, SWINGS, YEARS, ageCurveFacts, isPresidential, unspecifiedLatest, womenShareRange } from './data';
 import { BOOK, PixelDalia } from './PixelArt';
@@ -325,6 +326,7 @@ export function HallazgosPage() {
         source="Fuente: Conteos Censales de Participación Ciudadana (CCPC) 2009–2024, Instituto Nacional Electoral."
         sourceHref="https://portal.ine.mx/transparencia/datos-abiertos/visualizacion-datos/conteos-censales-participacion/"
       />
+      <LandingFooter />
     </div>
   );
 }

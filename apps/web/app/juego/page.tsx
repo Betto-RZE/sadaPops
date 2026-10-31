@@ -1,6 +1,7 @@
 import { Navbar } from "@/shared/components/Navbar";
 import { GameLoader } from "@/features/juego/GameLoader";
 import { JuegoInfo } from "@/features/juego/JuegoInfo";
+import { LandingFooter } from "@/shared/components/LandingFooter";
 
 export const metadata = {
   title: "MODO DE JUEGO PIXEL ART | Mapa de Dalias - INE",
@@ -41,16 +42,7 @@ export default function JuegoPage() {
         </main>
       </div>
 
-      {/* FOOTER - ESTÉTICA ESTÁNDAR IDÉNTICA A TODA LA NAVEGACIÓN */}
-      <footer className="w-full py-8 text-center text-[10px] font-bold tracking-widest uppercase text-gray-400 border-t border-gray-100 bg-white mt-auto">
-        <div className="mx-auto max-w-[1440px] px-6 lg:px-12 flex justify-between items-center">
-          <div className="flex gap-4 items-center">
-            <span className="text-brand-navy">INE</span>
-            <div className="w-px h-3 bg-gray-300"></div>
-            <span>Democracia que florece</span>
-          </div>
-        </div>
-      </footer>
+      <LandingFooter />
     </div>
   );
 }

@@ -21,7 +21,7 @@ export function DataFooter({
   sourceHref = 'https://computos2024.ine.mx',
 }: DataFooterProps) {
   return (
-    <footer className="mt-12 border-t border-slate-200 bg-[#F7F5F7]">
+    <section aria-label="Navegación entre historias de datos" className="mt-12 border-t border-slate-200 bg-[#F7F5F7]">
       <div className="mx-auto max-w-[1360px] px-4 py-9 sm:px-6 lg:px-12 sm:py-11">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="max-w-xl">
@@ -56,6 +56,6 @@ export function DataFooter({
           <span>Instituto Nacional Electoral</span>
         </div>
       </div>
-    </footer>
+    </section>
   );
 }

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Navbar } from '@/shared/components/Navbar';
 import { DataFooter } from '@/shared/components/DataFooter';
+import { LandingFooter } from '@/shared/components/LandingFooter';
 import { HeaderEdades } from './HeaderEdades';
 import { AgeStorySection } from './AgeStorySection';
 import { AGE_DATA } from './constants';
@@ -79,7 +80,7 @@ export function EdadesPage() {
             </ul>
           </div>
 
-          <div className="mt-7 grid max-w-4xl gap-5 border-t border-slate-100 pt-5 md:grid-cols-[1fr_auto] md:items-center">
+          <div className="mt-7 max-w-4xl gap-5 border-t border-slate-100 pt-5 md:grid-cols-[1fr_auto] md:items-center">
             <div>
               <h3 className="text-base font-semibold text-brand-navy">¿Qué nos dicen los datos?</h3>
               <p className="mt-1 text-sm sm:text-base leading-relaxed text-slate-600">
@@ -103,6 +104,8 @@ export function EdadesPage() {
         source="Fuente: Conteos Censales de Participación Ciudadana (CCPC) del INE, elecciones federales 2009–2024. Agregado nacional por edad y sexo a partir de los archivos abiertos; no incluye casillas especiales ni voto desde el extranjero."
         sourceHref="https://portal.ine.mx/transparencia/datos-abiertos/visualizacion-datos/conteos-censales-participacion/"
       />
+
+      <LandingFooter />
     </div>
   );
 }

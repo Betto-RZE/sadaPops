@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Info } from 'lucide-react';
 import { Navbar } from '@/shared/components/Navbar';
 import { DataFooter } from '@/shared/components/DataFooter';
+import { LandingFooter } from '@/shared/components/LandingFooter';
 import { STATE_SAMPLES } from './constants';
 import { HeaderEstados } from './components/HeaderEstados';
 import { StateExplorer } from './components/StateExplorer';
@@ -53,6 +54,8 @@ export function EstadosPage() {
         source="Fuente: Conteos Censales de Participación Ciudadana 2009–2024, Instituto Nacional Electoral."
         sourceHref="https://portal.ine.mx/transparencia/datos-abiertos/visualizacion-datos/conteos-censales-participacion/"
       />
+
+      <LandingFooter />
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { Navbar } from '@/shared/components/Navbar';
 import { DatosHero } from '@/features/datos/DatosHero';
 import { ParticipationFigures } from '@/features/datos/ParticipationFigures';
 import { SourcesPanel } from '@/features/datos/SourcesPanel';
+import { LandingFooter } from '@/shared/components/LandingFooter';
 
 export default function DatosPage() {
   return (
@@ -14,15 +15,7 @@ export default function DatosPage() {
         <SourcesPanel />
       </main>
 
-      <footer className="mt-auto w-full border-t border-gray-100 bg-white py-8 text-center text-[10px] font-bold uppercase tracking-widest text-gray-400">
-        <div className="mx-auto flex max-w-[1440px] items-center px-6 lg:px-12">
-          <div className="flex items-center gap-4">
-            <span className="text-brand-navy">INE</span>
-            <span className="h-3 w-px bg-gray-300" />
-            <span>Democracia que florece</span>
-          </div>
-        </div>
-      </footer>
+      <LandingFooter />
     </div>
   );
 }
