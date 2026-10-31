@@ -273,7 +273,12 @@
   .flower { width: 110%; margin-left: 0; }
 }
 
-/* Hide the existing collage while the incoming planting cinematic runs. */
-.sheet { transition: opacity .4s ease, transform .4s ease, background-color .2s, border-color .2s; }
-.sheetHidden { opacity: 0 !important; pointer-events: none !important; transform: scale(.95) translateY(16px) !important; }
-.adornmentHidden { opacity: 0 !important; pointer-events: none !important; transition: opacity .35s ease !important; }
+/* The choreography is viewport-based; translate preserves each object's rotation. */
+.sheetHidden { pointer-events: none; animation: sheetExit .55s cubic-bezier(.6, 0, .9, .5) .35s forwards; }
+.adornmentHidden { pointer-events: none; animation: decorExit .45s cubic-bezier(.5, 0, .8, .5) forwards; }
+.flowerInFlight { visibility: hidden; }
+@keyframes decorExit { to { translate: var(--exit-x, -110vw) 0; opacity: 0; } }
+@keyframes sheetExit { to { translate: 0 var(--exit-y, 120vh); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .sheetHidden, .adornmentHidden { visibility: hidden; }
+}

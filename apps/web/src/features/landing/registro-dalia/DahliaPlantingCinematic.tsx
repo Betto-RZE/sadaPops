@@ -1,259 +1,97 @@
 'use client';
 
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import NextImage from 'next/image';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useReducedMotion } from 'framer-motion';
 import { getStateCinematicAnchor } from './dahliaCinematicData';
 import { type RegistrationTheme } from './themes';
 import styles from './DahliaPlantingCinematic.module.css';
 
+export interface DahliaStartPoint { x: number; y: number; width: number; height: number }
 interface Props {
   theme: RegistrationTheme;
   stateId: string;
   stateName: string;
-  startPoint: { x: number; y: number } | null;
+  startPoint: DahliaStartPoint | null;
   onComplete: () => void;
 }
 
-const BURST_PETAL_OFFSETS = [
-  { dx: '-45px', dy: '-38px', rot: '-35deg' },
-  { dx: '48px', dy: '-32px', rot: '45deg' },
-  { dx: '55px', dy: '24px', rot: '80deg' },
-  { dx: '12px', dy: '50px', rot: '120deg' },
-  { dx: '-42px', dy: '40px', rot: '-75deg' },
-  { dx: '-52px', dy: '-10px', rot: '-110deg' },
+const PETALS = [
+  { x: '-65px', y: '-50px', rotation: '-35deg' },
+  { x: '70px', y: '-45px', rotation: '45deg' },
+  { x: '78px', y: '30px', rotation: '80deg' },
+  { x: '15px', y: '65px', rotation: '120deg' },
+  { x: '-60px', y: '55px', rotation: '-75deg' },
+  { x: '-75px', y: '-15px', rotation: '-110deg' },
 ];
 
-export function DahliaPlantingCinematic({
-  theme,
-  stateId,
-  stateName,
-  startPoint,
-  onComplete,
-}: Props) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const mapWrapperRef = useRef<HTMLDivElement>(null);
+export function DahliaPlantingCinematic({ theme, stateId, stateName, startPoint, onComplete }: Props) {
+  const reducedMotion = useReducedMotion();
+  const [viewport, setViewport] = useState<{ width: number; height: number } | null>(null);
+  const [phase, setPhase] = useState<'clearing' | 'center' | 'map' | 'impact'>('clearing');
+  const impacted = phase === 'impact';
+  const skip = useRef<HTMLButtonElement>(null);
+  const anchor = getStateCinematicAnchor(stateId);
 
-  const anchor = useMemo(() => getStateCinematicAnchor(stateId), [stateId]);
-  const [targetPos, setTargetPos] = useState<{ x: number; y: number } | null>(null);
-  const [hasImpacted, setHasImpacted] = useState(false);
-  const [isMapShaking, setIsMapShaking] = useState(false);
-
-  // Calcula la posición real en pixeles del estado dentro del contenedor
-  useEffect(() => {
-    function computeTarget() {
-      if (!mapWrapperRef.current || !containerRef.current) return;
-      const mapRect = mapWrapperRef.current.getBoundingClientRect();
-      const contRect = containerRef.current.getBoundingClientRect();
-      const x = mapRect.left - contRect.left + (mapRect.width * anchor.pctX) / 100;
-      const y = mapRect.top - contRect.top + (mapRect.height * anchor.pctY) / 100;
-      setTargetPos({ x, y });
-    }
-
-    computeTarget();
-    window.addEventListener('resize', computeTarget);
-    return () => window.removeEventListener('resize', computeTarget);
-  }, [anchor.pctX, anchor.pctY]);
-
-  // Cronómetro del impacto y finalización
-  useEffect(() => {
-    // A los 1.75s la flor impacta el mapa
-    const impactTimer = setTimeout(() => {
-      setHasImpacted(true);
-      setIsMapShaking(true);
-      setTimeout(() => setIsMapShaking(false), 220);
-    }, 1750);
-
-    // A los 3.2s termina la cinemática y regresa a la hoja de confirmación
-    const completeTimer = setTimeout(() => {
-      onComplete();
-    }, 3200);
-
+  useLayoutEffect(() => {
+    const measure = () => setViewport({ width: window.innerWidth, height: window.innerHeight });
+    measure();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('resize', measure);
     return () => {
-      clearTimeout(impactTimer);
-      clearTimeout(completeTimer);
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('resize', measure);
     };
-  }, [onComplete]);
+  }, []);
 
-  const initialX = startPoint?.x ?? 300;
-  const initialY = startPoint?.y ?? 450;
-  const apexX = containerRef.current ? containerRef.current.clientWidth / 2 : 350;
-  const apexY = containerRef.current ? containerRef.current.clientHeight * 0.16 : 80;
-  const finalX = targetPos?.x ?? initialX;
-  const finalY = targetPos?.y ?? initialY;
+  useEffect(() => {
+    const center = window.setTimeout(() => setPhase('center'), 1550);
+    const map = window.setTimeout(() => setPhase('map'), 2100);
+    const impact = window.setTimeout(() => setPhase('impact'), reducedMotion ? 0 : 3150);
+    const complete = window.setTimeout(onComplete, reducedMotion ? 900 : 4250);
+    return () => { window.clearTimeout(center); window.clearTimeout(map); window.clearTimeout(impact); window.clearTimeout(complete); };
+  }, [onComplete, reducedMotion]);
 
-  return (
-    <div
-      ref={containerRef}
-      className={styles.cinematicOverlay}
-      style={{
-        '--dahlia-swatch': theme.hex,
-        '--dahlia-accent': theme.accent,
-      } as React.CSSProperties}
-    >
-      <button
-        type="button"
-        className={styles.skipButton}
-        onClick={onComplete}
-        aria-label="Saltar animación"
-      >
-        Saltar animación ✕
-      </button>
+  useEffect(() => { if (viewport) skip.current?.focus({ preventScroll: true }); }, [viewport]);
 
-      {/* Contenedor del Mapa de México */}
-      <div
-        ref={mapWrapperRef}
-        className={`${styles.mapWrapper} ${styles.mapEnter} ${isMapShaking ? styles.mapShaking : ''}`}
-      >
-        <NextImage
-          src="/data/map-shadow.webp"
-          alt=""
-          width={710}
-          height={480}
-          className={styles.mapShadow}
-          unoptimized
-          priority
-        />
-        <NextImage
-          src="/data/map-base.png"
-          alt="Mapa de México"
-          width={660}
-          height={435}
-          className={styles.mapBase}
-          unoptimized
-          priority
-        />
+  if (!viewport) return null;
+  const { width, height } = viewport;
+  // The map has no perspective transform: anchor percentages and the sprite use
+  // the very same viewport coordinate space, including after a resize.
+  const mapWidth = Math.min(900, width * .92, height * .72 * 660 / 435);
+  const mapHeight = mapWidth * 435 / 660;
+  const targetX = (width - mapWidth) / 2 + mapWidth * anchor.pctX / 100;
+  const targetY = (height - mapHeight) / 2 + mapHeight * anchor.pctY / 100;
+  const largeWidth = Math.min(width * .78, height * .65 * 720 / 607, 560);
+  const variables = {
+    '--dahlia-swatch': theme.hex, '--dahlia-accent': theme.accent,
+    '--source-x': `${startPoint?.x ?? width * .92}px`, '--source-y': `${startPoint?.y ?? height / 2}px`,
+    '--source-width': `${startPoint?.width ?? 200}px`, '--source-height': `${startPoint?.height ?? 169}px`,
+    '--center-x': `${width / 2}px`, '--center-y': `${height / 2}px`,
+    '--large-width': `${largeWidth}px`, '--large-height': `${largeWidth * 607 / 720}px`,
+    '--target-x': `${targetX}px`, '--target-y': `${targetY}px`,
+  } as CSSProperties;
 
-        {/* Faro / Beacon del estado objetivo */}
-        {!hasImpacted && (
-          <div
-            className={styles.targetBeacon}
-            style={{
-              left: `${anchor.pctX}%`,
-              top: `${anchor.pctY}%`,
-            }}
-          >
-            <div className={styles.beaconRing} />
-            <div className={styles.beaconDot} />
-          </div>
-        )}
-
-        {/* Efectos de impacto sobre el estado */}
-        {hasImpacted && (
-          <>
-            {/* Ondas de choque dorada y color dalia */}
-            <div
-              className={styles.shockwaveContainer}
-              style={{
-                left: `${anchor.pctX}%`,
-                top: `${anchor.pctY}%`,
-              }}
-            >
-              <div className={styles.shockwaveGold} />
-              <div className={styles.shockwaveTheme} />
-
-              {/* Ráfaga de pétalos radiales */}
-              {BURST_PETAL_OFFSETS.map((p, idx) => (
-                <NextImage
-                  key={idx}
-                  src={`/form/themes/petal-${theme.id}.webp`}
-                  alt=""
-                  width={28}
-                  height={28}
-                  className={styles.burstPetal}
-                  style={
-                    {
-                      '--dx': p.dx,
-                      '--dy': p.dy,
-                      '--rot': p.rot,
-                    } as React.CSSProperties
-                  }
-                  unoptimized
-                />
-              ))}
-            </div>
-
-            {/* Dalia plantada en el estado */}
-            <div
-              className={styles.flyingDahliaWrap}
-              style={{
-                left: `${anchor.pctX}%`,
-                top: `${anchor.pctY}%`,
-                width: 58,
-                height: 58,
-                transform: 'translate(-50%, -50%)',
-              }}
-            >
-              <div className={styles.dahliaGlow}>
-                <div className={styles.goldenHalo} />
-                <NextImage
-                  src={`/form/themes/dahlia-${theme.id}.webp`}
-                  alt=""
-                  width={120}
-                  height={101}
-                  className={styles.dahliaSprite}
-                  unoptimized
-                />
-              </div>
-            </div>
-
-            {/* Pin con el nombre del estado */}
-            <div
-              className={styles.impactPin}
-              style={{
-                left: `${anchor.pctX}%`,
-                top: `${anchor.pctY}%`,
-              }}
-            >
-              <span className={styles.pinIcon}>✦</span>
-              <span>{stateName || anchor.name}</span>
-            </div>
-          </>
-        )}
+  return createPortal(
+    <div data-phase={phase} className={`${styles.cinematicOverlay} ${reducedMotion ? styles.reducedMotion : ''}`} style={variables} role="dialog" aria-modal="true" aria-label="Plantando tu dalia">
+      <div className={styles.revealBackground} />
+      <button ref={skip} type="button" className={styles.skipButton} onClick={onComplete}>Saltar animación ✕</button>
+      <p className={styles.srOnly} role="status">{impacted ? `Tu dalia florece en ${stateName}.` : phase === 'center' ? 'Tu dalia florece en comunidad.' : phase === 'map' ? `Destino: ${stateName}.` : `Plantando tu dalia en ${stateName}.`}</p>
+      <div className={`${styles.mapWrapper} ${impacted ? styles.mapImpacted : ''}`} style={{ width: mapWidth, height: mapHeight }}>
+        <NextImage src="/data/map-base.png" alt="Mapa de México" width={660} height={435} className={styles.mapBase} unoptimized priority />
+        <div className={styles.targetBeacon} style={{ left: `${anchor.pctX}%`, top: `${anchor.pctY}%` }} aria-hidden="true" />
       </div>
-
-      {/* Dalia en vuelo parabólico (desde el botón al cenit y picada al estado) */}
-      {!hasImpacted && (
-        <motion.div
-          className={styles.flyingDahliaWrap}
-          initial={{
-            x: initialX,
-            y: initialY,
-            scale: 0.55,
-            opacity: 0.2,
-            rotate: 0,
-          }}
-          animate={{
-            x: [initialX, apexX, finalX],
-            y: [initialY, apexY, finalY],
-            scale: [0.55, 1.35, 0.75],
-            opacity: [0.2, 1, 1],
-            rotate: [0, 45, 180],
-          }}
-          transition={{
-            duration: 1.75,
-            times: [0, 0.48, 1],
-            ease: ['easeOut', 'anticipate'],
-          }}
-          style={{
-            width: 72,
-            height: 72,
-            transform: 'translate(-50%, -50%)',
-          }}
-        >
-          <div className={styles.dahliaGlow}>
-            <div className={styles.goldenHalo} />
-            <NextImage
-              src={`/form/themes/dahlia-${theme.id}.webp`}
-              alt=""
-              width={160}
-              height={135}
-              className={styles.dahliaSprite}
-              unoptimized
-            />
-          </div>
-        </motion.div>
-      )}
-    </div>
+      {!impacted && <div className={styles.flyingDahlia} aria-hidden="true">
+        <NextImage src={`/form/themes/dahlia-${theme.id}.webp`} alt="" width={720} height={607} className={styles.dahliaSprite} unoptimized priority />
+      </div>}
+      {impacted && <div className={styles.impact} style={{ left: targetX, top: targetY, '--pin-shift': `${Math.min(width - 88, Math.max(88, targetX)) - targetX}px` } as CSSProperties}>
+        <div className={styles.shockwave} aria-hidden="true" />
+        <NextImage src={`/form/themes/dahlia-${theme.id}.webp`} alt="" width={52} height={44} className={styles.plantedDahlia} unoptimized />
+        {PETALS.map((petal, index) => <NextImage key={index} src={`/form/themes/petal-${theme.id}.webp`} alt="" width={24} height={22} className={styles.burstPetal} style={{ '--dx': petal.x, '--dy': petal.y, '--rotation': petal.rotation } as CSSProperties} unoptimized />)}
+        <span className={styles.impactPin}>✦ {stateName || anchor.name}</span>
+      </div>}
+    </div>, document.body,
   );
 }
