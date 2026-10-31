@@ -18,6 +18,8 @@ export function useDahliaRegistration(stateId: string) {
   const [themeError, setThemeError] = useState(false);
   const [ready, setReady] = useState(false);
   const [plantedStateId, setPlantedStateId] = useState<string | null>(null);
+  const [isCinematicActive, setIsCinematicActive] = useState(false);
+  const pendingPlantResult = useRef<{ stateId: string; persisted: boolean } | null>(null);
   const [wantsAlerts, setWantsAlerts] = useState(false);
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -86,13 +88,21 @@ export function useDahliaRegistration(stateId: string) {
       window.dispatchEvent(new CustomEvent('dalias:add-dahlia', { detail: { stateId: nextStateId } }));
     });
     sessionState.current = result.stateId;
-    setPlantedStateId(result.stateId);
+    pendingPlantResult.current = result;
+    setIsCinematicActive(true);
     const themePersisted = writeStored(storage.current, REGISTRATION_KEYS.color, theme.id);
     setStorageWarning(!emailPersisted || !result.persisted || !themePersisted);
   };
 
   return {
     theme, pendingTheme, themeError, ready, plantedStateId, isPlanted: Boolean(plantedStateId),
+    isCinematicActive,
+    onCinematicComplete: () => {
+      if (pendingPlantResult.current) {
+        setPlantedStateId(pendingPlantResult.current.stateId);
+      }
+      setIsCinematicActive(false);
+    },
     wantsAlerts, email, emailError, alertsSaved, storageWarning, detailsOpen,
     onThemeChange,
     onSubmit,

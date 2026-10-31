@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useRef, type CSSProperties, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import NextImage, { type ImageProps } from 'next/image';
 import { IBM_Plex_Mono } from 'next/font/google';
 import { ArrowRight, Check, ChevronDown, MapPin, ShieldCheck, Plus } from 'lucide-react';
 import messages from '@/i18n/es.json';
 import { REGISTRATION_THEMES, type RegistrationTheme } from './themes';
+import { DahliaPlantingCinematic } from './DahliaPlantingCinematic';
 import styles from './DahliaRegistrationSection.module.css';
 
 const mono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500', '600'], display: 'swap' });
@@ -24,6 +25,8 @@ interface Props {
   count: number;
   theme: RegistrationTheme;
   isPlanted: boolean;
+  isCinematicActive?: boolean;
+  onCinematicComplete?: () => void;
   wantsAlerts: boolean;
   email: string;
   emailError: string | null;
@@ -58,9 +61,53 @@ function Stationery({ theme, ticket = false }: { theme: RegistrationTheme; ticke
 export function DahliaRegistrationSection(props: Props) {
   const { theme } = props;
   const confirmationHeading = useRef<HTMLHeadingElement>(null);
+  const sceneRef = useRef<HTMLDivElement>(null);
+  const submitButtonRef = useRef<HTMLButtonElement>(null);
+  const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(null);
+
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (props.isPlanted) confirmationHeading.current?.focus({ preventScroll: true });
   }, [props.isPlanted]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsDropdownOpen(false);
+      }
+    }
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [isDropdownOpen]);
+
+  const handleFormSubmit = (event: FormEvent) => {
+    if (submitButtonRef.current && sceneRef.current) {
+      const bRect = submitButtonRef.current.getBoundingClientRect();
+      const sRect = sceneRef.current.getBoundingClientRect();
+      setStartPoint({
+        x: bRect.left - sRect.left + bRect.width / 2,
+        y: bRect.top - sRect.top + bRect.height / 2,
+      });
+    }
+    props.onSubmit(event);
+  };
+
+  const selectedState = props.states.find(s => s.id === props.stateId);
+  const displayName = selectedState ? selectedState.name : props.stateName;
+
   const variables = {
     '--dahlia-swatch': theme.hex, '--dahlia-scene': theme.scene, '--dahlia-paper': theme.paper,
     '--dahlia-accent': theme.accent, '--dahlia-border': theme.border,
@@ -73,23 +120,35 @@ export function DahliaRegistrationSection(props: Props) {
         <span className={styles.markerLine} aria-hidden="true" />
         <span>{copy.section}</span>
       </div>
-      <div className={styles.scene}>
+      <div className={styles.scene} ref={sceneRef}>
         <div className={`${styles.wash} ${styles.washTop}`} aria-hidden="true" />
         <div className={`${styles.wash} ${styles.washRight}`} aria-hidden="true" />
         <div className={`${styles.wash} ${styles.washBottom}`} aria-hidden="true" />
         <div className={styles.sceneGrid} aria-hidden="true" />
-        <div className={styles.polaroid} aria-hidden="true">
+
+        {/* Cinemática de plantado de dalia hacia el mapa de México */}
+        {props.isCinematicActive && (
+          <DahliaPlantingCinematic
+            theme={theme}
+            stateId={props.stateId}
+            stateName={displayName}
+            startPoint={startPoint}
+            onComplete={() => props.onCinematicComplete?.()}
+          />
+        )}
+
+        <div className={`${styles.polaroid} ${props.isCinematicActive ? styles.adornmentHidden : ''}`} aria-hidden="true">
           <Image src={`/form/themes/polaroid-ine-${theme.id}.webp`} alt="" width={640} height={684} sizes="(min-width: 1280px) 225px, 120px" />
         </div>
         {Array.from({ length: 18 }, (_, index) => index).map(index => (
-          <div key={index} className={`${styles.petal} ${styles[`petal${index}`]}`} aria-hidden="true">
+          <div key={index} className={`${styles.petal} ${styles[`petal${index}`]} ${props.isCinematicActive ? styles.adornmentHidden : ''}`} aria-hidden="true">
             <Image src={`/form/themes/petal-${theme.id}.webp`} alt="" width={256} height={234} sizes="(min-width: 1024px) 105px, 58px" />
           </div>
         ))}
-        <Plus className={`${styles.ornament} ${styles.ornamentOne}`} aria-hidden="true" />
-        <Plus className={`${styles.ornament} ${styles.ornamentTwo}`} aria-hidden="true" />
+        <Plus className={`${styles.ornament} ${styles.ornamentOne} ${props.isCinematicActive ? styles.adornmentHidden : ''}`} aria-hidden="true" />
+        <Plus className={`${styles.ornament} ${styles.ornamentTwo} ${props.isCinematicActive ? styles.adornmentHidden : ''}`} aria-hidden="true" />
 
-        <div className={styles.sheet}>
+        <div className={`${styles.sheet} ${props.isCinematicActive ? styles.sheetHidden : ''}`}>
           <div className={styles.tape} aria-hidden="true" />
           <header className={styles.heading}>
             <div className={styles.headingCopy}>
@@ -106,16 +165,61 @@ export function DahliaRegistrationSection(props: Props) {
           </header>
 
           {!props.isPlanted ? (
-            <form onSubmit={props.onSubmit} className={styles.form} noValidate>
+            <form onSubmit={handleFormSubmit} className={styles.form} noValidate>
               <div className={styles.field}>
                 <label htmlFor="registro-estado-select" className={`${styles.label} ${mono.className}`}>{copy.stateLabel}</label>
-                <div className={styles.selectWrap}>
-                  <MapPin size={21} aria-hidden="true" />
-                  <select id="registro-estado-select" value={props.stateId} onChange={event => props.onStateChange(event.target.value)}
-                    disabled={!props.ready}>
-                    {props.states.map(state => <option key={state.id} value={state.id}>{state.name}</option>)}
+                <div className={styles.selectWrap} ref={dropdownRef}>
+                  <MapPin size={21} aria-hidden="true" className={styles.pinIcon} />
+                  <button
+                    type="button"
+                    id="registro-estado-select"
+                    className={styles.selectTrigger}
+                    disabled={!props.ready}
+                    aria-haspopup="listbox"
+                    aria-expanded={isDropdownOpen}
+                    onClick={() => setIsDropdownOpen(open => !open)}
+                  >
+                    <span className={styles.triggerValue}>{displayName}</span>
+                  </button>
+                  <ChevronDown
+                    size={20}
+                    aria-hidden="true"
+                    className={`${styles.chevronIcon} ${isDropdownOpen ? styles.chevronOpen : ''}`}
+                  />
+                  {isDropdownOpen && (
+                    <div className={styles.dropdownMenu} role="listbox" tabIndex={-1} aria-label="Entidades federativas">
+                      {props.states.map(state => {
+                        const isSelected = state.id === props.stateId;
+                        return (
+                          <button
+                            type="button"
+                            key={state.id}
+                            role="option"
+                            aria-selected={isSelected}
+                            className={`${styles.dropdownItem} ${isSelected ? styles.dropdownItemSelected : ''}`}
+                            onClick={() => {
+                              props.onStateChange(state.id);
+                              setIsDropdownOpen(false);
+                            }}
+                          >
+                            <span>{state.name}</span>
+                            {isSelected && <Check size={16} strokeWidth={2.5} className={styles.itemCheck} />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <select
+                    value={props.stateId}
+                    onChange={event => props.onStateChange(event.target.value)}
+                    className={styles.visuallyHiddenSelect}
+                    tabIndex={-1}
+                    aria-hidden="true"
+                  >
+                    {props.states.map(state => (
+                      <option key={state.id} value={state.id}>{state.name}</option>
+                    ))}
                   </select>
-                  <ChevronDown size={20} aria-hidden="true" />
                 </div>
                 <div className={`${styles.metrics} ${mono.className}`}>
                   {props.turnout != null && <p>{copy.turnout}: <strong>{props.turnout}%</strong> <span>· {copy.turnoutSource}</span></p>}
@@ -149,8 +253,30 @@ export function DahliaRegistrationSection(props: Props) {
                   <span>{copy.alertsQuestion}</span>
                   <span className={`${styles.optional} ${mono.className}`}>{copy.optional}</span>
                 </label>
-                  <div id="registro-avisos" className={styles.alertFields} hidden={!props.wantsAlerts}>
-                    <p>{copy.alertsHelp}</p>
+                <div id="registro-avisos" className={styles.alertFields} hidden={!props.wantsAlerts}>
+                  <p className={styles.alertsIntro}>{copy.alertsHelp}</p>
+                  <div className={styles.stopsBlock}>
+                    <p className={`${styles.stopsTitle} ${mono.className}`}>3 paradas de preparación cívica:</p>
+                    <ol className={styles.stopsList}>
+                      {copy.stops.map((stop, idx) => (
+                        <li key={stop.title} className={styles.stopItem}>
+                          <span className={`${styles.stopNumber} ${mono.className}`}>0{idx + 1}</span>
+                          <div className={styles.stopBody}>
+                            <strong>{stop.title}</strong>
+                            <p>{stop.text}</p>
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                  <div className={styles.privacyNotice}>
+                    <ShieldCheck size={18} className={styles.privacyShield} aria-hidden="true" />
+                    <div>
+                      <strong>Privacidad protegida: </strong>
+                      <span>{copy.privacy}</span>
+                    </div>
+                  </div>
+                  <div className={styles.emailWrap}>
                     <label htmlFor="registro-correo" className={`${styles.emailLabel} ${mono.className}`}>{copy.emailLabel}</label>
                     <input id="registro-correo" type="email" autoComplete="email" value={props.email}
                       onChange={event => props.onEmailChange(event.target.value)} placeholder={copy.emailPlaceholder}
@@ -159,18 +285,21 @@ export function DahliaRegistrationSection(props: Props) {
                     <p id="registro-correo-help" className={styles.emailHelp}>{copy.localEmail}</p>
                     {props.emailError && <p id="registro-correo-error" role="alert" className={styles.error}>{props.emailError}</p>}
                   </div>
+                </div>
               </div>
-              <button type="submit" disabled={!props.ready || Boolean(props.pendingTheme)} className={`${styles.submit} ${mono.className}`}>
+
+              <button
+                ref={submitButtonRef}
+                type="submit"
+                disabled={!props.ready || Boolean(props.pendingTheme)}
+                className={`${styles.submit} ${mono.className}`}
+              >
                 {copy.submit}<ArrowRight size={25} strokeWidth={1.5} aria-hidden="true" />
               </button>
               <div className={styles.assurances}>
                 <span><ShieldCheck size={15} aria-hidden="true" />{copy.anonymous}</span>
-                <button type="button" onClick={props.onDetailsChange} aria-expanded={props.detailsOpen} aria-controls="registro-detalles">{copy.details}<ChevronDown size={14} aria-hidden="true" /></button>
+                <span className={styles.disclaimerPill}>✦ {copy.disclaimer}</span>
               </div>
-                <div id="registro-detalles" className={styles.details} hidden={!props.detailsOpen}>
-                  <ol>{copy.stops.map(stop => <li key={stop.title}><strong>{stop.title}</strong><p>{stop.text}</p></li>)}</ol>
-                  <p>{copy.privacy}</p><p>{copy.definition}</p>
-                </div>
             </form>
           ) : (
             <div className={styles.confirmation} role="status">
@@ -185,8 +314,8 @@ export function DahliaRegistrationSection(props: Props) {
           <p className={styles.disclaimer}>{copy.disclaimer}</p>
           <div className={styles.closingRule} aria-hidden="true"><span />✦<span /></div>
         </div>
-        <div className={styles.notePosition}><Stationery theme={theme} /></div>
-        <div className={styles.ticketPosition}><Stationery theme={theme} ticket /></div>
+        <div className={`${styles.notePosition} ${props.isCinematicActive ? styles.adornmentHidden : ''}`}><Stationery theme={theme} /></div>
+        <div className={`${styles.ticketPosition} ${props.isCinematicActive ? styles.adornmentHidden : ''}`}><Stationery theme={theme} ticket /></div>
       </div>
     </section>
   );
