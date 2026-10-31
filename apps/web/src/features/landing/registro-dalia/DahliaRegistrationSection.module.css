@@ -75,15 +75,15 @@
 .ticketPosition { position: absolute; left: 20px; top: 475px; z-index: 3; }
 .note, .ticket { position: relative; pointer-events: none; }
 .note { width: 205px; height: 200px; transform: rotate(8deg); }
-.ticket { width: 174px; height: 235px; transform: rotate(-9deg); }
+.ticket { width: 205px; height: 233px; transform: rotate(-9deg); }
 .paperWindow { position: absolute; inset: 0; overflow: hidden; filter: drop-shadow(0 8px 6px #17253621); }
 .noteAtlas, .ticketAtlas { position: absolute; height: auto; max-width: none; }
 .noteAtlas { width: 178.5714%; left: 0; top: 0; }
 .ticketAtlas { width: 227.2727%; right: 0; top: 0; }
 .paperMessage { position: absolute; z-index: 1; color: var(--dahlia-accent); font-size: 14px; line-height: 1.65; text-align: center; }
 .note .paperMessage { top: 55px; left: 46px; width: 120px; transform: rotate(15deg); }
-.ticket .paperMessage { top: 100px; left: 50px; width: 101px; font-size: 12px; font-weight: 600; text-transform: uppercase; transform: rotate(-13deg); }
-.ticket .paperMessage span { display: inline-block; margin-top: 7px; }
+.ticket .paperMessage { top: 57%; left: 29%; width: 44%; margin: 0; font-size: 12px; font-weight: 600; line-height: 1.2; transform: translateY(-50%) rotate(-13deg); }
+.ticket .paperMessage span { display: inline-block; margin-top: 4px; }
 .petal { position: absolute; z-index: 3; pointer-events: none; width: 90px; }
 .petal img { width: 100%; height: auto; object-fit: contain; filter: drop-shadow(0 8px 6px #17253620); }
 .petal0 { left: 3%; top: 10px; transform: rotate(-20deg); }
@@ -118,8 +118,9 @@
   .note { width: 155px; height: 155px; }
   .note .paperMessage { font-size: 11px; top: 42px; left: 35px; width: 90px; }
   .ticketPosition { left: 8px; }
-  .ticket { width: 135px; height: 185px; }
-  .ticket .paperMessage { font-size: 9px; top: 77px; left: 40px; width: 78px; }
+  .ticket { width: 135px; height: auto; transform: none; }
+  .ticket .paperWindow { position: relative; aspect-ratio: 528 / 600; transform: rotate(-9deg); }
+  .ticket .paperMessage { position: relative; inset: auto; width: 100%; margin: 10px 0 0; font-size: 12px; line-height: 1.5; transform: none; }
   .title { font-size: 54px; }
 }
 @media (max-width: 1023px) {
@@ -128,8 +129,7 @@
   .notePosition, .ticketPosition { position: relative; inset: auto; grid-row: 2; justify-self: center; margin-top: 28px; z-index: 2; }
   .note { width: 180px; height: 180px; }
   .note .paperMessage { font-size: 13px; top: 47px; left: 40px; width: 105px; }
-  .ticket { width: 155px; height: 210px; }
-  .ticket .paperMessage { font-size: 11px; top: 90px; left: 45px; width: 90px; }
+  .ticket { width: 155px; }
   .polaroid { left: auto; right: -5px; top: auto; bottom: 30px; width: 95px; z-index: 0; }
   .sceneGrid { top: auto; bottom: 30px; }
   .petal2 { bottom: 240px; right: -30px; }
@@ -169,8 +169,7 @@
   .petal2 { width: 50px; bottom: 250px; right: -10px; }
   .note { width: 142px; height: 145px; }
   .note .paperMessage { top: 39px; left: 31px; width: 85px; font-size: 12px; }
-  .ticket { width: 128px; height: 175px; }
-  .ticket .paperMessage { top: 74px; left: 37px; width: 75px; font-size: 12px; }
+  .ticket { width: 128px; }
   .polaroid { position: relative; grid-row: 3; grid-column: 1 / -1; justify-self: center; width: 100px; inset: auto; margin-top: 6px; }
   .confirmation h4 { font-size: 28px; }
 }

@@ -29,6 +29,8 @@ export function useDahliaRegistration(stateId: string) {
   const storage = useRef<RegistrationStorage | null>(null);
 
   useEffect(() => {
+    // Conservar el contador compartido para invalidar también selecciones posteriores al montaje.
+    const requests = themeRequest;
     storage.current = browserStorage();
     const restored = restoreRegistration(storage.current);
     sessionState.current = restored.plantedStateId;
@@ -37,18 +39,18 @@ export function useDahliaRegistration(stateId: string) {
     setWantsAlerts(Boolean(restored.email));
     setAlertsSaved(Boolean(restored.email));
     setReady(true);
-    const request = ++themeRequest.current;
+    const request = ++requests.current;
     setPendingTheme(restored.theme);
     prepareThemeAssets(restored.theme).then(() => {
-      if (request !== themeRequest.current) return;
+      if (request !== requests.current) return;
       setTheme(restored.theme);
       setPendingTheme(null);
     }).catch(() => {
-      if (request !== themeRequest.current) return;
+      if (request !== requests.current) return;
       setPendingTheme(null);
       setThemeError(true);
     });
-    return () => { themeRequest.current++; };
+    return () => { requests.current++; };
   }, []);
 
   const onThemeChange = async (next: RegistrationTheme) => {

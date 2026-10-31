@@ -8,7 +8,7 @@
 - Fase 3 completada: maquetación local en `src/features/landing/registro-dalia/`, integrada en la sección existente.
 - Fase 4 completada: persistencia, migración de colores, precarga coordinada y registro sin duplicar envíos. Por indicación del usuario, se retiró la reubicación/edición; el registro previo muestra «Ya dejaste tu dalia».
 - Fase 5 completada: ajustes de responsive y accesibilidad con revisión dirigida en navegador.
-- Fase 6 pendiente. Esperar confirmación del usuario antes de la revisión visual final.
+- Fase 6 completada: comparación visual final y pulido del boleto; validaciones técnicas del alcance correctas. Newsreader sigue pendiente, con Georgia como alternativa.
 - La fase 1 fue documental; la fase 2 incorpora imágenes sin cambiar la interfaz.
 - Referencia visual única: `docs/referencias/Formulario Deja una Dalia.png`.
 - Recursos originales: `apps/web/public/form/`; conservarlos sin sobrescribir.
@@ -214,4 +214,14 @@ La migración de IDs antiguos a los nuevos temas debe ser explícita y tolerante
 - Movimiento reducido conserva la regla que anula animaciones y transiciones. No se cambió la preferencia del sistema durante la revisión.
 - Evidencia de escritorio guardada en `/private/tmp/registro-dalia-fase5.png`; tamaño de navegador restaurado tras las pruebas. Se usó navegador exclusivamente para esta validación necesaria.
 - TypeScript correcto, diez pruebas previas pasan y diff sin errores. Sigue pendiente cargar Newsreader con autorización; se mantiene Georgia como alternativa local.
-- [ ] Confirmación del usuario para comenzar la fase 6.
+- [x] Confirmación del usuario para comenzar la fase 6.
+
+### Entrega de fase 6
+
+- Comparación de la referencia con la composición final: hoja central, flor estática, polaroid INE con rombo gris, nota, boleto, círculos y textos aprobados conservados. No se reincorporan las cabeceras/pies decorativos eliminados.
+- Corregida la composición del boleto: ampliación en escritorio y texto centrado dentro del espacio libre entre ornamentos. Se conserva la capitalización del texto aprobado, sin forzar mayúsculas. Hasta 1279 px, el mensaje pasa debajo de la imagen, a 12 px, para no reducir su legibilidad ni superponerlo a las ilustraciones.
+- Revisión dirigida en navegador del boleto en escritorio y del tema Rosa pálido; comprobaciones de reflujo en móvil de 360 px y tableta de 1024 px sin desbordamiento de documento. Captura completa de escritorio: `/private/tmp/registro-dalia-fase6.png`. No se sembraron dalias de prueba ni se guardaron correos.
+- Resuelta la advertencia del linter sobre el contador de solicitudes de tema: el efecto conserva la referencia compartida y la limpieza sigue invalidando todas las cargas pendientes, incluidas selecciones posteriores al montaje.
+- Diez pruebas automatizadas, TypeScript sin emisión ni archivo incremental y lint del componente padre/carpeta de registro correctos; diff sin errores. Estas comprobaciones no constituyen una auditoría completa con lector de pantalla ni una compilación de producción.
+- Limitaciones conservadas: Georgia hasta disponer de Newsreader autorizado; avisos como preferencia local sin envío de correo; persistencia de registro local y mapa en memoria. No se amplió el alcance al backend, store del mapa ni `Hero.tsx`.
+- Fases de implementación cerradas. Commit sugerido, sin ejecutar: `fix: pule la presentación final del registro de dalia`.
